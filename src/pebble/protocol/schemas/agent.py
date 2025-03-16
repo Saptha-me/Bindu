@@ -5,13 +5,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
-
-class AgentType(str, Enum):
-    """Enumeration of supported agent types."""
-    SMOL = "smol"
-    AGNO = "agno"
-    CREW = "crew"
-    CUSTOM = "custom"
+from ...constants import AgentType
 
 
 class AgentCapability(str, Enum):

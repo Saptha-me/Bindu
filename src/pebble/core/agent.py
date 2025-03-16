@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, Literal
 import json
 from datetime import datetime
 
@@ -10,6 +10,9 @@ class BaseAgent:
     # --- Section 1: Instructions and Flow ---
     name: str
     description: str
+    # --- Section 5: Model System ---
+    model: Any
+    # --- Section 1 (continued): Instructions and Flow ---
     instructions: List[str] = field(default_factory=list)
     goal: Optional[str] = None
     markdown: bool = True
@@ -35,8 +38,7 @@ class BaseAgent:
     search_knowledge: bool = True
     update_knowledge: bool = False
     
-    # --- Section 5: Model System ---
-    model: Any
+    # --- Section 5 (continued): Model System ---
     stream: bool = True
     retries: int = 3
     delay_between_retries: int = 1

@@ -22,12 +22,7 @@ class MessageType(str, Enum):
     ERROR = "error"
 
 
-class AgentType(str, Enum):
-    """Agent types supported by the protocol."""
-    SMOL = "smol"
-    AGNO = "agno"
-    CREW = "crew"
-    CUSTOM = "custom"
+from ..constants import AgentType
 
 
 class Message(BaseModel):

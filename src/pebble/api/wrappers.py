@@ -26,7 +26,8 @@ import asyncio
 import inspect
 from functools import wraps
 from contextlib import contextmanager
-from typing import Optional, Union, Dict, Any, List, Callable, Type, Tuple, cast, Generator
+from typing import Optional, Union, Dict, Any, List, Callable, Type, Tuple, cast, Generator, ClassVar
+from .handlers import AgnoAgentHandler, SmolAgentHandler, CrewAgentHandler
 from enum import Enum
 from datetime import datetime
 from uuid import uuid4
@@ -55,42 +56,34 @@ from agno.agent import Agent as AgnoAgent
 from smolagents import MultiStepAgent as SmolAgent
 from crewai.agents.agent_builder.base_agent import BaseAgent as CrewAIAgent
 
-# Define agent types enum
-class AgentType(str, Enum):
-    """Enum of supported agent types.
+# Import centralized agent type enum
+from ..constants import AgentType
+
+# Add helper function to determine agent type
+def determine_agent_type(agent: Any) -> AgentType:
+    """Determine agent type from an agent instance.
     
-    This enum defines the different agent framework types supported
-    by the pebble API wrapper system.
+    Args:
+        agent: An instance of an agent from any supported framework
+        
+    Returns:
+        AgentType: The detected agent type
+        
+    Raises:
+        ValueError: If the agent type is not supported
     """
-    AGNO = "agno"
-    SMOL = "smol"
-    CREW = "crew"
+    from agno.agent import Agent as AgnoAgent
+    from smolagents import MultiStepAgent as SmolAgent
+    from crewai.agents.agent_builder.base_agent import BaseAgent as CrewAIAgent
     
-    @classmethod
-    def from_agent_instance(cls, agent: Any) -> "AgentType":
-        """Determine agent type from an agent instance.
-        
-        Args:
-            agent: An instance of an agent from any supported framework
-            
-        Returns:
-            AgentType: The detected agent type
-            
-        Raises:
-            ValueError: If the agent type is not supported
-        """
-        from agno.agent import Agent as AgnoAgent
-        from smolagents import MultiStepAgent as SmolAgent
-        from crewai.agents.agent_builder.base_agent import BaseAgent as CrewAIAgent
-        
-        if isinstance(agent, AgnoAgent):
-            return cls.AGNO
-        elif isinstance(agent, SmolAgent):
-            return cls.SMOL
-        elif isinstance(agent, CrewAIAgent):
-            return cls.CREW
-        else:
-            raise ValueError(f"Unsupported agent type: {type(agent).__name__}")
+    if isinstance(agent, AgnoAgent):
+        return AgentType.AGNO
+    elif isinstance(agent, SmolAgent):
+        return AgentType.SMOL
+    elif isinstance(agent, CrewAIAgent):
+        return AgentType.CREW
+    else:
+        raise ValueError(f"Unsupported agent type: {type(agent).__name__}")
 
 class AgentResponse(BaseModel):
     """Standardized response model for all agent types.
@@ -107,7 +100,7 @@ class AgentResponse(BaseModel):
         response_id: Unique identifier for this response
         timestamp: When this response was generated
     """
-    content: Any
+    content: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
     agent_type: AgentType
     success: bool = True
@@ -224,8 +217,8 @@ class AgentAPIWrapper(BaseModel):
     cache_config: Optional[Dict[str, Any]] = None
     
     # Private attributes
-    _cache: Dict[str, Any] = Field(default_factory=dict, exclude=True)
-    _stats: Dict[str, Any] = Field(default_factory=dict, exclude=True)
+    cache: Dict[str, Any] = Field(default_factory=dict, exclude=True)
+    stats: Dict[str, Any] = Field(default_factory=dict, exclude=True)
     
     class Config:
         """Pydantic model configuration."""
@@ -255,7 +248,7 @@ class AgentAPIWrapper(BaseModel):
             }])
             
         # Initialize stats
-        self._stats = {
+        self.stats = {
             "calls": 0,
             "successes": 0,
             "failures": 0,
@@ -296,7 +289,7 @@ class AgentAPIWrapper(BaseModel):
             Exception: Any exception from the underlying agent action
         """
         # Update stats
-        self._stats["calls"] += 1
+        self.stats["calls"] += 1
         
         # Extract general parameters
         retry_on_error = kwargs.pop('retry_on_error', True)
@@ -307,9 +300,9 @@ class AgentAPIWrapper(BaseModel):
         if use_cache:
             cache_key = self._generate_cache_key(prompt, kwargs)
             if cache_key in self._cache:
-                self._stats["cache_hits"] += 1
+                self.stats["cache_hits"] += 1
                 logger.debug(f"Cache hit for {self.agent_type.value} agent with prompt: {prompt[:50]}...")
-                return self._cache[cache_key]
+                return self.cache[cache_key]
         
         # Execute with retries if enabled
         retries = self.max_retries if retry_on_error else 0
@@ -337,11 +330,11 @@ class AgentAPIWrapper(BaseModel):
                     })
                     
                     # Update success stats
-                    self._stats["successes"] += 1
+                    self.stats["successes"] += 1
                     
                     # Cache if enabled
                     if use_cache:
-                        self._cache[cache_key] = agent_response
+                        self.cache[cache_key] = agent_response
                         
                     return agent_response
             except asyncio.TimeoutError:
@@ -358,7 +351,7 @@ class AgentAPIWrapper(BaseModel):
                 await asyncio.sleep(wait_time)
                 
         # If we got here, all attempts failed
-        self._stats["failures"] += 1
+        self.stats["failures"] += 1
         
         error_response = AgentResponse(
             content=None,
@@ -387,14 +380,8 @@ class AgentAPIWrapper(BaseModel):
         Raises:
             ValueError: If the agent type is not supported
         """
-        if self.agent_type == AgentType.AGNO:
-            return await self._handle_agno_action(prompt, **kwargs)
-        elif self.agent_type == AgentType.SMOL:
-            return await self._handle_smol_action(prompt, **kwargs)
-        elif self.agent_type == AgentType.CREW:
-            return await self._handle_crew_action(prompt, **kwargs)
-        else:
-            raise ValueError(f"Unsupported agent type: {self.agent_type}")
+        # Use the generic handler system
+        return await self._handle_action(prompt, **kwargs)
             
     def _generate_cache_key(self, prompt: str, params: Dict[str, Any]) -> str:
         """Generate a cache key for the given prompt and parameters.
@@ -424,497 +411,57 @@ class AgentAPIWrapper(BaseModel):
         
         return hashlib.md5('|'.join(key_parts).encode()).hexdigest()
 
-    async def _handle_agno_action(self, prompt: str, **kwargs) -> Any:
-        """Handle action for Agno agent.
+    async def _get_agent_handler(self):
+        """Get the appropriate handler for the current agent type.
         
-        Args:
-            prompt: The input prompt for the Agno agent
-            **kwargs: Agno-specific parameters including:
-                - stream: Whether to stream the response (default: True)
-                - add_references: Whether to add knowledge references (default: False)
-                - session_id: Optional session ID for conversation tracking
-                - context: Optional context for the agent
-                - history: Previous messages to include (default: None)
-                - num_history_responses: Number of historical responses to include (default: None)
-                - tools: Additional tools to make available to the agent (default: None)
-                
         Returns:
-            The processed response from the Agno agent
+            BaseAgentHandler: Handler instance for the current agent type
             
         Raises:
-            AttributeError: If the agent doesn't have expected attributes
-            ValueError: If there are issues with the provided parameters
-            Exception: Any exception from the underlying Agno agent
+            ValueError: If the agent type is not supported
         """
-        logger.debug(f"Preparing Agno agent with prompt: {prompt[:50]}...")
-        
-        # Extract and configure Agno-specific parameters
-        stream = kwargs.pop('stream', True)
-        add_references = kwargs.pop('add_references', False)
-        session_id = kwargs.pop('session_id', None)
-        context = kwargs.pop('context', None)
-        history = kwargs.pop('history', None)
-        num_history_responses = kwargs.pop('num_history_responses', None)
-        tools = kwargs.pop('tools', None)
-        
-        try:
-            # Configure agent for this run
-            agno_config = {}
-            
-            # Handle context if provided
-            if context is not None:
-                if hasattr(self.agent, 'context'):
-                    if isinstance(context, dict):
-                        # If original context is None, initialize it
-                        if self.agent.context is None:
-                            self.agent.context = {}
-                        # Merge new context with existing
-                        self.agent.context.update(context)
-                    else:
-                        self.agent.context = context
-                    agno_config['context'] = self.agent.context
-                else:
-                    logger.warning("Agno agent does not support context, ignoring context parameter")
-            
-            # Configure references
-            if hasattr(self.agent, 'add_references'):
-                self.agent.add_references = add_references
-                agno_config['add_references'] = add_references
-            
-            # Set session ID if provided
-            if session_id is not None and hasattr(self.agent, 'session_id'):
-                self.agent.session_id = session_id
-                agno_config['session_id'] = session_id
-            
-            # Configure message history
-            if history is not None and hasattr(self.agent, 'add_history_to_messages'):
-                self.agent.add_history_to_messages = True
-                agno_config['history'] = history
-                
-            if num_history_responses is not None and hasattr(self.agent, 'num_history_responses'):
-                self.agent.num_history_responses = num_history_responses
-                agno_config['num_history_responses'] = num_history_responses
-                
-            # Add tools if provided
-            if tools is not None and hasattr(self.agent, 'tools'):
-                # If agent has tools but they're None, initialize
-                if self.agent.tools is None:
-                    self.agent.tools = []
-                
-                # Add new tools to existing tools
-                if isinstance(tools, list):
-                    self.agent.tools.extend(tools)
-                else:
-                    self.agent.tools.append(tools)
-                agno_config['tools'] = self.agent.tools
-            
-            logger.debug(f"Configured Agno agent with: {agno_config}")
-            
-            # Use the agent's run method if available, otherwise fall back to get_response
-            if hasattr(self.agent, 'run'):
-                logger.debug("Using Agno agent's run method")
-                response = await self.agent.run(prompt, stream=stream, **kwargs)
-                
-                # Extract the actual response content if it's wrapped in a response object
-                if hasattr(response, 'response'):
-                    return response.response
-                return response
-            else:
-                logger.debug("Using Agno agent's get_response method")
-                return await self.agent.get_response(prompt, stream=stream, **kwargs)
-                
-        except AttributeError as e:
-            logger.error(f"Agno agent structure error: {str(e)}")
-            raise
-        except ValueError as e:
-            logger.error(f"Invalid parameters for Agno agent: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error with Agno agent: {str(e)}")
-            logger.debug(f"Stack trace: {traceback.format_exc()}")
-            raise
+        if self.agent_type == AgentType.AGNO:
+            return AgnoAgentHandler(self.agent, verbose=self.verbose)
+        elif self.agent_type == AgentType.SMOL:
+            return SmolAgentHandler(self.agent, verbose=self.verbose)
+        elif self.agent_type == AgentType.CREW:
+            handler = CrewAgentHandler(self.agent, verbose=self.verbose)
+            # Transfer any context from the wrapper to the handler
+            if hasattr(self, 'transfer_context'):
+                handler.transfer_context = self.transfer_context
+            return handler
+        else:
+            raise ValueError(f"Unsupported agent type: {self.agent_type}")
 
-    async def _handle_smol_action(self, prompt: str, **kwargs) -> Any:
-        """Handle action for Smol agent.
+    async def _handle_action(self, prompt: str, **kwargs) -> Any:
+        """Handle an action for the agent using the appropriate handler.
         
         Args:
-            prompt: The input prompt for the Smol agent
-            **kwargs: Smol-specific parameters including:
-                - task_name: Name for the task (default: 'Default Task')
-                - memory: Optional memory instance
-                - use_tools: Whether tools should be used (default: True)
-                - verbose: Whether to be verbose (default: False)
-                - max_steps: Maximum steps for the agent to take
-                - persist_memory: Whether to persist memory between runs (default: True)
-                - tools: Optional list of tools to use for this specific request
-                - context: Optional context to provide for this request
-                
+            prompt: The input prompt for the agent
+            **kwargs: Agent-specific parameters
+            
         Returns:
-            The processed response from the Smol agent
+            The processed response from the agent
             
         Raises:
-            AttributeError: If the agent doesn't have expected attributes
-            ValueError: If there are issues with the provided parameters
-            Exception: Any exception from the underlying Smol agent
+            ValueError: If the agent type is not supported
+            Exception: Any exception from the underlying agent handler
         """
-        logger.debug(f"Preparing SmolaAgent with prompt: {prompt[:50]}...")
-        
-        try:
-            # Extract SmolaAgent specific parameters
-            task_name = kwargs.pop('task_name', 'Default Task')
-            memory = kwargs.pop('memory', None)
-            use_tools = kwargs.pop('use_tools', True)
-            verbose = kwargs.pop('verbose', False)
-            max_steps = kwargs.pop('max_steps', None)
-            persist_memory = kwargs.pop('persist_memory', True)
-            tools = kwargs.pop('tools', None)
-            context = kwargs.pop('context', None)
-            
-            # Store configuration for logging
-            smol_config = {
-                "task_name": task_name,
-                "use_tools": use_tools,
-                "verbose": verbose,
-                "persist_memory": persist_memory
-            }
-            
-            # Configure memory if provided
-            if memory is not None and hasattr(self.agent, 'memory'):
-                prev_memory = self.agent.memory
-                self.agent.memory = memory
-                smol_config["memory"] = "custom"
-            elif not persist_memory and hasattr(self.agent, 'memory'):
-                # Clear memory if not persisting
-                prev_memory = self.agent.memory
-                self.agent.memory = None
-                smol_config["memory"] = "cleared"
-            elif hasattr(self.agent, 'memory') and self.agent.memory is not None:
-                smol_config["memory"] = "existing"
-            
-            # Configure max steps if provided
-            agent_options = {}
-            if max_steps is not None:
-                agent_options['max_steps'] = max_steps
-                smol_config["max_steps"] = max_steps
-            
-            # Add tools if provided
-            if tools is not None and hasattr(self.agent, 'tools'):
-                # Store original tools
-                original_tools = self.agent.tools
-                
-                # Update tools for this request
-                if isinstance(tools, list):
-                    self.agent.tools = tools
-                else:
-                    self.agent.tools = [tools]
-                    
-                smol_config["tools"] = f"custom ({len(self.agent.tools)} tools)"
-            elif hasattr(self.agent, 'tools') and self.agent.tools:
-                smol_config["tools"] = f"existing ({len(self.agent.tools)} tools)"
-            
-            # Add context if provided
-            if context is not None:
-                agent_options['context'] = context
-                smol_config["context"] = "provided"
-            
-            logger.debug(f"Configured Smol agent with: {smol_config}")
-            
-            # Execute agent action
-            try:
-                # Use the solve method if available, otherwise fall back to chat
-                if hasattr(self.agent, 'solve'):
-                    logger.debug("Using SmolaAgent's solve method")
-                    
-                    # Wrap synchronous calls in a ThreadPoolExecutor to avoid blocking
-                    loop = asyncio.get_event_loop()
-                    result = await loop.run_in_executor(
-                        None,
-                        lambda: self.agent.solve(
-                            prompt, 
-                            task_name=task_name,
-                            memory=memory if memory is not None else self.agent.memory,
-                            use_tools=use_tools,
-                            verbose=verbose,
-                            **agent_options,
-                            **kwargs
-                        )
-                    )
-                else:
-                    logger.debug("Using SmolaAgent's chat method")
-                    loop = asyncio.get_event_loop()
-                    result = await loop.run_in_executor(
-                        None,
-                        lambda: self.agent.chat(prompt, **kwargs)
-                    )
-                
-                logger.debug("SmolaAgent execution completed successfully")
-                
-                # Build enhanced response structure
-                if hasattr(result, 'output') and result.output is not None:
-                    # Extract steps information if available
-                    steps_info = []
-                    if hasattr(result, 'steps') and result.steps:
-                        for i, step in enumerate(result.steps):
-                            step_data = {
-                                "step": i+1,
-                                "thought": getattr(step, 'thought', None),
-                                "action": getattr(step, 'action', None),
-                                "observation": getattr(step, 'observation', None)
-                            }
-                            steps_info.append(step_data)
-                    
-                    # Create a structured response
-                    if steps_info:
-                        return {
-                            "final_answer": result.output,
-                            "steps": steps_info,
-                            "num_steps": len(steps_info)
-                        }
-                    else:
-                        return result.output
-                
-                # Return the raw result if no output property is found
-                return result
-                
-            finally:
-                # Restore original agent state if needed
-                if 'prev_memory' in locals() and persist_memory is False:
-                    self.agent.memory = prev_memory
-                
-                if 'original_tools' in locals() and tools is not None:
-                    self.agent.tools = original_tools
-                
-        except AttributeError as e:
-            logger.error(f"Smol agent structure error: {str(e)}")
-            raise
-        except ValueError as e:
-            logger.error(f"Invalid parameters for Smol agent: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error with Smol agent: {str(e)}")
-            logger.debug(f"Stack trace: {traceback.format_exc()}")
-            raise
+        handler = await self._get_agent_handler()
+        return await handler.handle_action(prompt, **kwargs)
 
-    async def _handle_crew_action(self, prompt: str, **kwargs) -> Any:
-        """Handle action for CrewAI agent.
-        
-        Args:
-            prompt: The input prompt for the CrewAI agent
-            **kwargs: CrewAI-specific parameters including:
-                - task_description: Optional detailed task description
-                - context: Optional context for the task
-                - tools: Optional list of tools to use
-                - cache: Whether to use cache (default: True)
-                - expected_output: Description of the expected output format
-                - async_execution: Whether to run tasks asynchronously
-                - task_id: Optional ID for the task
-                - callbacks: Optional callbacks for monitoring task execution
-                
-        Returns:
-            The processed response from the CrewAI agent
-            
-        Raises:
-            ImportError: If required CrewAI modules are not available
-            ValueError: If the agent doesn't have expected execution methods
-            Exception: Any exception from the underlying CrewAI execution
-        """
-        logger.debug(f"Preparing CrewAI agent with prompt: {prompt[:50]}...")
-        
-        try:
-            # Extract CrewAI specific parameters
-            task_description = kwargs.pop('task_description', prompt)
-            context = kwargs.pop('context', None)
-            tools = kwargs.pop('tools', [])
-            cache = kwargs.pop('cache', True)
-            expected_output = kwargs.pop('expected_output', "Detailed response to the query or task")
-            async_execution = kwargs.pop('async_execution', True)
-            task_id = kwargs.pop('task_id', None)
-            callbacks = kwargs.pop('callbacks', None)
-            
-            # Store configuration for logging
-            crew_config = {
-                "has_task_description": task_description != prompt,
-                "has_context": context is not None,
-                "tools_count": len(tools) if isinstance(tools, list) else 1 if tools else 0,
-                "cache_enabled": cache,
-                "async_execution": async_execution
-            }
-            
-            # Create a safe context if provided
-            safe_context = None
-            if context is not None:
-                if isinstance(context, dict):
-                    # Make a copy to avoid side effects
-                    safe_context = context.copy()
-                else:
-                    safe_context = context
-            
-            # Keep track of original tools if we're modifying them
-            original_tools = None
-            if tools and hasattr(self.agent, 'tools'):
-                original_tools = self.agent.tools
-                
-                # Update tools for this request
-                if isinstance(tools, list):
-                    self.agent.tools = tools
-                else:
-                    self.agent.tools = [tools]
-            
-            logger.debug(f"Configured CrewAI agent with: {crew_config}")
-            
-            # If agent has a transfer_context from previous knowledge transfer
-            if hasattr(self, 'transfer_context') and self.transfer_context:
-                # Combine with existing context or create new one
-                if safe_context is None:
-                    safe_context = self.transfer_context
-                elif isinstance(safe_context, dict):
-                    safe_context['transferred_knowledge'] = self.transfer_context
-                elif isinstance(safe_context, str):
-                    safe_context = f"{safe_context}\n\nAdditional context: {self.transfer_context}"
-                
-                logger.debug("Added transferred knowledge to context")
-            
-            # Try to create and execute a Task object if appropriate
-            task_execution_result = None
-            
-            try:
-                # First check if we have a proper task description and CrewAI is available
-                if task_description and task_description != prompt:
-                    try:
-                        from crewai import Task
-                        
-                        # Create a task with all available parameters
-                        task_args = {
-                            "description": task_description,
-                            "agent": self.agent,
-                            "expected_output": expected_output,
-                        }
-                        
-                        # Add optional parameters
-                        if safe_context is not None:
-                            task_args["context"] = safe_context
-                        if task_id is not None:
-                            task_args["id"] = task_id
-                        if callbacks is not None:
-                            task_args["callbacks"] = callbacks
-                        
-                        # Create and execute the task
-                        task = Task(**task_args)
-                        
-                        logger.debug("Created CrewAI Task for execution")
-                        
-                        if async_execution:
-                            task_execution_result = await task.execute()
-                        else:
-                            # Use thread pool for synchronous execution
-                            loop = asyncio.get_event_loop()
-                            task_execution_result = await loop.run_in_executor(
-                                None, task.execute_sync
-                            )
-                            
-                        logger.debug("CrewAI Task execution completed successfully")
-                    except ImportError as e:
-                        logger.warning(f"CrewAI Task module not available: {str(e)}")
-                        # Continue to try alternate methods
-                        
-                # If task execution didn't work, try direct agent methods
-                if task_execution_result is None:
-                    if hasattr(self.agent, 'execute_task'):
-                        logger.debug("Using CrewAI agent's execute_task method")
-                        
-                        # Prepare kwargs for execute_task
-                        execution_kwargs = kwargs.copy()
-                        if safe_context is not None:
-                            execution_kwargs['context'] = safe_context
-                            
-                        if async_execution:
-                            task_execution_result = await self.agent.execute_task(prompt, **execution_kwargs)
-                        else:
-                            # Use thread pool for synchronous execution if method is not async
-                            if not inspect.iscoroutinefunction(self.agent.execute_task):
-                                loop = asyncio.get_event_loop()
-                                task_execution_result = await loop.run_in_executor(
-                                    None, lambda: self.agent.execute_task(prompt, **execution_kwargs)
-                                )
-                            else:
-                                task_execution_result = await self.agent.execute_task(prompt, **execution_kwargs)
-                                
-                    elif hasattr(self.agent, 'run') and callable(self.agent.run):
-                        logger.debug("Using CrewAI agent's run method")
-                        
-                        if async_execution and inspect.iscoroutinefunction(self.agent.run):
-                            task_execution_result = await self.agent.run(prompt, **kwargs)
-                        else:
-                            # Use thread pool for synchronous execution
-                            loop = asyncio.get_event_loop()
-                            task_execution_result = await loop.run_in_executor(
-                                None, lambda: self.agent.run(prompt, **kwargs)
-                            )
-                    else:
-                        # No suitable execution method found
-                        raise ValueError("CrewAI agent does not have expected execution methods (execute_task or run)")
-                
-                # Process and return the result
-                if isinstance(task_execution_result, dict) and 'output' in task_execution_result:
-                    return task_execution_result['output']
-                
-                return task_execution_result
-            
-            finally:
-                # Cleanup: restore original tools if modified
-                if original_tools is not None:
-                    self.agent.tools = original_tools
-                
-        except ImportError as e:
-            logger.error(f"Missing CrewAI dependency: {str(e)}")
-            raise
-        except ValueError as e:
-            logger.error(f"Invalid CrewAI configuration: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error with CrewAI agent: {str(e)}")
-            logger.debug(f"Stack trace: {traceback.format_exc()}")
-            raise
-
-    def _get_agent_metadata(self) -> Dict[str, Any]:
-        """Get metadata specific to each agent type.
+    async def _get_agent_metadata(self) -> Dict[str, Any]:
+        """Get metadata specific to each agent type using the appropriate handler.
         
         Returns:
             Dict[str, Any]: A dictionary containing agent-specific metadata
         """
-        metadata = {
-            "agent_type": self.agent_type,
-            "timestamp": datetime.now().isoformat()
-        }
+        # Get the handler for this agent type
+        handler = await self._get_agent_handler()
         
-        if self.agent_type == AgentType.AGNO:
-            metadata.update({
-                "agent_id": getattr(self.agent, 'agent_id', None),
-                "model": str(getattr(self.agent, 'model', 'Unknown')),
-                "session_id": getattr(self.agent, 'session_id', None),
-                "knowledge": bool(getattr(self.agent, 'knowledge', None)),
-                "tools": bool(getattr(self.agent, 'tools', None)),
-                "memory": bool(getattr(self.agent, 'memory', None)),
-                "tools_count": len(getattr(self.agent, 'tools', [])) if hasattr(self.agent, 'tools') else 0
-            })
-        elif self.agent_type == AgentType.SMOL:
-            metadata.update({
-                "tools": bool(getattr(self.agent, 'tools', None)),
-                "tools_count": len(getattr(self.agent, 'tools', [])) if hasattr(self.agent, 'tools') else 0,
-                "memory": bool(getattr(self.agent, 'memory', None)),
-                "planning": bool(getattr(self.agent, 'planning', False)),
-                "model": str(getattr(self.agent, 'model', 'Unknown'))
-            })
-        elif self.agent_type == AgentType.CREW:
-            metadata.update({
-                "agent_id": str(getattr(self.agent, 'id', None)),
-                "role": getattr(self.agent, 'role', None),
-                "goal": getattr(self.agent, 'goal', None),
-                "backstory": getattr(self.agent, 'backstory', None),
-                "allow_delegation": getattr(self.agent, 'allow_delegation', False),
-                "tools_count": len(getattr(self.agent, 'tools', [])) if hasattr(self.agent, 'tools') else 0
-            })
-            
+        # Get the metadata from the handler
+        metadata = handler.get_metadata()
+        
         return metadata
 
 

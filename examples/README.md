@@ -73,6 +73,32 @@ Shows a practical and comprehensive multi-agent workflow example:
 2. Adjust the workflow steps to match your specific project requirements
 3. Customize the project data structure for your application domain
 
+### 6. `agent_type_usage.py`
+
+Demonstrates how to use the centralized AgentType constants for consistent type identification:
+
+- Working with the AgentType enumeration
+- Creating messages for different agent types
+- Adapting messages based on agent type
+- Using agent type metadata in your messages
+
+**To adapt**:
+1. Use the consistent AgentType enum in your custom implementations
+2. Add your own agent type handling logic as needed
+
+### 7. `agent_handlers_test.py`
+
+Demonstrates the use of the refactored agent handler system for different agent types:
+
+- Using the generic handler-based architecture
+- Creating mock agents for testing
+- Getting consistent responses with uniform API
+- Handling agent-specific configuration 
+
+**To adapt**:
+1. Replace the mock agents with your real agent implementations
+2. Use the handler system for your custom agent types
+
 ## Running the Examples
 
 To run any example:

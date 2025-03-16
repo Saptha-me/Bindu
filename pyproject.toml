@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pebble"
+version = "0.1.0"
+description = "Communication protocol for different agent types (smolagent, agno, crew)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Rahul Dutta", email = "rahuldutta@example.com"}
+]
+keywords = ["agents", "llm", "communication", "protocol"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "agno>=1.1.9",
+    "crewai>=0.105.0",
+    "crewai-tools>=0.37.0",
+    "duckduckgo-search>=7.5.1",
+    "fastapi>=0.115.11",
+    "llama-index>=0.12.23",
+    "loguru>=0.7.3",
+    "numpy>=2.2.3",
+    "openai>=1.65.4",
+    "requests>=2.32.3",
+    "smolagents>=1.10.0",
+    "tantivy>=0.22.0",
+    "uvicorn>=0.34.0",
+    "pydantic>=2.0.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/pebble"
+"Bug Tracker" = "https://github.com/yourusername/pebble/issues"

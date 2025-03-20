@@ -1,4 +1,4 @@
 sqlalchemy==2.0.27
 alembic==1.12.1
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 python-dotenv==1.0.0

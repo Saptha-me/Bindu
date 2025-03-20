@@ -40,5 +40,5 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/yourusername/pebble"
-"Bug Tracker" = "https://github.com/yourusername/pebble/issues"
+"Homepage" = "https://github.com/Pebbling-ai/pebble"
+"Bug Tracker" = "https://github.com/Pebbling-ai/pebble/issues"

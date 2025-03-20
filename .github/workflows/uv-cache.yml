@@ -23,7 +23,7 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       
       # Cache the uv cache directory
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cache/uv

@@ -10,6 +10,14 @@ from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
+# Import cognitive models
+from pebble.schemas.cognitive_models import (
+    StimulusType,
+    CognitiveState,
+    CognitiveRequest,
+    CognitiveResponse
+)
+
 
 class AgentStatus(str, Enum):
     """Status of an agent."""

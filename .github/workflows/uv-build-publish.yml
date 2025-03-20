@@ -1,0 +1,61 @@
+name: Build and Publish with uv
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  build-and-publish:
+    name: Build and publish Python distribution to PyPI
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    # Cache uv directory for faster builds
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
+    
+    - name: Install build dependencies
+      run: |
+        uv pip install build twine
+    
+    - name: Build package
+      run: |
+        uv run python -m build
+    
+    - name: Check distribution
+      run: |
+        uv run twine check dist/*
+    
+    - name: Publish to Test PyPI
+      if: github.event_name == 'workflow_dispatch'  # Only on manual run
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
+    
+    - name: Publish to PyPI
+      if: startsWith(github.ref, 'refs/tags')  # Only on tagged releases
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}

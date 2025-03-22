@@ -22,7 +22,10 @@
   <h3> A Protocol to Connect Them All: Seamless AI Agent Communication </h3>
 </div>
 
-Pebble breaks down the barriers between AI agent frameworks, enabling effortless collaboration across [Smolagent](https://github.com/huggingface/smolagents), [AgnoAI](https://github.com/agno-agi/agno), [CrewAI](https://github.com/crewai/crewai) and more. One protocol to unite them all — simple, powerful, and ready to transform how your agents communicate.
+Millions Agents from mutiple frameworks - but how they will communicate? 
+We are making the Esperanto of AI Agent Communication to solve the problem.
+Enabling effortless collaboration across [Smolagent](https://github.com/huggingface/smolagents), [AgnoAI](https://github.com/agno-agi/agno), [CrewAI](https://github.com/crewai/crewai) and more. 
+One protocol to unite them all — simple, powerful, and ready to transform how your agents communicate.
 
 ## 🌐 Our Vision
 

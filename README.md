@@ -17,7 +17,7 @@
 
 
 <div align="center">
-  <h3>🔄 A Protocol to Connect Them All: Seamless AI Agent Communication</h3>
+  <h3> A Protocol to Connect Them All: Seamless AI Agent Communication</h3>
 </div>
 
 Pebble is a powerful communication protocol library that enables seamless interaction between different AI agent frameworks in Python. It provides a standardized way for agents from various frameworks (such as SmolagentAI, AgnoAI, and CrewAI) to exchange messages, share context, and collaborate effectively.

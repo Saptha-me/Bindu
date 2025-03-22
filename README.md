@@ -25,42 +25,23 @@
 Millions Agents from mutiple frameworks - but how they will communicate? 
 We are making the Esperanto of AI Agent Communication to solve the problem.
 Enabling effortless collaboration across [Smolagent](https://github.com/huggingface/smolagents), [AgnoAI](https://github.com/agno-agi/agno), [CrewAI](https://github.com/crewai/crewai) and more. 
-One protocol to unite them all — simple, powerful, and ready to transform how your agents communicate.
+One protocol to unite them all , simple, powerful, and ready to transform how your agents communicate.
 
-## 🌐 Our Vision
 
-**Building the open standard for agent-to-agent communication in a world of billions of AI agents.**
+## 🚀 Our Vision
+
+**Building the Open Standard for Agent-to-Agent Communication in a World of Billions of AI Agents.**
 
 As autonomous agents proliferate, secure and efficient communication becomes critical. Our protocol enables decentralized agent communication with:  
 
 - **Security First**: Built on mutual TLS (mTLS) for enterprise-grade security
+- **Framework-Agnostic Adapters**: Adapter system translates between different frameworks' internal representations.
+- **Persistent State Management**: Maintain context and cognitive state across interactions
 - **High Performance**: Lightweight protocol optimized for distributed systems
 - **Future-Ready**: Designed for the coming era of autonomous, agent-driven applications
 
-We're building the foundation for a truly decentralized agent ecosystem.
-
-## 🤔 The Problem
-
-As AI agent ecosystems grow more complex, a critical challenge emerges: **agents built with different frameworks can't easily communicate with each other**. This communication barrier prevents:
-
-- **Automatic Decision Making**: Agents can't collaborate on complex tasks requiring multiple specialized capabilities
-- **Cross-Framework Collaboration**: Teams using different agent technologies are forced to build custom integration layers
-- **Consistent Media Handling**: Image, audio, and video content gets processed inconsistently across frameworks
-- **Cognitive State Sharing**: Agents can't share their understanding or context with other agents
-
 Without a standardized protocol, creating multi-agent systems becomes exponentially more complex, requiring custom adapters for each pair of frameworks.
 
-## 💡 The Solution
-
-Pebble provides a universal communication layer that enables seamless interaction between agents built on different frameworks:
-
-- **Framework-Agnostic Adapters**: Pebble's adapter system translates between different frameworks' internal representations
-- **Cognitive Protocol**: Enhanced agent interactions with standardized cognitive capabilities (act, see, listen, think)
-- **Smart Media Handling**: Automatic conversion between different frameworks' media requirements (URL → direct content)
-- **Unified Message Format**: Standardized message structure ensures consistent data exchange
-- **Persistent State Management**: Maintain context and cognitive state across interactions
-
-With Pebble, your AI agents can focus on solving problems together rather than struggling to understand each other.
 
 ## 🚀 Getting Started
 
@@ -73,6 +54,91 @@ uv pip install pebble
 ```
 
 Check out the [examples](examples/) directory to see how to use Pebble with different agent frameworks.
+
+
+## 🏁 Quick Start
+
+### Basic Agent Communication
+
+```python
+# Import Agno agent components
+from agno.agent import Agent as AgnoAgent
+from agno.models.openai import OpenAIChat
+from agno.models.google import Gemini
+from agno.tools.duckduckgo import DuckDuckGoTools
+
+# Import pebble components
+from pebble import deploy
+from pebble.schemas.models import DeploymentConfig
+from pebble.security.keys import get_secret_key, rotate_secret_key
+
+# Initialize a simple Agno agent
+basic_agent = AgnoAgent(
+    name="Customer Support Assistant",
+    model=OpenAIChat(id="gpt-4o"),
+    description="You are a helpful customer support assistant for a software company.",
+    instructions=[
+        "Be concise and professional.",
+        "If you don't know an answer, acknowledge it.",
+        "Make use of your tools when appropriate.",
+        "Focus on providing actionable solutions."
+    ],
+    tools=[DuckDuckGoTools()],
+    show_tool_calls=True,
+    markdown=True
+)
+
+audio_agent = AgnoAgent(
+    name="Audio Assistant",
+    model=Gemini(id="gemini-2.0-flash-thinking-exp"),
+    description="You are an assistant that can process audio and generate responses.",
+    instructions=[
+        "Be concise and professional.",
+        "If you don't know an answer, acknowledge it.",
+        "Make use of your tools when appropriate.",
+        "Focus on providing actionable solutions."
+    ],
+    markdown=True
+)
+
+image_agent = AgnoAgent(
+    name="Image Assistant",
+    model=OpenAIChat(id="gpt-4o"),
+    markdown=True,
+)
+
+video_agent = AgnoAgent(
+    name="Video Assistant",
+    description="Process videos and generate engaging shorts.",
+    model=Gemini(id="gemini-2.0-flash-exp"),
+    markdown=True,
+    debug_mode=True,
+    instructions=[
+    "Analyze the provided video directly—do NOT reference or analyze any external sources or YouTube videos."
+    ]
+)
+
+config = DeploymentConfig(
+    host="0.0.0.0",         # Host to bind to
+    port=8000,              # Port to listen on
+    cors_origins=["*"],     # CORS allowed origins
+    enable_docs=True,       # Enable Swagger docs at /docs
+    require_auth=True,      # Require authentication
+    access_token_expire_minutes=30,  # Token expiration time
+    api_key_expire_days=365  # API key expiration time
+)
+
+deploy(
+    agent=[audio_agent, image_agent, video_agent],  # Pass a list of agents
+    name=["Audio Processing Agent", "Image Processing Agent", "Video Processing Agent"],
+    host=config.host,
+    port=config.port,
+    cors_origins=config.cors_origins,
+    enable_docs=config.enable_docs,
+    require_auth=config.require_auth
+)
+
+```
 
 ## 📚 Learn More
 

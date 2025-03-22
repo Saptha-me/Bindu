@@ -17,13 +17,15 @@ from pebble.schemas.models import DeploymentConfig
 
 def create_app(
     adapter: AgentProtocol,
-    config: Optional[DeploymentConfig] = None
+    config: Optional[DeploymentConfig] = None,
+    additional_adapters: Optional[List[AgentProtocol]] = None
 ) -> FastAPI:
     """Create and configure a FastAPI application for agent deployment.
     
     Args:
-        adapter: The agent protocol adapter
+        adapter: The primary agent protocol adapter
         config: Configuration for deployment
+        additional_adapters: Additional agent protocol adapters to register
         
     Returns:
         FastAPI: The configured FastAPI application
@@ -54,7 +56,8 @@ def create_app(
     register_routes(
         app=app,
         adapter=adapter,
-        require_auth=config.require_auth
+        require_auth=config.require_auth,
+        additional_adapters=additional_adapters
     )
     
     return app

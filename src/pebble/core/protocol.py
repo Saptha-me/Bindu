@@ -15,6 +15,7 @@ from pebble.schemas.models import (
     MessageRole, 
     StatusResponse
 )
+from pebble.schemas.models import ListenRequest, ViewRequest
 
 
 class AgentProtocol:
@@ -75,3 +76,42 @@ class AgentProtocol:
             ActionResponse: The response from the agent
         """
         raise NotImplementedError("This method must be implemented by adapter classes")
+    
+    def act(self, request: ActionRequest) -> ActionResponse:
+        """Process a standard text-based action and return a response.
+        
+        This is a convenience wrapper around process_action.
+        
+        Args:
+            request: The action request to process
+            
+        Returns:
+            ActionResponse: The response from the agent
+        """
+        return self.process_action(request)
+    
+    def listen(self, request: ListenRequest) -> ActionResponse:
+        """Process an audio input and return a response.
+        
+        This method should be implemented by adapter classes that support audio processing.
+        
+        Args:
+            request: The listen request containing audio data to process
+            
+        Returns:
+            ActionResponse: The response from the agent
+        """
+        raise NotImplementedError("Audio processing not supported by this adapter")
+    
+    def view(self, request: ViewRequest) -> ActionResponse:
+        """Process an image or video input and return a response.
+        
+        This method should be implemented by adapter classes that support image/video processing.
+        
+        Args:
+            request: The view request containing image/video data to process
+            
+        Returns:
+            ActionResponse: The response from the agent
+        """
+        raise NotImplementedError("Image/video processing not supported by this adapter")

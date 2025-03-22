@@ -6,6 +6,5 @@ and the unified pebble protocol.
 """
 
 from pebble.adapters.agno_adapter import AgnoAdapter
-from pebble.adapters.crew_adapter import CrewAdapter
 
-__all__ = ["AgnoAdapter", "CrewAdapter"]
+__all__ = ["AgnoAdapter"]

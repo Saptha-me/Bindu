@@ -11,15 +11,34 @@ from pebble.schemas.models import (
     ActionRequest,
     ActionResponse,
     StatusResponse,
-    DeploymentConfig
+    DeploymentConfig,
+    # Media models
+    ListenRequest,
+    Media,
+    AudioArtifact,
+    ImageArtifact,
+    Image,
+    VideoArtifact,
+    Video,
+    ViewRequest
 )
 
 __all__ = [
+    # Base models
     "AgentStatus",
     "MessageRole",
     "Message",
     "ActionRequest",
     "ActionResponse",
     "StatusResponse",
-    "DeploymentConfig"
+    "DeploymentConfig",
+    # Media models
+    "ListenRequest",
+    "Media",
+    "AudioArtifact",
+    "ImageArtifact",
+    "Image",
+    "VideoArtifact",
+    "Video",
+    "ViewRequest"
 ]

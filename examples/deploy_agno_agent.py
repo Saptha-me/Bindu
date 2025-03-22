@@ -18,6 +18,7 @@ from utils.manage_secrets import ensure_env_file
 # Import Agno agent components
 from agno.agent import Agent as AgnoAgent
 from agno.models.openai import OpenAIChat
+from agno.models.google import Gemini
 from agno.tools.duckduckgo import DuckDuckGoTools
 
 # Import pebble components
@@ -53,7 +54,44 @@ def main():
         show_tool_calls=True,
         markdown=True
     )
-    
+
+    audio_agent = AgnoAgent(
+        name="Audio Assistant",
+        model=Gemini(id="gemini-2.0-flash-thinking-exp"),
+        description="You are an assistant that can process audio and generate responses.",
+        instructions=[
+            "Be concise and professional.",
+            "If you don't know an answer, acknowledge it.",
+            "Make use of your tools when appropriate.",
+            "Focus on providing actionable solutions."
+        ],
+        markdown=True
+    )
+
+    image_agent = AgnoAgent(
+        name="Image Assistant",
+        model=OpenAIChat(id="gpt-4o"),
+        markdown=True,
+    )
+
+    video_agent = AgnoAgent(
+        name="Video Assistant",
+        description="Process videos and generate engaging shorts.",
+        model=Gemini(id="gemini-2.0-flash-exp"),
+        markdown=True,
+        debug_mode=True,
+        instructions=[
+            "Analyze the provided video directly—do NOT reference or analyze any external sources or YouTube videos.",
+            "Identify engaging moments that meet the specified criteria for short-form content.",
+            "Provide your analysis in a **table format** with these columns: Start Time | End Time | Description | Importance Score",
+            "Ensure all timestamps use MM:SS format and importance scores range from 1-10. ",
+            "Focus only on segments between 15 and 60 seconds long.",
+            "Base your analysis solely on the provided video content.",
+            "Deliver actionable insights to improve the identified segments for short-form optimization.",
+        ],
+    )
+
+
     # Configure deployment settings
     # This shows all available options with their default values
     config = DeploymentConfig(
@@ -67,11 +105,13 @@ def main():
     )
     
     print("Deploying Agno agent with protocol-integrated pebblify and authentication...")
-    
-    # Deploy the agent with configuration
-    # You can pass either the raw agent or the adapted agent
+
+
+    # Deploy multiple agents at once (image and video)
+    # The first agent in the list becomes the primary agent, but all are available
     deploy(
-        agent=agent,
+        agent=[audio_agent, image_agent, video_agent],  # Pass a list of agents
+        name=["Audio Processing Agent", "Image Processing Agent", "Video Processing Agent"],  # Optional names for the agents
         host=config.host,
         port=config.port,
         cors_origins=config.cors_origins,

@@ -17,7 +17,7 @@ from pebble.schemas.models import (
 )
 
 # Adapters
-from pebble.adapters import AgnoAdapter, CrewAdapter
+from pebble.adapters import AgnoAdapter
 
 # Server and configuration
 from pebble.api.server import create_app, start_server

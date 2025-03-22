@@ -37,6 +37,7 @@ dependencies = [
     "tantivy>=0.22.0",
     "uvicorn>=0.34.0",
     "pydantic>=2.0.0",
+    "google-genai>=1.2.0",
 ]
 
 [project.urls]

@@ -38,6 +38,7 @@ dependencies = [
     "uvicorn>=0.34.0",
     "pydantic>=2.0.0",
     "google-genai>=1.2.0",
+    "grip>=4.6.2",
 ]
 
 [project.urls]

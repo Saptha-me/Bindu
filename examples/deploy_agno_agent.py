@@ -23,7 +23,7 @@ from agno.tools.duckduckgo import DuckDuckGoTools
 # Import pebble components
 from pebble import deploy
 from pebble.schemas.models import DeploymentConfig
-from pebble.security.keys import get_secret_key, rotate_key_with_awk
+from pebble.security.keys import get_secret_key, rotate_secret_key
 
 
 def main():

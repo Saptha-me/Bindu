@@ -28,7 +28,7 @@ Enabling effortless collaboration across [Smolagent](https://github.com/huggingf
 One protocol to unite them all , simple, powerful, and ready to transform how your agents communicate.
 
 
-## 🚀 Our Vision
+## 🏎️ Our Vision
 
 **Building the Open Standard for Agent-to-Agent Communication in a World of Billions of AI Agents.**
 

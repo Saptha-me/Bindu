@@ -1,87 +1,81 @@
-<div align="center" id="top">
+<div align="center">
   <a href="https://docs.pebbling.ai">
     <picture>
       <img src="sample_data/image/image.png" alt="Pebble" width="100">
     </picture>
   </a>
 </div>
+
 <div align="center">
   <a href="https://docs.pebbling.ai">📚 Documentation</a> &nbsp;|&nbsp;
   <a href="examples">💡 Examples</a> &nbsp;|&nbsp;
   <a href="https://github.com/Pebbling-ai/pebble/stargazers">🌟 Star Us</a>
 </div>
 
-<div align="center" id="top">
-  <h1><strong>Pebble 🐧</strong></h1>
-</div>
-
-
-
+<br/>
 
 <div align="center">
-  <h3> A Protocol to Connect Them All: Seamless AI Agent Communication </h3>
+  <h1><strong>Pebble 🐧</strong></h1>
+  <h3>One Protocol to Connect Them All: Seamless AI Agent Communication</h3>
 </div>
 
-Millions Agents from mutiple frameworks - but how they will communicate? 
-We are making the Esperanto of AI Agent Communication to solve the problem.
-Enabling effortless collaboration across [Smolagent](https://github.com/huggingface/smolagents), [AgnoAI](https://github.com/agno-agi/agno), [CrewAI](https://github.com/crewai/crewai) and more. 
-One protocol to unite them all , simple, powerful, and ready to transform how your agents communicate.
+---
 
+> **Millions of AI agents. Different frameworks. No universal language.**  
+> Pebble is the *Esperanto* for agent-to-agent communication — a simple, secure, and powerful protocol enabling collaboration across [Smolagent](https://github.com/huggingface/smolagents), [AgnoAI](https://github.com/agno-agi/agno), [CrewAI](https://github.com/crewai/crewai), and beyond.
+
+---
 
 ## 🏎️ Our Vision
 
-**Building the Open Standard for Agent-to-Agent Communication in a World of Billions of AI Agents.**
+**Build the open standard for agent communication in a world with billions of AI agents.**
 
-As autonomous agents proliferate, secure and efficient communication becomes critical. Our protocol enables decentralized agent communication with:  
+As autonomous agents scale, seamless and secure communication becomes non-negotiable. Pebble is designed to be the backbone of this agent ecosystem:
 
-- **Security First**: Built on mutual TLS (mTLS) for enterprise-grade security
-- **Framework-Agnostic Adapters**: Adapter system translates between different frameworks' internal representations.
-- **Persistent State Management**: Maintain context and cognitive state across interactions
-- **High Performance**: Lightweight protocol optimized for distributed systems
-- **Future-Ready**: Designed for the coming era of autonomous, agent-driven applications
+- 🔐 **Security First**: Built on mutual TLS (mTLS) for end-to-end trust  
+- 🔌 **Framework-Agnostic**: Adapters bridge internal APIs across ecosystems  
+- 🧠 **Stateful by Default**: Maintain agent memory and cognition across requests  
+- ⚡ **Blazing Fast**: Lightweight protocol optimized for distributed deployments  
+- 🔮 **Future-Proof**: Built for the coming wave of autonomous applications
 
-Without a standardized protocol, creating multi-agent systems becomes exponentially more complex, requiring custom adapters for each pair of frameworks.
+> Without Pebble, building interoperable multi-agent systems is like writing custom APIs for every pair of agents. Yikes.
 
+---
 
-## 🚀 Getting Started
+## 🚀 Installation
 
 ```bash
 # Install Pebble
 pip install pebble
 
-# Or with uv for faster installation
+# Or use uv for faster installs
 uv pip install pebble
 ```
 
 Check out the [examples](examples/) directory to see how to use Pebble with different agent frameworks.
 
 
-## 🏁 Quick Start
-
-### Basic Agent Communication
+## 🏁 Quickstart: Cross-Framework Agent Communication
 
 ```python
-# Import Agno agent components
 from agno.agent import Agent as AgnoAgent
 from agno.models.openai import OpenAIChat
 from agno.models.google import Gemini
 from agno.tools.duckduckgo import DuckDuckGoTools
 
-# Import pebble components
 from pebble import deploy
 from pebble.schemas.models import DeploymentConfig
-from pebble.security.keys import get_secret_key, rotate_secret_key
 
-# Initialize a simple Agno agent
-basic_agent = AgnoAgent(
-    name="Customer Support Assistant",
+# Define agents
+support_agent = AgnoAgent(
+    name="Customer Support",
     model=OpenAIChat(id="gpt-4o"),
-    description="You are a helpful customer support assistant for a software company.",
+    description="Handles user queries for a software company.",
     instructions=[
         "Be concise and professional.",
-        "If you don't know an answer, acknowledge it.",
-        "Make use of your tools when appropriate.",
-        "Focus on providing actionable solutions."
+        "Acknowledge unknowns gracefully.",
+        "Use tools when relevant.",
+        "Focus on actionable advice."
     ],
     tools=[DuckDuckGoTools()],
     show_tool_calls=True,
@@ -91,46 +85,42 @@ basic_agent = AgnoAgent(
 audio_agent = AgnoAgent(
     name="Audio Assistant",
     model=Gemini(id="gemini-2.0-flash-thinking-exp"),
-    description="You are an assistant that can process audio and generate responses.",
+    description="Processes audio and generates intelligent responses.",
     instructions=[
         "Be concise and professional.",
-        "If you don't know an answer, acknowledge it.",
-        "Make use of your tools when appropriate.",
-        "Focus on providing actionable solutions."
+        "Use tools when relevant.",
+        "Don’t fake answers."
     ],
     markdown=True
 )
 
-image_agent = AgnoAgent(
-    name="Image Assistant",
-    model=OpenAIChat(id="gpt-4o"),
-    markdown=True,
-)
-
 video_agent = AgnoAgent(
     name="Video Assistant",
-    description="Process videos and generate engaging shorts.",
+    description="Processes videos to generate engaging shorts.",
     model=Gemini(id="gemini-2.0-flash-exp"),
-    markdown=True,
     debug_mode=True,
     instructions=[
-    "Analyze the provided video directly—do NOT reference or analyze any external sources or YouTube videos."
-    ]
+        "Analyze only the input video.",
+        "Avoid referencing YouTube or external content."
+    ],
+    markdown=True
 )
 
+# Deployment config
 config = DeploymentConfig(
-    host="0.0.0.0",         # Host to bind to
-    port=8000,              # Port to listen on
-    cors_origins=["*"],     # CORS allowed origins
-    enable_docs=True,       # Enable Swagger docs at /docs
-    require_auth=True,      # Require authentication
-    access_token_expire_minutes=30,  # Token expiration time
-    api_key_expire_days=365  # API key expiration time
+    host="0.0.0.0",
+    port=8000,
+    cors_origins=["*"],
+    enable_docs=True,
+    require_auth=True,
+    access_token_expire_minutes=30,
+    api_key_expire_days=365
 )
 
+# Launch agents
 deploy(
-    agent=[audio_agent, image_agent, video_agent],  # Pass a list of agents
-    name=["Audio Processing Agent", "Image Processing Agent", "Video Processing Agent"],
+    agent=[support_agent, audio_agent, video_agent],
+    name=["Customer Support", "Audio Agent", "Video Agent"],
     host=config.host,
     port=config.port,
     cors_origins=config.cors_origins,
@@ -148,11 +138,13 @@ Visit our [documentation](https://docs.pebbling.ai) for comprehensive guides and
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions of all kinds:
+
+1. Fork the repo
+2. Create your feature branch: `git checkout -b feat/amazing-idea`
+3. Commit your changes: `git commit -m "feat: added amazing idea"`
+4. Push to your branch: `git push origin feat/amazing-idea`
+5. Submit a Pull Request ❤️
 
 ## 📄 License
 

@@ -24,6 +24,18 @@
 
 Pebble breaks down the barriers between AI agent frameworks, enabling effortless collaboration across [Smolagent](https://github.com/huggingface/smolagents), [AgnoAI](https://github.com/agno-agi/agno), [CrewAI](https://github.com/crewai/crewai) and more. One protocol to unite them all — simple, powerful, and ready to transform how your agents communicate.
 
+## 🌐 Our Vision
+
+**Building the open standard for agent-to-agent communication in a world of billions of AI agents.**
+
+As autonomous agents proliferate, secure and efficient communication becomes critical. Our protocol enables decentralized agent communication with:  
+
+- **Security First**: Built on mutual TLS (mTLS) for enterprise-grade security
+- **High Performance**: Lightweight protocol optimized for distributed systems
+- **Future-Ready**: Designed for the coming era of autonomous, agent-driven applications
+
+We're building the foundation for a truly decentralized agent ecosystem.
+
 ## 🤔 The Problem
 
 As AI agent ecosystems grow more complex, a critical challenge emerges: **agents built with different frameworks can't easily communicate with each other**. This communication barrier prevents:
@@ -62,6 +74,16 @@ Check out the [examples](examples/) directory to see how to use Pebble with diff
 ## 📚 Learn More
 
 Visit our [documentation](https://docs.pebbling.ai) for comprehensive guides and API references.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 

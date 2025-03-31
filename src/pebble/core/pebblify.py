@@ -10,103 +10,61 @@ from uuid import UUID
 
 from fastapi import FastAPI
 
-from pebble.adapters import AgnoAdapter
+from pebble.adapters import get_adapter_for_agent
 from pebble.api.server import create_app, start_server
 from pebble.core.protocol import AgentProtocol
-from pebble.schemas.models import DeploymentConfig
+from pebble.schemas.models import DeploymentConfig, DeploymentMode
+from pebble.deployment import register_with_router, create_docker_deployment
 
-
-def get_adapter_for_agent(
-    agent: Any,
-    agent_id: Optional[UUID] = None,
-    name: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None
-) -> AgentProtocol:
-    """Get the appropriate adapter for an agent.
-    
-    Args:
-        agent: The agent to adapt
-        agent_id: Unique identifier for the agent
-        name: Name of the agent
-        metadata: Additional metadata for the agent
-        
-    Returns:
-        AgentProtocol: The agent protocol adapter
-        
-    Raises:
-        ValueError: If the agent type is not supported
-    """
-    # Import agent frameworks here to avoid dependency issues
-    try:
-        from agno.agent import Agent as AgnoAgent
-        has_agno = True
-    except ImportError:
-        has_agno = False
-    
-    try:
-        from crewai.agent import Agent as CrewAgent
-        has_crew = True
-    except ImportError:
-        has_crew = False
-    
-    # Check agent type and create appropriate adapter
-    if has_agno and isinstance(agent, AgnoAgent):
-        return AgnoAdapter(agent, agent_id=agent_id, name=name, metadata=metadata)
-    
-    if has_crew and isinstance(agent, CrewAgent):
-        return CrewAdapter(agent, agent_id=agent_id, name=name, metadata=metadata)
-    
-    # If no adapter found, look at the class hierarchy
-    if has_agno and inspect.isclass(type(agent)) and issubclass(type(agent), AgnoAgent):
-        return AgnoAdapter(agent, agent_id=agent_id, name=name, metadata=metadata)
-    
-    if has_crew and inspect.isclass(type(agent)) and issubclass(type(agent), CrewAgent):
-        return CrewAdapter(agent, agent_id=agent_id, name=name, metadata=metadata)
-    
-    # If still no match, raise an error
-    raise ValueError(
-        f"Unsupported agent type: {type(agent).__name__}. "
-        "Currently supported frameworks: Agno, CrewAI"
-    )
-
-
-def deploy(
+def pebblify(
     agent: Union[Any, List[Any]],
     agent_id: Optional[Union[UUID, List[UUID]]] = None,
     name: Optional[Union[str, List[str]]] = None,
     metadata: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
+    config: Optional[DeploymentConfig] = None,
+    # For backwards compatibility
     host: str = "0.0.0.0",
     port: int = 8000,
     cors_origins: List[str] = ["*"],
     enable_docs: bool = True,
     require_auth: bool = True,
     autostart: bool = True
-) -> Union[FastAPI, List[AgentProtocol]]:
+) -> Union[FastAPI, List[AgentProtocol], str]:
     """Deploy one or more agents via the Pebble protocol.
+    
+    This function provides multiple deployment options:
+    1. LOCAL: Run a local FastAPI server (default)
+    2. REGISTER: Deploy and register with an external router
+    3. DOCKER: Create Docker artifacts for containerized deployment
     
     Args:
         agent: A single agent or list of agents to deploy
         agent_id: Unique identifier(s) for the agent(s)
         name: Name(s) of the agent(s)
         metadata: Additional metadata for the agent(s)
-        host: Host address to bind the server to
-        port: Port to run the server on
-        cors_origins: Allowed CORS origins
-        enable_docs: Whether to enable API documentation
-        require_auth: Whether to require authentication
-        autostart: Whether to automatically start the server
+        config: Comprehensive deployment configuration
+        host: Host address to bind the server to (if not using config)
+        port: Port to run the server on (if not using config)
+        cors_origins: Allowed CORS origins (if not using config)
+        enable_docs: Whether to enable API documentation (if not using config)
+        require_auth: Whether to require authentication (if not using config)
+        autostart: Whether to automatically start the server (LOCAL mode only)
         
     Returns:
-        Union[FastAPI, List[AgentProtocol]]: The FastAPI app if autostart=False, otherwise the list of adapters
+        For LOCAL mode: The FastAPI app if autostart=False, otherwise the list of adapters
+        For REGISTER mode: The registration URL
+        For DOCKER mode: Path to the Docker artifacts
     """
-    # Create the deployment configuration
-    config = DeploymentConfig(
-        host=host,
-        port=port,
-        cors_origins=cors_origins,
-        enable_docs=enable_docs,
-        require_auth=require_auth
-    )
+    # Create the deployment configuration if not provided
+    if config is None:
+        config = DeploymentConfig(
+            host=host,
+            port=port,
+            cors_origins=cors_origins,
+            enable_docs=enable_docs,
+            require_auth=require_auth,
+            mode=DeploymentMode.LOCAL
+        )
     
     # Convert single agent to list for consistent handling
     agents_list = [agent] if not isinstance(agent, list) else agent
@@ -138,21 +96,60 @@ def deploy(
     
     if not adapters:
         raise ValueError("No valid adapters could be created from the provided agents")
+    
+    # Handle different deployment modes
+    if config.mode == DeploymentMode.LOCAL:
+        # Use the first adapter as the primary one but register routes for all adapters
+        primary_adapter = adapters[0]
+        additional_adapters = adapters[1:] if len(adapters) > 1 else None
         
-    # Use the first adapter as the primary one but register routes for all adapters
-    primary_adapter = adapters[0]
-    additional_adapters = adapters[1:] if len(adapters) > 1 else None
-    
-    # Create the FastAPI app with all adapters
-    app = create_app(
-        adapter=primary_adapter, 
-        config=config,
-        additional_adapters=additional_adapters
-    )
-    
-    # Start the server if requested
-    if autostart:
+        # Create the FastAPI app with all adapters
+        app = create_app(
+            adapter=primary_adapter, 
+            config=config,
+            additional_adapters=additional_adapters
+        )
+        
+        # Start the server if requested
+        if autostart:
+            start_server(app=app, config=config)
+            return adapters
+        else:
+            return app
+            
+    elif config.mode == DeploymentMode.REGISTER:
+        if not config.router_config:
+            raise ValueError("Router configuration is required for REGISTER mode")
+            
+        # Create server app
+        primary_adapter = adapters[0]
+        additional_adapters = adapters[1:] if len(adapters) > 1 else None
+        app = create_app(
+            adapter=primary_adapter, 
+            config=config,
+            additional_adapters=additional_adapters
+        )
+        
+        # Register with router service and start server
+        registration_url = register_with_router(
+            app=app,
+            adapters=adapters,
+            config=config
+        )
+        
+        # Start the server
         start_server(app=app, config=config)
-        return adapters
-    else:
-        return app
+        
+        return registration_url
+        
+    elif config.mode == DeploymentMode.DOCKER:
+        if not config.docker_config:
+            raise ValueError("Docker configuration is required for DOCKER mode")
+            
+        # Create docker artifacts
+        docker_path = create_docker_deployment(
+            adapters=adapters,
+            config=config
+        )
+        
+        return docker_path

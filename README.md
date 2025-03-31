@@ -1,24 +1,93 @@
-<div align="center">
-  <a href="https://docs.pebbling.ai">
-    <picture>
-      <img src="sample_data/image/image.png" alt="Pebble" width="100">
-    </picture>
-  </a>
-</div>
+# Pebble
 
-<div align="center">
-  <a href="https://docs.pebbling.ai">📚 Documentation</a> &nbsp;|&nbsp;
-  <a href="examples">💡 Examples</a> &nbsp;|&nbsp;
-  <a href="https://github.com/Pebbling-ai/pebble/stargazers">🌟 Star Us</a>
-</div>
+A unified framework for deploying AI agents across different frameworks with standardized communication protocols.
 
-<br/>
+## Features
 
-<div align="center">
-  <h1><strong>Pebble 🐧</strong></h1>
-  <h3>One Protocol to Connect Them All: Seamless AI Agent Communication</h3>
-</div>
+- **Framework Agnostic**: Deploy agents from Agno, CrewAI, LangChain, and LlamaIndex with the same API
+- **Flexible Deployment Options**: Local server, router registration, or Docker containerization
+- **Standardized Communication**: Common protocol for all agents regardless of underlying implementation
+- **Cognitive Capabilities**: Support for advanced agent capabilities like vision and audio processing
+- **Inter-Agent Communication**: Registry system for agent-to-agent interaction
+- **Comprehensive Logging**: Request/response logging with unique request IDs for tracing
 
+## Installation
+
+```bash
+# Basic installation
+pip install pebble
+
+# With specific framework support
+pip install pebble[agno]      # For Agno support
+pip install pebble[crew]      # For CrewAI support
+pip install pebble[langchain] # For LangChain support
+pip install pebble[llamaindex] # For LlamaIndex support
+
+# All frameworks
+pip install pebble[all]
+
+# Development
+pip install pebble[dev]
+
+from agno.agent import Agent as AgnoAgent
+from agno.models.openai import OpenAIChat
+from pebble import pebblify
+
+# Create an Agno agent
+agent = AgnoAgent(
+    name="MyAgent",
+    model=OpenAIChat(model="gpt-4"),
+    description="A helpful agent."
+)
+
+# Deploy with a local server
+pebblify(agent)
+
+from pebble import pebblify
+from pebble.schemas.models import DeploymentConfig, DeploymentMode, RouterRegistration
+
+# Configure router registration
+config = DeploymentConfig(
+    mode=DeploymentMode.REGISTER,
+    router_config=RouterRegistration(
+        router_url="https://router.example.com",
+        api_key="your-api-key"
+    )
+)
+
+# Deploy and register
+registration_url = pebblify(agent, config=config)
+
+
+### Create Docker Deployment
+
+```python
+from pebble import pebblify
+from pebble.schemas.models import DeploymentConfig, DeploymentMode, DockerConfig
+
+# Configure Docker deployment
+config = DeploymentConfig(
+    mode=DeploymentMode.DOCKER,
+    docker_config=DockerConfig(
+        base_image="python:3.10-slim",
+        output_dir="./docker_deploy"
+    )
+)
+
+# Create Docker artifacts
+docker_path = pebblify(agent, config=config)
+
+from pebble.registry import AgentRegistry
+
+# Create a registry
+registry = AgentRegistry()
+
+# Register agents
+registry.register("search_agent", search_adapter, roles=["search"])
+registry.register("math_agent", math_adapter, roles=["math"])
+
+# Send messages between agents
+response = registry.send_message("search_agent", "math_agent", "Solve this equation...")
 ---
 
 > **Millions of AI agents. Different frameworks. No universal language.**  

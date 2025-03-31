@@ -1,0 +1,86 @@
+"""
+Router registration for Pebble agents.
+
+This module provides functionality to register deployed agents with an external routing service.
+"""
+import httpx
+import json
+import logging
+from typing import List, Dict, Any
+from fastapi import FastAPI
+
+from pebble.core.protocol import AgentProtocol
+from pebble.schemas.models import DeploymentConfig
+
+logger = logging.getLogger("pebble.deployment")
+
+def register_with_router(
+    app: FastAPI,
+    adapters: List[AgentProtocol],
+    config: DeploymentConfig
+) -> str:
+    """Register the deployed agents with an external router service.
+    
+    Args:
+        app: The FastAPI application (for metadata)
+        adapters: The agent protocol adapters
+        config: Deployment configuration
+        
+    Returns:
+        str: The registration URL where the agent can be accessed
+    """
+    router_config = config.router_config
+    if not router_config:
+        raise ValueError("Router configuration is required")
+    
+    # Extract agent information for registration
+    agents_info = []
+    for adapter in adapters:
+        status = adapter.get_status()
+        agents_info.append({
+            "agent_id": str(status.agent_id),
+            "name": status.name,
+            "framework": status.framework,
+            "capabilities": status.capabilities,
+            "cognitive_capabilities": getattr(adapter, "cognitive_capabilities", ["act"]),
+            "metadata": status.metadata
+        })
+    
+    # Create registration payload
+    registration_payload = {
+        "agents": agents_info,
+        "service_host": config.host,
+        "service_port": config.port,
+        "require_auth": config.require_auth,
+        "description": router_config.description,
+        "tags": router_config.tags,
+        "organization_id": router_config.organization_id
+    }
+    
+    # Send registration request
+    logger.info(f"Registering with router at {router_config.router_url}")
+    try:
+        headers = {}
+        if router_config.api_key:
+            headers["X-API-Key"] = router_config.api_key
+            
+        with httpx.Client() as client:
+            response = client.post(
+                f"{router_config.router_url}/register",
+                json=registration_payload,
+                headers=headers,
+                timeout=30
+            )
+            
+        if response.status_code != 200:
+            logger.error(f"Router registration failed: {response.text}")
+            raise Exception(f"Router registration failed: {response.status_code}")
+            
+        registration_data = response.json()
+        logger.info(f"Successfully registered with router. Access URL: {registration_data['access_url']}")
+        
+        return registration_data["access_url"]
+        
+    except Exception as e:
+        logger.error(f"Error registering with router: {str(e)}")
+        raise

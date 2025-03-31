@@ -41,6 +41,66 @@ dependencies = [
     "grip>=4.6.2",
 ]
 
+project.optional-dependencies=
+agno = ["agno>=0.1.0"]
+crew = ["crewai>=0.1.0"]
+langchain = ["langchain>=0.1.0"]
+llamaindex = ["llama-index>=0.1.0"]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.12.1",
+    "black>=21.5b2",
+    "isort>=5.9.1",
+    "mypy>=0.812",
+    "ruff>=0.0.1",
+]
+all = [
+    "agno>=0.1.0",
+    "crewai>=0.1.0",
+    "langchain>=0.1.0",
+    "llama-index>=0.1.0",
+]
+
+
+project.urls
+]
+"Homepage" = "https://github.com/pebbling/pebble"
+"Bug Tracker" = "https://github.com/pebbling/pebble/issues"
+
+[
+tool.setuptools
+]
+package-dir = {"" = "src"}
+
+[
+tool.isort
+]
+profile = "black"
+known_first_party = ["pebble"]
+
+[
+tool.black
+]
+line-length = 88
+target-version = ["py38", "py39", "py310"]
+
+[
+tool.mypy
+]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[
+tool.ruff
+]
+target-version = "py38"
+line-length = 88
+select = ["E", "F", "B", "I"]
+ignore = []
+
 [project.urls]
 "Homepage" = "https://github.com/Pebbling-ai/pebble"
 "Bug Tracker" = "https://github.com/Pebbling-ai/pebble/issues"

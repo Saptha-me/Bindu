@@ -1,0 +1,103 @@
+"""
+FastAPI middleware for request/response logging.
+"""
+from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
+import time
+import logging
+import json
+import uuid
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    """Middleware for logging FastAPI requests and responses."""
+    
+    def __init__(self, app, log_level=logging.INFO):
+        super().__init__(app)
+        self.logger = logging.getLogger("pebble.api")
+        self.log_level = log_level
+    
+    async def dispatch(self, request: Request, call_next):
+        # Generate request ID for tracing
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
+        
+        # Log request
+        await self._log_request(request, request_id)
+        
+        # Process request and time it
+        start_time = time.time()
+        try:
+            response = await call_next(request)
+            # Add request_id to response headers
+            response.headers["X-Request-ID"] = request_id
+            # Log response
+            self._log_response(request, response, request_id, time.time() - start_time)
+            return response
+        except Exception as e:
+            # Log exception
+            self._log_exception(request, e, request_id, time.time() - start_time)
+            raise
+    
+    async def _log_request(self, request: Request, request_id: str):
+        """Log request details."""
+        body = await self._get_request_body(request)
+        
+        # Create log entry
+        log_entry = {
+            "request_id": request_id,
+            "type": "request",
+            "method": request.method,
+            "path": request.url.path,
+            "query_params": dict(request.query_params),
+            "client_ip": request.client.host,
+            "headers": dict(request.headers),
+            "body": body
+        }
+        
+        # Log as JSON
+        self.logger.log(self.log_level, json.dumps(log_entry))
+        
+    def _log_response(self, request: Request, response: Response, request_id: str, duration: float):
+        """Log response details."""
+        log_entry = {
+            "request_id": request_id,
+            "type": "response",
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": round(duration * 1000, 2),
+            "headers": dict(response.headers)
+        }
+        
+        # Log as JSON
+        self.logger.log(self.log_level, json.dumps(log_entry))
+        
+    def _log_exception(self, request: Request, exception: Exception, request_id: str, duration: float):
+        """Log exception details."""
+        log_entry = {
+            "request_id": request_id,
+            "type": "exception",
+            "method": request.method,
+            "path": request.url.path,
+            "exception": str(exception),
+            "exception_type": type(exception).__name__,
+            "duration_ms": round(duration * 1000, 2)
+        }
+            
+        # Log as JSON with error level
+        self.logger.error(json.dumps(log_entry))
+            
+    async def _get_request_body(self, request: Request):
+        """Get request body for logging, with handling for different content types."""
+        if request.headers.get("content-type") == "application/json":
+            # For JSON content, parse and potentially mask sensitive data
+            body_bytes = await request.body()
+            try:
+                body = json.loads(body_bytes)
+                # Could implement masking of sensitive fields here
+                return body
+            except:
+                return {"raw": str(body_bytes)}
+        else:
+            # For non-JSON, just note content type
+            return {"content_type": request.headers.get("content-type", "unknown")}

@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import agent_pb2 as agent__pb2
+from pebble.protos import agent_pb2 as pebble_dot_protos_dot_agent__pb2
 
 GRPC_GENERATED_VERSION = '1.70.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in agent_pb2_grpc.py depends on'
+        + f' but the generated code in pebble/protos/agent_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,28 +36,28 @@ class AgentServiceStub(object):
         """
         self.GetStatus = channel.unary_unary(
                 '/pebble.AgentService/GetStatus',
-                request_serializer=agent__pb2.Empty.SerializeToString,
-                response_deserializer=agent__pb2.StatusResponse.FromString,
+                request_serializer=pebble_dot_protos_dot_agent__pb2.Empty.SerializeToString,
+                response_deserializer=pebble_dot_protos_dot_agent__pb2.StatusResponse.FromString,
                 _registered_method=True)
         self.ProcessAction = channel.unary_unary(
                 '/pebble.AgentService/ProcessAction',
-                request_serializer=agent__pb2.ActionRequest.SerializeToString,
-                response_deserializer=agent__pb2.ActionResponse.FromString,
+                request_serializer=pebble_dot_protos_dot_agent__pb2.ActionRequest.SerializeToString,
+                response_deserializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
                 _registered_method=True)
         self.Listen = channel.unary_unary(
                 '/pebble.AgentService/Listen',
-                request_serializer=agent__pb2.AudioRequest.SerializeToString,
-                response_deserializer=agent__pb2.ActionResponse.FromString,
+                request_serializer=pebble_dot_protos_dot_agent__pb2.AudioRequest.SerializeToString,
+                response_deserializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
                 _registered_method=True)
         self.ViewImage = channel.unary_unary(
                 '/pebble.AgentService/ViewImage',
-                request_serializer=agent__pb2.ImageRequest.SerializeToString,
-                response_deserializer=agent__pb2.ActionResponse.FromString,
+                request_serializer=pebble_dot_protos_dot_agent__pb2.ImageRequest.SerializeToString,
+                response_deserializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
                 _registered_method=True)
         self.ViewVideo = channel.unary_unary(
                 '/pebble.AgentService/ViewVideo',
-                request_serializer=agent__pb2.VideoRequest.SerializeToString,
-                response_deserializer=agent__pb2.ActionResponse.FromString,
+                request_serializer=pebble_dot_protos_dot_agent__pb2.VideoRequest.SerializeToString,
+                response_deserializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
                 _registered_method=True)
 
 
@@ -99,28 +99,28 @@ def add_AgentServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'GetStatus': grpc.unary_unary_rpc_method_handler(
                     servicer.GetStatus,
-                    request_deserializer=agent__pb2.Empty.FromString,
-                    response_serializer=agent__pb2.StatusResponse.SerializeToString,
+                    request_deserializer=pebble_dot_protos_dot_agent__pb2.Empty.FromString,
+                    response_serializer=pebble_dot_protos_dot_agent__pb2.StatusResponse.SerializeToString,
             ),
             'ProcessAction': grpc.unary_unary_rpc_method_handler(
                     servicer.ProcessAction,
-                    request_deserializer=agent__pb2.ActionRequest.FromString,
-                    response_serializer=agent__pb2.ActionResponse.SerializeToString,
+                    request_deserializer=pebble_dot_protos_dot_agent__pb2.ActionRequest.FromString,
+                    response_serializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.SerializeToString,
             ),
             'Listen': grpc.unary_unary_rpc_method_handler(
                     servicer.Listen,
-                    request_deserializer=agent__pb2.AudioRequest.FromString,
-                    response_serializer=agent__pb2.ActionResponse.SerializeToString,
+                    request_deserializer=pebble_dot_protos_dot_agent__pb2.AudioRequest.FromString,
+                    response_serializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.SerializeToString,
             ),
             'ViewImage': grpc.unary_unary_rpc_method_handler(
                     servicer.ViewImage,
-                    request_deserializer=agent__pb2.ImageRequest.FromString,
-                    response_serializer=agent__pb2.ActionResponse.SerializeToString,
+                    request_deserializer=pebble_dot_protos_dot_agent__pb2.ImageRequest.FromString,
+                    response_serializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.SerializeToString,
             ),
             'ViewVideo': grpc.unary_unary_rpc_method_handler(
                     servicer.ViewVideo,
-                    request_deserializer=agent__pb2.VideoRequest.FromString,
-                    response_serializer=agent__pb2.ActionResponse.SerializeToString,
+                    request_deserializer=pebble_dot_protos_dot_agent__pb2.VideoRequest.FromString,
+                    response_serializer=pebble_dot_protos_dot_agent__pb2.ActionResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -148,8 +148,8 @@ class AgentService(object):
             request,
             target,
             '/pebble.AgentService/GetStatus',
-            agent__pb2.Empty.SerializeToString,
-            agent__pb2.StatusResponse.FromString,
+            pebble_dot_protos_dot_agent__pb2.Empty.SerializeToString,
+            pebble_dot_protos_dot_agent__pb2.StatusResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -175,8 +175,8 @@ class AgentService(object):
             request,
             target,
             '/pebble.AgentService/ProcessAction',
-            agent__pb2.ActionRequest.SerializeToString,
-            agent__pb2.ActionResponse.FromString,
+            pebble_dot_protos_dot_agent__pb2.ActionRequest.SerializeToString,
+            pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -202,8 +202,8 @@ class AgentService(object):
             request,
             target,
             '/pebble.AgentService/Listen',
-            agent__pb2.AudioRequest.SerializeToString,
-            agent__pb2.ActionResponse.FromString,
+            pebble_dot_protos_dot_agent__pb2.AudioRequest.SerializeToString,
+            pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -229,8 +229,8 @@ class AgentService(object):
             request,
             target,
             '/pebble.AgentService/ViewImage',
-            agent__pb2.ImageRequest.SerializeToString,
-            agent__pb2.ActionResponse.FromString,
+            pebble_dot_protos_dot_agent__pb2.ImageRequest.SerializeToString,
+            pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -256,8 +256,8 @@ class AgentService(object):
             request,
             target,
             '/pebble.AgentService/ViewVideo',
-            agent__pb2.VideoRequest.SerializeToString,
-            agent__pb2.ActionResponse.FromString,
+            pebble_dot_protos_dot_agent__pb2.VideoRequest.SerializeToString,
+            pebble_dot_protos_dot_agent__pb2.ActionResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -14,7 +14,8 @@ from pebble.schemas.models import (
     ActionResponse, 
     AgentStatus,
     ListenRequest,
-    ViewRequest
+    ViewRequest,
+    StatusResponse
 )
 
 import logging

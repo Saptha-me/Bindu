@@ -13,15 +13,11 @@ from pebble.schemas.models import (
     ActionRequest, 
     ActionResponse, 
     AgentStatus,
-    MessageRole, 
-    StatusResponse,
-    StimulusType,
     ListenRequest,
     ViewRequest
 )
 
 import logging
-import time
 
 logger = logging.getLogger(__name__)
 

@@ -118,24 +118,6 @@ def main():
         enable_docs=config.enable_docs,
         require_auth=config.require_auth
     )
-    
-    print("\nOnce the server is running, try these endpoints:")
-    print("- GET /agent/status: Check the agent's status (requires authentication)")
-    print("- POST /agent/action: Send a message to the agent (requires authentication)")
-    print("- GET /docs: Full API documentation")
-    print("\nAuthentication:")
-    print("- The API key will be shown in the server logs when starting")
-    print("- Add header 'X-API-Key: <your-api-key>' to your requests")
-    print("- Or use Bearer authentication with 'Authorization: Bearer <your-api-key>'")
-    
-    print("\nExample curl command to check status:")
-    print("curl -H 'X-API-Key: <your-api-key>' http://localhost:8000/agent/status")
-    
-    print("\nExample curl command to send a message:")
-    print("""curl -X POST -H 'Content-Type: application/json' \\
-    -H 'X-API-Key: <your-api-key>' \\
-    -d '{"agent_id": "<agent-id-from-status>", "message": "How can you help me?"}' \\
-    http://localhost:8000/agent/action""")
 
 
 if __name__ == "__main__":

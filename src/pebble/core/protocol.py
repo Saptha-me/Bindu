@@ -9,7 +9,6 @@ an extended CognitiveAgentProtocol with enhanced capabilities for more sophistic
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
-from pebble.db.storage import PostgresStateProvider
 from pebble.schemas.models import (
     ActionRequest, 
     ActionResponse, 

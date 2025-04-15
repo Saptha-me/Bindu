@@ -59,34 +59,6 @@ def create_app(
         require_auth=config.require_auth,
         additional_adapters=additional_adapters
     )
-
-    if config.security and config.security.use_mtls:
-        # Generate certificate for this server if needed
-        agent_id = str(adapter.agent_id)
-        cert_dir = Path(config.security.certs_dir) if config.security.certs_dir else None
-        cert_path, key_path = generate_agent_certificate(agent_id, cert_dir)
-        
-        # Store paths in config for server startup
-        config.security.cert_path = str(cert_path)
-        config.security.key_path = str(key_path)
-        
-        # Store endpoint in adapter metadata for other agents to connect
-        adapter.metadata["endpoint"] = f"https://{config.host}:{config.port}"
-        
-        # Setup client certificate verification
-        @app.middleware("https")
-        async def verify_client_cert(request: Request, call_next):
-            # This middleware will only be effective when running with uvicorn SSL
-            client_cert = request.scope.get("client_cert")
-            if not client_cert and config.security.require_client_cert:
-                return JSONResponse(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    content={"detail": "Client certificate required"}
-                )
-            return await call_next(request)
-    
-    # ... rest of existing code ...
-    return app
     
     return app
 
@@ -104,31 +76,10 @@ def start_server(
     import uvicorn
     
     # Use default config if none provided
-    mport uvicorn
-    
     uvicorn_config = {
         "app": app,
         "host": config.host,
-        "port": config.port,
-        "log_level": config.log_level.lower(),
+        "port": config.port
     }
-    
-    # Add SSL configuration if using mTLS
-    if config.security and config.security.use_mtls:
-        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ssl_context.load_cert_chain(
-            certfile=config.security.cert_path,
-            keyfile=config.security.key_path
-        )
-        
-        # Require client certificate if configured
-        if config.security.require_client_cert:
-            ssl_context.verify_mode = ssl.CERT_REQUIRED
-            
-            # Load CA bundle if provided
-            if config.security.ca_bundle_path:
-                ssl_context.load_verify_locations(cafile=config.security.ca_bundle_path)
-        
-        uvicorn_config["ssl"] = ssl_context
     
     uvicorn.run(**uvicorn_config)

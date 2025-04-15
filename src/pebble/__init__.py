@@ -22,12 +22,6 @@ from pebble.adapters import AgnoAdapter
 # Server and configuration
 from pebble.api.server import create_app, start_server
 
-# Authentication
-from pebble.security.auth import get_auth_token
-
-# Security
-from pebble.security.keys import create_api_key, validate_api_key
-
 # Configuration
 from pebble.utils.config import get_project_root, ensure_env_file, load_env_vars
 
@@ -44,12 +38,6 @@ __all__ = [
     
     # Server and configuration
     "DeploymentConfig", "create_app", "start_server",
-    
-    # Authentication
-    "get_auth_token",
-    
-    # Security
-    "create_api_key", "validate_api_key",
     
     # Configuration
     "get_project_root", "ensure_env_file", "load_env_vars"

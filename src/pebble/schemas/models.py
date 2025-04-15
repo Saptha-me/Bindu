@@ -47,42 +47,6 @@ class StimulusType(str, Enum):
     THOUGHT = "thought"
     RESPONSE = "response"
 
-
-class CognitiveState(BaseModel):
-    """Representation of an agent's cognitive state."""
-    
-    mental_state: Dict[str, Any] = Field(default_factory=dict)
-    episodic_memory: List[Dict[str, Any]] = Field(default_factory=list)
-    semantic_memory: Dict[str, Any] = Field(default_factory=dict)
-    attention: Optional[StimulusType] = None
-    context: List[str] = Field(default_factory=list)
-
-
-class CognitiveRequest(BaseModel):
-    """Request model for cognitive agent operations that is superseded by ActionRequest."""
-    
-    # This class is kept for backward compatibility but will be removed in a future version
-    # Use ActionRequest with stimulus_type field instead
-    agent_id: UUID = Field(default_factory=uuid4)
-    session_id: UUID = Field(default_factory=uuid4)
-    content: str
-    stimulus_type: StimulusType
-    stream: bool = Field(default=False, description="Whether to stream the response")
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
-
-class CognitiveResponse(BaseModel):
-    """Response model for cognitive agent operations that is superseded by ActionResponse."""
-    
-    # This class is kept for backward compatibility but will be removed in a future version
-    # Use ActionResponse with stimulus_type and cognitive_state fields instead
-    agent_id: UUID
-    session_id: UUID
-    content: str
-    stimulus_type: StimulusType
-    cognitive_state: Dict[str, Any]
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-
     
 class ActionRequest(BaseModel):
     """A request for an agent to take action, with support for cognitive capabilities."""

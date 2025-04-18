@@ -1,23 +1,20 @@
 """
 Pebble Protocol Implementation
 
-A minimal implementation of the Pebble agent-to-agent communication protocol.
-Based on JSON-RPC 2.0 with support for task, conversation, and memory operations.
+A minimal JSON-RPC 2.0 protocol for agent-to-agent communication.
 """
-
 import json
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
+from typing import Dict, Any, Optional, Union
 
 
 class ProtocolMethod(str, Enum):
-    """Supported Pebble protocol methods"""
-    
-    # Context Management
+    """Supported protocol methods"""
     CONTEXT = "Context"
+
 
 class TaskStatus(str, Enum):
     """Task status values"""
@@ -35,18 +32,18 @@ class MemoryType(str, Enum):
 
 
 class PebbleProtocol:
-    """Minimal implementation of the Pebble agent-to-agent communication protocol"""
+    """Pebble protocol implementation"""
     
     JSONRPC_VERSION = "2.0"
     
     def __init__(self, protocol_config_path: Optional[str] = None):
-        """Initialize with optional config file path"""
+        """Initialize with optional config file"""
         self.protocol_config = {}
         if protocol_config_path:
             self._load_config(protocol_config_path)
     
     def _load_config(self, config_path: str) -> None:
-        """Load protocol configuration from JSON file"""
+        """Load configuration from JSON file"""
         path = Path(config_path)
         if path.exists():
             with open(path, 'r') as f:
@@ -59,7 +56,7 @@ class PebbleProtocol:
         destination_agent_id: str,
         params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Create a protocol message with the given method and parameters"""
+        """Create a protocol message"""
         if isinstance(method, ProtocolMethod):
             method = method.value
             
@@ -75,29 +72,29 @@ class PebbleProtocol:
     
     def validate_message(self, message: Dict[str, Any]) -> bool:
         """Validate a protocol message"""
-        # Basic validation
-        if not all(key in message for key in ["jsonrpc", "id", "method", "source_agent_id", "timestamp", "params"]):
+        required_keys = ["jsonrpc", "id", "method", "source_agent_id", "timestamp", "params"]
+        
+        # Check required keys and version
+        if not all(key in message for key in required_keys):
             return False
-            
         if message.get("jsonrpc") != self.JSONRPC_VERSION:
             return False
             
-        # Method validation using protocol config if available
+        # Method and params validation
         method = message.get("method", "")
         if self.protocol_config and "methods" in self.protocol_config:
             if method not in self.protocol_config["methods"]:
                 return False
                 
-            # Validate required params if defined in config
-            if "required_params" in self.protocol_config["methods"][method]:
-                required = self.protocol_config["methods"][method]["required_params"]
-                if not all(param in message.get("params", {}) for param in required):
-                    return False
+            method_config = self.protocol_config["methods"][method]
+            required_params = method_config.get("required_params", [])
+            if required_params and not all(param in message.get("params", {}) for param in required_params):
+                return False
         
         return True
     
     def create_response(self, request_id: str, result: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a response to a protocol message"""
+        """Create a success response"""
         return {
             "jsonrpc": self.JSONRPC_VERSION,
             "id": request_id,
@@ -112,7 +109,6 @@ class PebbleProtocol:
             "error": {"code": code, "message": message}
         }
     
-    # Utility function for creating any protocol message
     def make(
         self, 
         method: Union[str, ProtocolMethod],
@@ -120,7 +116,7 @@ class PebbleProtocol:
         destination_agent_id: str,
         **kwargs
     ) -> Dict[str, Any]:
-        """Create any protocol message with the given method and parameters"""
+        """Convenience method to create a protocol message with kwargs as params"""
         return self.create_message(
             method=method,
             source_agent_id=source_agent_id,

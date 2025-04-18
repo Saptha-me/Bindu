@@ -1,32 +1,23 @@
-import asyncio
-import json
-from typing import List, Dict, Any, Optional, Callable, Type, Union
 import uuid
+from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException, Request, Body, Depends
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+from fastapi.responses import JSONResponse
 
-from agno.agent import Agent, RunResponse
-
-from pebble.core.protocol import PebbleProtocol, ProtocolMethod
+from pebble.server.schemas.model import (
+    HealthResponse, 
+    ErrorResponse, 
+    AgentRequest, 
+    AgentResponse
+)
 
 
 def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
-    """
-    Create a REST API server for user interaction.
-    
-    Args:
-        protocol_handler: Optional protocol handler instance shared with JSON-RPC server
-        
-    Returns:
-        FastAPI application for REST API
-    """
-    # Create the REST API app for user interaction
+    """Create a REST API server for user interaction."""
     rest_app = FastAPI(title="Pebble User API")
     
-    # Add CORS middleware
+    # Configure CORS
     rest_app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -35,40 +26,50 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Health endpoint
-    @rest_app.get("/health")
+    @rest_app.get("/health", response_model=HealthResponse)
     async def health_check():
         """Check the health of the agent server"""
         try:
-            # Check basic server health
-            agent_status = protocol_handler.agent.get_status() if hasattr(protocol_handler.agent, "get_status") else "healthy"
-            return {
-                "status": agent_status,
-                "message": "Service is running",
-                "timestamp": str(uuid.uuid4())
-            }
+            agent_status = getattr(protocol_handler.agent, "get_status", lambda: "healthy")()
+            return HealthResponse(
+                status_code=200,
+                status=agent_status,
+                message="Service is running",
+                timestamp=str(uuid.uuid4())
+            )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+            return ErrorResponse(
+                status_code=500,
+                status="error",
+                message=f"Health check failed: {str(e)}"
+            )
     
-    # Run endpoint
-    @rest_app.post("/run")
-    async def run_agent(request_data: Dict[str, Any] = Body(...)):
+    @rest_app.post("/run", response_model=AgentResponse)
+    async def run_agent(request_data: AgentRequest):
         """Run the agent with the provided input"""
         try:
-            input_text = request_data.get("input", "")
-            if not input_text:
-                raise HTTPException(status_code=400, detail="Input text is required")
+            if not request_data.input:
+                return ErrorResponse(
+                    status_code=400,
+                    status="error",
+                    message="Input text is required"
+                )
             
             # Execute the agent
-            result = protocol_handler.agent.run(input_text).to_dict()
+            result = protocol_handler.agent.run(request_data.input).to_dict()
 
-            return {
-                "status": "success",
-                "content": result["content"],
-                "messages": result["messages"],
-                "metrics": result["metrics"],
-            }
+            return AgentResponse(
+                status_code=200,
+                status="success",
+                content=result["content"],
+                messages=result["messages"],
+                metrics=result["metrics"]
+            )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Agent execution failed: {str(e)}")
+            return ErrorResponse(
+                status_code=500,
+                status="error",
+                message=f"Agent execution failed: {str(e)}"
+            )
     
     return rest_app

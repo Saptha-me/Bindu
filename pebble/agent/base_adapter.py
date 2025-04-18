@@ -5,10 +5,8 @@ This module defines the base adapter interface that all agent-specific adapters 
 It provides protocol handlers for the Pebble protocol methods.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional, Union, Callable
+from typing import Dict, Any, Optional
 import uuid
-
-from pebble.core.protocol import ProtocolMethod, TaskStatus
 
 
 class BaseAdapter(ABC):

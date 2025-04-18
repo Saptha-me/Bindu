@@ -21,6 +21,7 @@ dependencies = [
     "fastapi>=0.68.0",
     "uvicorn>=0.15.0",
     "pydantic>=1.8.2",
+    "loguru>=0.7.3",
 ]
 
 [project.optional-dependencies]
@@ -34,4 +35,12 @@ include = [
     "pebble",
     "protocol_config.json",
     "README.md",
+]
+
+[tool.uv.sources]
+pebble = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pebble",
 ]

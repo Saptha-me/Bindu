@@ -48,11 +48,15 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     async def run_agent(request_data: AgentRequest):
         """Run the agent with the provided input"""
         try:
-            if not request_data.input:
-                return ErrorResponse(
+            if not request_data.input.strip():
+                # Return a JSONResponse directly to bypass response_model validation
+                return JSONResponse(
                     status_code=400,
-                    status="error",
-                    message="Input text is required"
+                    content={
+                        "status_code": 400,
+                        "status": "error",
+                        "message": "Input text is required"
+                    }
                 )
             
             # Execute the agent

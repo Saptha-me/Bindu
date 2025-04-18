@@ -5,45 +5,33 @@ build-backend = "hatchling.build"
 [project]
 name = "pebble"
 version = "0.1.0"
-description = "Communication protocol for different agent types (smolagent, agno, crew)"
+description = "A protocol framework for agent-to-agent communication"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {file = "LICENSE"}
+license = {text = "MIT"}
 authors = [
-    {name = "Rahul Dutta", email = "rahuldutta@example.com"}
+    {name = "Rahul Dutta", email = "raahul@pebbling.ai"},
 ]
-keywords = ["agents", "llm", "communication", "protocol"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "agno>=1.1.9",
-    "crewai>=0.105.0",
-    "crewai-tools>=0.37.0",
-    "duckduckgo-search>=7.5.1",
-    "fastapi>=0.115.11",
-    "llama-index>=0.12.23",
-    "loguru>=0.7.3",
-    "numpy>=2.2.3",
-    "openai>=1.65.4",
-    "requests>=2.32.3",
-    "smolagents>=1.10.0",
-    "tantivy>=0.22.0",
-    "uvicorn>=0.34.0",
-    "pydantic>=2.0.0",
-    "google-genai>=1.2.0",
-    "grip>=4.6.2",
-    "grpcio>=1.70.0",
-    "grpcio-tools>=1.70.0",
-    "jsonrpcserver>=5.0.9",
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+    "pydantic>=1.8.2",
 ]
 
-[project.urls]
-"Homepage" = "https://github.com/Pebbling-ai/pebble"
-"Bug Tracker" = "https://github.com/Pebbling-ai/pebble/issues"
+[project.optional-dependencies]
+agno = ["agno>=0.1.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["pebble"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "pebble",
+    "protocol_config.json",
+    "README.md",
+]

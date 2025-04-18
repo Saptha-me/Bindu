@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "jsonrpc_version": "2.0",
+  "methods": {
+    "Context": {
+      "required_params": ["operation", "key"],
+      "optional_params": ["value", "metadata"]
+    }
+  }
+}

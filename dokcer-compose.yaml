@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  text-embeddings-inference:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
+    command: --model-id all-MiniLM-L6-v2
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/readiness"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  qdrant_data:

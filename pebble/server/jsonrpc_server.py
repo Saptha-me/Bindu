@@ -38,6 +38,7 @@ def create_jsonrpc_server(
     async def handle_jsonrpc(request: Request):
         """Handle JSON-RPC requests"""
         try:
+            request_id = None
             data = await request.json()
             
             # Validate request is a dictionary

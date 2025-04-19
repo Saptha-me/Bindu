@@ -59,6 +59,10 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                     }
                 )
             
+            # Apply user-specific context if user_id is provided
+            if request_data.user_id and hasattr(protocol_handler, "apply_user_context"):
+                protocol_handler.apply_user_context(request_data.user_id)
+            
             # Execute the agent
             result = protocol_handler.agent.run(request_data.input).to_dict()
 

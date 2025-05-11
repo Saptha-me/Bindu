@@ -3,19 +3,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pebble"
+name = "pebbling"
 version = "0.1.0"
 description = "A protocol framework for agent-to-agent communication"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
-authors = [
-    {name = "Rahul Dutta", email = "raahul@pebbling.ai"},
-]
+license = { text = "MIT" }
+authors = [{ name = "Rahul Dutta", email = "raahul@pebbling.ai" }]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Operating System :: OS Independent"
 ]
 dependencies = [
     "fastapi>=0.68.0",
@@ -31,26 +29,22 @@ dependencies = [
     "atproto>=0.0.61",
     "base58>=2.1.1",
     "supabase>=2.15.1",
+    "uvx<2.0",
+    "pipreqs>=0.5.0",
+    "twine>=6.1.0",
+    "rich>=13.0.0",
+    # Removed pebbling dependency as this package is now pebbling
 ]
 
 [project.optional-dependencies]
-agno = ["agno>=0.1.0"]
+dev = ["pytest-asyncio>=0.26.0"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pebble"]
+packages = ["pebbling"]  # Changed from src/pebbling to reflect actual directory structure
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "pebble",
+    "pebbling",  # Changed from /src to pebbling
     "protocol_config.json",
-    "README.md",
-]
-
-[tool.uv.sources]
-pebble = { workspace = true }
-
-[dependency-groups]
-dev = [
-    "pytest-asyncio",
-    "pebble",
+    "README.md"
 ]

@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from pebble.server.jsonrpc_server import create_jsonrpc_server
+from pebbling.server.jsonrpc_server import create_jsonrpc_server
 
 
 class TestJsonRpcServer:

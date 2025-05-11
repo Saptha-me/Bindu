@@ -1,13 +1,13 @@
 """
-Shared pytest fixtures for testing the pebble package.
+Shared pytest fixtures for testing the pebbling package.
 """
 import json
 import uuid
 from unittest.mock import MagicMock, patch
 import pytest
 
-from pebble.core.protocol import PebbleProtocol
-from pebble.server.schemas.model import (
+from pebbling.core.protocol import pebblingProtocol
+from pebbling.server.schemas.model import (
     AgentRequest, AgentResponse, HealthResponse, ErrorResponse,
     JsonRpcRequest, JsonRpcResponse, JsonRpcError
 )
@@ -47,8 +47,8 @@ def mock_protocol_handler(mock_agent):
 
 @pytest.fixture
 def protocol():
-    """Create a PebbleProtocol instance."""
-    return PebbleProtocol()
+    """Create a pebblingProtocol instance."""
+    return pebblingProtocol()
 
 
 @pytest.fixture

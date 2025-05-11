@@ -1,8 +1,8 @@
 """
-Base Adapter for Pebble Protocol
+Base Adapter for pebbling Protocol
 
 This module defines the base adapter interface that all agent-specific adapters must implement.
-It provides protocol handlers for the Pebble protocol methods.
+It provides protocol handlers for the pebbling protocol methods.
 """
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
@@ -11,7 +11,7 @@ import uuid
 
 class BaseAdapter(ABC):
     """
-    Base adapter class that provides the framework for integrating any agent with the Pebble protocol.
+    Base adapter class that provides the framework for integrating any agent with the pebbling protocol.
     Subclasses must implement the create_agent_runner and create_protocol_handler methods.
     """
     def __init__(self, agent_id: Optional[str] = None):
@@ -43,7 +43,7 @@ class BaseAgentRunner(BaseAdapter, ABC):
 class BaseProtocolHandler(BaseAdapter, ABC):
     """
     Base class for protocol handlers that all framework-specific implementations must implement.
-    This class defines handlers for the Pebble protocol methods.
+    This class defines handlers for the pebbling protocol methods.
     """
 
     @abstractmethod

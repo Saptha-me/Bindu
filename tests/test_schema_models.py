@@ -1,10 +1,10 @@
 """
-Tests for the pebble schema models.
+Tests for the pebbling schema models.
 """
 import pytest
 from pydantic import ValidationError
 
-from pebble.server.schemas.model import (
+from pebbling.server.schemas.model import (
     HealthResponse, ErrorResponse, AgentRequest, AgentResponse,
     JsonRpcRequest, JsonRpcResponse, JsonRpcError, JsonRpcErrorDetail
 )

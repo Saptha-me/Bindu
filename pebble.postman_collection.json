@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "c902d25e-c61a-401a-a3c8-ac1cd6873736",
-		"name": "pebble",
+		"name": "pebbling",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "964032"
 	},
@@ -60,7 +60,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"agent_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"session_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n    \"message\": \"whats the capital of india?\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"mobile_app\"\n    },\n    \"stream\": false,\n    \"audio\": {\n        \"url\" : \"https://raw.githubusercontent.com/Pebbling-ai/pebble/main/sample_data/audio/sample_audio.mp3\"\n    }\n}",
+					"raw": "{\n    \"agent_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"session_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n    \"message\": \"whats the capital of india?\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"mobile_app\"\n    },\n    \"stream\": false,\n    \"audio\": {\n        \"url\" : \"https://raw.githubusercontent.com/Pebbling-ai/pebbling/main/sample_data/audio/sample_audio.mp3\"\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"

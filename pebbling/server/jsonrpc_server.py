@@ -5,8 +5,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from pebble.core.protocol import PebbleProtocol, ProtocolMethod
-from pebble.server.schemas.model import (
+from pebbling.core.protocol import pebblingProtocol, ProtocolMethod
+from pebbling.server.schemas.model import (
     JsonRpcResponse, 
     JsonRpcError, 
     JsonRpcErrorDetail
@@ -14,12 +14,12 @@ from pebble.server.schemas.model import (
 
 
 def create_jsonrpc_server(
-    protocol: PebbleProtocol,
+    protocol: pebblingProtocol,
     protocol_handler: Any,
     supported_methods: List[Union[str, ProtocolMethod]]
 ) -> FastAPI:
     """Create a JSON-RPC server for agent-to-agent communication."""
-    jsonrpc_app = FastAPI(title="Pebble JSON-RPC API")
+    jsonrpc_app = FastAPI(title="pebbling JSON-RPC API")
     
     jsonrpc_app.add_middleware(
         CORSMiddleware,

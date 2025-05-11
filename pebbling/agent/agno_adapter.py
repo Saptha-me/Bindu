@@ -1,13 +1,20 @@
 """
-Agno-specific adapter for the Pebble protocol.
+Agno-specific adapter for the pebbling protocol.
 """
 from typing import Any, Dict, Optional
 import uuid
 
 from agno.agent import Agent as AgnoAgent
+from loguru import logger
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
-from pebble.agent.base_adapter import BaseProtocolHandler
-from pebble.core.protocol import PebbleProtocol
+from pebbling.agent.base_adapter import BaseProtocolHandler
+from pebbling.core.protocol import pebblingProtocol
+
+# Initialize Rich console
+console = Console()
 
 
 class AgnoProtocolHandler(BaseProtocolHandler):
@@ -21,7 +28,7 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         # Initialize agent context if needed
         if not hasattr(self.agent, "context") or self.agent.context is None:
             self.agent.context = {}
-        self.protocol = PebbleProtocol()
+        self.protocol = pebblingProtocol()
         
         # Initialize user-specific contexts
         self.user_contexts = {}
@@ -42,15 +49,32 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             for key, context_item in self.user_contexts[user_id].items():
                 self.agent.context[key] = context_item["value"]
                 
-            print(f"Applied context for user {user_id}: {self.user_contexts[user_id]}")
+            # Log with rich formatting
+            context_text = Text()
+            for key, item in self.user_contexts[user_id].items():
+                context_text.append(f"\n  {key}: ", style="bright_cyan")
+                context_text.append(f"{item['value']}", style="bright_green")
+                if 'metadata' in item and item['metadata']:
+                    context_text.append(f" (metadata: {item['metadata']})", style="dim")
+            
+            console.print(Panel.fit(
+                Text(f"🔄 Applied context for user: ", style="bold blue") + 
+                Text(user_id, style="bold yellow") + context_text,
+                title="[bright_cyan]Context Applied[/bright_cyan]",
+                border_style="blue"
+            ))
+            logger.info(f"Applied context for user {user_id}")
         else:
-            print(f"No specific context found for user {user_id}")
+            console.print(Text(f"⚠️ No specific context found for user: {user_id}", style="yellow"))
+            logger.warning(f"No specific context found for user {user_id}")
             
     def reset_context(self) -> None:
         """Reset to original context after processing a user request."""
         if hasattr(self, "_original_context"):
             self.agent.context = self._original_context
             delattr(self, "_original_context")
+            console.print(Text("🔄 Context reset to original state", style="bright_green"))
+            logger.info("Agent context reset to original state")
             
     async def handle_Context(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle Context protocol (add/update/delete operations)."""
@@ -112,6 +136,15 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             # Store in user-specific context
             self.user_contexts[user_id][key] = context_data
             message = f"Context added for user {user_id} successfully"
+            console.print(Panel(
+                Text(f"✅ Added context key: ", style="bold green") + 
+                Text(key, style="bright_cyan") + 
+                Text(" for user: ", style="green") + 
+                Text(user_id, style="bright_yellow"),
+                title="[bright_green]Context Added[/bright_green]",
+                border_style="green"
+            ))
+            logger.success(f"Added context key '{key}' for user {user_id}")
         else:
             # Store in global context
             self.agent.context[key] = context_data
@@ -121,6 +154,14 @@ class AgnoProtocolHandler(BaseProtocolHandler):
                 self.agent.context[key] = value
             
             message = "Context added successfully"
+            console.print(Panel(
+                Text(f"✅ Added global context key: ", style="bold green") + 
+                Text(key, style="bright_cyan") + 
+                Text(f" with value type: {type(value).__name__}", style="dim"),
+                title="[bright_green]Global Context Added[/bright_green]",
+                border_style="green"
+            ))
+            logger.success(f"Added global context key '{key}'")
         
         return self.protocol.create_response(
             request_id=request_id,
@@ -154,6 +195,26 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             self.agent.context[key] = value
             
         message = "Context updated successfully" + (f" for user {user_id}" if user_id else "")
+        
+        # Log the update with rich formatting
+        if user_id:
+            console.print(Panel(
+                Text(f"🔄 Updated context key: ", style="bold blue") + 
+                Text(key, style="bright_cyan") + 
+                Text(" for user: ", style="blue") + 
+                Text(user_id, style="bright_yellow"),
+                title="[bright_blue]Context Updated[/bright_blue]",
+                border_style="blue"
+            ))
+            logger.info(f"Updated context key '{key}' for user {user_id}")
+        else:
+            console.print(Panel(
+                Text(f"🔄 Updated global context key: ", style="bold blue") + 
+                Text(key, style="bright_cyan"),
+                title="[bright_blue]Global Context Updated[/bright_blue]",
+                border_style="blue"
+            ))
+            logger.info(f"Updated global context key '{key}'")
         return self.protocol.create_response(
             request_id=request_id,
             result={"key": key, "status": "success", "message": message}
@@ -177,6 +238,26 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             del self.agent.context[key]
         
         message = "Context deleted successfully" + (f" for user {user_id}" if user_id else "")
+        
+        # Log the deletion with rich formatting
+        if user_id:
+            console.print(Panel(
+                Text(f"🗑️ Deleted context key: ", style="bold red") + 
+                Text(key, style="bright_cyan") + 
+                Text(" for user: ", style="red") + 
+                Text(user_id, style="bright_yellow"),
+                title="[bright_red]Context Deleted[/bright_red]",
+                border_style="red"
+            ))
+            logger.warning(f"Deleted context key '{key}' for user {user_id}")
+        else:
+            console.print(Panel(
+                Text(f"🗑️ Deleted global context key: ", style="bold red") + 
+                Text(key, style="bright_cyan"),
+                title="[bright_red]Global Context Deleted[/bright_red]",
+                border_style="red"
+            ))
+            logger.warning(f"Deleted global context key '{key}'")
         return self.protocol.create_response(
             request_id=request_id,
             result={"key": key, "status": "success", "message": message}

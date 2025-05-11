@@ -1,8 +1,8 @@
 """
-Response Models for Pebble Server
+Response Models for pebbling Server
 
 This module defines Pydantic models for standardized request and response formats
-used by the Pebble REST API server.
+used by the pebbling REST API server.
 """
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
@@ -26,6 +26,7 @@ class ErrorResponse(BaseModel):
 class AgentRequest(BaseModel):
     """Agent run request model"""
     input: str = Field(..., description="Input text for the agent")
+    user_id: str = Field(..., description="User ID")
 
 
 class AgentResponse(BaseModel):

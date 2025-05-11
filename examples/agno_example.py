@@ -2,7 +2,7 @@
 News Reporter Agent Example
 
 This example demonstrates how to create an Agno agent with a news reporter personality
-and integrate it with Pebble's protocol framework for JSON-RPC and REST API communication.
+and integrate it with pebbling's protocol framework for JSON-RPC and REST API communication.
 """
 from textwrap import dedent
 from typing import List, Optional
@@ -12,10 +12,9 @@ from loguru import logger
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 
-# Pebble imports
-from pebble.core.protocol import ProtocolMethod
-from pebble.server.pebble_server import pebblify
-
+# pebbling imports
+from pebbling.core.protocol import ProtocolMethod
+from pebbling.server.pebbling_server import pebblify
 
 news_reporter_agent = Agent(
     model=OpenAIChat(id="gpt-4o"),
@@ -37,16 +36,17 @@ news_reporter_agent = Agent(
 
 supported_methods = [ProtocolMethod.CONTEXT]
 
-# Wrap the agent with Pebble protocol capabilities
+# Wrap the agent with pebbling protocol capabilities
 pebblify(
     register=True,
     agent=news_reporter_agent,
     agent_id="news-reporter-agent",
     supported_methods=supported_methods,
-    pebble_port=3773,
+    pebbling_port=3773,
     user_port=3774,
     host="0.0.0.0",
-    protocol_config_path="./protocol_config.json"
+    protocol_config_path="./protocol_config.json",
+    hosting_method="localhost"
 )
 
 #registrer to hibiscus

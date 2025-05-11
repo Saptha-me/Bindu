@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from pebble.server.schemas.model import (
+from pebbling.server.schemas.model import (
     HealthResponse, 
     ErrorResponse, 
     AgentRequest, 
@@ -15,7 +15,7 @@ from pebble.server.schemas.model import (
 
 def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     """Create a REST API server for user interaction."""
-    rest_app = FastAPI(title="Pebble User API")
+    rest_app = FastAPI(title="pebbling User API")
     
     # Configure CORS
     rest_app.add_middleware(

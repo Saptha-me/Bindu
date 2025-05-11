@@ -5,7 +5,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from pebble.server.rest_server import create_rest_server
+from pebbling.server.rest_server import create_rest_server
 
 
 class TestRestServer:

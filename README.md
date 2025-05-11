@@ -1,4 +1,4 @@
-<h1 align="center">Pebble 🐧</h1>
+<h1 align="center">pebbling 🐧</h1>
 
 <h1 align="center">Agent-to-Agent Communication </h1>
 
@@ -7,9 +7,9 @@
 [![Discord](https://img.shields.io/discord/bgwYGs7t?color=7289DA&label=Discord&logo=discord&logoColor=white)](https://discord.gg/bgwYGs7t)
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.pebbling.ai)
 
-🪨 Pebble is the easiest way to enable seamless, secure communication between autonomous AI agents.
+🪨 pebbling is the easiest way to enable seamless, secure communication between autonomous AI agents.
 
-💡 Built on **JSON-RPC 2.0** over **mutual TLS (mTLS)**, Pebble provides a lightweight yet powerful protocol framework for the next generation of collaborative AI systems.
+💡 Built on **JSON-RPC 2.0** over **mutual TLS (mTLS)**, pebbling provides a lightweight yet powerful protocol framework for the next generation of collaborative AI systems.
 
 
 ## Contributing
@@ -19,7 +19,7 @@ Please do contribute.
 We provide a developer version with additional pre-commit hooks to perform checks compared to the official version:
 
 # For mac
-uv add pebble --dev
+uv add pebbling --dev
 
 # Install pre-commit hooks
 pre-commit install

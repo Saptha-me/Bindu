@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from agno.agent import Agent as AgnoAgent
-from pebble.agent.agno_adapter import AgnoProtocolHandler
+from pebbling.agent.agno_adapter import AgnoProtocolHandler
 
 
 class TestAgnoAdapter:

@@ -1,5 +1,5 @@
 """
-Pebble Protocol Implementation
+pebbling Protocol Implementation
 
 A minimal JSON-RPC 2.0 protocol for agent-to-agent communication.
 """
@@ -31,8 +31,8 @@ class MemoryType(str, Enum):
     LONG_TERM = "long-term"
 
 
-class PebbleProtocol:
-    """Pebble protocol implementation"""
+class pebblingProtocol:
+    """pebbling protocol implementation"""
     
     JSONRPC_VERSION = "2.0"
     

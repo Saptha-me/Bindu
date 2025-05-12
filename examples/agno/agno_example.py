@@ -35,7 +35,9 @@ news_reporter_agent = Agent(
 )
 
 supported_methods = [
-    ProtocolMethod.CONTEXT
+    ProtocolMethod.CONTEXT,
+    ProtocolMethod.LISTEN,
+    ProtocolMethod.ACT,
 ]
 
 # Wrap the agent with pebbling protocol capabilities

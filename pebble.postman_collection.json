@@ -1,49 +1,11 @@
 {
 	"info": {
 		"_postman_id": "c902d25e-c61a-401a-a3c8-ac1cd6873736",
-		"name": "pebbling",
+		"name": "pebble",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "964032"
 	},
 	"item": [
-		{
-			"name": "act",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					},
-					{
-						"key": "Authorization",
-						"value": "Bearer pbl_eyJleHAiOiAxNzczODY4MDc3LjgxMzgzMiwgImp0aSI6ICJkZWI3MzdiMWRiMzFlNzA2In0.IIPwR3FKThr_DK0D7Vavw8o9g43aRSaC1meAcIgxrXk"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"agent_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"message\": \"What can you help me with?\",\n    \"session_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n    \"role\": \"user\",\n    \"metadata\": {\n      \"source\": \"web_interface\",\n      \"priority\": \"normal\" \n    }\n  }",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8000/agent/act",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"agent",
-						"act"
-					]
-				}
-			},
-			"response": []
-		},
 		{
 			"name": "listen",
 			"request": {
@@ -60,7 +22,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"agent_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"session_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n    \"message\": \"whats the capital of india?\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"mobile_app\"\n    },\n    \"stream\": false,\n    \"audio\": {\n        \"url\" : \"https://raw.githubusercontent.com/Pebbling-ai/pebbling/main/sample_data/audio/sample_audio.mp3\"\n    }\n}",
+					"raw": "{\n    \"agent_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"session_id\": \"123e4567-e89b-12d3-a456-426614174001\",\n    \"message\": \"whats the capital of india?\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"mobile_app\"\n    },\n    \"stream\": false,\n    \"audio\": {\n        \"url\" : \"https://raw.githubusercontent.com/Pebbling-ai/pebble/main/sample_data/audio/sample_audio.mp3\"\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -90,15 +52,11 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json"
-					},
-					{
-						"key": "Authorization",
-						"value": "Bearer pbl_eyJleHAiOiAxNzczODY4MDc3LjgxMzgzMiwgImp0aSI6ICJkZWI3MzdiMWRiMzFlNzA2In0.IIPwR3FKThr_DK0D7Vavw8o9g43aRSaC1meAcIgxrXk"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"agent_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"session_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"message\": \"Describe what you see in this image\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"web_app\"\n    },\n    \"stream\": false,\n    \"media_type\": \"image\",\n    \"media\": {\n      \"url\": \"https://avatars.githubusercontent.com/u/202021745?s=200&v=4\"\n    }\n  }",
+					"raw": "{\n    \"agent_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"user_id\": \"user-123456\",\n    \"session_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"input\": \"Describe what you see in this image\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"web_app\"\n    },\n    \"stream\": false,\n    \"media_type\": \"image\",\n    \"media\": {\n      \"url\": \"https://avatars.githubusercontent.com/u/202021745?s=200&v=4\"\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -106,14 +64,13 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/agent/view",
+					"raw": "http://localhost:3774/view",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "3774",
 					"path": [
-						"agent",
 						"view"
 					]
 				}
@@ -128,15 +85,11 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json"
-					},
-					{
-						"key": "Authorization",
-						"value": "Bearer pbl_eyJleHAiOiAxNzczODY4MDc3LjgxMzgzMiwgImp0aSI6ICJkZWI3MzdiMWRiMzFlNzA2In0.IIPwR3FKThr_DK0D7Vavw8o9g43aRSaC1meAcIgxrXk"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"agent_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"session_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"message\": \"Analyze this video for engaging moments\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"api\"\n    },\n    \"stream\": false,\n    \"media_type\": \"video\",\n    \"media\": {\n      \"url\": \"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4\",\n      \"mime_type\": \"video/mp4\",\n      \"duration\": 120.5\n    }\n  }",
+					"raw": "{\n    \"agent_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"user_id\": \"user-123456\",\n    \"session_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"input\": \"Analyze this video for engaging moments\",\n    \"role\": \"user\",\n    \"metadata\": {\n        \"source\": \"api\"\n    },\n    \"stream\": false,\n    \"media_type\": \"video\",\n    \"media\": {\n      \"url\": \"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4\",\n      \"mime_type\": \"video/mp4\",\n      \"duration\": 120.5,\n      \"caption\": \"Big Buck Bunny - Sample Video\",\n      \"frame_rate\": 30.0,\n      \"width\": 1280,\n      \"height\": 720\n    }\n  }",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -144,14 +97,13 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8000/agent/view",
+					"raw": "http://localhost:3774/view",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8000",
+					"port": "3774",
 					"path": [
-						"agent",
 						"view"
 					]
 				}
@@ -220,7 +172,7 @@
 			]
 		},
 		{
-			"name": "User request Run",
+			"name": "act",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -231,7 +183,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"input\": \"Tell me about food recommondation - location is beach\"\n}",
+					"raw": "{\n    \"input\": \"Tell me about food recommondation - location is beach\",\n    \"user_id\": \"user-123456\",\n    \"session_id\": \"45ab8be5-d213-4373-bcf6-c79b61caa086\",\n    \"stream\": true\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -239,14 +191,14 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3774/run",
+					"raw": "http://localhost:3774/act",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
 					"port": "3774",
 					"path": [
-						"run"
+						"act"
 					]
 				}
 			},
@@ -320,7 +272,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": \"context-001\",\n  \"method\": \"Context\",\n  \"params\": {\n    \"operation\": \"add\",\n    \"key\": \"FoodAllergies\",\n    \"value\": \"Fish and prawns\",\n    \"metadata\": {\n      \"priority\": \"high\"\n    }\n  }\n}",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": \"context-001\",\n  \"method\": \"Context\",\n  \"params\": {\n    \"user_id\" : \"user-123456\",\n    \"operation\": \"add\",\n    \"key\": \"Preferable\",\n    \"value\": \"Veg Food\",\n    \"metadata\": {\n      \"priority\": \"high\"\n    }\n  }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -409,7 +361,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": \"context-001\",\n  \"method\": \"Context\",\n  \"params\": {\n    \"operation\": \"delete\",\n    \"key\": \"FoodAllergies\"\n  }\n}",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": \"context-001\",\n  \"method\": \"Context\",\n  \"params\": {\n    \"user_id\" : \"abcd\",\n    \"operation\": \"delete\",\n    \"key\": \"FoodAllergies\"\n  }\n}",
 					"options": {
 						"raw": {
 							"language": "json"

@@ -2,8 +2,8 @@
 Agno-specific adapter for the pebbling protocol.
 """
 import uuid
-from typing import Any, Dict, Optional, List
-
+from typing import Any, Dict, Optional, List, Union
+import httpx
 from agno.agent import Agent as AgnoAgent
 from loguru import logger
 from rich.console import Console
@@ -12,7 +12,13 @@ from rich.text import Text
 
 from pebbling.agent.base_adapter import BaseProtocolHandler
 from pebbling.core.protocol import pebblingProtocol
-from pebbling.server.schemas.model import AudioArtifact, AgentResponse, MessageRole
+from pebbling.server.schemas.model import (
+    AudioArtifact, 
+    AgentResponse, 
+    MessageRole, 
+    ImageArtifact, 
+    VideoArtifact
+)
 
 # Initialize Rich console
 console = Console()
@@ -81,6 +87,36 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             metadata={"messages": messages},  
             status="success"
         )
+
+    
+    def _download_content_from_url(self, url: str) -> bytes:
+        """Download content from a URL.
+        
+        Args:
+            url: URL to download content from
+            
+        Returns:
+            Downloaded content as bytes
+            
+        Raises:
+            Exception: If download fails
+        """
+        with httpx.Client() as client:
+            response = client.get(url)
+            if response.status_code != 200:
+                raise Exception(f"HTTP status {response.status_code}")
+            return response.content
+    
+    def _decode_base64(self, base64_content: str) -> bytes:
+        """Decode base64 content to bytes.
+        
+        Args:
+            base64_content: Base64 encoded content
+            
+        Returns:
+            Decoded content as bytes
+        """
+        return base64.b64decode(base64_content)
     
     def apply_user_context(self, user_id: str) -> None:
         """
@@ -347,11 +383,19 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         # Create and return the response
         return self._create_response(session_id, response_content, messages)
     
-    def listen(self, audio: AudioArtifact, session_id: str = None, user_id: str = None, stream: bool = False) -> Dict[str, Any]:
+    def listen(
+        self, 
+        message: str,
+        audio: AudioArtifact, 
+        session_id: str = None, 
+        user_id: str = None, 
+        stream: bool = False
+    ) -> Dict[str, Any]:
         """
         Acts in the environment and updates its internal cognitive state.
         
         Args:
+            message: The text message to process
             audio: The audio input to process
             session_id: Session identifier for conversation continuity
             user_id: User identifier for user-specific context
@@ -363,7 +407,7 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         # Store the request in session history with audio reference
         self.sessions[session_id]["history"].append({
             "role": "user",
-            "content": "Process this audio input",
+            "content": message,
             "has_audio": True
         })
 
@@ -381,9 +425,107 @@ class AgnoProtocolHandler(BaseProtocolHandler):
 
             result = self.agent.run(
                 session_id=session_id,
+                message=message,
                 audio=agno_audio,
                 user_id=user_id,
                 stream=stream).to_dict()
+            response_content, messages = self._extract_response(result)
+
+        except Exception as e:
+            logger.error(f"Error processing request: {str(e)}")
+            response_content = f"Error processing request: {str(e)}"
+            messages = []
+            
+        return self._create_response(session_id, response_content, messages)
+
+    def view(
+        self, 
+        message: str,
+        media: Union[VideoArtifact, ImageArtifact], 
+        session_id: str = None, 
+        user_id: str = None, 
+        stream: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Acts in the environment and updates its internal cognitive state.
+        
+        Args:
+            message: The text message to process
+            media: The media input to process
+            session_id: Session identifier for conversation continuity
+            user_id: User identifier for user-specific context
+            stream: Whether to stream the response
+            
+        Returns:
+            Dict[str, Any]: The response from the agent
+        """
+        # Store the request in session history with media reference
+        self.sessions[session_id]["history"].append({
+            "role": "user",
+            "content": message,
+            "has_media": True
+        })
+
+        # Import Agno's Image and Video class
+        from agno.media import Image as AgnoImage, Video as AgnoVideo
+        
+        # Create Audio object based on input type
+        try:
+            if isinstance(media, ImageArtifact):
+                media_type = "image"
+                AgnoMediaClass = AgnoImage
+                media_param_name = "images"
+                
+                # Get appropriate data access attributes based on media type
+                url_attr = "url"
+                base64_attr = "base64_image"
+            elif isinstance(media, VideoArtifact):
+                media_type = "video"
+                AgnoMediaClass = AgnoVideo
+                media_param_name = "videos"
+                
+                # Get appropriate data access attributes based on media type
+                url_attr = "url"
+                base64_attr = "base64_video"
+
+            url = getattr(media, url_attr)
+            base64_content = getattr(media, base64_attr)
+            
+            if url:
+                # Download content from the URL first (Agno media classes need content, not URL)
+                try:
+                    content_bytes = self._download_content_from_url(url)
+                except Exception as e:
+                    return self._create_response(
+                        session_id,
+                        f"Error downloading {media_type} from URL: {str(e)}",
+                        {}
+                    )
+                
+                # Create Agno media with the downloaded content
+                agno_media = AgnoMediaClass(content=content_bytes)
+
+            elif base64_content:
+                # Handle base64 data
+                try:
+                    content_bytes = self._decode_base64(base64_content)
+                except Exception as e:
+                    return self._create_response(
+                        session_id,
+                        f"Error decoding base64 {media_type}: {str(e)}",
+                        {}
+                    )
+                
+                agno_media = AgnoMediaClass(content=content_bytes)
+
+            agent_kwargs = {media_param_name: [agno_media]}
+
+            result = self.agent.run(
+                session_id=session_id,
+                message=message,
+                user_id=user_id,
+                stream=stream,
+                **agent_kwargs).to_dict()
             response_content, messages = self._extract_response(result)
 
         except Exception as e:

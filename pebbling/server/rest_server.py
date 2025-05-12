@@ -11,7 +11,8 @@ from pebbling.server.schemas.model import (
     AgentRequest, 
     AgentResponse,
     MessageRole,
-    ListenRequest
+    ListenRequest,
+    ViewRequest
 )
 
 
@@ -200,11 +201,11 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 message=f"Agent execution failed: {str(e)}"
             ) 
     
-    @rest_app.post("/listen", response_model=AgentResponse)
-    async def listen_agent(listen_request: ListenRequest):
+    @rest_app.post("/view", response_model=AgentResponse)
+    async def view_agent(view_request: ViewRequest):
         """Run the agent with the provided input"""
         try:
-            if not listen_request.audio:
+            if not view_request.media:
                 # Return a JSONResponse directly to bypass response_model validation
                 return JSONResponse(
                     status_code=400,
@@ -216,19 +217,21 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 )
 
             # Generate session ID if not provided
-            session_id = listen_request.session_id or str(uuid.uuid4())
-            user_id = listen_request.user_id or "user_" + str(uuid.uuid4())
+            session_id = view_request.session_id or str(uuid.uuid4())
+            user_id = view_request.user_id or "user_" + str(uuid.uuid4())
 
             # Apply user-specific context if user_id is provided
-            if listen_request.user_id and hasattr(protocol_handler, "apply_user_context"):
+            if view_request.user_id and hasattr(protocol_handler, "apply_user_context"):
                 protocol_handler.apply_user_context(user_id)
 
             protocol_handler._initialize_session(session_id)
 
             # Execute the agent with all required parameters
-            result = protocol_handler.listen(
-                audio=listen_request.audio,
-                session_id=session_id
+            result = protocol_handler.view(
+                message=view_request.input,  # Pass input as message parameter
+                media=view_request.media,
+                session_id=session_id,
+                user_id=user_id
             )
 
             # Ensure we're returning an AgentResponse

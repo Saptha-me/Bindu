@@ -24,6 +24,12 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         """Initialize with an Agno agent."""
         super().__init__(agent_id)
         self.agent = agent
+
+        capabilities = []
+        if hasattr(agent, 'tools') and agent.tools:
+            for tool in agent.tools:
+                if hasattr(tool, 'name'):
+                    capabilities.append(tool.name)
         
         # Initialize agent context if needed
         if not hasattr(self.agent, "context") or self.agent.context is None:
@@ -32,6 +38,29 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         
         # Initialize user-specific contexts
         self.user_contexts = {}
+
+        # Store session history for continuity
+        self.sessions = {}
+
+    def _initialize_session(self, session_id, request):
+        """Helper to initialize session and set agent properties"""
+        # Initialize session if it doesn't exist
+        if session_id not in self.sessions:
+            self.sessions[session_id] = {
+                "history": [],
+                "agent_state": {}
+            }
+        
+        # Get or set the agent_id and session_id for the Agno agent
+        if hasattr(self.agent, 'agent_id') and not self.agent.agent_id:
+            self.agent.agent_id = str(self.agent_id)
+        
+        if hasattr(self.agent, 'session_id') and not self.agent.session_id:
+            self.agent.session_id = str(session_id)
+            
+        # Set stream mode if applicable
+        if hasattr(self.agent, 'stream'):
+            self.agent.stream = request.stream
     
     def apply_user_context(self, user_id: str) -> None:
         """
@@ -262,3 +291,25 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             request_id=request_id,
             result={"key": key, "status": "success", "message": message}
         )
+
+    def listen(self, message: str) -> Dict[str, Any]:
+        """
+        Acts in the environment and updates its internal cognitive state.
+        
+        Args:
+            message: The action request to process
+            
+        Returns:
+            Dict[str, Any]: The response from the agent
+        """
+        # Process the request with the Agno agent
+        try:
+            result = self.agent.run(message)
+            response_content, tool_calls = self._extract_response(result)
+        except Exception as e:
+            response_content = f"Error processing request: {str(e)}"
+            tool_calls = []
+        
+        # Create and return the response
+        return self._create_response(session_id, response_content, request, tool_calls)
+    

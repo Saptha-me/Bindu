@@ -14,11 +14,9 @@ from typing import Dict, Any, Optional, Union
 class ProtocolMethod(str, Enum):
     """Supported protocol methods"""
     CONTEXT = "Context"
-    ACT = "Act"
     LISTEN = "Listen"
     VIEW = "View"
     
-
 
 class TaskStatus(str, Enum):
     """Task status values"""

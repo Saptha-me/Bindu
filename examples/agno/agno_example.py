@@ -34,19 +34,18 @@ news_reporter_agent = Agent(
     markdown=True,
 )
 
-supported_methods = [ProtocolMethod.CONTEXT]
+supported_methods = [
+    ProtocolMethod.CONTEXT
+]
 
 # Wrap the agent with pebbling protocol capabilities
 pebblify(
-    register=True,
     agent=news_reporter_agent,
-    agent_id="news-reporter-agent",
     supported_methods=supported_methods,
     pebbling_port=3773,
     user_port=3774,
     host="0.0.0.0",
     protocol_config_path="./protocol_config.json",
-    hosting_method="localhost"
 )
 
 

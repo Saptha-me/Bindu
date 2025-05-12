@@ -10,7 +10,8 @@ from pebbling.server.schemas.model import (
     ErrorResponse, 
     AgentRequest, 
     AgentResponse,
-    #ListenRequest
+    MessageRole,
+    ListenRequest
 )
 
 
@@ -45,8 +46,8 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 message=f"Health check failed: {str(e)}"
             )
     
-    @rest_app.post("/run", response_model=AgentResponse)
-    async def run_agent(request_data: AgentRequest):
+    @rest_app.post("/act", response_model=AgentResponse)
+    async def act(request_data: AgentRequest):
         """Run the agent with the provided input"""
         try:
             if not request_data.input.strip():
@@ -63,17 +64,31 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
             # Apply user-specific context if user_id is provided
             if request_data.user_id and hasattr(protocol_handler, "apply_user_context"):
                 protocol_handler.apply_user_context(request_data.user_id)
-            
-            # Execute the agent
-            result = protocol_handler.agent.run(request_data.input).to_dict()
 
-            return AgentResponse(
-                status_code=200,
-                status="success",
-                content=result["content"],
-                messages=result["messages"],
-                metrics=result["metrics"]
+            # Generate session ID if not provided
+            session_id = request_data.session_id or str(uuid.uuid4())
+            user_id = request_data.user_id or "user_" + str(uuid.uuid4())
+
+            protocol_handler._initialize_session(session_id, request_data.stream)
+            
+            # Execute the agent with simplified parameters
+            result = protocol_handler.act(
+                message=request_data.input,
+                session_id=session_id
             )
+            
+            # Ensure we're returning an AgentResponse
+            if not isinstance(result, AgentResponse):
+                # Convert to AgentResponse if it's not already
+                return AgentResponse(
+                    agent_id=protocol_handler.agent_id,
+                    session_id=session_id,
+                    role=MessageRole.AGENT,
+                    status="success",
+                    content=str(result),
+                    metrics={}
+                )
+            return result
         except Exception as e:
             return ErrorResponse(
                 status_code=500,
@@ -81,38 +96,52 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 message=f"Agent execution failed: {str(e)}"
             )
 
-    # @rest_app.post("/listen", response_model=AgentResponse)
-    # async def listen_agent(listen_request: ListenRequest):
-    #     """Run the agent with the provided input"""
-    #     try:
-    #         if not request_data.input.strip():
-    #             # Return a JSONResponse directly to bypass response_model validation
-    #             return JSONResponse(
-    #                 status_code=400,
-    #                 content={
-    #                     "status_code": 400,
-    #                     "status": "error",
-    #                     "message": "Input text is required"
-    #                 }
-    #             )
-            
-    #         # Apply user-specific context if user_id is provided
-    #         if request_data.user_id and hasattr(protocol_handler, "apply_user_context"):
-    #             protocol_handler.apply_user_context(request_data.user_id)
-            
-    #         # Execute the agent
-    #         result = protocol_handler.agent.run(request_data.input).to_dict()
+    @rest_app.post("/listen", response_model=AgentResponse)
+    async def listen_agent(listen_request: ListenRequest):
+        """Run the agent with the provided input"""
+        try:
+            if not listen_request.audio:
+                # Return a JSONResponse directly to bypass response_model validation
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "status_code": 400,
+                        "status": "error",
+                        "message": "Input text is required"
+                    }
+                )
 
-    #         return AgentResponse(
-    #             status_code=200,
-    #             status="success",
-    #             content=result["content"],
-    #             messages=result["messages"],
-    #             metrics=result["metrics"]
-    #         )
-    #     except Exception as e:
-    #         return ErrorResponse(
-    #             status_code=500,
-    #             status="error",
-    #             message=f"Agent execution failed: {str(e)}"
-    #         )
+            # Apply user-specific context if user_id is provided
+            if listen_request.user_id and hasattr(protocol_handler, "apply_user_context"):
+                protocol_handler.apply_user_context(listen_request.user_id)
+
+            # Generate session ID if not provided
+            session_id = listen_request.session_id or str(uuid.uuid4())
+            user_id = listen_request.user_id or "user_" + str(uuid.uuid4())
+
+            protocol_handler._initialize_session(session_id, listen_request.stream)
+
+            # Execute the agent with all required parameters
+            result = protocol_handler.listen(
+                audio=listen_request.audio,
+                session_id=session_id
+            )
+
+            # Ensure we're returning an AgentResponse
+            if not isinstance(result, AgentResponse):
+                # Convert to AgentResponse if it's not already
+                return AgentResponse(
+                    agent_id=protocol_handler.agent_id,
+                    session_id=session_id,
+                    role=MessageRole.AGENT,
+                    status="success",
+                    content=str(result),
+                    metrics={}
+                )
+            return result
+        except Exception as e:
+            return ErrorResponse(
+                status_code=500,
+                status="error",
+                message=f"Agent execution failed: {str(e)}"
+            ) 

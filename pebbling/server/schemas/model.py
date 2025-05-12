@@ -5,9 +5,16 @@ This module defines Pydantic models for standardized request and response format
 used by the pebbling REST API server.
 """
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from uuid import UUID, uuid4
+from enum import Enum
 
+class MessageRole(str, Enum):
+    """Role of a message sender."""
+    SYSTEM = "system"
+    USER = "user"
+    AGENT = "agent"
+    TOOL = "tool"
 
 class HealthResponse(BaseModel):
     """Health check response model"""
@@ -46,37 +53,41 @@ class AgentRequest(BaseModel):
     input: str = Field(..., description="Input text for the agent", example="Tell me about the latest news in technology")
     user_id: str = Field(..., description="User ID", example="user-123456")
     session_id: str = Field(..., description="Session ID", example="session-789012")
+    stream: bool = Field(..., description="Stream the response", example=False)
     
     class Config:
         schema_extra = {
             "example": {
                 "input": "What's happening in the stock market today?",
                 "user_id": "user-abc123",
-                "session_id": "session-xyz456"
+                "session_id": "session-xyz456",
+                "stream": False
             }
         }
 
 
 class AgentResponse(BaseModel):
     """Agent run response model"""
-    status_code: int = Field(..., description="HTTP status code")
+    agent_id: UUID = Field(description="Unique identifier for the agent")
+    session_id: UUID = Field(description="Session ID for conversation continuity")
+    role: MessageRole = Field(default=MessageRole.AGENT, description="Role of the message sender")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional metadata from the agent")
     status: str = Field("success", description="Success status")
     content: str = Field(..., description="Agent response content")
-    messages: List[Dict[str, Any]] = Field(default_factory=list, description="Messages exchanged")
     metrics: Dict[str, Any] = Field(default_factory=dict, description="Performance metrics")
 
     class Config:
         schema_extra = {
             "example": {
-                "status_code": 200,
+                "agent_id": "agent-123",
+                "session_id": "session-xyz456",
+                "role": "agent",
+                "metadata": {
+                    "original_prompt": "What's happening in the stock market today?",
+                    "revised_prompt": "What's happening in the stock market today?"
+                },
                 "status": "success",
                 "content": "The stock market is expected to continue its upward trend in the coming weeks.",
-                "messages": [
-                    {
-                        "role": "assistant",
-                        "content": "The stock market is expected to continue its upward trend in the coming weeks."
-                    }
-                ],
                 "metrics": {
                     "response_time": "1.234 seconds"
                 }
@@ -196,43 +207,43 @@ class Media(BaseModel):
         }
     
 
-# class AudioArtifact(Media):
-#     """Audio data for agent processing."""
-#     id: UUID = Field(default_factory=uuid.uuid4)  # Unique identifier for the audio artifact
-#     url: Optional[str] = None  # Remote location for file
-#     base64_audio: Optional[str] = None  # Base64-encoded audio data
-#     length: Optional[str] = None
-#     mime_type: Optional[str] = None
+class AudioArtifact(Media):
+    """Audio data for agent processing."""
+    id: UUID = Field(default_factory=uuid4)  # Unique identifier for the audio artifact
+    url: Optional[str] = None  # Remote location for file
+    base64_audio: Optional[str] = None  # Base64-encoded audio data
+    length: Optional[str] = None
+    mime_type: Optional[str] = None
 
-#     @model_validator(mode="before")
-#     def validate_exclusive_audio(cls, data: Any):
-#         """
-#         Ensure that either `url` or `base64_audio` is provided, but not both.
-#         """
-#         if data.get("url") and data.get("base64_audio"):
-#             raise ValueError("Provide either `url` or `base64_audio`, not both.")
-#         if not data.get("url") and not data.get("base64_audio"):
-#             raise ValueError("Either `url` or `base64_audio` must be provided.")
-#         return data
+    @model_validator(mode="before")
+    def validate_exclusive_audio(cls, data: Any):
+        """
+        Ensure that either `url` or `base64_audio` is provided, but not both.
+        """
+        if data.get("url") and data.get("base64_audio"):
+            raise ValueError("Provide either `url` or `base64_audio`, not both.")
+        if not data.get("url") and not data.get("base64_audio"):
+            raise ValueError("Either `url` or `base64_audio` must be provided.")
+        return data
 
-#     class Config:
-#         schema_extra = {
-#             "example": {
-#                 "agent_id": "123e4567-e89b-12d3-a456-426614174000",
-#                 "session_id": "123e4567-e89b-12d3-a456-426614174001",
-#                 "message": "whats the capital of india?",
-#                 "role": "user",
-#                 "metadata": {
-#                     "source": "mobile_app"
-#                 },
-#                 "stream": false,
-#                 "audio": {
-#                     "url" : "https://raw.githubusercontent.com/Pebbling-ai/pebble/main/sample_data/audio/sample_audio.mp3"
-#                 }
-#             }
-#         }
+    class Config:
+        schema_extra = {
+            "example": {
+                "agent_id": "123e4567-e89b-12d3-a456-426614174000",
+                "session_id": "123e4567-e89b-12d3-a456-426614174001",
+                "message": "whats the capital of india?",
+                "role": "user",
+                "metadata": {
+                    "source": "mobile_app"
+                },
+                "stream": False,
+                "audio": {
+                    "url" : "https://raw.githubusercontent.com/Pebbling-ai/pebble/main/sample_data/audio/sample_audio.mp3"
+                }
+            }
+        }
 
 
-# class ListenRequest(ActionRequest):
-#     """Combined request for listen endpoint containing both action and audio data."""
-#     audio: AudioArtifact
+class ListenRequest(AgentRequest):
+    """Combined request for listen endpoint containing both action and audio data."""
+    audio: AudioArtifact

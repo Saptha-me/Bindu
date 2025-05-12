@@ -342,17 +342,20 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         except Exception as e:
             logger.error(f"Error processing request: {str(e)}")
             response_content = f"Error processing request: {str(e)}"
+            messages = []
         
         # Create and return the response
         return self._create_response(session_id, response_content, messages)
     
-    def listen(self, audio: AudioArtifact, session_id: str = None) -> Dict[str, Any]:
+    def listen(self, audio: AudioArtifact, session_id: str = None, user_id: str = None, stream: bool = False) -> Dict[str, Any]:
         """
         Acts in the environment and updates its internal cognitive state.
         
         Args:
             audio: The audio input to process
             session_id: Session identifier for conversation continuity
+            user_id: User identifier for user-specific context
+            stream: Whether to stream the response
             
         Returns:
             Dict[str, Any]: The response from the agent
@@ -376,17 +379,17 @@ class AgnoProtocolHandler(BaseProtocolHandler):
                 audio_bytes = self._decode_base64(audio.base64_audio)
                 agno_audio = Audio(content=audio_bytes)
 
-            result = self.agent.run(agno_audio, **agent_kwargs)
-            response_content, tool_calls = self._extract_response(result)
+            result = self.agent.run(
+                session_id=session_id,
+                audio=agno_audio,
+                user_id=user_id,
+                stream=stream).to_dict()
+            response_content, messages = self._extract_response(result)
 
         except Exception as e:
             logger.error(f"Error processing request: {str(e)}")
             response_content = f"Error processing request: {str(e)}"
-            tool_calls = []
-        finally:
-            # Reset context if needed
-            if hasattr(self, "reset_context"):
-                self.reset_context()
+            messages = []
             
-        return self._create_response(session_id, response_content, tool_calls)
+        return self._create_response(session_id, response_content, messages)
     

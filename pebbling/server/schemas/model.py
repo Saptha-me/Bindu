@@ -246,4 +246,5 @@ class AudioArtifact(Media):
 
 class ListenRequest(AgentRequest):
     """Combined request for listen endpoint containing both action and audio data."""
+    input: str = Field(..., description="Input text for the agent", example="Tell me about the latest news in technology")
     audio: AudioArtifact

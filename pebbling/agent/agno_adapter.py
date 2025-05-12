@@ -1,8 +1,8 @@
 """
 Agno-specific adapter for the pebbling protocol.
 """
+import uuid
 from typing import Any, Dict, Optional, List
-from uuid import UUID, uuid4
 
 from agno.agent import Agent as AgnoAgent
 from loguru import logger
@@ -12,7 +12,7 @@ from rich.text import Text
 
 from pebbling.agent.base_adapter import BaseProtocolHandler
 from pebbling.core.protocol import pebblingProtocol
-from pebbling.server.schemas.model import AudioArtifact, AgentResponse
+from pebbling.server.schemas.model import AudioArtifact, AgentResponse, MessageRole
 
 # Initialize Rich console
 console = Console()
@@ -43,48 +43,27 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         # Store session history for continuity
         self.sessions = {}
 
-    def _initialize_session(self, session_id, stream):
+    def _initialize_session(self, session_id):
         """Helper to initialize session and set agent properties"""
         # Initialize session if it doesn't exist
         if session_id not in self.sessions:
             self.sessions[session_id] = {
                 "history": [],
-                "agent_state": {},
-                "stream": stream
+                "agent_state": {}
             }
-            
-        # Set stream mode if applicable
-        if hasattr(self.agent, 'stream'):
-            self.agent.stream = stream
 
     def _extract_response(self, result):
         """Extract content and tool calls from Agno response"""
-        tool_calls = []
-        # Extract tool calls if they exist and are visible
-        if result and hasattr(self.agent, 'show_tool_calls') and self.agent.show_tool_calls:
-            if hasattr(result, 'tool_calls'):
-                tool_calls = result.tool_calls
-            elif hasattr(result, 'get_tool_calls'):
-                tool_calls = result.get_tool_calls()
-        
         # Extract the response content
-        if result:
-            if hasattr(result, 'response'):
-                response_content = result.response
-            elif hasattr(result, 'content'):
-                response_content = result.content
-            else:
-                response_content = str(result)
-        else:
-            response_content = "No response generated."
-            
-        return response_content, tool_calls
+        response_content = result.get("content", "")
+        messages = result.get("messages", [])
+        return response_content, messages
 
     def _create_response(
         self, 
-        session_id: UUID,
+        session_id: str,
         response_content: str,
-        tool_calls: Optional[List[Dict[str, Any]]] = None
+        messages: List[Dict[str, Any]]
     ) -> AgentResponse:
         """Create response and update session history"""
         # Store the response in session history
@@ -99,8 +78,8 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             session_id=session_id,
             content=response_content,
             role=MessageRole.AGENT,
-            metadata=request.metadata,
-            tool_calls=tool_calls if tool_calls else None
+            metadata={"messages": messages},  
+            status="success"
         )
     
     def apply_user_context(self, user_id: str) -> None:
@@ -333,13 +312,15 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             result={"key": key, "status": "success", "message": message}
         )
 
-    def act(self, message: str, session_id: str = None) -> Dict[str, Any]:
+    def act(self, message: str, session_id: str = None, user_id: str = None, stream: bool = False) -> Dict[str, Any]:
         """
         Process a text request and generate a response
         
         Args:
             message: The text message to process
             session_id: Session identifier for conversation continuity
+            user_id: User identifier for user-specific context
+            stream: Whether to stream the response
             
         Returns:
             AgentResponse with the agent's reply
@@ -352,19 +333,18 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             
         try:
             # Process the request
-            result = self.agent.run(message)
-            response_content, tool_calls = self._extract_response(result)
+            result = self.agent.run(
+                session_id=session_id,
+                user_id=user_id,
+                message=message,
+                stream=stream).to_dict()
+            response_content, messages = self._extract_response(result)
         except Exception as e:
             logger.error(f"Error processing request: {str(e)}")
             response_content = f"Error processing request: {str(e)}"
-            tool_calls = []
-        finally:
-            # Reset context if needed
-            if hasattr(self, "reset_context"):
-                self.reset_context()
         
         # Create and return the response
-        return self._create_response(session_id, response_content, tool_calls)
+        return self._create_response(session_id, response_content, messages)
     
     def listen(self, audio: AudioArtifact, session_id: str = None) -> Dict[str, Any]:
         """

@@ -200,5 +200,55 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 message=f"Agent execution failed: {str(e)}"
             ) 
     
+    @rest_app.post("/listen", response_model=AgentResponse)
+    async def listen_agent(listen_request: ListenRequest):
+        """Run the agent with the provided input"""
+        try:
+            if not listen_request.audio:
+                # Return a JSONResponse directly to bypass response_model validation
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "status_code": 400,
+                        "status": "error",
+                        "message": "Input text is required"
+                    }
+                )
+
+            # Generate session ID if not provided
+            session_id = listen_request.session_id or str(uuid.uuid4())
+            user_id = listen_request.user_id or "user_" + str(uuid.uuid4())
+
+            # Apply user-specific context if user_id is provided
+            if listen_request.user_id and hasattr(protocol_handler, "apply_user_context"):
+                protocol_handler.apply_user_context(user_id)
+
+            protocol_handler._initialize_session(session_id)
+
+            # Execute the agent with all required parameters
+            result = protocol_handler.listen(
+                audio=listen_request.audio,
+                session_id=session_id
+            )
+
+            # Ensure we're returning an AgentResponse
+            if not isinstance(result, AgentResponse):
+                # Convert to AgentResponse if it's not already
+                return AgentResponse(
+                    agent_id=protocol_handler.agent_id,
+                    session_id=session_id,
+                    role=MessageRole.AGENT,
+                    status="success",
+                    content=str(result),
+                    metrics={}
+                )
+            return result
+        except Exception as e:
+            return ErrorResponse(
+                status_code=500,
+                status="error",
+                message=f"Agent execution failed: {str(e)}"
+            ) 
+    
     # Return the FastAPI app
     return rest_app

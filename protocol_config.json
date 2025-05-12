@@ -5,6 +5,14 @@
     "Context": {
       "required_params": ["operation", "key"],
       "optional_params": ["value", "metadata"]
+    },
+    "Listen": {
+      "required_params": ["operation", "key"],
+      "optional_params": ["value", "metadata"]
+    },
+    "View": {
+      "required_params": ["operation", "key"],
+      "optional_params": ["value", "metadata"]
     }
   }
 }

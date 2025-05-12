@@ -7,7 +7,7 @@ import asyncio
 from typing import List, Optional, Literal
 
 import uvicorn
-import subprocess
+import uuid
 from fastapi import FastAPI
 
 from pebbling.core.protocol import pebblingProtocol, ProtocolMethod
@@ -80,21 +80,18 @@ async def start_servers(
 
 def pebblify(
     agent: AgnoAgent,
-    register: bool = False,
     agent_id: Optional[str] = None,
     supported_methods: List[ProtocolMethod] = None,
     pebbling_port: int = 3773,
     user_port: int = 3774,
     host: str = "0.0.0.0",
-    protocol_config_path: Optional[str] = None,
-    hosting_method: Literal["tunnel", "fly", "localhost"] = "localhost"
+    protocol_config_path: Optional[str] = None
 ) -> None:
     """
     Start pebbling protocol servers for an agent.
     
     Args:
         agent: The Agno agent to be served
-        register: Whether to register the agent in the registry
         agent_id: Unique identifier for the agent
         supported_methods: List of supported protocol methods
         pebbling_port: Port for JSON-RPC server
@@ -103,6 +100,9 @@ def pebblify(
         protocol_config_path: Path to protocol config file
         hosting_method: Method to host the servers
     """
+    if agent_id is None:
+        agent_id = str(uuid.uuid4())
+    
     supported_methods = supported_methods or []
         
     protocol = pebblingProtocol(protocol_config_path)
@@ -128,8 +128,7 @@ def pebblify(
             rest_app=rest_app,
             host=host,
             pebbling_port=pebbling_port,
-            user_port=user_port,
-            hosting_method=hosting_method
+            user_port=user_port
         ))
     except KeyboardInterrupt:
         print("Servers stopped.")

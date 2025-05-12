@@ -9,7 +9,8 @@ from pebbling.server.schemas.model import (
     HealthResponse, 
     ErrorResponse, 
     AgentRequest, 
-    AgentResponse
+    AgentResponse,
+    #ListenRequest
 )
 
 
@@ -79,5 +80,39 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 status="error",
                 message=f"Agent execution failed: {str(e)}"
             )
-    
-    return rest_app
+
+    # @rest_app.post("/listen", response_model=AgentResponse)
+    # async def listen_agent(listen_request: ListenRequest):
+    #     """Run the agent with the provided input"""
+    #     try:
+    #         if not request_data.input.strip():
+    #             # Return a JSONResponse directly to bypass response_model validation
+    #             return JSONResponse(
+    #                 status_code=400,
+    #                 content={
+    #                     "status_code": 400,
+    #                     "status": "error",
+    #                     "message": "Input text is required"
+    #                 }
+    #             )
+            
+    #         # Apply user-specific context if user_id is provided
+    #         if request_data.user_id and hasattr(protocol_handler, "apply_user_context"):
+    #             protocol_handler.apply_user_context(request_data.user_id)
+            
+    #         # Execute the agent
+    #         result = protocol_handler.agent.run(request_data.input).to_dict()
+
+    #         return AgentResponse(
+    #             status_code=200,
+    #             status="success",
+    #             content=result["content"],
+    #             messages=result["messages"],
+    #             metrics=result["metrics"]
+    #         )
+    #     except Exception as e:
+    #         return ErrorResponse(
+    #             status_code=500,
+    #             status="error",
+    #             message=f"Agent execution failed: {str(e)}"
+    #         )

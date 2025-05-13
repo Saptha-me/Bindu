@@ -45,6 +45,7 @@ dependencies = [
     "bandit>=1.8.3",
     "detect-secrets>=1.5.0",
     "google-genai>=1.15.0",
+    "types-requests>=2.32.0.20250328",
 ]
 
 [project.optional-dependencies]

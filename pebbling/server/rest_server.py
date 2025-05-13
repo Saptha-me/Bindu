@@ -110,22 +110,21 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         request_data: AgentRequest,
     ) -> Union[AgentResponse, ErrorResponse, JSONResponse]:
         """Process a text request with the agent."""
-
-        # Validate input
-        if not request_data.input.strip():
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "status_code": 400,
-                    "status": "error",
-                    "message": "Input text is required",
-                },
-            )
-
-        # Prepare session and context
-        session_info = _prepare_session(user_id=request_data.user_id, session_id=request_data.session_id)
-
         try:
+            # Validate input
+            if not request_data.input.strip():
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "status_code": 400,
+                        "status": "error",
+                        "message": "Input text is required",
+                    },
+                )
+
+            # Prepare session and context
+            session_info = _prepare_session(user_id=request_data.user_id, session_id=request_data.session_id)
+
             # Execute the agent
             result = (
                 protocol_handler.act(
@@ -152,8 +151,6 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         listen_request: ListenRequest,
     ) -> Union[AgentResponse, ErrorResponse, JSONResponse]:
         """Process an audio request with the agent."""
-
-        # Validate input
         if not listen_request.audio:
             return JSONResponse(
                 status_code=400,
@@ -195,7 +192,6 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         view_request: ViewRequest,
     ) -> Union[AgentResponse, ErrorResponse, JSONResponse]:
         """Process a media request with the agent."""
-
         # Validate input
         if not view_request.media:
             return JSONResponse(

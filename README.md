@@ -7,7 +7,7 @@
 [![Tests](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml/badge.svg)](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml)
 [![Coverage Status](https://coveralls.io/repos/github/Pebbling-ai/pebble/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Pebbling-ai/pebble?branch=v0.1.0.5)
 [![PyPI version](https://badge.fury.io/py/pebbling.svg)](https://badge.fury.io/py/pebbling)
-[![Discord](https://img.shields.io/discord/bgwYGs7t?color=7289DA&label=Discord&logo=discord&logoColor=white)](https://discord.gg/bgwYGs7t)
+[![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/Fr6rcRJa)
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.pebbling.ai)
 
 🪨 pebbling is the easiest way to enable seamless, secure communication between autonomous AI agents.

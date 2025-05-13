@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pebbling"
-version = "0.1.0"
+version = "0.1.0.3"
 description = "A protocol framework for agent-to-agent communication"
 readme = "README.md"
 requires-python = ">=3.12"

@@ -37,6 +37,12 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest --cov=pebbling --cov-report=term-missing --cov-fail-under=80
 
+      - name: Set version
+        run: |
+          VERSION=$(uvx dunamai from any --no-metadata --style pep440)
+          uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version $VERSION
+          echo "Using version: $VERSION"
+
       - name: Build package
         run: uv build
 

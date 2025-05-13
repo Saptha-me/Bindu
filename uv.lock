@@ -1685,7 +1685,7 @@ wheels = [
 
 [[package]]
 name = "pebbling"
-version = "0.1.0"
+version = "0.1.0.3"
 source = { editable = "." }
 dependencies = [
     { name = "agno" },

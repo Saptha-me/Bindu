@@ -213,15 +213,15 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         try:
             # Execute the agent
             result = (
-                    protocol_handler.view(
-                        message=view_request.input,
-                        media=view_request.media,
-                        session_id=session_info["session_id"],
-                        user_id=session_info["user_id"],
-                    )
-                    if protocol_handler is not None
-                    else None
+                protocol_handler.view(
+                    message=view_request.input,
+                    media=view_request.media,
+                    session_id=session_info["session_id"],
+                    user_id=session_info["user_id"],
                 )
+                if protocol_handler is not None
+                else None
+            )
 
             # Ensure correct response type
             return _ensure_agent_response(result, session_info["session_id"])

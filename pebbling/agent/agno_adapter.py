@@ -448,17 +448,14 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             if audio.url:
                 # Agno's Audio class supports direct URL handling
                 audio_data = requests.get(audio.url).content
-                format = audio.url.split('.')[-1]
+                format = audio.url.split(".")[-1]
                 agno_audio = Audio(content=audio_data, format=format)
             elif audio.base64_audio:
                 audio_bytes = self._decode_base64(audio.base64_audio)
                 agno_audio = Audio(content=audio_bytes)
 
             result = self.agent.run(
-                message=message,
-                audio=[agno_audio],
-                session_id=session_id,
-                user_id=user_id
+                message=message, audio=[agno_audio], session_id=session_id, user_id=user_id
             ).to_dict()
             response_content, messages = self._extract_response(result)
 

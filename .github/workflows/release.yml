@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'  # triggers only on tags like v0.1.0, v1.2.3
+  # Also allow manual triggering for testing
+  workflow_dispatch:
 
 jobs:
   build-and-publish:
@@ -22,7 +24,7 @@ jobs:
           python-version: '3.12'
           
       - name: Set up Python cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml', '**/setup.py', '**/requirements.txt') }}
@@ -48,7 +50,7 @@ jobs:
           uv build
           
       - name: Upload package artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pebble-dist
           path: dist/

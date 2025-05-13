@@ -47,4 +47,4 @@ jobs:
           path: dist/
 
       - name: Publish package to PyPI
-        run: uv publish --trusted-publishing always
+        run: uv publish --token ${{ secrets.PYPI_API_TOKEN }} dist/*

@@ -1,0 +1,12 @@
+[run]
+source = pebbling
+omit =
+    tests/*
+    */__init__.py
+
+[report]
+fail_under = 80
+show_missing = true
+
+[html]
+directory = coverage_html_report

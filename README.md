@@ -21,7 +21,6 @@
 - **Protocol Flexibility** - JSON-RPC 2.0 core with extensible transport layers
 - **Fast and Lightweight** - Minimal dependencies and efficient performance
 - **Language Agnostic** - Core protocol works with any language that supports JSON-RPC
-- **Highly Testable** - >80% test coverage with comprehensive integration tests
 
 ## 📦 Installation
 
@@ -30,45 +29,44 @@
 pip install pebbling
 
 # Using uv (recommended)
-uv pip install pebbling
+uv add pebbling
 ```
 
 ## 🚀 Quick Start
 
-### Creating a Server
+### Pebblify an Agent
 
 ```python
-from pebbling.server import pebblify
+from pebbling import pebblify
 
-# Define your agent's API
-@pebblify
-class CalculatorAgent:
-    def add(self, a: int, b: int) -> int:
-        return a + b
+# Define your agent
+class MyAgent:
+    def say_hello(self):
+        return "Hello, Agent!"
 
-    def multiply(self, a: int, b: int) -> int:
-        return a * b
+# Pebblify your agent
+pebblify(MyAgent())
 
-# Start the server
-if __name__ == "__main__":
-    calculator = CalculatorAgent()
-    calculator.serve(host="0.0.0.0", port=8000)
+# You're now ready to communicate securely between agents!
 ```
 
-### Connecting to a Server
+### Pebblify a [Agno](https://github.com/agno-ai/agno) Agent
 
 ```python
-from pebbling.client import PebblingClient
+from pebbling import pebblify
+from agno.agent import Agent
+from agno.models.openai import OpenAIChat
 
-# Connect to the calculator agent
-client = PebblingClient("localhost", 8000)
+# Define your agent
+agent = Agent(
+    model=OpenAIChat(id="gpt-4o"),
+    instructions="You are a helpful assistant.",
+)
 
-# Call methods
-result1 = client.call("add", {"a": 5, "b": 3})
-print(f"5 + 3 = {result1}")  # Output: 5 + 3 = 8
+# Pebblify your agent
+pebblify(agent)
 
-result2 = client.call("multiply", {"a": 5, "b": 3})
-print(f"5 * 3 = {result2}")  # Output: 5 * 3 = 15
+# You're now ready to communicate securely between agents!
 ```
 
 ## 📖 Documentation
@@ -81,7 +79,8 @@ Pebbling is thoroughly tested with a test coverage of over 83%:
 
 ```bash
 # Run tests with coverage
-pytest --cov=pebbling --cov-report=term-missing
+make test
+make coverage
 ```
 
 ## 🤝 Contributing
@@ -100,28 +99,31 @@ uv sync --dev
 pre-commit install
 
 # Run tests
-pytest
+make test
 ```
 
 Please see our [Contributing Guidelines](.github/CONTRIBUTING.md) for more details.
 
-## 📄 License
+## 📜 License
 
-Pebbling is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+Pebbling is proudly open-source and licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
 
-## 📢 Community
+## 🎉 Community
 
-- Join our [Discord](https://discord.gg/bgwYGs7t) for discussions and support
-- Follow us on [Twitter](https://twitter.com/pebblingai) for updates
+We 💛 contributions! Whether you're fixing bugs, improving documentation, or building demos — your contributions make Pebbling better.
+
+- Join our [Discord](https://discord.gg/Fr6rcRJa) for discussions and support
 - Star the repository if you find it useful!
 
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Pebbling-ai/pebble&type=Date)](https://star-history.com/#Pebbling-ai/pebble&Date)
 
----
 
-Built with ❤️ by the Pebbling team from Amsterdam🌷.
-We're excited to see what you'll build with Pebble!
+Built with ❤️ by the Pebbling team from Amsterdam 🌷.
 
-Have questions or ideas? We'd love to hear from you in our Discord community. Together, we're creating the foundation for the next generation of AI agent communication.
+We’re excited to see what you’ll build with Pebble! Our dream is a world where agents across the internet communicate securely, openly, and effortlessly.
+
+Have questions, ideas, or just want to chat? Join our Discord community— we’d love to hear from you! Together, let’s lay the foundation for the next generation of AI agent collaboration.
+
+Happy Pebbling! 🐧🚀✨

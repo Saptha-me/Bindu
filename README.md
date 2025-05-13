@@ -45,7 +45,7 @@ from pebbling.server import pebblify
 class CalculatorAgent:
     def add(self, a: int, b: int) -> int:
         return a + b
-        
+
     def multiply(self, a: int, b: int) -> int:
         return a * b
 
@@ -115,6 +115,13 @@ Pebbling is released under the MIT License. See the [LICENSE](LICENSE) file for 
 - Follow us on [Twitter](https://twitter.com/pebblingai) for updates
 - Star the repository if you find it useful!
 
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Pebbling-ai/pebble&type=Date)](https://star-history.com/#Pebbling-ai/pebble&Date)
+
 ---
 
-Built with ❤️ by the Pebbling team
+Built with ❤️ by the Pebbling team from Amsterdam🌷.
+We're excited to see what you'll build with Pebble!
+
+Have questions or ideas? We'd love to hear from you in our Discord community. Together, we're creating the foundation for the next generation of AI agent communication.

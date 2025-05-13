@@ -34,6 +34,17 @@ dependencies = [
     "twine>=6.1.0",
     "rich>=13.0.0",
     # Removed pebbling dependency as this package is now pebbling
+    "pytest-xdist>=3.6.1",
+    "pytest-cov>=6.1.1",
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+    "ruff>=0.11.9",
+    "mypy>=1.15.0",
+    "isort>=6.0.1",
+    "pre-commit>=4.2.0",
+    "bandit>=1.8.3",
+    "detect-secrets>=1.5.0",
+    "google-genai>=1.15.0",
 ]
 
 [project.optional-dependencies]

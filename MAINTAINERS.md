@@ -9,4 +9,3 @@ Maintainers are listed in alphabetical order by last name.
 | Name | GitHub Username |
 | ---- | ---- |
 | Raahul Dutta | [rahul](https://github.com/raahulrahl) |
-

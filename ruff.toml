@@ -1,0 +1,19 @@
+# ruff.toml
+# Line length configuration (matching your previous flake8 setting)
+line-length = 120
+
+# Select rules to enforce
+[lint]
+select = ["E", "F", "B", "I"]
+ignore = ["E203"]  # Same as Black recommends
+
+# Configure isort rules within Ruff
+[lint.isort]
+known-first-party = ["pebbling"]
+
+# Format configuration (to make formatting compatible with Black)
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

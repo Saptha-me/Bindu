@@ -1713,6 +1713,7 @@ dependencies = [
     { name = "sphinx-rtd-theme" },
     { name = "supabase" },
     { name = "twine" },
+    { name = "types-requests" },
     { name = "uvicorn" },
     { name = "uvx" },
     { name = "yfinance" },
@@ -1751,6 +1752,7 @@ requires-dist = [
     { name = "sphinx-rtd-theme", specifier = ">=3.0.2" },
     { name = "supabase", specifier = ">=2.15.1" },
     { name = "twine", specifier = ">=6.1.0" },
+    { name = "types-requests", specifier = ">=2.32.0.20250328" },
     { name = "uvicorn", specifier = ">=0.15.0" },
     { name = "uvx", specifier = "<2.0" },
     { name = "yfinance", specifier = ">=0.2.55" },
@@ -2974,6 +2976,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/8b/6f/3991f0f1c7fcb2df31aef28e0594d8d54b05393a0e4e34c65e475c2a5d41/typer-0.15.2.tar.gz", hash = "sha256:ab2fab47533a813c49fe1f16b1a370fd5819099c00b119e0633df65f22144ba5", size = 100711, upload-time = "2025-02-27T19:17:34.807Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/fc/5b29fea8cee020515ca82cc68e3b8e1e34bb19a3535ad854cac9257b414c/typer-0.15.2-py3-none-any.whl", hash = "sha256:46a499c6107d645a9c13f7ee46c5d5096cae6f5fc57dd11eccbbb9ae3e44ddfc", size = 45061, upload-time = "2025-02-27T19:17:32.111Z" },
+]
+
+[[package]]
+name = "types-requests"
+version = "2.32.0.20250328"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/7d/eb174f74e3f5634eaacb38031bbe467dfe2e545bc255e5c90096ec46bc46/types_requests-2.32.0.20250328.tar.gz", hash = "sha256:c9e67228ea103bd811c96984fac36ed2ae8da87a36a633964a21f199d60baf32", size = 22995, upload-time = "2025-03-28T02:55:13.271Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/15/3700282a9d4ea3b37044264d3e4d1b1f0095a4ebf860a99914fd544e3be3/types_requests-2.32.0.20250328-py3-none-any.whl", hash = "sha256:72ff80f84b15eb3aa7a8e2625fffb6a93f2ad5a0c20215fc1dcfa61117bcb2a2", size = 20663, upload-time = "2025-03-28T02:55:11.946Z" },
 ]
 
 [[package]]

@@ -447,7 +447,8 @@ class AgnoProtocolHandler(BaseProtocolHandler):
 
             if audio.url:
                 # Agno's Audio class supports direct URL handling
-                audio_data = requests.get(audio.url).content
+                # Add timeout to prevent potential DoS vulnerabilities
+                audio_data = requests.get(audio.url, timeout=10).content
                 format = audio.url.split(".")[-1]
                 agno_audio = Audio(content=audio_data, format=format)
             elif audio.base64_audio:

@@ -1,0 +1,7 @@
+skips:
+  - B101  # Allow use of asserts (common in tests)
+
+exclude_dirs:
+  - tests  # completely exclude test directories from bandit scanning
+
+tests: []  # Include all other tests

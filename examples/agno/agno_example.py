@@ -60,7 +60,8 @@ video_agent = Agent(
         """\
         - Analyze the provided video directly—do NOT reference or analyze any external sources or YouTube videos.
         - Identify engaging moments that meet the specified criteria for short-form content.
-        - Provide your analysis in a **table format** with these columns: Start Time | End Time | Description | Importance Score
+        - Provide your analysis in a **table format** with these columns:
+          Start Time | End Time | Description | Importance Score
         - Ensure all timestamps use MM:SS format and importance scores range from 1-10.
         - Focus only on segments between 15 and 60 seconds long.
         - Base your analysis solely on the provided video content.

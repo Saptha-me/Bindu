@@ -10,7 +10,11 @@ jobs:
   build-and-publish:
     name: Build, test, and publish
     runs-on: ubuntu-latest
+    # Environment and permissions for trusted publishing
+    environment:
+      name: release
     permissions:
+      id-token: write
       contents: read
 
     steps:
@@ -40,7 +44,7 @@ jobs:
 
       - name: Build package
         run: |
-          uv build
+          uv run python -m build
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
@@ -49,8 +53,5 @@ jobs:
           path: dist/
 
       - name: Publish package to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          uv publish
+          uv publish --trusted-publishing always

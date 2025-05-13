@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          
+
       - name: Set up Python cache
         uses: actions/cache@v4
         with:
@@ -48,7 +48,7 @@ jobs:
       - name: Build package
         run: |
           uv build
-          
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:

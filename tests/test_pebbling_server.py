@@ -7,8 +7,6 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from pebbling.core.protocol import ProtocolMethod, pebblingProtocol
 from pebbling.server.jsonrpc_server import create_jsonrpc_server
@@ -43,36 +41,37 @@ class TestPebblingServer:
 
     def test_pebblify_initialization(self, mock_agno_agent):
         """Test the initialization parameters for pebblify."""
-        with patch("pebbling.server.pebbling_server.create_jsonrpc_server") as mock_jsonrpc, \
-             patch("pebbling.server.pebbling_server.create_rest_server") as mock_rest, \
-             patch("pebbling.server.pebbling_server.asyncio.run") as mock_run:
-            
+        with (
+            patch("pebbling.server.pebbling_server.create_jsonrpc_server") as mock_jsonrpc,
+            patch("pebbling.server.pebbling_server.create_rest_server") as mock_rest,
+            patch("pebbling.server.pebbling_server.asyncio.run") as mock_run,
+        ):
             # Setup mocks
             mock_jsonrpc.return_value = "jsonrpc_app"
             mock_rest.return_value = "rest_app"
-            
+
             # Call pebblify
             agent_id = str(uuid.uuid4())
             supported_methods = [ProtocolMethod.ACT, ProtocolMethod.CONTEXT]
-            
+
             pebblify(
                 agent=mock_agno_agent,
                 agent_id=agent_id,
                 supported_methods=supported_methods,
                 pebbling_port=8001,
                 user_port=8002,
-                host="127.0.0.1"
+                host="127.0.0.1",
             )
-            
+
             # Verify calls
             mock_jsonrpc.assert_called_once()
             mock_rest.assert_called_once()
             mock_run.assert_called_once()
-            
+
             # Verify agent_id parameter
             args, kwargs = mock_jsonrpc.call_args
             assert kwargs["protocol_handler"].agent_id == agent_id
-            
+
             # Verify start_servers was called
             # The first arg is the coroutine object from start_servers
             assert mock_run.called
@@ -80,20 +79,18 @@ class TestPebblingServer:
 
     def test_pebblify_default_agent_id(self, mock_agno_agent):
         """Test that pebblify generates a default agent ID if none is provided."""
-        with patch("pebbling.server.pebbling_server.create_jsonrpc_server") as mock_jsonrpc, \
-             patch("pebbling.server.pebbling_server.create_rest_server") as mock_rest, \
-             patch("pebbling.server.pebbling_server.asyncio.run"):
-            
+        with (
+            patch("pebbling.server.pebbling_server.create_jsonrpc_server") as mock_jsonrpc,
+            patch("pebbling.server.pebbling_server.create_rest_server") as mock_rest,
+            patch("pebbling.server.pebbling_server.asyncio.run"),
+        ):
             # Setup mocks
             mock_jsonrpc.return_value = "jsonrpc_app"
             mock_rest.return_value = "rest_app"
-            
+
             # Call pebblify without agent_id
-            pebblify(
-                agent=mock_agno_agent,
-                supported_methods=[ProtocolMethod.ACT]
-            )
-            
+            pebblify(agent=mock_agno_agent, supported_methods=[ProtocolMethod.ACT])
+
             # Verify agent_id was automatically generated
             args, kwargs = mock_jsonrpc.call_args
             assert kwargs["protocol_handler"].agent_id is not None
@@ -101,19 +98,18 @@ class TestPebblingServer:
 
     def test_pebblify_default_methods(self, mock_agno_agent):
         """Test that pebblify uses default methods if none are provided."""
-        with patch("pebbling.server.pebbling_server.create_jsonrpc_server") as mock_jsonrpc, \
-             patch("pebbling.server.pebbling_server.create_rest_server") as mock_rest, \
-             patch("pebbling.server.pebbling_server.asyncio.run"):
-            
+        with (
+            patch("pebbling.server.pebbling_server.create_jsonrpc_server") as mock_jsonrpc,
+            patch("pebbling.server.pebbling_server.create_rest_server") as mock_rest,
+            patch("pebbling.server.pebbling_server.asyncio.run"),
+        ):
             # Setup mocks
             mock_jsonrpc.return_value = "jsonrpc_app"
             mock_rest.return_value = "rest_app"
-            
+
             # Call pebblify without supported_methods
-            pebblify(
-                agent=mock_agno_agent
-            )
-            
+            pebblify(agent=mock_agno_agent)
+
             # Verify jsonrpc server was created
             mock_jsonrpc.assert_called_once()
             # Supported methods might be empty since it depends on implementation
@@ -124,26 +120,22 @@ class TestPebblingServer:
         with patch("uvicorn.Server.serve") as mock_serve:
             # Make serve return an awaitable that completes immediately
             mock_serve.return_value = asyncio.sleep(0)
-            
+
             # Run start_servers for a short time then cancel
             task = asyncio.create_task(
                 start_servers(
-                    jsonrpc_app=jsonrpc_app,
-                    rest_app=rest_app,
-                    host="localhost",
-                    pebbling_port=8001,
-                    user_port=8002
+                    jsonrpc_app=jsonrpc_app, rest_app=rest_app, host="localhost", pebbling_port=8001, user_port=8002
                 )
             )
-            
+
             # Give it a moment to reach the gather
             await asyncio.sleep(0.1)
             task.cancel()
-            
+
             try:
                 await task
             except asyncio.CancelledError:
                 pass
-            
+
             # Verify that serve was called twice (once for each server)
             assert mock_serve.call_count == 2

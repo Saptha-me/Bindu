@@ -1,0 +1,61 @@
+name: Release to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # triggers only on tags like v0.1.0, v1.2.3
+
+jobs:
+  build-and-publish:
+    name: Build, test, and publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Set up Python cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml', '**/setup.py', '**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip install --system build twine pre-commit pytest pytest-cov
+          uv sync --dev
+
+      - name: Run pre-commit checks
+        run: |
+          pre-commit run --all-files
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest --cov=pebbling --cov-report=term-missing --cov-fail-under=80
+
+      - name: Build package
+        run: |
+          uv build
+          
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pebble-dist
+          path: dist/
+
+      - name: Publish package to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          uv publish

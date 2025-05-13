@@ -5,7 +5,7 @@
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml/badge.svg)](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml)
-[![Coverage Status](https://coveralls.io/repos/github/Pebbling-ai/pebble/badge.svg?branch=main)](https://coveralls.io/github/Pebbling-ai/pebble?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/Pebbling-ai/pebble/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Pebbling-ai/pebble?branch=v0.1.0.5)
 [![PyPI version](https://badge.fury.io/py/pebbling.svg)](https://badge.fury.io/py/pebbling)
 [![Discord](https://img.shields.io/discord/bgwYGs7t?color=7289DA&label=Discord&logo=discord&logoColor=white)](https://discord.gg/bgwYGs7t)
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.pebbling.ai)

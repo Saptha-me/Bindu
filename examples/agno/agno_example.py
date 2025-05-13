@@ -9,8 +9,8 @@ from textwrap import dedent
 
 # Agno imports
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
 from agno.models.google import Gemini
+from agno.models.openai import OpenAIChat
 
 # pebbling imports
 from pebbling.core.protocol import ProtocolMethod
@@ -40,17 +40,14 @@ news_reporter_agent = Agent(
 
 audio_agent = Agent(
     name="Audio Assistant",
-    model=OpenAIChat(id="gpt-4o-audio-preview",
+    model=OpenAIChat(
+        id="gpt-4o-audio-preview",
         modalities=["text", "audio"],
         audio={"voice": "sage", "format": "wav"},
     ),
     description="Processes audio and generates intelligent responses.",
-    instructions=[
-        "Be concise and professional.",
-        "Use tools when relevant.",
-        "Don’t fake answers."
-    ],
-    markdown=True
+    instructions=["Be concise and professional.", "Use tools when relevant.", "Don’t fake answers."],
+    markdown=True,
 )
 
 video_agent = Agent(
@@ -64,12 +61,12 @@ video_agent = Agent(
         - Analyze the provided video directly—do NOT reference or analyze any external sources or YouTube videos.
         - Identify engaging moments that meet the specified criteria for short-form content.
         - Provide your analysis in a **table format** with these columns: Start Time | End Time | Description | Importance Score
-        - Ensure all timestamps use MM:SS format and importance scores range from 1-10. 
+        - Ensure all timestamps use MM:SS format and importance scores range from 1-10.
         - Focus only on segments between 15 and 60 seconds long.
         - Base your analysis solely on the provided video content.
         - Deliver actionable insights to improve the identified segments for short-form optimization.
         """
-    )
+    ),
 )
 
 supported_methods = [

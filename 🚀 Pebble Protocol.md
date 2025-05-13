@@ -16,7 +16,7 @@ The agent-to-agent communication protocol provides a **secure**, **lightweight**
 }
 ```
 
-## ** Context Management (1 Protocol) 
+## ** Context Management (1 Protocol)
 
 Enable agents to share and manage context, ensuring clear and context-aware interactions:
 
@@ -82,6 +82,3 @@ Enable agents to share and manage context, ensuring clear and context-aware inte
 ```
 
 ### TaskAdd Operation
-
-
-

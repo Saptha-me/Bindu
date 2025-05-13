@@ -3,8 +3,7 @@ name: Release to PyPI
 on:
   push:
     tags:
-      - 'v*.*.*'  # triggers only on tags like v0.1.0, v1.2.3
-  # Also allow manual triggering for testing
+      - 'v*.*.*'
   workflow_dispatch:
 
 jobs:
@@ -23,23 +22,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Set up Python cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml', '**/setup.py', '**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - name: Install uv
+        uses: astral-sh/uv/actions/setup@v1
 
       - name: Install dependencies
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip install --system build twine pre-commit pytest pytest-cov
+          uv pip install --system build twine pre-commit pytest pytest-cov uvicorn
           uv sync --dev
 
       - name: Run pre-commit checks
         run: |
-          pre-commit run --all-files
+          uv run pre-commit run --all-files
 
       - name: Run tests with coverage
         run: |

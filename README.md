@@ -10,17 +10,27 @@
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/Fr6rcRJa)
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.pebbling.ai)
 
-🪨 pebbling is the easiest way to enable seamless, secure communication between autonomous AI agents.
+🌍✨ Imagine a world where AI agents collaborate effortlessly and securely—no friction 🚫⚙️, no boundaries 🌐.
 
-💡 Built on **JSON-RPC 2.0** over **mutual TLS (mTLS)**, pebbling provides a lightweight yet powerful protocol framework for the next generation of collaborative AI systems.
+That’s Pebbling 🐧.
+
+🚀 Powered by Decentralised Identifiers (DIDs) 🔑, secured conversations with mutual TLS (mTLS) 🔒, and a lightweight yet powerful communication protocol built on JSON-RPC 2.0 ⚡️—Pebbling is paving the way for the next generation of collaborative AI systems. 🌟🤖
+
 
 ## 🌟 Features
 
-- **Secure by Default** - Built-in mutual TLS authentication and encryption
-- **Simple API** - Easy-to-use decorators for defining and invoking agent methods
-- **Protocol Flexibility** - JSON-RPC 2.0 core with extensible transport layers
-- **Fast and Lightweight** - Minimal dependencies and efficient performance
-- **Language Agnostic** - Core protocol works with any language that supports JSON-RPC
+Pebbling helps your AI agents talk to each other seamlessly:
+
+🔒 **Super Secure** - Your agents exchange secrets safely (with built-in mTLS)
+
+🧩 **Plug-and-Play** - Just decorate your agent and it's ready to communicate
+
+⚡ **Lightning Fast** - Quick connections without the weight
+
+🌐 **Works Everywhere** - Connect any agents, regardless of their programming language
+
+🔄 **Reliable Communication** - Messages always arrive correctly and in order
+
 
 ## 📦 Installation
 
@@ -69,6 +79,18 @@ pebblify(agent)
 # You're now ready to communicate securely between agents!
 ```
 
+## 🛠️ Supported Agent Frameworks
+
+Pebbling is tested and integrated with popular agent frameworks:
+
+- ✅ [Agno](https://github.com/agno-ai/agno)
+- 🔜 CrewAI (Coming soon)
+- 🔜 AutoGen (Coming soon)
+- 🔜 LangChain (Coming soon)
+- 🔜 LlamaIndex (Coming soon)
+
+Want integration with your favorite framework? Let us know on [Discord](https://discord.gg/Fr6rcRJa)!
+
 ## 📖 Documentation
 
 For comprehensive documentation, visit [docs.pebbling.ai](https://docs.pebbling.ai)
@@ -108,12 +130,43 @@ Please see our [Contributing Guidelines](.github/CONTRIBUTING.md) for more detai
 
 Pebbling is proudly open-source and licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
 
+## 💻 Example Use Cases
+
+Pebbling is ideal for:
+
+- **Multi-Agent Collaboration**: Enable efficient, secure teamwork between LLM-driven agents.
+- **Decentralized Autonomous Systems**: Build reliable decentralized AI networks.
+- **Secure Agent Ecosystems**: Create ecosystems where agents from different providers interact seamlessly.
+- **Distributed AI Workflows**: Coordinate agents across distributed computing environments.
+
 ## 🎉 Community
 
 We 💛 contributions! Whether you're fixing bugs, improving documentation, or building demos — your contributions make Pebbling better.
 
 - Join our [Discord](https://discord.gg/Fr6rcRJa) for discussions and support
 - Star the repository if you find it useful!
+
+## 🚧 Roadmap
+
+Here's what's next for pebbling:
+
+- [ ] GRPC transport support
+- [ ] Integration with [Hibiscus](https://github.com/Pebbling-ai/hibiscus) (DiD - Decentralized Identifiers, mTLS)
+- [ ] Detailed tutorials and guides
+- [ ] Expanded multi-framework support
+
+Suggest features or contribute by joining our [Discord](https://discord.gg/Fr6rcRJa)!
+
+## 📋 FAQ
+
+**Can Pebble be deployed locally?**  
+Yes! Pebble supports local development as well as cloud-based deployments.
+
+**Does Pebble support other languages besides Python?**  
+Absolutely! Any language that can implement JSON-RPC and mTLS is compatible.
+
+**How scalable is Pebble?**  
+Pebble's minimal dependencies and protocol simplicity ensure scalability across complex agent ecosystems.
 
 ## ⭐ Star History
 

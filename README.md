@@ -129,6 +129,22 @@ make test
 
 Please see our [Contributing Guidelines](.github/CONTRIBUTING.md) for more details.
 
+## 👥 Maintainers
+
+Pebbling is maintained by a dedicated team led by Raahul Dutta.
+
+| Name | GitHub | Role |
+| ---- | ------ | ---- |
+| Raahul Dutta | [raahulrahl](https://github.com/raahulrahl) | Project Lead |
+
+Maintainers are responsible for:
+- Reviewing and merging pull requests
+- Ensuring test coverage remains above 80%
+- Managing releases and deployment pipelines
+- Guiding the technical direction of the project
+
+For more details about maintainership, including how to become a maintainer, see our [MAINTAINERS.md](MAINTAINERS.md) file.
+
 ## 📜 License
 
 Pebbling is proudly open-source and licensed under the [MIT License](https://choosealicense.com/licenses/mit/).

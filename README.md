@@ -10,7 +10,7 @@
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/Fr6rcRJa)
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.pebbling.ai)
 
-🌍✨ Imagine a world where AI agents collaborate effortlessly and securely—no friction 🚫⚙️, no boundaries 🌐.
+✨ Imagine a world where AI agents collaborate effortlessly and securely—no friction 🚫⚙️, no boundaries 🌐.
 
 That’s Pebbling 🐧.
 

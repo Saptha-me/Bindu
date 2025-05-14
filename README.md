@@ -166,13 +166,13 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/Fr6rc
 
 ## 📋 FAQ
 
-**Can Pebble be deployed locally?**  
+**Can Pebble be deployed locally?**
 Yes! Pebble supports local development as well as cloud-based deployments.
 
-**Does Pebble support other languages besides Python?**  
+**Does Pebble support other languages besides Python?**
 Absolutely! Any language that can implement JSON-RPC and mTLS is compatible.
 
-**How scalable is Pebble?**  
+**How scalable is Pebble?**
 Pebble's minimal dependencies and protocol simplicity ensure scalability across complex agent ecosystems.
 
 ## ⭐ Star History

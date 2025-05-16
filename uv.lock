@@ -501,6 +501,20 @@ wheels = [
 ]
 
 [[package]]
+name = "didkit"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/90/cb/26a2df538b1a3a0ecd35733658ac9e4efb5124b028826386087ccbf0ebf2/didkit-0.3.3-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:a46112dae41a71967fdb735d239be0ec83206018123fb8abb2ed6251a5386307", size = 6828132, upload-time = "2024-08-15T09:43:53.766Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/80/fc5b6ed231b32e3fc252d69ccd9abfb1b4ead19bcc5ef17f044b93cadf9a/didkit-0.3.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:fe73e7de8e9d673b79ab95f0a1b01a33cca42eea9fd76009349d2eb080925391", size = 6637832, upload-time = "2024-08-15T09:43:55.418Z" },
+    { url = "https://files.pythonhosted.org/packages/77/22/22c4e5a382fc90b5da6ff40103190f10907b802bf1e3c7678984fcdf1d9b/didkit-0.3.3-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d2abf625d10645ccb9f170301677de75abbafbad693211ab0064939367e62870", size = 8492427, upload-time = "2024-08-15T09:43:57.454Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/7c/5edb6411a205c5d69d9d5eced36af14bdd6290c304786e5189e0db6b8b5b/didkit-0.3.3-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9edb85b27b727ffba7accf42f21729a2ca59cf786b1bb38969d2f8dd9f84ef4e", size = 9327950, upload-time = "2024-08-15T09:43:59.932Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/a2/8e2a100614629ce300c920aef44a1f71b244739ea45a305d46c5147d4362/didkit-0.3.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d567bf0f7e328287a2037d09b5441b60a330f5490235598c44a67f1c03fbd241", size = 8697944, upload-time = "2024-08-15T09:44:02.542Z" },
+    { url = "https://files.pythonhosted.org/packages/23/bd/49f3eb360409f8c19534dde8591380ab5faef1e3f62047aa7076bffb4df3/didkit-0.3.3-cp312-none-win32.whl", hash = "sha256:be18fae3d63b02f81f60f7ed27f87f005a4670ab12a92c42ecfaf02d954abe67", size = 5776009, upload-time = "2024-08-15T09:44:04.705Z" },
+    { url = "https://files.pythonhosted.org/packages/4b/5d/e585973a62115c303d115c8c3d4d991bbdc39353eeb93d7b7d7b8b8ba466/didkit-0.3.3-cp312-none-win_amd64.whl", hash = "sha256:04fd3db72e8d8beace3de76d2a9995977dc6c4fcdb2a4309d51bc74aae87246f", size = 6181567, upload-time = "2024-08-15T09:44:06.403Z" },
+]
+
+[[package]]
 name = "distlib"
 version = "0.3.9"
 source = { registry = "https://pypi.org/simple" }
@@ -1692,7 +1706,9 @@ dependencies = [
     { name = "atproto" },
     { name = "bandit" },
     { name = "base58" },
+    { name = "cryptography" },
     { name = "detect-secrets" },
+    { name = "didkit" },
     { name = "duckduckgo-search" },
     { name = "fastapi" },
     { name = "google-genai" },
@@ -1730,7 +1746,9 @@ requires-dist = [
     { name = "atproto", specifier = ">=0.0.61" },
     { name = "bandit", specifier = ">=1.8.3" },
     { name = "base58", specifier = ">=2.1.1" },
+    { name = "cryptography", specifier = ">=44.0.2" },
     { name = "detect-secrets", specifier = ">=1.5.0" },
+    { name = "didkit", specifier = ">=0.3.3" },
     { name = "duckduckgo-search", specifier = ">=8.0.1" },
     { name = "fastapi", specifier = ">=0.68.0" },
     { name = "google-genai", specifier = ">=1.15.0" },

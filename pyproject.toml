@@ -46,6 +46,8 @@ dependencies = [
     "detect-secrets>=1.5.0",
     "google-genai>=1.15.0",
     "types-requests>=2.32.0.20250328",
+    "didkit>=0.3.3",
+    "cryptography>=44.0.2",
 ]
 
 [project.optional-dependencies]

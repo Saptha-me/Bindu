@@ -1,5 +1,5 @@
 <h1 align="center">pebbling 🐧</h1>
-
+<img src="./banner.jpg" alt="Pebbling Banner" width="800">
 <h1 align="center">Agent-to-Agent Communication </h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)

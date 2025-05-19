@@ -62,3 +62,6 @@ include = [
     "protocol_config.json",
     "README.md"
 ]
+
+[tool.uv.workspace]
+members = ["pebbling-template/my_project", "pebbling-template/project1"]

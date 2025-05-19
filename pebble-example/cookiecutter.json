@@ -1,0 +1,15 @@
+{
+  "author": "Penguin Pebble",
+  "email": "dev@pebbling.ai",
+  "author_github_handle": "raahulmona",
+  "project_name": "pebble-project",
+  "project_slug": "{{cookiecutter.project_name|lower|replace('-', '_')}}",
+  "project_description": "This is a template repository for Pebble projects that use uv for their dependency management with pebbling pre-installed.",
+  "pebbling_version": "0.1.0",
+  "deployment_platform": [
+    "fly.io",
+    "render",
+    "kubernetes",
+    "none"
+  ]
+}

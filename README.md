@@ -3,6 +3,7 @@
 <h1 align="center">Agent-to-Agent Communication </h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Hits](https://hits.sh/github.com/Pebbling-ai/pebble.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/Pebbling-ai/pebble/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml/badge.svg)](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml)
 [![Coverage Status](https://coveralls.io/repos/github/Pebbling-ai/pebble/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Pebbling-ai/pebble?branch=v0.1.0.5)

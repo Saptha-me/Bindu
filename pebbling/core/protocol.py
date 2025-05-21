@@ -58,14 +58,19 @@ class pebblingProtocol:
         source_agent_id: str,
         destination_agent_id: str,
         params: Dict[str, Any],
+        request_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create a protocol message."""
+        """Create a protocol message.
+
+        If ``request_id`` is provided it will be used in the returned message.
+        Otherwise a new UUID4 string is generated.
+        """
         if isinstance(method, ProtocolMethod):
             method = method.value
 
         return {
             "jsonrpc": self.JSONRPC_VERSION,
-            "id": str(uuid.uuid4()),
+            "id": request_id or str(uuid.uuid4()),
             "method": method,
             "source_agent_id": source_agent_id,
             "destination_agent_id": destination_agent_id,
@@ -129,4 +134,5 @@ class pebblingProtocol:
             source_agent_id=source_agent_id,
             destination_agent_id=destination_agent_id,
             params=params,
+            request_id=request_id,
         )

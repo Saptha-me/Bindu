@@ -16,6 +16,7 @@ sys.path.append(current_dir)
 from deployment.flyio import setup_flyio_deployment
 from deployment.render import setup_render_deployment
 from deployment.kubernetes import setup_kubernetes_deployment
+from deployment.docker import setup_docker_deployment
 
 
 def setup_deployment_files():
@@ -30,6 +31,8 @@ def setup_deployment_files():
         setup_render_deployment(project_slug)
     elif deployment_platform == "kubernetes":
         setup_kubernetes_deployment(project_slug)
+    elif deployment_platform == "docker":
+        setup_docker_deployment(project_slug)
 
 
 if __name__ == "__main__":

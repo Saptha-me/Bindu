@@ -38,7 +38,7 @@ supported_methods = [
     ProtocolMethod.ACT,
 ]
 
-did_manager = DIDManager(key_path="./{{cookiecutter.project_slug}}_private_key.json")
+did_manager = DIDManager(key_path="./pebble_project_private_key.json")
 
 # Wrap the agent with pebbling protocol capabilities
 pebblify(

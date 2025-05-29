@@ -6,7 +6,7 @@ from agno.models.google import Gemini
 from agno.models.openai import OpenAIChat
 
 # pebbling imports
-from pebbling.core.protocol import ProtocolMethod
+from pebbling.core.protocol import CoreProtocolMethod, SecurityProtocolMethod, DiscoveryProtocolMethod
 from pebbling.security.did_manager import DIDManager
 from pebbling.server.pebbling_server import pebblify
 
@@ -34,10 +34,15 @@ news_reporter_agent = Agent(
 )
 
 supported_methods = [
-    ProtocolMethod.CONTEXT,
-    ProtocolMethod.ACT,
+    CoreProtocolMethod.CONTEXT,
+    CoreProtocolMethod.ACT,
+    SecurityProtocolMethod.EXCHANGE_DID,
+    SecurityProtocolMethod.VERIFY_IDENTITY,
+    DiscoveryProtocolMethod.DISCOVER_AGENTS,
 ]
 
+# Create a DID manager for secure agent communication
+# This generates/loads private keys and creates DID documents
 did_manager = DIDManager(key_path="./pebble_project_private_key.json")
 
 # Wrap the agent with pebbling protocol capabilities
@@ -48,4 +53,10 @@ pebblify(
     user_port=port + 1,
     host=localhost,
     protocol_config_path="./protocol_config.json",
+    # Enable DID-based security for secure agent-to-agent communication
+    did_manager=did_manager,
+    enable_security=True,
+    # Uncomment to register with a Hibiscus registry when available
+    # register_with_hibiscus=True,
+    # hibiscus_url="https://hibiscus.example.com",
 )

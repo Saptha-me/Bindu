@@ -48,6 +48,8 @@ dependencies = [
     "types-requests>=2.32.0.20250328",
     "didkit>=0.3.3",
     "cryptography>=44.0.2",
+    "pydocstyle>=6.3.0",
+    "orjson>=3.10.18",
 ]
 
 [project.optional-dependencies]

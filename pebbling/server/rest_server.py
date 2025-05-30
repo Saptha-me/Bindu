@@ -149,7 +149,7 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
 
             # Execute the agent
             result = (
-                protocol_handler.act(
+                protocol_handler.handle_act(
                     message=request_data.input,
                     session_id=session_info["session_id"],
                     user_id=session_info["user_id"],
@@ -189,7 +189,7 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         try:
             # Execute the agent
             result = (
-                protocol_handler.listen(
+                protocol_handler.handle_listen(
                     message=listen_request.input,
                     audio=listen_request.audio,
                     session_id=session_info["session_id"],
@@ -231,7 +231,7 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         try:
             # Execute the agent
             result = (
-                protocol_handler.view(
+                protocol_handler.handle_view(
                     message=view_request.input,
                     media=view_request.media,
                     session_id=session_info["session_id"],

@@ -114,8 +114,14 @@ def create_jsonrpc_server(
                     )
                     
                 try:
-                    result = await handler_method(params)
-                    return create_success_response(result, request_id)
+                    handler_result = await handler_method(**params)
+                    return create_success_response(
+                        result={
+                            "content": handler_result.content,
+                            "metadata": handler_result.metadata
+                        },
+                        request_id=request_id
+                    )
                 except Exception as e:
                     import traceback
                     print(f"Error in handler method {handler_method_name}: {e}")

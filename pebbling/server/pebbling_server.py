@@ -21,6 +21,7 @@ async def start_servers(
     jsonrpc_app: FastAPI,
     rest_app: FastAPI,
     host: str,
+    hosting_method: str,
     pebbling_port: int,
     user_port: int,
 ) -> None:
@@ -214,6 +215,7 @@ def pebblify(
                 jsonrpc_app=jsonrpc_app,
                 rest_app=rest_app,
                 host=host,
+                hosting_method="uvicorn",
                 pebbling_port=pebbling_port,
                 user_port=user_port,
             )

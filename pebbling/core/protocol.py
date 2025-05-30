@@ -69,6 +69,7 @@ class pebblingProtocol:
         source_agent_id: str,
         destination_agent_id: str,
         params: Dict[str, Any],
+        request_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a protocol message."""
         if isinstance(method, CoreProtocolMethod):
@@ -76,7 +77,7 @@ class pebblingProtocol:
 
         return {
             "jsonrpc": self.JSONRPC_VERSION,
-            "id": str(uuid.uuid4()),
+            "id": request_id or str(uuid.uuid4()),
             "method": method,
             "source_agent_id": source_agent_id,
             "destination_agent_id": destination_agent_id,
@@ -140,4 +141,5 @@ class pebblingProtocol:
             source_agent_id=source_agent_id,
             destination_agent_id=destination_agent_id,
             params=params,
+            request_id=request_id,
         )

@@ -16,7 +16,7 @@
 
 ✨ Imagine a world where AI agents collaborate effortlessly and securely—no passport 🚫, no boundaries 🌐.
 
-That’s Pebbling 🐧.An open source, secured protocol fo agent to agent communication.
+That’s Pebbling 🐧.An open source, secured protocol for agent-to-agent communication.
 
 🚀 Powered by Decentralised Identifiers (DIDs) 🔑, secured conversations with mutual TLS (mTLS) 🔒, and a lightweight yet powerful communication protocol built on JSON-RPC 2.0 ⚡️—Pebbling is paving the way for the next generation of collaborative AI systems. 🌟🤖
 

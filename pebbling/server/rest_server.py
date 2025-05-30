@@ -105,6 +105,28 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 message=f"Health check failed: {str(e)}",
             )
 
+    @rest_app.get("/status", response_model=HealthResponse)
+    async def status_check() -> Union[HealthResponse, ErrorResponse]:
+        """Check the status of the agent server."""
+        try:
+            agent_status = (
+                getattr(protocol_handler.agent, "get_status", lambda: "healthy")()
+                if protocol_handler is not None
+                else "healthy"
+            )
+            return HealthResponse(
+                status_code=200,
+                status=agent_status,
+                message="Service is running",
+                timestamp=str(uuid.uuid4()),
+            )
+        except Exception as e:
+            return ErrorResponse(
+                status_code=500,
+                status="error",
+                message=f"Status check failed: {str(e)}",
+            )
+
     @rest_app.post("/act", response_model=AgentResponse)
     async def act(
         request_data: AgentRequest,

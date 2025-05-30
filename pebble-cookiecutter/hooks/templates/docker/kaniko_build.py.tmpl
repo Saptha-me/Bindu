@@ -1,0 +1,137 @@
+#!/usr/bin/env python
+"""
+Build and push Docker images to DockerHub using Google Kaniko.
+This script uses kaniko to build the Docker image without requiring Docker daemon.
+"""
+
+import os
+import subprocess
+import sys
+import json
+import tempfile
+import base64
+from pathlib import Path
+
+def run_command(command, check=True):
+    """Run a command and return its output."""
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=check,
+            text=True,
+            capture_output=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing command: {command}")
+        print(f"Error message: {e.stderr}")
+        if check:
+            sys.exit(1)
+        return None
+
+def setup_docker_credentials():
+    """Setup Docker credentials for kaniko."""
+    print("Setting up Docker credentials...")
+    
+    dockerhub_username = input("Enter your DockerHub username: ")
+    dockerhub_password = input("Enter your DockerHub password/token: ")
+    
+    # Create Docker config directory
+    home_dir = str(Path.home())
+    docker_dir = os.path.join(home_dir, '.docker')
+    os.makedirs(docker_dir, exist_ok=True)
+    
+    # Create Docker config.json
+    docker_config = {
+        "auths": {
+            "https://index.docker.io/v1/": {
+                "auth": base64.b64encode(f"{dockerhub_username}:{dockerhub_password}".encode()).decode()
+            }
+        }
+    }
+    
+    with open(os.path.join(docker_dir, 'config.json'), 'w') as f:
+        json.dump(docker_config, f)
+    
+    print("Docker credentials configured successfully.")
+    return dockerhub_username
+
+def check_kaniko_installed():
+    """Check if kaniko is available."""
+    try:
+        run_command("which kaniko-executor", check=False)
+        return True
+    except:
+        return False
+
+def build_and_push_docker_image():
+    """Build and push the Docker image using kaniko."""
+    # Get project info
+    project_name = "{{project_slug}}"
+    
+    # Get DockerHub username
+    dockerhub_username = setup_docker_credentials()
+    
+    # Ask for image tag
+    image_tag = input(f"Enter image tag for {project_name} (default: latest): ") or "latest"
+    
+    # Full image name
+    image_name = f"{dockerhub_username}/{project_name}:{image_tag}"
+    
+    print(f"Building and pushing Docker image: {image_name}")
+    
+    # Run kaniko
+    kaniko_command = f"""
+    kaniko-executor --dockerfile=./Dockerfile \
+                     --context=. \
+                     --destination={image_name} \
+                     --cleanup
+    """
+    
+    print("Starting Kaniko build process...")
+    result = run_command(kaniko_command)
+    
+    print(f"Image built and pushed successfully: {image_name}")
+    print("You can now use this image in your Kubernetes deployments.")
+
+def main():
+    """Main entry point."""
+    print("=== Docker Build and Push Tool (Kaniko) ===")
+    
+    # Check if we have a Dockerfile
+    if not os.path.exists("Dockerfile"):
+        print("Dockerfile not found in the current directory!")
+        print("Creating a default Dockerfile...")
+        
+        with open("Dockerfile", "w") as f:
+            f.write("""FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Set environment variables
+ENV PORT=8000
+ENV PYTHONPATH=/app
+
+# Expose the port
+EXPOSE 8000
+
+# Run the application
+CMD ["python", "-m", "{{project_slug}}"]
+""")
+        print("Default Dockerfile created.")
+    
+    # Build and push
+    build_and_push_docker_image()
+    
+    print("\nDocker image build and push complete!")
+
+if __name__ == "__main__":
+    main()

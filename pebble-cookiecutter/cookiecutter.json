@@ -1,0 +1,28 @@
+{
+  "author": "Penguin Pebble 🐧",
+  "email": "iceberg-chief@pebbling.ai",
+  "author_github_handle": "raahulmona",
+  "project_name": "pebble-project",
+  "project_slug": "{{cookiecutter.project_name|lower|replace('-', '_')}}",
+  "project_description": "A penguin-approved Pebble project template. Slide into productivity with uv and pebbling pre-installed. 🧊❄️",
+  "pebbling_version": "0.1.0",
+  "deployment_platform": [
+    "fly.io (soar like a penguin... in your dreams!)",
+    "render (draw your dreams, or just your app)",
+    "kubernetes (herd your pods like penguins on an iceberg)",
+    "docker (build an igloo for your code)",
+    "none (I prefer to chill for now)"
+  ],
+  "store_history": [
+    "yes (never forget a waddle)",
+    "no (penguins live in the moment)"
+  ],
+  "cache_setup": [
+    "yes (keep your fish in a cool cache)",
+    "no (let it go, let it gooo)"
+  ],
+  "hibiscus_registration": [
+    "yes (register and join the penguin parade!)",
+    "no (I'm a lone penguin, thanks)"
+  ]
+}

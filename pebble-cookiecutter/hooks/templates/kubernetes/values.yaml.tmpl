@@ -1,0 +1,26 @@
+# Default values for {{project_slug}}.
+# This is a YAML-formatted file.
+
+replicaCount: 1
+
+image:
+  repository: {{project_slug}}
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+environment:
+  - name: PORT
+    value: "8000"

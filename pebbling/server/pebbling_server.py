@@ -33,6 +33,52 @@ async def start_servers(
         pebbling_port: Port for protocol server
         user_port: Port for user-facing server
     """
+    """Start both JSON-RPC and REST API servers concurrently."""
+    # Import rich components for pretty display
+    from rich import box
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.text import Text
+
+    console = Console()
+
+    # Create a stylish ASCII art logo with penguin emoji
+    logo = """
+    ██████╗ ███████╗██████╗ ██████╗ ██╗     ██╗███╗   ██╗ ██████╗
+    ██╔══██╗██╔════╝██╔══██╗██╔══██╗██║     ██║████╗  ██║██╔════╝
+    ██████╔╝█████╗  ██████╔╝██████╔╝██║     ██║██╔██╗ ██║██║  ███╗
+    ██╔═══╝ ██╔══╝  ██╔══██╗██╔══██╗██║     ██║██║╚██╗██║██║   ██║
+    ██║     ███████╗██████╔╝██████╔╝███████╗██║██║ ╚████║╚██████╔╝
+    ╚═╝     ╚══════╝╚═════╝ ╚═════╝ ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝
+    """
+
+    version_info = Text("v" + "0.1.0", style="bright_white")
+    hosting_text = Text(f"Hosting method: {hosting_method}", style="bright_cyan")
+    jsonrpc_text = Text(f"JSON-RPC server: {host}:{pebbling_port}", style="bright_green")
+    rest_text = Text(f"REST API server: {host}:{user_port}", style="bright_yellow")
+
+    # Display the colorful logo and server information
+    console.print(
+        Panel.fit(
+            Text(logo, style="bold magenta")
+            + "\n\n"
+            + version_info
+            + "\n"
+            + hosting_text
+            + "\n"
+            + jsonrpc_text
+            + "\n"
+            + rest_text
+            + "\n\n"
+            + Text(
+                "🐧 Pebbling - A Protocol Framework for Agent to Agent Communication",
+                style="bold cyan italic",
+            ),
+            title="[bold rainbow]🐧 Pebbling Protocol Framework[/bold rainbow]",
+            border_style="bright_blue",
+            box=box.DOUBLE,
+        )
+    )
     # Configuration for servers
     pebbling_config = uvicorn.Config(
         jsonrpc_app,

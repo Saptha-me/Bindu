@@ -7,14 +7,25 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
-
-class ProtocolMethod(str, Enum):
+# Core protocol
+class CoreProtocolMethod(str, Enum):
     """Supported protocol methods."""
 
-    CONTEXT = "Context"
-    ACT = "Act"
-    LISTEN = "Listen"
-    VIEW = "View"
+    CONTEXT = "context"
+    ACT = "act"
+    LISTEN = "listen"
+    VIEW = "view"
+
+# Security protocol
+class SecurityProtocolMethod(str, Enum):
+    EXCHANGE_DID = "exchange_did"
+    UPDATE_DID = "update_did"
+    VERIFY_IDENTITY = "verify_identity"
+
+# Discovery protocol
+class DiscoveryProtocolMethod(str, Enum):
+    DISCOVER_AGENTS = "discover_agents"
+    REGISTER_AGENT = "register_agent"
 
 
 class TaskStatus(str, Enum):
@@ -54,18 +65,14 @@ class pebblingProtocol:
 
     def create_message(
         self,
-        method: Union[str, ProtocolMethod],
+        method: Union[str, CoreProtocolMethod],
         source_agent_id: str,
         destination_agent_id: str,
         params: Dict[str, Any],
         request_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create a protocol message.
-
-        If ``request_id`` is provided it will be used in the returned message.
-        Otherwise a new UUID4 string is generated.
-        """
-        if isinstance(method, ProtocolMethod):
+        """Create a protocol message."""
+        if isinstance(method, CoreProtocolMethod):
             method = method.value
 
         return {
@@ -122,7 +129,7 @@ class pebblingProtocol:
 
     def make(
         self,
-        method: Union[str, ProtocolMethod],
+        method: Union[str, CoreProtocolMethod],
         source_agent_id: str,
         destination_agent_id: str,
         params: Dict[str, Any],

@@ -1,0 +1,39 @@
+# {{project_slug}} Helm Chart
+
+This Helm chart deploys the {{project_slug}} pebble service to a Kubernetes cluster.
+
+## Prerequisites
+
+- Kubernetes 1.16+
+- Helm 3.0+
+
+## Installing the Chart
+
+```bash
+helm install {{project_slug}} ./helm/{{project_slug}}
+```
+
+## Uninstalling the Chart
+
+```bash
+helm uninstall {{project_slug}}
+```
+
+## Configuration
+
+The following table lists the configurable parameters of the {{project_slug}} chart and their default values.
+
+| Parameter | Description | Default |
+| --------- | ----------- | ------- |
+| `replicaCount` | Number of replicas | `1` |
+| `image.repository` | Image repository | `{{project_slug}}` |
+| `image.tag` | Image tag | `latest` |
+| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `service.type` | Service type | `ClusterIP` |
+| `service.port` | Service port | `80` |
+| `service.targetPort` | Container port | `8000` |
+| `resources.limits.cpu` | CPU limits | `500m` |
+| `resources.limits.memory` | Memory limits | `512Mi` |
+| `resources.requests.cpu` | CPU requests | `100m` |
+| `resources.requests.memory` | Memory requests | `128Mi` |
+| `environment` | Environment variables | `PORT: 8000` |

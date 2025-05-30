@@ -117,3 +117,16 @@ class TestPebblingProtocol:
         del invalid_message["source_agent_id"]
 
         assert protocol.validate_message(invalid_message) is False
+
+    def test_make_uses_provided_request_id(self, protocol):
+        """Ensure make() respects an explicitly provided request_id."""
+        request_id = "custom-id"
+        message = protocol.make(
+            method=ProtocolMethod.ACT,
+            source_agent_id="src",
+            destination_agent_id="dest",
+            params={"input": "hi"},
+            request_id=request_id,
+        )
+
+        assert message["id"] == request_id

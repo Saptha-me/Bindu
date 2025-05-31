@@ -84,12 +84,17 @@ class MTLSMiddleware:
         context.options |= (
             ssl.OP_NO_SSLv2 | 
             ssl.OP_NO_SSLv3 | 
-            ssl.OP_NO_TLSv1 | 
-            ssl.OP_NO_TLSv1_1
+            ssl.OP_NO_TLSv1 
+            #ssl.OP_NO_TLSv1_1
         )
         
         # Use strong ciphers
         context.set_ciphers("ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384")
+
+        # Uvicorn checks for these specific attributes on the SSL context object
+        context.certfile = server_context["certfile"]
+        context.keyfile = server_context["keyfile"]
+        context.ca_certs = server_context["ca_certs"]
         
         return context
         
@@ -127,12 +132,17 @@ class MTLSMiddleware:
         context.options |= (
             ssl.OP_NO_SSLv2 | 
             ssl.OP_NO_SSLv3 | 
-            ssl.OP_NO_TLSv1 | 
-            ssl.OP_NO_TLSv1_1
+            ssl.OP_NO_TLSv1  
+            #ssl.OP_NO_TLSv1_1
         )
         
         # Use strong ciphers
         context.set_ciphers("ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384")
+
+        # Uvicorn checks for these specific attributes on the SSL context object
+        context.certfile = client_context["certfile"]
+        context.keyfile = client_context["keyfile"]
+        context.ca_certs = client_context["ca_certs"]
         
         return context
     

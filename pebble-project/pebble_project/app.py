@@ -6,12 +6,12 @@ from agno.models.google import Gemini
 from agno.models.openai import OpenAIChat
 
 # pebbling imports
-from pebbling.core.protocol import CoreProtocolMethod, SecurityProtocolMethod, DiscoveryProtocolMethod
+from pebbling.core.protocol import CoreProtocolMethod
 from pebbling.security.did_manager import DIDManager
 from pebbling.server.pebbling_server import pebblify
 
 localhost: str = "127.0.0.1"
-port: int = 8000
+port: int = 3773
 
 news_reporter_agent = Agent(
     model=OpenAIChat(id="gpt-4o"),
@@ -35,10 +35,7 @@ news_reporter_agent = Agent(
 
 supported_methods = [
     CoreProtocolMethod.CONTEXT,
-    CoreProtocolMethod.ACT,
-    SecurityProtocolMethod.EXCHANGE_DID,
-    SecurityProtocolMethod.VERIFY_IDENTITY,
-    DiscoveryProtocolMethod.DISCOVER_AGENTS,
+    CoreProtocolMethod.ACT
 ]
 
 # Create a DID manager for secure agent communication

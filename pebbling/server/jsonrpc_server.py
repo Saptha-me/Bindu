@@ -2,11 +2,10 @@
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Dict, List
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.routing import APIRoute
 
 from pebbling.core.protocol import pebblingProtocol
 from pebbling.server.server_security import SecurityMiddleware
@@ -47,15 +46,15 @@ class JSONRPCServer:
         # If security middleware is provided, register security method handlers
         if self.security_middleware:
             self.security_handlers.update({
-                "security_exchange_did": self.security_middleware.handle_exchange_did,
-                "security_verify_identity": self.security_middleware.handle_verify_identity,
+                "exchange_did": self.security_middleware.handle_exchange_did,
+                "verify_identity": self.security_middleware.handle_verify_identity,
             })
             
         # If mTLS middleware is provided, register mTLS method handlers
         if self.mtls_middleware:
             self.security_handlers.update({
-                "security_exchange_certificates": self.mtls_middleware.handle_exchange_certificates,
-                "security_verify_connection": self.mtls_middleware.handle_verify_connection,
+                "exchange_certificates": self.mtls_middleware.handle_exchange_certificates,
+                "verify_connection": self.mtls_middleware.handle_verify_connection,
             })
 
     async def handle_jsonrpc_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
@@ -103,43 +102,41 @@ class JSONRPCServer:
                     
                 # Call the handler method
                 try:
-                    result = await handler_method(params)
-                except Exception as e:
-                    logger.error(f"Error in method handler: {str(e)}")
-                    return {
-                        "jsonrpc": "2.0",
-                        "error": {
-                            "code": -32000,
-                            "message": f"Error in method handler: {str(e)}"
+                    handler_result = await handler_method(**params)
+                    return create_success_response(
+                        result={
+                            "content": handler_result.content,
+                            "metadata": handler_result.metadata
                         },
-                        "id": request_id
-                    }
+                        request_id=request_id
+                    )
+
+                except Exception as e:
+                    import traceback
+                    print(f"Error in handler method {handler_method_name}: {e}")
+                    print(traceback.format_exc())
+                    return create_error_response(-32603, f"Internal error in handler: {str(e)}", request_id)
             
-            # If security is enabled, sign the response
-            if self.security_middleware and "result" in result:
-                # Only sign successful responses that are not security-related
-                if method not in self.security_handlers:
-                    result = await self.security_middleware.sign_message(result)
-            
-            # Build response
-            response = {
-                "jsonrpc": "2.0",
-                "result": result,
-                "id": request_id
-            }
-            
-            return response
-            
+        except json.JSONDecodeError:
+            return create_error_response(-32700, "Parse error: Invalid JSON", request_id)
         except Exception as e:
-            logger.error(f"Error handling request: {str(e)}")
-            return {
-                "jsonrpc": "2.0",
-                "error": {
-                    "code": -32603,
-                    "message": f"Internal error: {str(e)}"
-                },
-                "id": request.get("id", None)
-            }
+            import traceback
+            print(f"Unhandled error in JSON-RPC server: {e}")
+            print(traceback.format_exc())
+            return create_error_response(-32603, f"Internal error: {str(e)}", request_id)
+
+    async def require_full_security(self, method: str, params: Dict[str, Any]) -> bool:
+        """Check if a method requires full security (DID + mTLS).
+    
+        Returns True if security is satisfied, False otherwise.
+        """
+        if method == "act":  # Add other secure methods as needed
+            source_agent_id = params.get("source_agent_id")
+            if not self.security_middleware or not self.security_middleware.is_agent_verified(source_agent_id):
+                return False    
+            if not self.mtls_middleware or not self.mtls_middleware.is_connection_verified(source_agent_id):
+                return False
+        return True
 
     async def handle_request(self, request: Request) -> Response:
         """Handle an HTTP request to the JSON-RPC server.
@@ -167,10 +164,9 @@ class JSONRPCServer:
             # Process each request
             for req in requests:
                 # Verify the request signature if security is enabled
-                if self.security_middleware and req.get("method") not in ["security_exchange_did", "security_verify_identity", "security_exchange_certificates", "security_verify_connection"]:
-                    # Skip verification for security-related methods
-                    is_verified = await self.security_middleware.verify_message(req)
-                    if not is_verified:
+                if self.security_middleware and self.mtls_middleware and req.get("method") not in ["exchange_did", "verify_identity", "exchange_certificates", "verify_connection"]:
+                    is_secured = await self.require_full_security(req.get("method"), req.get("params"))
+                    if not is_secured:
                         responses.append({
                             "jsonrpc": "2.0",
                             "error": {

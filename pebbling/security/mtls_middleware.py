@@ -145,6 +145,13 @@ class MTLSMiddleware:
         context.ca_certs = client_context["ca_certs"]
         
         return context
+
+    def is_connection_verified(self, agent_id: str) -> bool:
+        """Check if an agent has completed the mTLS verification process."""
+        if agent_id not in self.peer_certs:
+            return False
+    
+        return agent_id in getattr(self, "verified_connections", set())
     
     async def handle_exchange_certificates(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle certificate exchange request.
@@ -230,6 +237,11 @@ class MTLSMiddleware:
                 "status": "error",
                 "message": f"No certificates registered for agent {sender_id}"
             }
+
+        if not hasattr(self, "verified_connections"):
+            self.verified_connections = set()
+        
+        self.verified_connections.add(sender_id)
             
         return {
             "status": "success",

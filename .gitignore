@@ -173,3 +173,10 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 .DS_Store
+
+# pebble project files
+pebble-project/*
+pebble-project_private_key.json
+pebble_project_certificates/*
+pebble_project_private_key.json
+

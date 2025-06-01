@@ -255,7 +255,7 @@ def create_jsonrpc_server(
     )
     
     # Add route
-    @app.post("/jsonrpc")
+    @app.post("/pebble")
     async def handle_jsonrpc(request: Request) -> Response:
         return await server.handle_request(request)
         

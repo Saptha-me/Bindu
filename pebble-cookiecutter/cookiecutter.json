@@ -20,9 +20,5 @@
   "cache_setup": [
     "yes (keep your fish in a cool cache)",
     "no (let it go, let it gooo)"
-  ],
-  "hibiscus_registration": [
-    "yes (register and join the penguin parade!)",
-    "no (I'm a lone penguin, thanks)"
   ]
 }

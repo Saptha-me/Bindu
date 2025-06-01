@@ -98,19 +98,19 @@ class BaseProtocolHandler(BaseAdapter, ABC):
         pass
 
     @abstractmethod
-    def act(
+    async def handle_act(
         self,
+        source_agent_id: str,
         message: str,
         session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
     ) -> AgentResponse:
         """
         Process a text request and generate a response.
 
         Args:
+            source_agent_id: The source agent identifier
             message: The text message to process
             session_id: Session identifier for conversation continuity
-            user_id: User identifier for user-specific context
 
         Returns:
             AgentResponse with the agent's reply
@@ -118,21 +118,21 @@ class BaseProtocolHandler(BaseAdapter, ABC):
         pass
 
     @abstractmethod
-    def listen(
+    async def handle_listen(
         self,
+        source_agent_id: str,
         message: str,
         audio: AudioArtifact,
         session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
     ) -> AgentResponse:
         """
         Process audio input with optional text and generate a response.
 
         Args:
+            source_agent_id: The source agent identifier
             message: The text message to process
             audio: The audio input to process
             session_id: Session identifier for conversation continuity
-            user_id: User identifier for user-specific context
 
         Returns:
             AgentResponse with the agent's reply
@@ -140,21 +140,21 @@ class BaseProtocolHandler(BaseAdapter, ABC):
         pass
 
     @abstractmethod
-    def view(
+    async def handle_view(
         self,
+        source_agent_id: str,
         message: str,
         media: Union[VideoArtifact, ImageArtifact],
-        session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
+        session_id: Optional[str] = None
     ) -> AgentResponse:
         """
         Process visual media with optional text and generate a response.
 
         Args:
+            source_agent_id: The source agent identifier
             message: The text message to process
             media: The media input (image or video) to process
             session_id: Session identifier for conversation continuity
-            user_id: User identifier for user-specific context
 
         Returns:
             AgentResponse with the agent's reply

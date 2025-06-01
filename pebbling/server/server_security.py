@@ -49,6 +49,20 @@ class SecurityMiddleware:
             
         self.agent_did_documents[agent_id] = did_document
 
+    def is_agent_verified(self, agent_id: str) -> bool:
+        """Check if an agent has completed the verification process."""
+        # Agent must have a registered DID document
+        if agent_id not in self.agent_did_documents:
+            return False
+        
+        # Agent must have completed a successful challenge verification
+        # Look for completed challenges for this agent
+        for challenge_id, challenge in self.challenges.items():
+            if challenge.get("agent_id") == agent_id and challenge.get("verified", False):
+                return True
+        
+        return False
+
     async def get_verification_method(self, agent_id: str) -> Optional[str]:
         """Get verification method from an agent's DID document.
         
@@ -223,10 +237,11 @@ class SecurityMiddleware:
                 verification_method
             )
             
-            # Remove the challenge after verification
-            del self.challenges[challenge_id]
-            
             if is_valid:
+                # Mark the challenge as verified
+                self.challenges[challenge_id]["verified"] = True
+                self.challenges[challenge_id]["agent_id"] = sender_id
+                
                 return {
                     "status": "success",
                     "message": "Identity verified successfully"

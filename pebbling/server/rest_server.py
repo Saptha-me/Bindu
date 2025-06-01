@@ -8,13 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from pebbling.server.schemas.model import (
-    AgentRequest,
     AgentResponse,
     ErrorResponse,
     HealthResponse,
-    ListenRequest,
-    MessageRole,
-    ViewRequest,
+    MessageRole
 )
 
 
@@ -125,130 +122,6 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 status_code=500,
                 status="error",
                 message=f"Status check failed: {str(e)}",
-            )
-
-    @rest_app.post("/act", response_model=AgentResponse)
-    async def act(
-        request_data: AgentRequest,
-    ) -> Union[AgentResponse, ErrorResponse, JSONResponse]:
-        """Process a text request with the agent."""
-        try:
-            # Validate input
-            if not request_data.input.strip():
-                return JSONResponse(
-                    status_code=400,
-                    content={
-                        "status_code": 400,
-                        "status": "error",
-                        "message": "Input text is required",
-                    },
-                )
-
-            # Prepare session and context
-            session_info = _prepare_session(user_id=request_data.user_id, session_id=request_data.session_id)
-
-            # Execute the agent
-            result = (
-                protocol_handler.act(
-                    message=request_data.input,
-                    session_id=session_info["session_id"],
-                    user_id=session_info["user_id"],
-                )
-                if protocol_handler is not None
-                else None
-            )
-
-            # Ensure correct response type
-            return _ensure_agent_response(result, session_info["session_id"])
-
-        except Exception as e:
-            return ErrorResponse(
-                status_code=500,
-                status="error",
-                message=f"Agent execution failed: {str(e)}",
-            )
-
-    @rest_app.post("/listen", response_model=AgentResponse)
-    async def listen(
-        listen_request: ListenRequest,
-    ) -> Union[AgentResponse, ErrorResponse, JSONResponse]:
-        """Process an audio request with the agent."""
-        if not listen_request.audio:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "status_code": 400,
-                    "status": "error",
-                    "message": "Audio input is required",
-                },
-            )
-
-        # Prepare session and context
-        session_info = _prepare_session(user_id=listen_request.user_id, session_id=listen_request.session_id)
-
-        try:
-            # Execute the agent
-            result = (
-                protocol_handler.listen(
-                    message=listen_request.input,
-                    audio=listen_request.audio,
-                    session_id=session_info["session_id"],
-                    user_id=session_info["user_id"],
-                )
-                if protocol_handler is not None
-                else None
-            )
-
-            # Ensure correct response type
-            return _ensure_agent_response(result, session_info["session_id"])
-
-        except Exception as e:
-            return ErrorResponse(
-                status_code=500,
-                status="error",
-                message=f"Audio processing failed: {str(e)}",
-            )
-
-    @rest_app.post("/view", response_model=AgentResponse)
-    async def view(
-        view_request: ViewRequest,
-    ) -> Union[AgentResponse, ErrorResponse, JSONResponse]:
-        """Process a media request with the agent."""
-        # Validate input
-        if not view_request.media:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "status_code": 400,
-                    "status": "error",
-                    "message": "Media input is required",
-                },
-            )
-
-        # Prepare session and context
-        session_info = _prepare_session(user_id=view_request.user_id, session_id=view_request.session_id)
-
-        try:
-            # Execute the agent
-            result = (
-                protocol_handler.view(
-                    message=view_request.input,
-                    media=view_request.media,
-                    session_id=session_info["session_id"],
-                    user_id=session_info["user_id"],
-                )
-                if protocol_handler is not None
-                else None
-            )
-
-            # Ensure correct response type
-            return _ensure_agent_response(result, session_info["session_id"])
-
-        except Exception as e:
-            return ErrorResponse(
-                status_code=500,
-                status="error",
-                message=f"Media processing failed: {str(e)}",
             )
 
     return rest_app

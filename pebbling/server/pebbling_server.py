@@ -10,7 +10,9 @@ from fastapi import FastAPI
 
 from pebbling.agent.agno_adapter import AgnoProtocolHandler
 from pebbling.core.protocol import CoreProtocolMethod, SecurityProtocolMethod, DiscoveryProtocolMethod, pebblingProtocol
+from pebbling.security.cert_manager import CertificateManager
 from pebbling.security.did_manager import DIDManager
+from pebbling.security.mtls_middleware import MTLSMiddleware
 from pebbling.server.jsonrpc_server import create_jsonrpc_server
 from pebbling.server.rest_server import create_rest_server
 from pebbling.server.server_security import SecurityMiddleware
@@ -21,8 +23,10 @@ async def start_servers(
     jsonrpc_app: FastAPI,
     rest_app: FastAPI,
     host: str,
+    hosting_method: str,
     pebbling_port: int,
     user_port: int,
+    ssl_context: Optional[Any] = None,
 ) -> None:
     """Start the pebbling protocol and user-facing servers.
 
@@ -30,8 +34,10 @@ async def start_servers(
         jsonrpc_app: FastAPI app for agent-to-agent protocol
         rest_app: FastAPI app for user-agent interactions
         host: Host to bind servers to
+        hosting_method: Hosting method (local or docker)
         pebbling_port: Port for protocol server
         user_port: Port for user-facing server
+        ssl_context: Optional SSL context for secure connections
     """
     """Start both JSON-RPC and REST API servers concurrently."""
     # Import rich components for pretty display
@@ -85,6 +91,12 @@ async def start_servers(
         host=host,
         port=pebbling_port,
         log_level="info",
+        ssl_certfile=getattr(ssl_context, "certfile", None) if ssl_context else None,
+        ssl_keyfile=getattr(ssl_context, "keyfile", None) if ssl_context else None,
+        ssl_ca_certs=getattr(ssl_context, "ca_certs", None) if ssl_context else None,
+        ssl_cert_reqs=getattr(ssl_context, "verify_mode", None) if ssl_context else None,
+        ssl_version=getattr(ssl_context, "protocol", None) if ssl_context else None,
+        ssl_ciphers=":".join(getattr(ssl_context, "ciphers", [])) if ssl_context and hasattr(ssl_context, "ciphers") else None,
     )
     user_config = uvicorn.Config(
         rest_app,
@@ -118,6 +130,8 @@ def pebblify(
     protocol_config_path: Optional[str] = None,
     did_manager: Optional[DIDManager] = None,
     enable_security: bool = False,
+    enable_mtls: bool = False,
+    cert_path: Optional[str] = None,
     register_with_hibiscus: bool = False,
     hibiscus_url: Optional[str] = None,
 ) -> None:
@@ -134,6 +148,8 @@ def pebblify(
         protocol_config_path: Path to protocol config file
         did_manager: Optional DID manager for secure communication
         enable_security: Whether to enable DID-based security
+        enable_mtls: Whether to enable mTLS secure connections
+        cert_path: Path for storing certificates (if enable_mtls is True)
         register_with_hibiscus: Whether to register agent with Hibiscus
         hibiscus_url: URL of Hibiscus agent registry
     """
@@ -151,6 +167,19 @@ def pebblify(
         for method in security_methods:
             if method not in supported_methods:
                 supported_methods.append(method)
+    
+    # If mTLS is enabled, ensure certificate methods are included
+    if enable_mtls:
+        if not enable_security:
+            raise ValueError("mTLS requires DID-based security to be enabled")
+            
+        mtls_methods = [
+            SecurityProtocolMethod.EXCHANGE_CERTIFICATES,
+            SecurityProtocolMethod.VERIFY_CONNECTION,
+        ]
+        for method in mtls_methods:
+            if method not in supported_methods:
+                supported_methods.append(method)
 
     # Initialize the protocol
     protocol = pebblingProtocol(protocol_config_path)
@@ -166,6 +195,9 @@ def pebblify(
     
     # Initialize security middleware if enabled
     security_middleware = None
+    mtls_middleware = None
+    ssl_context = None
+    
     if enable_security:
         if did_manager is None:
             # Generate a default key path based on agent ID
@@ -192,31 +224,52 @@ def pebblify(
                 print(f"Registered agent with Hibiscus at {hibiscus_url}")
             except Exception as e:
                 print(f"Failed to register with Hibiscus: {e}")
+                
+    # Initialize mTLS middleware if enabled
+    if enable_mtls:
+        # Create certificate manager
+        cert_manager = CertificateManager(
+            did_manager=did_manager,
+            cert_path=cert_path
+        )
+        
+        # Create mTLS middleware
+        mtls_middleware = MTLSMiddleware(
+            did_manager=did_manager,
+            cert_manager=cert_manager
+        )
+        
+        # Get SSL context for the server
+        ssl_context = mtls_middleware.get_server_ssl_context()
+        
+        print(f"mTLS security enabled with certificates in: {cert_manager.cert_path}")
 
     # Create the servers
     jsonrpc_app = create_jsonrpc_server(
         protocol=protocol,
         protocol_handler=protocol_handler,
         supported_methods=[m.value for m in supported_methods],
-        security_middleware=security_middleware,  # Pass security middleware to the server
+        security_middleware=security_middleware,
+        mtls_middleware=mtls_middleware
     )
-    rest_app = create_rest_server(protocol_handler)
-
-    print(f"Pebblifying agent with methods: {supported_methods}")
-    if enable_security:
-        print("DID-based security enabled")
-    print("Use Ctrl+C to stop the servers")
-
-    try:
-        # All hosting methods use the same function call with identical parameters
-        asyncio.run(
-            start_servers(
-                jsonrpc_app=jsonrpc_app,
-                rest_app=rest_app,
-                host=host,
-                pebbling_port=pebbling_port,
-                user_port=user_port,
-            )
+    rest_app = create_rest_server(
+        protocol_handler=protocol_handler
+    )
+    
+    # Determine the appropriate hosting method based on host value
+    hosting_method = "local"
+    if host == "0.0.0.0":
+        hosting_method = "docker"
+    
+    # Start the servers
+    asyncio.run(
+        start_servers(
+            jsonrpc_app=jsonrpc_app,
+            rest_app=rest_app,
+            host=host,
+            hosting_method=hosting_method,
+            pebbling_port=pebbling_port,
+            user_port=user_port,
+            ssl_context=ssl_context if enable_mtls else None,
         )
-    except KeyboardInterrupt:
-        print("Servers stopped.")
+    )

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import httpx
 import requests
+import asyncio
 from agno.agent import Agent as AgnoAgent
 from loguru import logger
 from rich.console import Console
@@ -383,18 +384,18 @@ class AgnoProtocolHandler(BaseProtocolHandler):
 
     # Main interaction methods
 
-    def act(
+    async def handle_act(
         self,
+        source_agent_id: str,
         message: str,
-        session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
+        session_id: Optional[str] = None
     ) -> AgentResponse:
         """Process a text request and generate a response.
 
         Args:
+            source_agent_id: The source agent identifier
             message: The text message to process
             session_id: Session identifier for conversation continuity
-            user_id: User identifier for user-specific context
 
         Returns:
             AgentResponse with the agent's reply
@@ -405,8 +406,14 @@ class AgnoProtocolHandler(BaseProtocolHandler):
 
         try:
             # Process the request
-            result = self.agent.run(message=message, session_id=session_id, user_id=user_id).to_dict()
-            response_content, messages = self._extract_response(result)
+            result = await asyncio.to_thread(
+                self.agent.run, 
+                message=message, 
+                session_id=session_id, 
+                user_id=source_agent_id
+            )
+            result_dict = result.to_dict()
+            response_content, messages = self._extract_response(result_dict)
         except Exception as e:
             logger.error(f"Error processing request: {str(e)}")
             response_content = f"Error processing request: {str(e)}"
@@ -415,20 +422,20 @@ class AgnoProtocolHandler(BaseProtocolHandler):
         # Create and return the response
         return self._create_response(session_id_safe, response_content, messages)
 
-    def listen(
+    async def handle_listen(
         self,
+        source_agent_id: str,
         message: str,
         audio: AudioArtifact,
-        session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
+        session_id: Optional[str] = None
     ) -> AgentResponse:
         """Process audio input with optional text.
 
         Args:
+            source_agent_id: The source agent identifier
             message: The text message to process
             audio: The audio input to process
             session_id: Session identifier for conversation continuity
-            user_id: User identifier for user-specific context
 
         Returns:
             AgentResponse with the agent's reply
@@ -455,10 +462,15 @@ class AgnoProtocolHandler(BaseProtocolHandler):
                 audio_bytes = self._decode_base64(audio.base64_audio)
                 agno_audio = Audio(content=audio_bytes)
 
-            result = self.agent.run(
-                message=message, audio=[agno_audio], session_id=session_id, user_id=user_id
-            ).to_dict()
-            response_content, messages = self._extract_response(result)
+            result = await asyncio.to_thread(
+                self.agent.run, 
+                message=message,
+                audio=[agno_audio], 
+                session_id=session_id, 
+                user_id=source_agent_id
+            )
+            result_dict = result.to_dict()
+            response_content, messages = self._extract_response(result_dict)
 
         except Exception as e:
             logger.error(f"Error processing audio request: {str(e)}")
@@ -467,20 +479,20 @@ class AgnoProtocolHandler(BaseProtocolHandler):
 
         return self._create_response(session_id_safe, response_content, messages)
 
-    def view(
+    async def handle_view(
         self,
+        source_agent_id: str,
         message: str,
         media: Union[VideoArtifact, ImageArtifact],
-        session_id: Optional[str] = None,
-        user_id: Optional[str] = None,
+        session_id: Optional[str] = None
     ) -> AgentResponse:
         """Process visual media input with optional text.
 
         Args:
+            source_agent_id: The source agent identifier
             message: The text message to process
             media: The media input (image or video) to process
             session_id: Session identifier for conversation continuity
-            user_id: User identifier for user-specific context
 
         Returns:
             AgentResponse with the agent's reply
@@ -546,13 +558,15 @@ class AgnoProtocolHandler(BaseProtocolHandler):
             media_param = {media_param_name: [agno_media]}  # Pass as a sequence
 
             # Run the agent
-            result = self.agent.run(
+            result = await asyncio.to_thread(
+                self.agent.run,
                 message=message,
                 session_id=session_id,
-                user_id=user_id,
+                user_id=source_agent_id,
                 **media_param,
-            ).to_dict()
-            response_content, messages = self._extract_response(result)
+            )
+            result_dict = result.to_dict()
+            response_content, messages = self._extract_response(result_dict)
 
         except Exception as e:
             logger.error(f"Error processing media request: {str(e)}")

@@ -46,11 +46,9 @@ did_manager = DIDManager(key_path="./pebble_project_private_key.json")
 pebblify(
     agent=news_reporter_agent,
     supported_methods=supported_methods,
-    pebbling_port=port,
-    user_port=port + 1,
+    port=port,
     host=localhost,
     protocol_config_path="./protocol_config.json",
-    # Enable DID-based security for secure agent-to-agent communication
     did_manager=did_manager,
     enable_security=True,
     enable_mtls=True,

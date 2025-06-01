@@ -121,7 +121,7 @@ async def start_servers(
     rest_app: FastAPI,
     host: str,
     hosting_method: str,
-    port: int=3773,
+    port: int,
     ssl_context: Optional[Any] = None,
 ) -> None:
     """Start the pebbling protocol and user-facing servers.
@@ -151,7 +151,7 @@ async def start_servers(
     hosting_info = f"Hosting method: {hosting_method}"
     server_info = f"Server running on: {host}:{port}"
     jsonrpc_info = f"JSON-RPC endpoint: /pebble"
-    rest_info = f"REST API endpoint: /api"
+    rest_info = f"REST API endpoint: /human"
     
     logger.info(hosting_info)
     logger.info(server_info)
@@ -322,8 +322,7 @@ def pebblify(
     agent: Any,  # Generic type to support any agent framework
     agent_id: Optional[str] = None,
     supported_methods: Optional[List[Union[str, CoreProtocolMethod, SecurityProtocolMethod, DiscoveryProtocolMethod]]] = None,
-    pebbling_port: int = 3773,
-    user_port: int = 3774,
+    port: int = 3773,
     host: str = "localhost",
     protocol_config_path: Optional[str] = None,
     did_manager: Optional[DIDManager] = None,
@@ -338,8 +337,7 @@ def pebblify(
         agent: The agent to be served (from any framework)
         agent_id: Unique identifier for the agent
         supported_methods: List of supported protocol methods
-        pebbling_port: Port for JSON-RPC server
-        user_port: Port for REST API server
+        port: Port for pebbling server
         host: Host to bind servers to
         protocol_config_path: Path to protocol config file
         did_manager: Optional DID manager for secure communication
@@ -350,11 +348,6 @@ def pebblify(
     # Configure logging
     _configure_logger()
     logger.info(f"Starting pebbling server for agent {agent_id}")
-    
-    # Set default user port if not provided
-    if user_port is None:
-        user_port = pebbling_port + 1
-        logger.debug(f"User port not specified, using {user_port}")
     
     # Generate agent ID if not provided
     if agent_id is None:
@@ -413,8 +406,7 @@ def pebblify(
             rest_app=rest_app,
             host=host,
             hosting_method=hosting_method,
-            pebbling_port=pebbling_port,
-            user_port=user_port,
+            port=port,
             ssl_context=ssl_context if enable_mtls else None,
         )
     )

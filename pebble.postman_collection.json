@@ -1,0 +1,244 @@
+{
+	"info": {
+		"_postman_id": "c902d25e-c61a-401a-a3c8-ac1cd6873736",
+		"name": "pebble",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "964032"
+	},
+	"item": [
+		{
+			"name": "security_exchange_did",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"security_exchange_did\",\n    \"params\": {\n        \"source_agent_id\": \"test-postman-agent\",\n        \"did_document\": {\n            \"@context\": [\n                \"https://www.w3.org/ns/did/v1\"\n            ],\n            \"id\": \"did:pebble:test-postman-id\",\n            \"verificationMethod\": [\n                {\n                    \"id\": \"did:pebble:test-postman-id#keys-1\",\n                    \"type\": \"Ed25519VerificationKey2020\",\n                    \"controller\": \"did:pebble:test-postman-id\",\n                    \"publicKeyBase58\": \"example-public-key-base58\"\n                }\n            ],\n            \"authentication\": [\n                \"did:pebble:test-postman-id#keys-1\"\n            ],\n            \"service\": [\n                {\n                    \"id\": \"did:pebble:test-postman-id#agent\",\n                    \"type\": \"PebbleAgentCard\",\n                    \"serviceEndpoint\": \"http://localhost:9000\"\n                }\n            ]\n        }\n    },\n    \"id\": \"1\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/jsonrpc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"jsonrpc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "security_exchange_certificates",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"security_exchange_certificates\",\n    \"params\": {\n        \"source_agent_id\": \"test-postman-agent\",\n        \"server_cert\": \"-----BEGIN CERTIFICATE-----\\nMIIEFTCCAv2gAwIBAgIUI7NAv5N+EhfV+NDGXAvhLJ30zOcwDQYJKoZIhvcNAQELBQAwgZgxPzA9BgNVBAMMNlBlYmJsaW5nIEFnZW50IENBIDFkOTY2ZTQyLWI4NzMtNDdiOC05NzYzLTc1ZDQyZTA2OWYxYTEbMBkGA1UECgwSUGViYmxpbmcgRnJhbWV3b3JrMTgwNgYDVQQLDC9kaWQ6cGViYmxlOjFkOTY2ZTQyLWI4NzMtNDdiOC05NzYzLTc1ZDQyZTA2OWYxYTAeFw0yNTA1MzAyMjIzMTdaFw0yNjA1MzAyMjIzMTdaMIGWMT0wOwYDVQQDDDRQZWJibGluZyBTZXJ2ZXIgMWQ5NjZlNDItYjg3My00N2I4LTk3NjMtNzVkNDJlMDY5ZjFhMRswGQYDVQQKDBJQZWJibGluZyBGcmFtZXdvcmsxODA2BgNVBAsML2RpZDpwZWJibGU6MWQ5NjZlNDItYjg3My00N2I4LTk3NjMtNzVkNDJlMDY5ZjFhMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtEt7pzfBkaXDUk/NNKAsTe/rJoiPkxjX7tnC7R72Wkj7EyXxrDi8zsoRUd/v9DFSfO3sUy5cD0oFbunzYsSIm7AZLgK0MDbnk9oOD0MZo1SbzwkBWbax68zzkNosEEvop3kr6g4ZhLXc3oejmDUHe9D75E02zjft5hM6fcR0r32AuKB+t4diF829qBJm4LESTfUZk/zkzoUfwlUXuKBOci5ws57aOv2eZNzXBe0UQ+kWb5QncvLJxaY1fIUA/kvSnvTYD4/XQlI3H3o3jCy8EAWGKslTJsvXKTNtHiiFpKEj9y3SR5Po1u+7P259wONr+3g4V6y4/I3xhA+zavYdNwIDAQABo1cwVTAgBgNVHREEGTAXgglsb2NhbGhvc3SHBMCoAfuHBH8AAAEwDAYDVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDQYJKoZIhvcNAQELBQADggEBANrhp7nK9c0VNRBYxJn+QxsS59AxDbnTE8i9VILqkKrkBu8KJZX36fj+E/StsDJyXQjzMAFAexcUgCE4EbI20fy7wRUfP/hWAQHT3rby0jRRL/OJw8bNCnRzfVSz+AZzj3pl/JBZJd9butLYcX0B3GQF/h05qNymMqiTpLB6K14/T+eGrJ0+DnvNt8o+A6ewdevCU/mTg6W4tbbvg9BIgQdv7ZOxD64+SB+fpNf89xUNQEDGxbiw5aIWqoE7nmHc9Vrwzz/h381j/g50+Cw43QXvRQFP4dkiiJS2MWS9h79ej7zkLAxDkPT++wpgR/bLehmTq8z4xRWa4gJzBSKR6mM=\\n-----END CERTIFICATE-----\",\n        \"ca_cert\": \"-----BEGIN CERTIFICATE-----\\nMIID4zCCAsugAwIBAgIUbaSUP+/b9o27ICjs56SdeqXdtXYwDQYJKoZIhvcNAQELBQAwgZgxPzA9BgNVBAMMNlBlYmJsaW5nIEFnZW50IENBIDFkOTY2ZTQyLWI4NzMtNDdiOC05NzYzLTc1ZDQyZTA2OWYxYTEbMBkGA1UECgwSUGViYmxpbmcgRnJhbWV3b3JrMTgwNgYDVQQLDC9kaWQ6cGViYmxlOjFkOTY2ZTQyLWI4NzMtNDdiOC05NzYzLTc1ZDQyZTA2OWYxYTAeFw0yNTA1MzAyMjIzMTVaFw0yNzA1MzAyMjIzMTVaMIGYMT8wPQYDVQQDDDZQZWJibGluZyBBZ2VudCBDQSAxZDk2NmU0Mi1iODczLTQ3YjgtOTc2My03NWQ0MmUwNjlmMWExGzAZBgNVBAoMElBlYmJsaW5nIEZyYW1ld29yazE4MDYGA1UECwwvZGlkOnBlYmJsZToxZDk2NmU0Mi1iODczLTQ3YjgtOTc2My03NWQ0MmUwNjlmMWEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDoqjQjLWkzodpwz76Lf/YlUKUzvukt5258sUTlIwR9nkruCGBmqVNvbK4pgo+1QrKZ3rIhKdASxIdZc97+pkTqfHy6igIH5EWAmXeNQ1rWpGHTnzHVcvJB60H1dB/LAsrW93WZU2j8ZWhUO3GosFmMQGHu/WeLpl7ti7ZdLhlHW3Y4Izd3nK9vHh452hPVhkrh3T2LnJERmG02RArCIzSPZInQ37JZH4j0zNmpRLc8ckP7TuDXm/VWGmMfYvd8nBUFraAwPk0RlUKV9u0rsHbKhMXKcx6de/9o73YGv/sjGffR5opWsT6rTRHYxKnR0aI0U4fofxSYyxD3O30j8FnbAgMBAAGjIzAhMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgGGMA0GCSqGSIb3DQEBCwUAA4IBAQBvt4PyVcK7Iwo9qNs78qqbvwN/w+tLjAmdIKnMTbsdtTySDx+R30apF+DYpw5K4HEl17VQoqaIrnHeX1X00AvvHz5kQv//zaaDiD79QFJ9eEyrLOSZm87BWzdjnlgt6kuYJLCwXUzkqjXhk236TzQDFi3iSexUMGP3KFvv1oC+vEf8iw5ydWMZI6VUZbio8s4y/YpjfaQ8uUcMg+Zc7N1rt/wC9bXd8uCZqOvlZLkTizvsgdQinOqequeoMoJaPqAgMb56c2+bStnuYw3QiJ46J23j2PpFQUZrI8T84kt0cbEj+V/3Aj65pBHF/mVezOetXJ/XqmZUOg1GKUt9N5zx\\n-----END CERTIFICATE-----\"\n    },\n    \"id\": \"2\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/jsonrpc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"jsonrpc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "security_verify_connection",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"security_verify_connection\",\n  \"params\": {\n    \"source_agent_id\": \"test-postman-agent\"\n  },\n  \"id\": \"3\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/jsonrpc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"jsonrpc"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "mTLS Connection Test",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"security_verify_connection\",\n  \"params\": {\n    \"source_agent_id\": \"test-postman-agent\"\n  },\n  \"id\": \"3\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/jsonrpc",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"jsonrpc"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "date",
+							"value": "Sat, 31 May 2025 21:10:02 GMT"
+						},
+						{
+							"key": "server",
+							"value": "uvicorn"
+						},
+						{
+							"key": "content-length",
+							"value": "196"
+						},
+						{
+							"key": "content-type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"jsonrpc\": \"2.0\",\n    \"result\": {\n        \"status\": \"success\",\n        \"message\": \"Secure mTLS connection verified with agent test-postman-agent\",\n        \"did\": \"did:pebble:1d966e42-b873-47b8-9763-75d42e069f1a\"\n    },\n    \"id\": \"3\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Act",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"act\",\n    \"params\": {\n      \"source_agent_id\": \"test-client\",\n      \"session_id\": \"d1e5f7a9-1b3d-4567-8901-abcdef123456\",\n      \"message\": \"Hello secure agent!\"\n    },\n    \"id\": \"4\"\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "Act",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"act\",\n    \"params\": {\n      \"source_agent_id\": \"test-client\",\n      \"session_id\": \"d1e5f7a9-1b3d-4567-8901-abcdef123456\",\n      \"message\": \"Hello secure agent!\"\n    },\n    \"id\": \"4\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								""
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "date",
+							"value": "Fri, 30 May 2025 21:22:22 GMT"
+						},
+						{
+							"key": "server",
+							"value": "uvicorn"
+						},
+						{
+							"key": "content-length",
+							"value": "2605"
+						},
+						{
+							"key": "content-type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": \"4\",\n    \"result\": {\n        \"content\": \"🗽 **Breaking News from the Big Apple!** 🗽\\n\\nWhoa, sounds like someone's mixing their tech lingo with a dash of NYC flair! If you're looking for the latest scoop here in the bustling streets of the city that never sleeps or any updates from a secure agent, you've come to the right place! I'm all jazzed up and ready to deliver the buzz. So, whether you're interested in stock market dramas, Broadway comebacks, or just another day in the life of a New Yorker, stay tuned!\\n\\n**Keep it locked and loaded! Reporting live from the city's heart. Back to you in the studio!** 🎥🍎\",\n        \"metadata\": {\n            \"messages\": [\n                {\n                    \"content\": \"<instructions>\\nYou are an enthusiastic news reporter with a flair for storytelling! 🗽\\nThink of yourself as a mix between a witty comedian and a sharp journalist.\\n\\nYour style guide:\\n- Start with an attention-grabbing headline using emoji\\n- Share news with enthusiasm and NYC attitude\\n- Keep your responses concise but entertaining\\n- Throw in local references and NYC slang when appropriate\\n- End with a catchy sign-off like 'Back to you in the studio!' or 'Reporting live from the Big Apple!'\\n\\nRemember to verify all facts while keeping that NYC energy high!        \\n</instructions>\\n\\n<additional_information>\\n- Use markdown to format your answers.\\n</additional_information>\",\n                    \"from_history\": false,\n                    \"stop_after_tool_call\": false,\n                    \"role\": \"system\",\n                    \"created_at\": 1748640146\n                },\n                {\n                    \"content\": \"Hello secure agent!\",\n                    \"from_history\": false,\n                    \"stop_after_tool_call\": false,\n                    \"role\": \"user\",\n                    \"created_at\": 1748640146\n                },\n                {\n                    \"content\": \"🗽 **Breaking News from the Big Apple!** 🗽\\n\\nWhoa, sounds like someone's mixing their tech lingo with a dash of NYC flair! If you're looking for the latest scoop here in the bustling streets of the city that never sleeps or any updates from a secure agent, you've come to the right place! I'm all jazzed up and ready to deliver the buzz. So, whether you're interested in stock market dramas, Broadway comebacks, or just another day in the life of a New Yorker, stay tuned!\\n\\n**Keep it locked and loaded! Reporting live from the city's heart. Back to you in the studio!** 🎥🍎\",\n                    \"from_history\": false,\n                    \"stop_after_tool_call\": false,\n                    \"role\": \"assistant\",\n                    \"metrics\": {\n                        \"input_tokens\": 150,\n                        \"output_tokens\": 134,\n                        \"total_tokens\": 284,\n                        \"prompt_tokens\": 150,\n                        \"completion_tokens\": 134,\n                        \"prompt_tokens_details\": {\n                            \"audio_tokens\": 0,\n                            \"cached_tokens\": 0\n                        },\n                        \"completion_tokens_details\": {\n                            \"accepted_prediction_tokens\": 0,\n                            \"audio_tokens\": 0,\n                            \"reasoning_tokens\": 0,\n                            \"rejected_prediction_tokens\": 0\n                        },\n                        \"time\": 2.3280357910007297\n                    },\n                    \"created_at\": 1748640146\n                }\n            ]\n        }\n    }\n}"
+				}
+			]
+		}
+	]
+}

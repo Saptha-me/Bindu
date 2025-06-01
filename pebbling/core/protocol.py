@@ -20,12 +20,12 @@ class CoreProtocolMethod(str, Enum):
 class SecurityProtocolMethod(str, Enum):
     """Security protocol methods."""
 
-    EXCHANGE_DID = "security_exchange_did"
-    VERIFY_IDENTITY = "security_verify_identity"
+    EXCHANGE_DID = "exchange_did"
+    VERIFY_IDENTITY = "verify_identity"
     
     # mTLS security methods
-    EXCHANGE_CERTIFICATES = "security_exchange_certificates"
-    VERIFY_CONNECTION = "security_verify_connection"
+    EXCHANGE_CERTIFICATES = "exchange_certificates"
+    VERIFY_CONNECTION = "verify_connection"
 
 # Discovery protocol
 class DiscoveryProtocolMethod(str, Enum):

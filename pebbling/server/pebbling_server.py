@@ -121,8 +121,7 @@ async def start_servers(
     rest_app: FastAPI,
     host: str,
     hosting_method: str,
-    pebbling_port: int,
-    user_port: int,
+    port: int=3773,
     ssl_context: Optional[Any] = None,
 ) -> None:
     """Start the pebbling protocol and user-facing servers.
@@ -132,8 +131,7 @@ async def start_servers(
         rest_app: FastAPI app for user-agent interactions
         host: Host to bind servers to
         hosting_method: Hosting method (local or docker)
-        pebbling_port: Port for protocol server
-        user_port: Port for user-facing server
+        port: Port for protocol server
         ssl_context: Optional SSL context for secure connections
     """
     logger.info(f"Starting servers with hosting method: {hosting_method}")
@@ -142,44 +140,42 @@ async def start_servers(
     server_display = _prepare_server_display()
     print(server_display)
     
+    # Create a single combined FastAPI app
+    combined_app = FastAPI()
+    
+    # Mount both apps as sub-applications with different path prefixes
+    combined_app.mount("/pebble", jsonrpc_app)
+    combined_app.mount("/human", rest_app)
+    
     # Additional server information
     hosting_info = f"Hosting method: {hosting_method}"
-    jsonrpc_info = f"JSON-RPC server: {host}:{pebbling_port}"
-    rest_info = f"REST API server: {host}:{user_port}"
+    server_info = f"Server running on: {host}:{port}"
+    jsonrpc_info = f"JSON-RPC endpoint: /pebble"
+    rest_info = f"REST API endpoint: /api"
     
     logger.info(hosting_info)
+    logger.info(server_info)
     logger.info(jsonrpc_info)
     logger.info(rest_info)
 
     # Create server configurations
-    pebbling_config = _create_uvicorn_config(
-        app=jsonrpc_app,
+    config = _create_uvicorn_config(
+        app=combined_app,
         host=host,
-        port=pebbling_port,
+        port=port,
         ssl_context=ssl_context
-    )
-    
-    user_config = _create_uvicorn_config(
-        app=rest_app,
-        host=host,
-        port=user_port
     )
 
     # Create server instances
-    pebbling_server = uvicorn.Server(pebbling_config)
-    user_server = uvicorn.Server(user_config)
+    server = uvicorn.Server(config)
 
     # Override installation signal handlers
-    pebbling_server.config.install_signal_handlers = False
-    user_server.config.install_signal_handlers = False
+    server.config.install_signal_handlers = False
 
     # Start both servers
     try:
         logger.debug("Starting server tasks")
-        await asyncio.gather(
-            pebbling_server.serve(),
-            user_server.serve(),
-        )
+        asyncio.run(server.serve())
     except Exception as e:
         logger.error(f"Error starting servers: {e}")
         raise

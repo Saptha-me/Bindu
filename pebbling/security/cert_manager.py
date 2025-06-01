@@ -1,18 +1,15 @@
 """Certificate manager for mTLS in pebbling agents."""
 
 import os
-import json
 import datetime
-from typing import Dict, Tuple, Optional, Any
+from typing import Dict, Tuple, Optional
 import ipaddress
 import socket
-from pathlib import Path
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from cryptography.x509.extensions import SubjectAlternativeName
 
 from pebbling.security.did_manager import DIDManager
 

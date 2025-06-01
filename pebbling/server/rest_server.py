@@ -1,11 +1,13 @@
 """REST server implementation for pebbling."""
 
+import os
 import uuid
 from typing import Any, Dict, Optional, Union
 
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 from pebbling.server.schemas.model import (
     AgentResponse,
@@ -15,8 +17,33 @@ from pebbling.server.schemas.model import (
 )
 
 
+def _configure_logger() -> None:
+    """Configure loguru logger for the REST server."""
+    # Remove default logger
+    logger.remove()
+    
+    # Ensure logs directory exists
+    os.makedirs("logs", exist_ok=True)
+    
+    # Add file logger with rotation
+    logger.add(
+        "logs/rest_server.log", 
+        rotation="10 MB", 
+        retention="1 week", 
+        level="INFO",
+        format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {message} | {extra}"
+    )
+    
+    # Add console logger for development
+    logger.add(lambda msg: print(msg), level="DEBUG", colorize=True)
+
+
 def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     """Create a REST API server for user interaction."""
+    # Configure logging
+    _configure_logger()
+    logger.info("Initializing REST API server")
+    
     rest_app = FastAPI(title="pebbling User API")
 
     # Configure CORS
@@ -27,9 +54,11 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    logger.debug("CORS middleware configured")
 
     # Create API router with /human prefix
     human_router = APIRouter(prefix="/human")
+    logger.debug("Created human API router with /human prefix")
 
     def _prepare_session(user_id: Optional[str], session_id: Optional[str]) -> Dict[str, str]:
         """Prepare session and user IDs, apply context if needed.
@@ -44,13 +73,16 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         # Generate IDs if not provided
         final_session_id = session_id or str(uuid.uuid4())
         final_user_id = user_id or f"user_{str(uuid.uuid4())}"
+        logger.debug(f"Prepared session with ID: {final_session_id} and user ID: {final_user_id}")
 
         # Apply user-specific context if needed
         if protocol_handler is not None and user_id and hasattr(protocol_handler, "apply_user_context"):
+            logger.debug(f"Applying user context for: {final_user_id}")
             protocol_handler.apply_user_context(final_user_id)
 
         # Initialize session
         if protocol_handler is not None and hasattr(protocol_handler, "_initialize_session"):
+            logger.debug(f"Initializing session: {final_session_id}")
             protocol_handler._initialize_session(final_session_id)
 
         return {"session_id": final_session_id, "user_id": final_user_id}
@@ -58,6 +90,7 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     def _cleanup_context():
         """Reset context after request processing if supported."""
         if protocol_handler is not None and hasattr(protocol_handler, "reset_context"):
+            logger.debug("Resetting protocol handler context")
             protocol_handler.reset_context()
 
     def _ensure_agent_response(result: Any, session_id: str) -> AgentResponse:
@@ -71,11 +104,15 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
             AgentResponse instance
         """
         if isinstance(result, AgentResponse):
+            logger.debug(f"Result already an AgentResponse for session {session_id}")
             return result
 
         # Convert to AgentResponse if it's not already
+        logger.debug(f"Converting result to AgentResponse for session {session_id}")
+        agent_id = protocol_handler.agent_id if protocol_handler is not None else None
+        
         return AgentResponse(
-            agent_id=(protocol_handler.agent_id if protocol_handler is not None else None),
+            agent_id=agent_id,
             session_id=session_id,
             role=MessageRole.AGENT,
             status="success",
@@ -86,12 +123,14 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     @human_router.get("/health", response_model=HealthResponse)
     async def health_check() -> Union[HealthResponse, ErrorResponse]:
         """Check the health of the agent server."""
+        logger.debug("Health check endpoint called")
         try:
             agent_status = (
                 getattr(protocol_handler.agent, "get_status", lambda: "healthy")()
                 if protocol_handler is not None
                 else "healthy"
             )
+            logger.info(f"Health check successful, agent status: {agent_status}")
             return HealthResponse(
                 status_code=200,
                 status=agent_status,
@@ -99,35 +138,43 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 timestamp=str(uuid.uuid4()),
             )
         except Exception as e:
+            logger.error(f"Health check failed: {e}")
             return ErrorResponse(
                 status_code=500,
                 status="error",
                 message=f"Health check failed: {str(e)}",
             )
 
-    @human_router.get("/status", response_model=HealthResponse)
-    async def status_check() -> Union[HealthResponse, ErrorResponse]:
-        """Check the status of the agent server."""
+    @human_router.get("/talk", response_model=HealthResponse)
+    async def talk() -> Union[HealthResponse, ErrorResponse]:
+        """Check the health of the agent server."""
+        logger.debug("Talk endpoint called")
         try:
             agent_status = (
                 getattr(protocol_handler.agent, "get_status", lambda: "healthy")()
                 if protocol_handler is not None
                 else "healthy"
             )
+            logger.info(f"Talk endpoint successful, agent status: {agent_status}")
+            timestamp = str(uuid.uuid4())
+            
             return HealthResponse(
                 status_code=200,
                 status=agent_status,
                 message="Service is running",
-                timestamp=str(uuid.uuid4()),
+                timestamp=timestamp,
             )
         except Exception as e:
+            logger.error(f"Talk endpoint failed: {e}")
             return ErrorResponse(
                 status_code=500,
                 status="error",
-                message=f"Status check failed: {str(e)}",
+                message=f"Health check failed: {str(e)}",
             )
+    
 
     # Include the human router in the main app
     rest_app.include_router(human_router)
-
+    logger.info("REST API server initialized successfully 🐧")
+    
     return rest_app

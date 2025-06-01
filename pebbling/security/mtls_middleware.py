@@ -1,11 +1,9 @@
 """mTLS middleware for secure agent-to-agent communication."""
 
-import json
 import logging
 import os
 import ssl
-import tempfile
-from typing import Dict, Optional, Any, Tuple
+from typing import Dict, Optional, Any
 
 from pebbling.security.cert_manager import CertificateManager
 from pebbling.security.did_manager import DIDManager

@@ -153,6 +153,9 @@ def pebblify(
         register_with_hibiscus: Whether to register agent with Hibiscus
         hibiscus_url: URL of Hibiscus agent registry
     """
+    if user_port is None:
+        user_port = pebbling_port + 1
+        
     if agent_id is None:
         agent_id = str(uuid.uuid4())
 

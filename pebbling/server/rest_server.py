@@ -3,7 +3,7 @@
 import uuid
 from typing import Any, Dict, Optional, Union
 
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -27,6 +27,9 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Create API router with /human prefix
+    human_router = APIRouter(prefix="/human")
 
     def _prepare_session(user_id: Optional[str], session_id: Optional[str]) -> Dict[str, str]:
         """Prepare session and user IDs, apply context if needed.
@@ -80,7 +83,7 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
             metrics={},
         )
 
-    @rest_app.get("/health", response_model=HealthResponse)
+    @human_router.get("/health", response_model=HealthResponse)
     async def health_check() -> Union[HealthResponse, ErrorResponse]:
         """Check the health of the agent server."""
         try:
@@ -102,7 +105,7 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 message=f"Health check failed: {str(e)}",
             )
 
-    @rest_app.get("/status", response_model=HealthResponse)
+    @human_router.get("/status", response_model=HealthResponse)
     async def status_check() -> Union[HealthResponse, ErrorResponse]:
         """Check the status of the agent server."""
         try:
@@ -123,5 +126,8 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
                 status="error",
                 message=f"Status check failed: {str(e)}",
             )
+
+    # Include the human router in the main app
+    rest_app.include_router(human_router)
 
     return rest_app

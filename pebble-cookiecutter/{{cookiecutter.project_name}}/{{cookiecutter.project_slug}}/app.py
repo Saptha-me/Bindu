@@ -54,8 +54,5 @@ pebblify(
     did_manager=did_manager,
     enable_security=True,
     enable_mtls=True,
-    cert_path="./pebble_project_certificates",
-    # Uncomment to register with a Hibiscus registry when available
-    # register_with_hibiscus=True,
-    # hibiscus_url="https://hibiscus.example.com",
+    cert_path="./pebble_project_certificates"
 )

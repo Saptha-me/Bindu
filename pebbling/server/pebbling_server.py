@@ -17,7 +17,6 @@ from pebbling.security.mtls_middleware import MTLSMiddleware
 from pebbling.server.jsonrpc_server import create_jsonrpc_server
 from pebbling.server.rest_server import create_rest_server
 from pebbling.server.server_security import SecurityMiddleware
-#from pebbling.utils import register_with_hibiscus_registry
 
 
 def _configure_logger() -> None:
@@ -53,7 +52,7 @@ def _prepare_server_display() -> str:
         from rich.panel import Panel
         from rich.text import Text
         
-        console = Console()
+        console = Console(record=True)
 
         # Create a stylish ASCII art logo with penguin emoji
         logo = """
@@ -81,10 +80,7 @@ def _prepare_server_display() -> str:
             box=box.DOUBLE,
         )
         
-        # Render the panel to console and return as string
-        with console.capture() as capture:
-            console.print(display_panel)
-        return capture.get()
+        return console.export_text(display_panel)
     except ImportError:
         return "🐧 Pebbling Protocol Framework v0.1.0"
 
@@ -257,9 +253,7 @@ def _setup_protocol_handler(
 def _setup_security_middleware(
     enable_security: bool,
     agent_id: str,
-    did_manager: Optional[DIDManager],
-    register_with_hibiscus: bool,
-    hibiscus_url: Optional[str]
+    did_manager: Optional[DIDManager]
 ) -> Tuple[Optional[SecurityMiddleware], Optional[DIDManager]]:
     """Set up security middleware if security is enabled.
     
@@ -267,8 +261,6 @@ def _setup_security_middleware(
         enable_security: Whether to enable DID-based security
         agent_id: Unique identifier for the agent
         did_manager: Optional DID manager for secure communication
-        register_with_hibiscus: Whether to register agent with Hibiscus
-        hibiscus_url: URL of Hibiscus agent registry
         
     Returns:
         Tuple of (security_middleware, did_manager)
@@ -288,19 +280,6 @@ def _setup_security_middleware(
     )
     
     logger.info(f"Agent DID: {did_manager.get_did()}")
-    
-    # Register with Hibiscus if requested
-    if register_with_hibiscus and hibiscus_url:
-        try:
-            asyncio.run(register_with_hibiscus_registry(
-                agent_id=agent_id,
-                did=did_manager.get_did(),
-                did_document=did_manager.get_did_document(),
-                hibiscus_url=hibiscus_url
-            ))
-            logger.info(f"Registered agent with Hibiscus at {hibiscus_url}")
-        except Exception as e:
-            logger.error(f"Failed to register with Hibiscus: {e}")
     
     return security_middleware, did_manager
 
@@ -354,9 +333,7 @@ def pebblify(
     did_manager: Optional[DIDManager] = None,
     enable_security: bool = False,
     enable_mtls: bool = False,
-    cert_path: Optional[str] = None,
-    register_with_hibiscus: bool = False,
-    hibiscus_url: Optional[str] = None,
+    cert_path: Optional[str] = None
 ) -> None:
     """
     Start pebbling protocol servers for an agent.
@@ -373,8 +350,6 @@ def pebblify(
         enable_security: Whether to enable DID-based security
         enable_mtls: Whether to enable mTLS secure connections
         cert_path: Path for storing certificates (if enable_mtls is True)
-        register_with_hibiscus: Whether to register agent with Hibiscus
-        hibiscus_url: URL of Hibiscus agent registry
     """
     # Configure logging
     _configure_logger()
@@ -405,9 +380,7 @@ def pebblify(
     security_middleware, did_manager = _setup_security_middleware(
         enable_security, 
         agent_id, 
-        did_manager, 
-        register_with_hibiscus, 
-        hibiscus_url
+        did_manager
     )
     
     # Set up mTLS middleware if enabled

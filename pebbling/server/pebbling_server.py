@@ -283,7 +283,9 @@ def _setup_security_middleware(
 def _setup_mtls_middleware(
     enable_mtls: bool,
     did_manager: Optional[DIDManager],
-    cert_path: Optional[str]
+    cert_path: Optional[str],
+    use_sheldon: bool = False,
+    sheldon_url: Optional[str] = None
 ) -> Tuple[Optional[MTLSMiddleware], Optional[Any]]:
     """Set up mTLS middleware if mTLS is enabled.
     
@@ -291,6 +293,8 @@ def _setup_mtls_middleware(
         enable_mtls: Whether to enable mTLS secure connections
         did_manager: DID manager for secure communication
         cert_path: Path for storing certificates
+        use_sheldon: Whether to use Sheldon CA for certificate management
+        sheldon_url: URL of the Sheldon CA service (required when use_sheldon is True)
         
     Returns:
         Tuple of (mtls_middleware, ssl_context)
@@ -298,22 +302,25 @@ def _setup_mtls_middleware(
     if not enable_mtls:
         return None, None
     
-    # Create certificate manager
-    cert_manager = CertificateManager(
-        did_manager=did_manager,
-        cert_path=cert_path
-    )
+    # Validate Sheldon configuration
+    if use_sheldon and not sheldon_url:
+        raise ValueError("sheldon_url is required when use_sheldon is True")
     
-    # Create mTLS middleware
+    # Create mTLS middleware with appropriate certificate manager
     mtls_middleware = MTLSMiddleware(
         did_manager=did_manager,
-        cert_manager=cert_manager
+        cert_path=cert_path,
+        use_sheldon=use_sheldon,
+        sheldon_url=sheldon_url
     )
     
     # Get SSL context for the server
     ssl_context = mtls_middleware.get_server_ssl_context()
     
-    logger.info(f"mTLS security enabled with certificates in: {cert_manager.cert_path}")
+    if use_sheldon:
+        logger.info(f"mTLS security enabled with Sheldon CA at {sheldon_url}")
+    else:
+        logger.info(f"mTLS security enabled with self-signed certificates in: {cert_path}")
     
     return mtls_middleware, ssl_context
 
@@ -328,7 +335,9 @@ def pebblify(
     did_manager: Optional[DIDManager] = None,
     enable_security: bool = False,
     enable_mtls: bool = False,
-    cert_path: Optional[str] = None
+    cert_path: Optional[str] = None,
+    use_sheldon: bool = False,
+    sheldon_url: Optional[str] = None
 ) -> None:
     """
     Start pebbling protocol servers for an agent.
@@ -344,6 +353,8 @@ def pebblify(
         enable_security: Whether to enable DID-based security
         enable_mtls: Whether to enable mTLS secure connections
         cert_path: Path for storing certificates (if enable_mtls is True)
+        use_sheldon: Whether to use Sheldon CA for certificate management
+        sheldon_url: URL of the Sheldon CA service (required when use_sheldon is True)
     """
     # Configure logging
     _configure_logger()
@@ -376,7 +387,9 @@ def pebblify(
     mtls_middleware, ssl_context = _setup_mtls_middleware(
         enable_mtls,
         did_manager,
-        cert_path
+        cert_path,
+        use_sheldon,
+        sheldon_url
     )
 
     # Create the servers

@@ -3,9 +3,11 @@
 import logging
 import os
 import ssl
-from typing import Dict, Optional, Any
+import tempfile
+from typing import Dict, Optional, Any, Union
 
 from pebbling.security.cert_manager import CertificateManager
+from pebbling.security.sheldon_cert_manager import SheldonCertificateManager
 from pebbling.security.did_manager import DIDManager
 
 logger = logging.getLogger(__name__)
@@ -21,9 +23,10 @@ class MTLSMiddleware:
     def __init__(
         self,
         did_manager: DIDManager,
-        cert_manager: Optional[CertificateManager] = None,
+        cert_manager: Optional[Union[CertificateManager, 'SheldonCertificateManager']] = None,
         cert_path: Optional[str] = None,
         verify_mode: int = ssl.CERT_REQUIRED,
+        sheldon_url: str = "http://localhost:8000",
     ):
         """Initialize the mTLS middleware.
         
@@ -32,13 +35,15 @@ class MTLSMiddleware:
             cert_manager: Optional certificate manager (will create one if not provided)
             cert_path: Path to store certificates (if cert_manager not provided)
             verify_mode: SSL verification mode
+            sheldon_url: URL of the Sheldon CA service
         """
         self.did_manager = did_manager
         
         if cert_manager is None:
-            self.cert_manager = CertificateManager(
+            self.cert_manager = SheldonCertificateManager(
                 did_manager=did_manager,
-                cert_path=cert_path
+                cert_path=cert_path,
+                sheldon_url=sheldon_url
             )
         else:
             self.cert_manager = cert_manager
@@ -165,43 +170,79 @@ class MTLSMiddleware:
         sender_server_cert = params.get("server_cert")
         sender_ca_cert = params.get("ca_cert")
         
-        if not sender_id or not sender_server_cert or not sender_ca_cert:
+        if not sender_id or not sender_server_cert:
             return {
                 "status": "error",
-                "message": "Missing source_agent_id, server_cert, or ca_cert in request"
+                "message": "Missing required certificate information in request"
             }
         
         # Register the peer's certificates
         try:
-            # Save CA cert
-            self.cert_manager.register_peer_certificate(
-                agent_id=f"{sender_id}_ca",
-                cert_pem=sender_ca_cert
-            )
-            
-            # Save server cert
-            self.cert_manager.register_peer_certificate(
-                agent_id=sender_id,
-                cert_pem=sender_server_cert
-            )
+            if self.using_sheldon:
+                # For Sheldon CA, we only need to verify the server cert
+                # The verification will be done through the Sheldon service
+                verified = await self.cert_manager.verify_peer_certificate(
+                    cert_pem=sender_server_cert,
+                    peer_id=sender_id
+                )
+                
+                if not verified:
+                    return {
+                        "status": "error",
+                        "message": "Certificate verification failed"
+                    }
+                
+                # Store the verified certificate
+                self.peer_certs[sender_id] = {
+                    "server_cert": sender_server_cert,
+                    "verification_token": self.cert_manager.get_verification_token(sender_id)
+                }
+            else:
+                # Traditional CA approach needs both server and CA certificates
+                if not sender_ca_cert:
+                    return {
+                        "status": "error",
+                        "message": "Missing ca_cert in request"
+                    }
+                    
+                # Save CA cert
+                self.cert_manager.register_peer_certificate(
+                    agent_id=f"{sender_id}_ca",
+                    cert_pem=sender_ca_cert
+                )
+                
+                # Save server cert
+                self.cert_manager.register_peer_certificate(
+                    agent_id=sender_id,
+                    cert_pem=sender_server_cert
+                )
+                
+                # Cache the peer's certificate info
+                self.peer_certs[sender_id] = {
+                    "server_cert": sender_server_cert,
+                    "ca_cert": sender_ca_cert
+                }
             
             logger.info(f"Registered certificates for agent {sender_id}")
             
-            # Cache the peer's certificate info
-            self.peer_certs[sender_id] = {
-                "server_cert": sender_server_cert,
-                "ca_cert": sender_ca_cert
-            }
-            
             # Return this agent's certificates
             cert_info = self.cert_manager.get_certificate_info()
-            return {
+            response = {
                 "status": "success",
                 "agent_id": cert_info["agent_id"],
                 "did": cert_info["did"],
-                "server_cert": cert_info["server_cert"],
-                "ca_cert": cert_info["ca_cert"]
+                "server_cert": cert_info["server_cert"]
             }
+            
+            # Add CA cert if using traditional approach
+            if not self.using_sheldon and "ca_cert" in cert_info:
+                response["ca_cert"] = cert_info["ca_cert"]
+                
+            # Add verification token if using Sheldon
+            if self.using_sheldon and sender_id in self.peer_certs:
+                response["verification_token"] = self.peer_certs[sender_id].get("verification_token", "")
+                
+            return response
             
         except Exception as e:
             logger.error(f"Error registering certificates: {e}")
@@ -222,6 +263,7 @@ class MTLSMiddleware:
             Response with connection status
         """
         sender_id = params.get("source_agent_id")
+        verification_token = params.get("verification_token", "")
         
         if not sender_id:
             return {
@@ -235,7 +277,24 @@ class MTLSMiddleware:
                 "status": "error",
                 "message": f"No certificates registered for agent {sender_id}"
             }
-
+        
+        # For Sheldon mode, check verification token
+        if self.using_sheldon:
+            if not verification_token:
+                return {
+                    "status": "error",
+                    "message": "Missing verification_token in request"
+                }
+                
+            # In a real implementation, validate the JWT token
+            # For now, we'll just accept it if it's present and matches what we have stored
+            stored_token = self.peer_certs[sender_id].get("verification_token", "")
+            if stored_token and stored_token != verification_token:
+                return {
+                    "status": "error",
+                    "message": "Invalid verification_token"
+                }
+        
         if not hasattr(self, "verified_connections"):
             self.verified_connections = set()
         
@@ -260,19 +319,26 @@ class MTLSMiddleware:
             return None
             
         # Create temporary files for certificates
-        with tempfile.NamedTemporaryFile(delete=False) as ca_file:
-            ca_file.write(self.peer_certs[peer_id]["ca_cert"].encode('utf-8'))
-            ca_path = ca_file.name
-            
         with tempfile.NamedTemporaryFile(delete=False) as cert_file:
             cert_file.write(self.peer_certs[peer_id]["server_cert"].encode('utf-8'))
             cert_path = cert_file.name
             
-        return {
+        result = {
             "agent_id": peer_id,
-            "ca_path": ca_path,
             "cert_path": cert_path
         }
+        
+        # Add CA path for traditional mode
+        if not self.using_sheldon and "ca_cert" in self.peer_certs[peer_id]:
+            with tempfile.NamedTemporaryFile(delete=False) as ca_file:
+                ca_file.write(self.peer_certs[peer_id]["ca_cert"].encode('utf-8'))
+                result["ca_path"] = ca_file.name
+                
+        # Add verification token for Sheldon mode
+        if self.using_sheldon and "verification_token" in self.peer_certs[peer_id]:
+            result["verification_token"] = self.peer_certs[peer_id]["verification_token"]
+            
+        return result
     
     def cleanup_temporary_files(self, connection_info: Dict[str, Any]) -> None:
         """Clean up temporary certificate files.

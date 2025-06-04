@@ -1,0 +1,28 @@
+{
+  "privateKeyBase58": "w3PdCo56SiXXUb+CTXOWQI65ikeexMNRQJO23fPSS30=",
+  "did": "did:pebble:8b91b53a-941e-4647-a101-95eeeeb18a6b",
+  "didDocument": {
+    "@context": [
+      "https://www.w3.org/ns/did/v1"
+    ],
+    "id": "did:pebble:8b91b53a-941e-4647-a101-95eeeeb18a6b",
+    "verificationMethod": [
+      {
+        "id": "did:pebble:8b91b53a-941e-4647-a101-95eeeeb18a6b#keys-1",
+        "type": "Ed25519VerificationKey2020",
+        "controller": "did:pebble:8b91b53a-941e-4647-a101-95eeeeb18a6b",
+        "publicKeyBase58": "qRDWzB9E/NlIvZZ9BOH/54H5qaehae44lm8hDIIpvOs="
+      }
+    ],
+    "authentication": [
+      "did:pebble:8b91b53a-941e-4647-a101-95eeeeb18a6b#keys-1"
+    ],
+    "service": [
+      {
+        "id": "did:pebble:8b91b53a-941e-4647-a101-95eeeeb18a6b#agent",
+        "type": "PebbleAgentCard",
+        "serviceEndpoint": "http://localhost:8000"
+      }
+    ]
+  }
+}

@@ -1776,6 +1776,11 @@ dev = [
     { name = "pytest-asyncio" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pebbling" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "agno", specifier = ">=1.3.2" },
@@ -1814,6 +1819,9 @@ requires-dist = [
     { name = "yfinance", specifier = ">=0.2.55" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pebbling", editable = "." }]
 
 [[package]]
 name = "peewee"

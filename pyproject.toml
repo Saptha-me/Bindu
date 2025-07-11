@@ -67,3 +67,11 @@ include = [
 
 [tool.uv.workspace]
 members = ["pebbling-template/my_project", "pebbling-template/project1"]
+
+[tool.uv.sources]
+pebbling = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pebbling",
+]

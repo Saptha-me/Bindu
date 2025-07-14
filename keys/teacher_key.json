@@ -1,0 +1,28 @@
+{
+  "privateKeyPem": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC6/BPq1CcBLF68\nalbgeaqTATm8EjY6nTp+afPyL4XHP2QZXwdb3MV7git0L8Pd615hSdzkvJOP6QMq\n4DLj8av9OM8J0/w2XtucSKaOY/mJO5RnBoIPD/SQwLgifmDh5R3ACew8STDbnfR4\nnTUTjMNE8fjsL2smeQWFUU8tW1hY0dzrwajrkLUbd9arUzwZfSkq+y2fzF0dbw8Z\nbfdD9nOpW/TU/uh3to5FGJ5Q+WI5g4uxCfH6SEBrqswzWTPx3UdkVMDSwJ4xk6aI\nTKdAofYbTG/+NJftr3AAK5ECXyEe6zZD3Qo7gX9gPrvdsxIy+xpbLHWZk2cJbokh\nxZmdq4z7AgMBAAECggEAQCgW02eInIvzU3WvKmVEhB0TCLc8+R6Sf+Ztx8bLgYJ8\nH4JuHXRiJA8VRs/Oxjmoj/wOeUNE5EdgiVkUzQZSa1ePHkGok6U3d+erkka2S4Jw\nWGswu+dPFE2zwE4ZgtigvRAKiOLaCzimta3HFNai92iI7s0UWEaFAOnVn2vso8iC\nt1jY1uiHIIEGJd8efRffmFx21G4RTlGIva6jDm2zoagfqur3cO9ZqpuUbcIjyGzG\nIy9YHaJsqP2eYikB3PNcHnq4ScrmjTWva28iOuNNjyhO6KkYGH0nwbS6pWLl+2JC\n2SwFAb5k9zR77YyWZfZ6njnI5yPrEvVCCzNpjQUl6QKBgQD5ToatBWDtqNUckrOt\nLrmixZDU4d3akGDlFKWGmqtSTxr/OD4T+idpp280+DEAzBSr/nCJZ+0VBctJ/YGT\nr6cHcufhCXH/631hRQ7NAze2OiMhy9Q8KuhOm/qShcpBhdmIGb26xCRH3FalJYHZ\nWEfKVcgPq1sW1XLWoB+bDTAHCQKBgQDAATcK89DGLZShjVoxhV+/hX2qBgagJYaI\nbcR8pgdir0s694VtQBFL4cGI+xS4N6D4mKR+YRDmD5pghSSdOaGN+w75/9CAV6aX\nfglsrJdPdywSN6LUi389UcP7gh0r5PTCwpM5+Y3PRtKzhPMxksG93PX6NdHfROcS\n9RJffO7Q4wKBgQDskxW9rjLyk5nXiWazWnmR+oSbXtJWC1fHSrZgavlUG/j0Y3yV\nHHa2Dcq7qyFlLkQXilVkLpiNsHfeeI+zg6Wurd1YcMwbHG5YFV4cMYd2hui7s15s\n0hKsNdurmwX483kfa73dMy9yeaZHBLaZdup5GLnGFMdVfauB+2TCj9sZcQKBgCJ3\n1V7E+ESraBQ8YOWk8NRb7Xw5SrUzJ1yUgAJ0d7zyhQnX537+UlyR8YFauZR8gAxA\nsr7xQ+xY/ri3DiSfdO4dFMoyb0aq9YAaoyx8K0mbtjCrBjMru7LRW+JpsDzyBDJ2\nZaGxuBBuwWJyyomqs9cWtJ2vTbbMEsNndV3o+qJLAoGAE4e3dA6i1bIB/xWdIbK/\nOfF+t3uCG4+2OtWc1ykcA62P+KHU49QHY0wdMjlGrtVxsquJIo9dkhqx7Aa2OtXy\nORVIxa8teQUOgyZRYcbUAxcFDu9Et8F2z/u6qBWZ0QVGy1oR9C5ap9PvcgHiXeCq\n0V+8A/hp+IGGlZFFMViRujE=\n-----END PRIVATE KEY-----\n",
+  "did": "did:pebble:e282948e-33b5-4e38-ae9e-fbe1b7caf88e",
+  "didDocument": {
+    "@context": [
+      "https://www.w3.org/ns/did/v1"
+    ],
+    "id": "did:pebble:e282948e-33b5-4e38-ae9e-fbe1b7caf88e",
+    "verificationMethod": [
+      {
+        "id": "did:pebble:e282948e-33b5-4e38-ae9e-fbe1b7caf88e#keys-1",
+        "type": "RsaVerificationKey2018",
+        "controller": "did:pebble:e282948e-33b5-4e38-ae9e-fbe1b7caf88e",
+        "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuvwT6tQnASxevGpW4Hmq\nkwE5vBI2Op06fmnz8i+Fxz9kGV8HW9zFe4IrdC/D3eteYUnc5LyTj+kDKuAy4/Gr\n/TjPCdP8Nl7bnEimjmP5iTuUZwaCDw/0kMC4In5g4eUdwAnsPEkw2530eJ01E4zD\nRPH47C9rJnkFhVFPLVtYWNHc68Go65C1G3fWq1M8GX0pKvstn8xdHW8PGW33Q/Zz\nqVv01P7od7aORRieUPliOYOLsQnx+khAa6rMM1kz8d1HZFTA0sCeMZOmiEynQKH2\nG0xv/jSX7a9wACuRAl8hHus2Q90KO4F/YD673bMSMvsaWyx1mZNnCW6JIcWZnauM\n+wIDAQAB\n-----END PUBLIC KEY-----\n"
+      }
+    ],
+    "authentication": [
+      "did:pebble:e282948e-33b5-4e38-ae9e-fbe1b7caf88e#keys-1"
+    ],
+    "service": [
+      {
+        "id": "did:pebble:e282948e-33b5-4e38-ae9e-fbe1b7caf88e#agent",
+        "type": "PebbleAgentCard",
+        "serviceEndpoint": "http://localhost:8000"
+      }
+    ]
+  }
+}

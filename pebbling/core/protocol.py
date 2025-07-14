@@ -34,7 +34,6 @@ class DiscoveryProtocolMethod(str, Enum):
     DISCOVER_AGENTS = "discover_agents"
     REGISTER_AGENT = "register_agent"
 
-
 class TaskStatus(str, Enum):
     """Task status values."""
 
@@ -44,13 +43,11 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
     CLARIFICATION_REQUIRED = "clarification_required"
 
-
 class MemoryType(str, Enum):
     """Memory types."""
 
     SHORT_TERM = "short-term"
     LONG_TERM = "long-term"
-
 
 class pebblingProtocol:
     """pebbling protocol implementation."""
@@ -70,8 +67,6 @@ class pebblingProtocol:
             with open(path, "r") as f:
                 self.protocol_config = json.load(f)
 
-
-
     def create_response(self, result: Any, request_id: str) -> Dict[str, Any]:
         """Create a protocol response."""
         return {"jsonrpc": self.JSONRPC_VERSION, "id": request_id, "result": result}
@@ -83,4 +78,3 @@ class pebblingProtocol:
             "id": request_id,
             "error": {"code": code, "message": message},
         }
-

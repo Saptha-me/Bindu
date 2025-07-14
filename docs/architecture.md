@@ -16,12 +16,12 @@ This phase outlines the single-line command process for agent creation:
        ├───────────────────────────────────┼───────────────────┐               │
        │                                   │                   │               │
        │             3. Register DID with Hibiscus             │               │
-       │───────────────────────────────────────────────────────>│               │
+       │──────────────────────────────────────────────────────>│               │
        │                                   │                   │               │
        │                                   │          4. Validate & register DID
        │                                   │                   │───────────────┤
        │                                   │                   │               │
-       │<───────────────────────────────────────────────────────┤               │
+       │<──────────────────────────────────────────────────────┤               │
        │                                   │                   │               │
        │        5. Generate CSR            │                   │               │
        │                                   │                   │               │
@@ -30,13 +30,13 @@ This phase outlines the single-line command process for agent creation:
        ├─── 7. Send CSR & JWT proof ──────>│                   │               │
        │                                   │                   │               │
        │                                   │                   │               │
-       │                                   ├─── 8. Verify DID ─────────────────>│
+       │                                   ├─── 8. Verify DID ────────────────>│
        │                                   │                   │               │
-       │                                   │        9. Confirm DID validity     │
-       │                                   │<───────────────────────────────────┤
+       │                                   │        9. Confirm DID validity    │
+       │                                   │<──────────────────────────────────┤
        │                                   │                                   │
        │                                   │                                   │
-       │                                   ├─── 10. Issue certificate           │
+       │                                   ├─── 10. Issue certificate          │
        │                                   │                                   │
        │<───── 11. Receive certificate ────┤                                   │
        │                                   │                                   │
@@ -45,7 +45,7 @@ This phase outlines the single-line command process for agent creation:
        │                                   │                                   │
        ├─── 13. Obtain deployment URL      │                                   │
        │                                   │                                   │
-       ├─── 14. Update DID doc & registry ─────────────────────────────────────>│
+       ├─── 14. Update DID doc & registry ────────────────────────────────────>│
        │          (with URL endpoint)      │                                   │
        │                                   │                   ┌───────────────┤
        │                                   │                   │ 15. Update DID│
@@ -108,16 +108,16 @@ Agent A                                   Agent B
 ## Complete End-to-End Pebbling Flow with mTLS & Communication
 
 ```
-┌───────────┐                 ┌───────────────────────────────────┐                    ┌───────────┐
-│ Human     │                 │ Pebbling Agent A                  │                    │ Agent B   │
-│ User      │                 │                                   │                    │           │
-└─────┬─────┘                 └──────────────┬────────────────────┘                    └─────┬─────┘
-      │                                      │                                               │
-      │                                      │                                               │
-      │── 1. Ask Question (Huma Port) ──────>│                                               │
-      │    ("Summarize document X")          │                                               │
-      │                                      │                                               │
-      │                                      │                                               │
+┌───────────┐                 ┌───────────────────────────────────┐                       ┌───────────┐
+│ Human     │                 │ Pebbling Agent A                  │                       │ Agent B   │
+│ User      │                 │                                   │                       │           │
+└─────┬─────┘                 └──────────────┬────────────────────┘                       └─────┬─────┘
+      │                                      │                                                  │
+      │                                      │                                              │
+      │── 1. Ask Question (Huma Port) ──────>│                                              │
+      │    ("Summarize document X")          │                                              │
+      │                                      │                                              │
+      │                                      │                                              │
       │                                      ├─── 2. Determine additional data needed        │
       │                                      │                                               │
       │                                      ├─── 3. Initiate Pebble Port mTLS handshake ───>│
@@ -127,7 +127,7 @@ Agent A                                   Agent B
       │                                      │─── 5. Secure request via Pebble Port ────────>│
       │                                      │    ("Provide context data for document X")    │
       │                                      │                                               │
-      │                                      │<─── 6. Secure response via Pebble Port ───────│
+      │                                      │<─── 6. Secured pebble response via Port ───────│
       │                                      │    ("Context data provided")                  │
       │                                      │                                               │
       │                                      ├─── 7. Process & summarize document            │

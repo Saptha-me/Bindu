@@ -3,6 +3,9 @@
 import logging
 import os
 import ssl
+import tempfile
+import requests
+import base64
 from typing import Dict, Optional, Any
 
 from pebbling.security.cert_manager import CertificateManager
@@ -61,10 +64,53 @@ class MTLSMiddleware:
         
         # Load certificates
         server_context = self.cert_manager.get_server_context()
-        context.load_cert_chain(
-            certfile=server_context["certfile"],
-            keyfile=server_context["keyfile"]
-        )
+        
+        # Check if certificate files exist and are readable
+        for key, path in [("certfile", server_context["certfile"]), 
+                        ("ca_certs", server_context["ca_certs"])]:
+            if not os.path.exists(path):
+                logger.error(f"Certificate file not found: {key}={path}")
+                raise FileNotFoundError(f"Certificate file not found: {key}={path}")
+            
+            # Check if file is readable and try to handle base64-encoded content
+            try:
+                with open(path, "r") as f:
+                    content = f.read()
+                    
+                # If it doesn't look like PEM but could be base64, try to decode it
+                if "-----BEGIN" not in content and "-----END" not in content:
+                    logger.warning(f"File {path} doesn't appear to be in PEM format, trying base64 decode")
+                    try:
+                        # Try to decode as base64
+                        decoded = base64.b64decode(content).decode('utf-8')
+                        
+                        # Check if the decoded content is a valid PEM
+                        if "-----BEGIN" in decoded and "-----END" in decoded:
+                            logger.info(f"Successfully decoded base64 content in {path}")
+                            # Write the decoded content back to the file
+                            with open(path, "w") as f:
+                                f.write(decoded)
+                        else:
+                            logger.error(f"Invalid PEM format in {key}={path} (after base64 decoding)")
+                            raise ValueError(f"Invalid PEM format in {key}={path} (after base64 decoding)")
+                    except Exception as e:
+                        logger.error(f"Error decoding base64 content in {key}={path}: {e}")
+                        raise ValueError(f"Invalid certificate format in {key}={path}: {e}")
+            except Exception as e:
+                logger.error(f"Error reading certificate file {key}={path}: {e}")
+                raise
+        
+        try:
+            # Load certificate chain
+            context.load_cert_chain(
+                certfile=server_context["certfile"],
+                keyfile=server_context["keyfile"]
+            )
+        except Exception as e:
+            logger.error(f"Error loading certificate chain: {e}")
+            # Debug information
+            logger.error(f"Certificate paths: certfile={server_context['certfile']}, keyfile={server_context['keyfile']}")
+            raise
         
         # Load CA certificates for peer verification
         context.load_verify_locations(cafile=server_context["ca_certs"])
@@ -82,7 +128,7 @@ class MTLSMiddleware:
         context.options |= (
             ssl.OP_NO_SSLv2 | 
             ssl.OP_NO_SSLv3 | 
-            ssl.OP_NO_TLSv1 
+            ssl.OP_NO_TLSv1  
             #ssl.OP_NO_TLSv1_1
         )
         
@@ -109,10 +155,54 @@ class MTLSMiddleware:
         
         # Load certificates
         client_context = self.cert_manager.get_client_context()
-        context.load_cert_chain(
-            certfile=client_context["certfile"],
-            keyfile=client_context["keyfile"]
-        )
+        
+        # Check if certificate files exist and are readable
+        for key, path in [("certfile", client_context["certfile"]), 
+                        ("keyfile", client_context["keyfile"]), 
+                        ("ca_certs", client_context["ca_certs"])]:
+            if not os.path.exists(path):
+                logger.error(f"Certificate file not found: {key}={path}")
+                raise FileNotFoundError(f"Certificate file not found: {key}={path}")
+            
+            # Check if file is readable and try to handle base64-encoded content
+            try:
+                with open(path, "r") as f:
+                    content = f.read()
+                    
+                # If it doesn't look like PEM but could be base64, try to decode it
+                if "-----BEGIN" not in content and "-----END" not in content:
+                    logger.warning(f"File {path} doesn't appear to be in PEM format, trying base64 decode")
+                    try:
+                        # Try to decode as base64
+                        decoded = base64.b64decode(content).decode('utf-8')
+                        
+                        # Check if the decoded content is a valid PEM
+                        if "-----BEGIN" in decoded and "-----END" in decoded:
+                            logger.info(f"Successfully decoded base64 content in {path}")
+                            # Write the decoded content back to the file
+                            with open(path, "w") as f:
+                                f.write(decoded)
+                        else:
+                            logger.error(f"Invalid PEM format in {key}={path} (after base64 decoding)")
+                            raise ValueError(f"Invalid PEM format in {key}={path} (after base64 decoding)")
+                    except Exception as e:
+                        logger.error(f"Error decoding base64 content in {key}={path}: {e}")
+                        raise ValueError(f"Invalid certificate format in {key}={path}: {e}")
+            except Exception as e:
+                logger.error(f"Error reading certificate file {key}={path}: {e}")
+                raise
+        
+        try:
+            # Load certificate chain
+            context.load_cert_chain(
+                certfile=client_context["certfile"],
+                keyfile=client_context["keyfile"]
+            )
+        except Exception as e:
+            logger.error(f"Error loading certificate chain: {e}")
+            # Debug information
+            logger.error(f"Certificate paths: certfile={client_context['certfile']}, keyfile={client_context['keyfile']}")
+            raise
         
         # Load CA certificates for server verification
         context.load_verify_locations(cafile=client_context["ca_certs"])
@@ -236,6 +326,21 @@ class MTLSMiddleware:
                 "message": f"No certificates registered for agent {sender_id}"
             }
 
+        # Check if the certificate's DID matches the claimed DID
+        try:
+            peer_cert_info = self.cert_manager.extract_did_from_certificate(self.peer_certs[sender_id]["server_cert"])
+            if peer_cert_info["did"] != params.get("did"):
+                return {
+                    "status": "error",
+                    "message": f"DID mismatch in certificate for agent {sender_id}"
+                }
+        except Exception as e:
+            logger.error(f"Error verifying DID in certificate: {e}")
+            return {
+                "status": "error", 
+                "message": f"Error verifying DID in certificate: {str(e)}"
+            }
+
         if not hasattr(self, "verified_connections"):
             self.verified_connections = set()
         
@@ -304,3 +409,65 @@ class MTLSMiddleware:
             "ssl_cert_reqs": self.verify_mode,
             "ssl_context": self.get_server_ssl_context()
         }
+
+    def get_client_connection_params(self, target_url: str) -> Dict[str, Any]:
+        """Get client connection parameters for connecting to other agents.
+        
+        Args:
+            target_url: The URL of the target agent
+            
+        Returns:
+            Dictionary with SSL context and connection parameters
+        """
+        return {
+            "ssl": self.get_client_ssl_context(),
+            "verify_ssl": True,
+            "target_url": target_url
+        }
+        
+    async def connect_to_peer(self, peer_did: str, hibiscus_url: Optional[str] = None) -> Dict[str, Any]:
+        """Connect to a peer agent using their DID.
+        
+        Args:
+            peer_did: DID of the peer agent
+            hibiscus_url: Optional URL of Hibiscus registry
+            
+        Returns:
+            Connection information or error
+        """
+        # Set default Hibiscus URL if not provided
+        hibiscus_url = hibiscus_url or os.environ.get('HIBISCUS_URL', 'http://localhost:8080')
+        
+        try:
+            # Lookup peer agent endpoint in Hibiscus
+            headers = {'Content-Type': 'application/json'}
+            response = requests.get(f"{hibiscus_url}/lookup/{peer_did}", headers=headers)
+            
+            if response.status_code != 200:
+                return {
+                    "status": "error",
+                    "message": f"Failed to lookup peer DID: HTTP {response.status_code} - {response.text}"
+                }
+                
+            # Extract endpoint URL
+            peer_info = response.json()
+            endpoint = peer_info.get("serviceEndpoint")
+            
+            if not endpoint:
+                return {
+                    "status": "error",
+                    "message": "No endpoint found for peer DID"
+                }
+                
+            # Return connection parameters
+            return {
+                "status": "success",
+                "connection_params": self.get_client_connection_params(endpoint)
+            }
+                
+        except Exception as e:
+            logger.error(f"Error connecting to peer: {e}")
+            return {
+                "status": "error",
+                "message": f"Error connecting to peer: {str(e)}"
+            }

@@ -6,6 +6,7 @@ management components for a unified interface to mTLS certificate operations.
 """
 
 import os
+import ssl
 import logging
 import datetime
 from typing import Dict, Any, Optional, Tuple

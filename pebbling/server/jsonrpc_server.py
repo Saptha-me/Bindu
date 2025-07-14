@@ -9,7 +9,7 @@ from loguru import logger
 
 from pebbling.core.protocol import pebblingProtocol
 from pebbling.server.server_security import SecurityMiddleware
-from pebbling.security.mtls_middleware import MTLSMiddleware
+from pebbling.security.mtls.certificate_manager import CertificateManager
 from pebbling.utils.jsonrpc_utils import create_success_response, create_error_response
 from pebbling.utils.logging_config import configure_logger, get_module_logger
 from pebbling.utils.security_utils import (
@@ -36,7 +36,7 @@ class JSONRPCServer:
         protocol_handler: Any,
         supported_methods: Optional[List[str]] = None,
         security_middleware: Optional[SecurityMiddleware] = None,
-        mtls_middleware: Optional[MTLSMiddleware] = None,
+        certificate_manager: Optional[CertificateManager] = None,
     ):
         """Initialize the JSON-RPC server.
 
@@ -45,7 +45,7 @@ class JSONRPCServer:
             protocol_handler: Protocol handler implementation
             supported_methods: List of supported protocol methods
             security_middleware: Optional security middleware
-            mtls_middleware: Optional mTLS middleware
+            certificate_manager: Optional certificate manager for mTLS
         """
         self.logger = get_module_logger("jsonrpc_server")
         self.logger.debug("Initializing JSONRPCServer")
@@ -54,8 +54,8 @@ class JSONRPCServer:
         self.protocol_handler = protocol_handler
         self.supported_methods = supported_methods or []
         self.security_middleware = security_middleware
-        self.mtls_middleware = mtls_middleware
-        self.security_handlers = register_security_handlers(security_middleware, mtls_middleware)
+        self.certificate_manager = certificate_manager
+        self.security_handlers = register_security_handlers(security_middleware, certificate_manager)
         
         self.logger.debug(f"Registered {len(self.security_handlers)} security handlers")
 
@@ -148,7 +148,7 @@ def create_jsonrpc_server(
     protocol_handler: Any,
     supported_methods: Optional[List[str]] = None,
     security_middleware: Optional[SecurityMiddleware] = None,
-    mtls_middleware: Optional[MTLSMiddleware] = None,
+    certificate_manager: Optional[CertificateManager] = None,
 ) -> FastAPI:
     """Create a FastAPI app for the JSON-RPC server.
     
@@ -157,7 +157,7 @@ def create_jsonrpc_server(
         protocol_handler: Protocol handler implementation
         supported_methods: List of supported methods
         security_middleware: Optional security middleware for DID-based security
-        mtls_middleware: Optional mTLS middleware for secure connections
+        certificate_manager: Optional certificate manager for mTLS secure connections
         
     Returns:
         FastAPI app
@@ -179,7 +179,7 @@ def create_jsonrpc_server(
         protocol_handler=protocol_handler,
         supported_methods=supported_methods,
         security_middleware=security_middleware,
-        mtls_middleware=mtls_middleware,
+        certificate_manager=certificate_manager,
     )
     
     # Create FastAPI app

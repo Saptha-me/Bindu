@@ -17,14 +17,16 @@ from pebbling.security.did_manager import DIDManager
 from pebbling.server.logging import configure_logger
 from pebbling.server.display import prepare_server_display
 from pebbling.server.protocol_handler import setup_protocol_handler
-from pebbling.server.security.middleware_setup import (
+
+# Import security components from our new modular structure
+from pebbling.server.security import SecurityMiddleware, CertificateManager
+from pebbling.server.security.middleware.server_middleware import ServerSecurityMiddleware
+from pebbling.security.handlers import (
     setup_security_methods,
-    setup_security_middleware,
-    setup_mtls_middleware,
     extract_did_manager
 )
-from pebbling.server.security.hibiscus_registry import register_with_hibiscus_registry
-from pebbling.server.security.sheldon_service import setup_sheldon_certificates
+from pebbling.hibiscus import register_with_hibiscus_registry
+from pebbling.security.sheldon_service import setup_sheldon_certificates
 from pebbling.server.server_utils import start_servers
 
 
@@ -80,11 +82,23 @@ async def pebblify(
     protocol_handler = setup_protocol_handler(agent, agent_id)
     
     # Set up security middleware if enabled
-    security_middleware, did_manager = setup_security_middleware(
-        enable_security, 
-        agent_id, 
-        did_manager
-    )
+    security_middleware = None
+    if enable_security:
+        if did_manager is None:
+            # Try to extract DID manager from agent
+            did_manager = extract_did_manager(agent)
+            if did_manager is None:
+                # Create a new DID manager
+                did_manager = DIDManager(agent_id=agent_id)
+                logger.info(f"Created new DID manager for agent {agent_id}")
+        
+        # Create security middleware
+        core_security = SecurityMiddleware(did_manager, agent_id)
+        security_middleware = ServerSecurityMiddleware(
+            security_middleware=core_security,
+            agent_id=agent_id
+        )
+        logger.info(f"Security middleware initialized for agent {agent_id}")
     
     # Register agent DID with Hibiscus (if enabled)
     if register_with_hibiscus:
@@ -112,23 +126,21 @@ async def pebblify(
         )
     
     # Set up Sheldon CA certificates if required
-    cert_manager = None
+    certificate_manager = None
+    ssl_context = None
+    
     if enable_security and enable_mtls:
         # Setup certificates
-        cert_manager = setup_sheldon_certificates(
+        certificate_manager = setup_sheldon_certificates(
             did_manager=did_manager,
             cert_path=cert_path,
             sheldon_ca_url=sheldon_ca_url,
         )
-    
-    # Set up mTLS middleware if enabled
-    mtls_middleware, ssl_context = setup_mtls_middleware(
-        enable_mtls,
-        agent_id,
-        did_manager,
-        cert_path=cert_path,
-        cert_manager=cert_manager
-    )
+        
+        # Create SSL context for HTTPS
+        if certificate_manager:
+            ssl_context = certificate_manager.create_ssl_context(server_side=True)
+            logger.info(f"SSL context created for secure communications")
     
     # Create the servers
     jsonrpc_app = create_jsonrpc_server(
@@ -136,7 +148,7 @@ async def pebblify(
         protocol_handler=protocol_handler,
         supported_methods=supported_methods,
         security_middleware=security_middleware,
-        mtls_middleware=mtls_middleware
+        certificate_manager=certificate_manager
     )
     
     rest_app = create_rest_server(

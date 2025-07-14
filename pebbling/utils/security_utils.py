@@ -4,14 +4,14 @@ from typing import Any, Dict, Optional
 from loguru import logger
 
 from pebbling.server.server_security import SecurityMiddleware
-from pebbling.security.mtls_middleware import MTLSMiddleware
+from pebbling.security.mtls.certificate_manager import CertificateManager
 
 
 async def verify_security_requirements(
     method: str,
     params: Dict[str, Any],
     security_middleware: Optional[SecurityMiddleware],
-    mtls_middleware: Optional[MTLSMiddleware]
+    certificate_manager: Optional[CertificateManager]
 ) -> bool:
     """Check if a method meets all security requirements.
     
@@ -19,7 +19,7 @@ async def verify_security_requirements(
         method: The method name to check
         params: Method parameters
         security_middleware: The DID-based security middleware
-        mtls_middleware: The mTLS security middleware
+        certificate_manager: The certificate manager for mTLS security
         
     Returns:
         True if security is satisfied, False otherwise
@@ -34,7 +34,7 @@ async def verify_security_requirements(
             return False
             
         # Check mTLS verification
-        if not mtls_middleware or not mtls_middleware.is_connection_verified(source_agent_id):
+        if not certificate_manager or not certificate_manager.is_connection_verified(source_agent_id):
             logger.warning(f"mTLS verification failed for agent {source_agent_id}")
             return False
             
@@ -44,14 +44,14 @@ async def verify_security_requirements(
 def needs_security_check(
     request: Dict[str, Any],
     security_middleware: Optional[SecurityMiddleware],
-    mtls_middleware: Optional[MTLSMiddleware]
+    certificate_manager: Optional[CertificateManager]
 ) -> bool:
     """Determine if a request needs security verification.
     
     Args:
         request: JSON-RPC request object
         security_middleware: The DID-based security middleware
-        mtls_middleware: The mTLS security middleware
+        certificate_manager: The certificate manager for mTLS security
         
     Returns:
         True if security check is needed, False otherwise
@@ -59,7 +59,7 @@ def needs_security_check(
     security_methods = ["exchange_did", "verify_identity", "exchange_certificates", "verify_connection"]
     return (
         security_middleware and 
-        mtls_middleware and 
+        certificate_manager and 
         request.get("method") not in security_methods
     )
 
@@ -85,13 +85,13 @@ def create_security_failure_response(request_id: Any) -> Dict[str, Any]:
 
 def register_security_handlers(
     security_middleware: Optional[SecurityMiddleware],
-    mtls_middleware: Optional[MTLSMiddleware]
+    certificate_manager: Optional[CertificateManager]
 ) -> Dict[str, Any]:
     """Register security method handlers based on available middleware.
     
     Args:
         security_middleware: The DID-based security middleware
-        mtls_middleware: The mTLS security middleware
+        certificate_manager: The certificate manager for mTLS security
         
     Returns:
         Dictionary mapping method names to handler functions
@@ -105,11 +105,11 @@ def register_security_handlers(
             "verify_identity": security_middleware.handle_verify_identity,
         })
         
-    # If mTLS middleware is provided, register mTLS method handlers
-    if mtls_middleware:
+    # If certificate manager is provided, register mTLS method handlers
+    if certificate_manager:
         security_handlers.update({
-            "exchange_certificates": mtls_middleware.handle_exchange_certificates,
-            "verify_connection": mtls_middleware.handle_verify_connection,
+            "exchange_certificates": certificate_manager.handle_exchange_certificates,
+            "verify_connection": certificate_manager.handle_verify_connection,
         })
         
     return security_handlers

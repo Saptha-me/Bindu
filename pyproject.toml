@@ -50,6 +50,12 @@ dependencies = [
     "cryptography>=44.0.2",
     "pydocstyle>=6.3.0",
     "orjson>=3.10.18",
+    "opentelemetry-instrumentation-httpx>=0.56b0",
+    "opentelemetry-api>=1.35.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.35.0",
+    "opentelemetry-instrumentation-fastapi>=0.56b0",
+    "opentelemetry-sdk>=1.35.0",
+    "psycopg2-binary>=2.9.10",
 ]
 
 [project.optional-dependencies]

@@ -3,7 +3,7 @@
 from typing import Any, Dict, List, Optional
 from loguru import logger
 
-from pebbling.security.did_manager import DIDManager
+from pebbling.security.did_manager.did_manager import DIDManager
 from pebbling.security.hibiscus import HibiscusRegistrar
 
 

@@ -574,18 +574,111 @@ class TrustVerificationParams(BaseModel):
 
 
 class MessageSendConfiguration(BaseModel):
+    """
+    Configuration for sending messages to an agent.
+    
+    This model controls how messages are processed, including output modes
+    (sync, async, streaming), blocking behavior, and history context length.
+    
+    Examples:
+        ```python
+        # Configure synchronous blocking request
+        sync_config = MessageSendConfiguration(
+            acceptedOutputModes=[RunMode.sync.value],
+            blocking=True,
+            historyLength=10
+        )
+        
+        # Configure streaming non-blocking request
+        stream_config = MessageSendConfiguration(
+            acceptedOutputModes=[RunMode.stream.value],
+            blocking=False
+        )
+        
+        # Configure request that accepts multiple output modes
+        flexible_config = MessageSendConfiguration(
+            acceptedOutputModes=[RunMode.sync.value, RunMode.async_.value, RunMode.stream.value],
+            blocking=True
+        )
+        ```
+    """
     acceptedOutputModes: List[str] = Field(..., title='Acceptedoutputmodes')
     blocking: Optional[bool] = Field(None, title='Blocking')
     historyLength: Optional[int] = Field(None, title='Historylength')
 
 
 class TextPart(BaseModel):
+    """
+    A text message part in the Pebbling communication protocol.
+    
+    TextPart represents plain text content in messages between users and agents.
+    It's the most common message part type for standard text interactions.
+    
+    Examples:
+        ```python
+        # Create a simple text part
+        text = TextPart(content="Hello! How can I assist you today?")
+        
+        # Create text part with metadata
+        annotated_text = TextPart(
+            content="Here's the information you requested.",
+            metadata={
+                "language": "en",
+                "confidence": 0.98,
+                "tone": "informational"
+            }
+        )
+        
+        # Add text part to a message
+        message = Message(
+            role=Role.agent,
+            parts=[text],
+            # ... other message fields
+        )
+        ```
+    """
     kind: str = Field('text', const=True, title='Kind')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     content: str = Field(..., title='Content')
 
 
 class DataPart(BaseModel):
+    """
+    A structured data message part in the Pebbling communication protocol.
+    
+    DataPart represents structured data in messages, allowing agents to
+    exchange machine-readable information alongside human-readable content.
+    Useful for conveying results, parameters, or other structured information.
+    
+    Examples:
+        ```python
+        # Create a data part with analysis results
+        analysis_data = DataPart(
+            content="Analysis results for your query",
+            data={
+                "sentiment": "positive",
+                "entities": ["Apple", "technology", "innovation"],
+                "confidence_score": 0.87,
+                "recommended_actions": ["follow up", "investigate"] 
+            }
+        )
+        
+        # Create a data part with geolocation
+        location_data = DataPart(
+            content="Nearest coffee shops",
+            data={
+                "locations": [
+                    {"name": "Coffee House", "distance": "0.3 miles", 
+                     "coords": {"lat": 37.7749, "lng": -122.4194}},
+                    {"name": "Brew Corner", "distance": "0.5 miles", 
+                     "coords": {"lat": 37.7748, "lng": -122.4141}}
+                ],
+                "search_radius": "1 mile"
+            },
+            metadata={"source": "maps-api", "timestamp": "2023-10-27T10:00:00Z"}
+        )
+        ```
+    """
     kind: str = Field('data', const=True, title='Kind')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     content: str = Field(..., title='Content')
@@ -593,12 +686,73 @@ class DataPart(BaseModel):
 
 
 class FileWithBytes(BaseModel):
+    """
+    File representation with raw byte content for message attachments.
+    
+    FileWithBytes represents a file as base64-encoded bytes with metadata
+    about the file type and name. Used for file attachments in messages.
+    
+    Examples:
+        ```python
+        # Create a file attachment with base64 encoded data
+        import base64
+        
+        # Read image file and encode as base64
+        with open('image.jpg', 'rb') as f:
+            image_bytes = base64.b64encode(f.read()).decode('utf-8')
+            
+        # Create file attachment
+        image_file = FileWithBytes(
+            bytes=image_bytes,
+            mimeType="image/jpeg",
+            name="sunset_photo.jpg"
+        )
+        
+        # Use in a file part (assuming a FilePart class exists)
+        file_part = FilePart(
+            kind="file",
+            file=image_file
+        )
+        ```
+    """
     bytes: str = Field(..., title='Bytes')
     mimeType: Optional[str] = Field(None, title='Mimetype')
     name: Optional[str] = Field(None, title='Name')
 
 
 class FileWithUri(BaseModel):
+    """
+    File representation with URI reference for message attachments.
+    
+    FileWithUri extends FileWithBytes by adding a URI reference to the file,
+    allowing for remote access or reference to the file resource.
+    
+    Examples:
+        ```python
+        # Create a file with URI reference
+        import base64
+        
+        # Read document file and encode as base64
+        with open('document.pdf', 'rb') as f:
+            doc_bytes = base64.b64encode(f.read()).decode('utf-8')
+            
+        # Create file with URI
+        pdf_file = FileWithUri(
+            bytes=doc_bytes,  # Can be empty string if only using URI
+            mimeType="application/pdf",
+            name="quarterly_report.pdf",
+            uri="https://storage.example.com/documents/quarterly_report.pdf"
+        )
+        
+        # Example showing a file reference with minimal bytes
+        large_file = FileWithUri(
+            bytes="",  # Empty since we're only using the URI
+            name="large_dataset.csv",
+            mimeType="text/csv",
+            uri="https://data.example.com/datasets/large_dataset.csv"
+        )
+        ```
+    """
     bytes: str = Field(..., title='Bytes')
     mimeType: Optional[str] = Field(None, title='Mimetype')
     name: Optional[str] = Field(None, title='Name')
@@ -606,19 +760,83 @@ class FileWithUri(BaseModel):
 
 
 class TaskState(Enum):
-    submitted = 'submitted'
-    working = 'working'
-    input_required = 'input-required'
-    completed = 'completed'
-    canceled = 'canceled'
-    failed = 'failed'
-    rejected = 'rejected'
-    auth_required = 'auth-required'
-    unknown = 'unknown'
-    trust_verification_required = 'trust-verification-required'
+    """
+    Possible states of a task in the Pebbling protocol.
+    
+    TaskState tracks the lifecycle of a task from submission to completion,
+    including intermediate states that may require user interaction.
+    
+    Examples:
+        ```python
+        # Check if task requires user interaction
+        def requires_user_action(task):
+            interactive_states = [
+                TaskState.input_required,
+                TaskState.auth_required,
+                TaskState.trust_verification_required
+            ]
+            return task.state in interactive_states
+        
+        # Process task based on state
+        def handle_task(task):
+            if task.state == TaskState.completed:
+                process_results(task.result)
+            elif task.state == TaskState.failed:
+                handle_failure(task.error)
+            elif task.state == TaskState.working:
+                show_progress_indicator()
+            elif requires_user_action(task):
+                prompt_for_user_input(task)
+        ```
+    """
+    submitted = 'submitted'                          # Task has been submitted but not yet started
+    working = 'working'                              # Task is currently being processed
+    input_required = 'input-required'                # Task requires additional input from the user
+    completed = 'completed'                          # Task has been successfully completed
+    canceled = 'canceled'                            # Task was canceled before completion
+    failed = 'failed'                                # Task encountered an error and could not complete
+    rejected = 'rejected'                            # Task was rejected by the agent
+    auth_required = 'auth-required'                  # Task requires authentication to proceed
+    unknown = 'unknown'                              # Task state could not be determined
+    trust_verification_required = 'trust-verification-required'  # Task requires trust verification
 
 
 class TaskIdParams(BaseModel):
+    """
+    Parameters for identifying and managing a specific task.
+    
+    TaskIdParams provides the necessary identification for task operations
+    like retrieving status, canceling tasks, or resubscribing to updates.
+    
+    Examples:
+        ```python
+        # Create parameters for a task query
+        from uuid import UUID
+        
+        task_params = TaskIdParams(
+            id=UUID('12345678-1234-5678-1234-567812345678'),
+            metadata={
+                "client_version": "2.1.0",
+                "request_source": "mobile_app"
+            }
+        )
+        
+        # Use parameters in a task status request
+        get_task_request = GetTaskRequest(
+            id=UUID('87654321-8765-4321-8765-432187654321'),
+            method='tasks/get',
+            params=task_params
+        )
+        
+        # Use parameters in a task cancellation
+        cancel_params = TaskIdParams(id=UUID('12345678-1234-5678-1234-567812345678'))
+        cancel_request = CancelTaskRequest(
+            id=UUID('98765432-9876-5432-9876-543298765432'),
+            method='tasks/cancel',
+            params=cancel_params
+        )
+        ```
+    """
     id: UUID = Field(..., title='Id')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
 

@@ -1,0 +1,29 @@
+{
+  "description": "JSON-RPC parse error",
+  "properties": {
+    "code": {
+      "const": -32700,
+      "default": -32700,
+      "title": "Code",
+      "type": "integer"
+    },
+    "data": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data"
+    },
+    "message": {
+      "const": "Invalid JSON",
+      "default": "Invalid JSON",
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "title": "JSONParseError",
+  "type": "object"
+}

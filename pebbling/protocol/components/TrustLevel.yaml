@@ -1,0 +1,13 @@
+type: string
+enum:
+- untrusted
+- minimal
+- low
+- standard
+- medium
+- high
+- elevated
+- critical
+- super-critical
+- emergency
+description: Trust levels for operations and permissions

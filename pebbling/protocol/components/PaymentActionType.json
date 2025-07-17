@@ -1,0 +1,11 @@
+{
+  "type": "string",
+  "enum": [
+    "submit",
+    "cancel",
+    "refund",
+    "verify",
+    "unknown"
+  ],
+  "description": "Types of payment actions that can be performed"
+}

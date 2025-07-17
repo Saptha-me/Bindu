@@ -1,0 +1,289 @@
+{
+  "$defs": {
+    "DataPart": {
+      "description": "Represents a structured data part in a message",
+      "properties": {
+        "kind": {
+          "const": "data",
+          "default": "data",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": true,
+          "title": "Data",
+          "type": "object"
+        }
+      },
+      "required": [
+        "content",
+        "data"
+      ],
+      "title": "DataPart",
+      "type": "object"
+    },
+    "FilePart": {
+      "description": "Represents a file part in a message",
+      "properties": {
+        "kind": {
+          "const": "file",
+          "default": "file",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileWithBytes"
+            },
+            {
+              "$ref": "#/$defs/FileWithUri"
+            }
+          ],
+          "title": "File"
+        }
+      },
+      "required": [
+        "content",
+        "file"
+      ],
+      "title": "FilePart",
+      "type": "object"
+    },
+    "FileWithBytes": {
+      "description": "File representation with binary content",
+      "properties": {
+        "bytes": {
+          "title": "Bytes",
+          "type": "string"
+        },
+        "mimeType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mimetype"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        }
+      },
+      "required": [
+        "bytes"
+      ],
+      "title": "FileWithBytes",
+      "type": "object"
+    },
+    "FileWithUri": {
+      "description": "File representation with URI reference",
+      "properties": {
+        "bytes": {
+          "title": "Bytes",
+          "type": "string"
+        },
+        "mimeType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mimetype"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "uri": {
+          "title": "Uri",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "uri"
+      ],
+      "title": "FileWithUri",
+      "type": "object"
+    },
+    "Part": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TextPart"
+        },
+        {
+          "$ref": "#/$defs/FilePart"
+        },
+        {
+          "$ref": "#/$defs/DataPart"
+        }
+      ],
+      "description": "Union type for all possible message parts",
+      "title": "Part"
+    },
+    "Role": {
+      "description": "Message sender's role",
+      "enum": [
+        "agent",
+        "user"
+      ],
+      "title": "Role",
+      "type": "string"
+    },
+    "TextPart": {
+      "description": "Represents a text segment within parts.",
+      "properties": {
+        "kind": {
+          "const": "text",
+          "default": "text",
+          "title": "Kind",
+          "type": "string"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metadata"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "title": "TextPart",
+      "type": "object"
+    }
+  },
+  "description": "Message exchanged between agents or users",
+  "properties": {
+    "contextId": {
+      "format": "uuid",
+      "title": "Contextid",
+      "type": "string"
+    },
+    "kind": {
+      "const": "message",
+      "default": "message",
+      "title": "Kind",
+      "type": "string"
+    },
+    "messageId": {
+      "format": "uuid",
+      "title": "Messageid",
+      "type": "string"
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Metadata"
+    },
+    "parts": {
+      "items": {
+        "$ref": "#/$defs/Part"
+      },
+      "title": "Parts",
+      "type": "array"
+    },
+    "role": {
+      "$ref": "#/$defs/Role"
+    },
+    "extra_data": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Extra Data"
+    }
+  },
+  "required": [
+    "contextId",
+    "messageId",
+    "parts",
+    "role"
+  ],
+  "title": "Message",
+  "type": "object"
+}

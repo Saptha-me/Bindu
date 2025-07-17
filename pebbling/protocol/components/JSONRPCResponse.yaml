@@ -1,0 +1,847 @@
+$defs:
+  Artifact:
+    description: Represents an artifact generated for a task.
+    properties:
+      artifact_id:
+        description: Unique identifier for the artifact
+        format: uuid
+        title: Artifact Id
+        type: string
+      name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        title: Name
+      description:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        title: Description
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      parts:
+        items:
+          $ref: '#/$defs/Part'
+        title: Parts
+        type: array
+    required:
+    - artifact_id
+    - parts
+    title: Artifact
+    type: object
+  CancelTaskSuccessResponse:
+    description: Success response for canceling a task
+    properties:
+      id:
+        format: uuid
+        title: Id
+        type: string
+      jsonrpc:
+        const: '2.0'
+        default: '2.0'
+        title: Jsonrpc
+        type: string
+      result:
+        $ref: '#/$defs/Task'
+    required:
+    - id
+    - result
+    title: CancelTaskSuccessResponse
+    type: object
+  ContentTypeNotSupportedError:
+    description: Error for unsupported content types
+    properties:
+      code:
+        const: -32011
+        default: -32011
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Content type not supported
+        default: Content type not supported
+        title: Message
+        type: string
+    title: ContentTypeNotSupportedError
+    type: object
+  DataPart:
+    description: Represents a structured data part in a message
+    properties:
+      kind:
+        const: data
+        default: data
+        title: Kind
+        type: string
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      content:
+        title: Content
+        type: string
+      data:
+        additionalProperties: true
+        title: Data
+        type: object
+    required:
+    - content
+    - data
+    title: DataPart
+    type: object
+  FilePart:
+    description: Represents a file part in a message
+    properties:
+      kind:
+        const: file
+        default: file
+        title: Kind
+        type: string
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      content:
+        title: Content
+        type: string
+      file:
+        anyOf:
+        - $ref: '#/$defs/FileWithBytes'
+        - $ref: '#/$defs/FileWithUri'
+        title: File
+    required:
+    - content
+    - file
+    title: FilePart
+    type: object
+  FileWithBytes:
+    description: File representation with binary content
+    properties:
+      bytes:
+        title: Bytes
+        type: string
+      mimeType:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        title: Mimetype
+      name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        title: Name
+    required:
+    - bytes
+    title: FileWithBytes
+    type: object
+  FileWithUri:
+    description: File representation with URI reference
+    properties:
+      bytes:
+        title: Bytes
+        type: string
+      mimeType:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        title: Mimetype
+      name:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        title: Name
+      uri:
+        title: Uri
+        type: string
+    required:
+    - bytes
+    - uri
+    title: FileWithUri
+    type: object
+  GetTaskSuccessResponse:
+    description: Success response for getting a task
+    properties:
+      id:
+        format: uuid
+        title: Id
+        type: string
+      jsonrpc:
+        const: '2.0'
+        default: '2.0'
+        title: Jsonrpc
+        type: string
+      result:
+        $ref: '#/$defs/Task'
+    required:
+    - id
+    - result
+    title: GetTaskSuccessResponse
+    type: object
+  InternalError:
+    description: JSON-RPC internal error
+    properties:
+      code:
+        const: -32603
+        default: -32603
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Internal error
+        default: Internal error
+        title: Message
+        type: string
+    title: InternalError
+    type: object
+  InvalidAgentResponseError:
+    description: Error for invalid agent responses
+    properties:
+      code:
+        const: -32006
+        default: -32006
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Invalid agent response
+        default: Invalid agent response
+        title: Message
+        type: string
+    title: InvalidAgentResponseError
+    type: object
+  InvalidParamsError:
+    description: JSON-RPC invalid parameters error
+    properties:
+      code:
+        const: -32602
+        default: -32602
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Invalid parameters
+        default: Invalid parameters
+        title: Message
+        type: string
+    title: InvalidParamsError
+    type: object
+  InvalidRequestError:
+    description: JSON-RPC invalid request error
+    properties:
+      code:
+        const: -32600
+        default: -32600
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Validation error
+        default: Validation error
+        title: Message
+        type: string
+    title: InvalidRequestError
+    type: object
+  JSONParseError:
+    description: JSON-RPC parse error
+    properties:
+      code:
+        const: -32700
+        default: -32700
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Invalid JSON
+        default: Invalid JSON
+        title: Message
+        type: string
+    title: JSONParseError
+    type: object
+  JSONRPCError:
+    description: Base JSON-RPC error representation
+    properties:
+      code:
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        title: Message
+        type: string
+    required:
+    - code
+    - message
+    title: JSONRPCError
+    type: object
+  JSONRPCErrorResponse:
+    description: JSON-RPC error response
+    properties:
+      error:
+        anyOf:
+        - $ref: '#/$defs/JSONRPCError'
+        - $ref: '#/$defs/JSONParseError'
+        - $ref: '#/$defs/InvalidRequestError'
+        - $ref: '#/$defs/MethodNotFoundError'
+        - $ref: '#/$defs/InvalidParamsError'
+        - $ref: '#/$defs/InternalError'
+        - $ref: '#/$defs/TaskNotFoundError'
+        - $ref: '#/$defs/TaskNotCancelableError'
+        - $ref: '#/$defs/PushNotificationNotSupportedError'
+        - $ref: '#/$defs/UnsupportedOperationError'
+        - $ref: '#/$defs/ContentTypeNotSupportedError'
+        - $ref: '#/$defs/InvalidAgentResponseError'
+        title: Error
+      id:
+        anyOf:
+        - type: string
+        - type: integer
+        - type: 'null'
+        default: null
+        title: Id
+      jsonrpc:
+        const: '2.0'
+        default: '2.0'
+        title: Jsonrpc
+        type: string
+    required:
+    - error
+    title: JSONRPCErrorResponse
+    type: object
+  Message:
+    description: Message exchanged between agents or users
+    properties:
+      contextId:
+        format: uuid
+        title: Contextid
+        type: string
+      kind:
+        const: message
+        default: message
+        title: Kind
+        type: string
+      messageId:
+        format: uuid
+        title: Messageid
+        type: string
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      parts:
+        items:
+          $ref: '#/$defs/Part'
+        title: Parts
+        type: array
+      role:
+        $ref: '#/$defs/Role'
+      extra_data:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Extra Data
+    required:
+    - contextId
+    - messageId
+    - parts
+    - role
+    title: Message
+    type: object
+  MethodNotFoundError:
+    description: JSON-RPC method not found error
+    properties:
+      code:
+        const: -32601
+        default: -32601
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Method not found
+        default: Method not found
+        title: Message
+        type: string
+    title: MethodNotFoundError
+    type: object
+  Part:
+    anyOf:
+    - $ref: '#/$defs/TextPart'
+    - $ref: '#/$defs/FilePart'
+    - $ref: '#/$defs/DataPart'
+    description: Union type for all possible message parts
+    title: Part
+  PushNotificationNotSupportedError:
+    description: Error for push notification not supported
+    properties:
+      code:
+        const: -32009
+        default: -32009
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Push notification not supported
+        default: Push notification not supported
+        title: Message
+        type: string
+    title: PushNotificationNotSupportedError
+    type: object
+  Role:
+    description: Message sender's role
+    enum:
+    - agent
+    - user
+    title: Role
+    type: string
+  SendMessageSuccessResponse:
+    description: Success response for sending a message
+    properties:
+      id:
+        format: uuid
+        title: Id
+        type: string
+      jsonrpc:
+        const: '2.0'
+        default: '2.0'
+        title: Jsonrpc
+        type: string
+      result:
+        anyOf:
+        - $ref: '#/$defs/Task'
+        - $ref: '#/$defs/Message'
+        title: Result
+    required:
+    - id
+    - result
+    title: SendMessageSuccessResponse
+    type: object
+  SendStreamingMessageSuccessResponse:
+    description: Success response for sending a streaming message
+    properties:
+      id:
+        format: uuid
+        title: Id
+        type: string
+      jsonrpc:
+        const: '2.0'
+        default: '2.0'
+        title: Jsonrpc
+        type: string
+      result:
+        anyOf:
+        - $ref: '#/$defs/Task'
+        - $ref: '#/$defs/Message'
+        - $ref: '#/$defs/TaskStatusUpdateEvent'
+        - $ref: '#/$defs/TaskArtifactUpdateEvent'
+        title: Result
+    required:
+    - id
+    - result
+    title: SendStreamingMessageSuccessResponse
+    type: object
+  Task:
+    description: Top-level task representation
+    properties:
+      artifacts:
+        anyOf:
+        - items:
+            $ref: '#/$defs/Artifact'
+          type: array
+        - type: 'null'
+        default: null
+        title: Artifacts
+      contextId:
+        format: uuid
+        title: Contextid
+        type: string
+      history:
+        anyOf:
+        - items:
+            $ref: '#/$defs/Message'
+          type: array
+        - type: 'null'
+        default: null
+        title: History
+      id:
+        title: Id
+        type: string
+      kind:
+        const: task
+        default: task
+        title: Kind
+        type: string
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      status:
+        $ref: '#/$defs/TaskStatus'
+    required:
+    - contextId
+    - id
+    - status
+    title: Task
+    type: object
+  TaskArtifactUpdateEvent:
+    description: Event for task artifact updates
+    properties:
+      append:
+        anyOf:
+        - type: boolean
+        - type: 'null'
+        default: null
+        title: Append
+      artifact:
+        $ref: '#/$defs/Artifact'
+      contextId:
+        format: uuid
+        title: Contextid
+        type: string
+      kind:
+        const: artifact-update
+        default: artifact-update
+        title: Kind
+        type: string
+      lastChunk:
+        anyOf:
+        - type: boolean
+        - type: 'null'
+        default: null
+        title: Lastchunk
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      taskId:
+        format: uuid
+        title: Taskid
+        type: string
+    required:
+    - artifact
+    - contextId
+    - taskId
+    title: TaskArtifactUpdateEvent
+    type: object
+  TaskNotCancelableError:
+    description: Error for task not cancelable
+    properties:
+      code:
+        const: -32008
+        default: -32008
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Task not cancelable
+        default: Task not cancelable
+        title: Message
+        type: string
+    title: TaskNotCancelableError
+    type: object
+  TaskNotFoundError:
+    description: Error for task not found
+    properties:
+      code:
+        const: -32007
+        default: -32007
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Task not found
+        default: Task not found
+        title: Message
+        type: string
+    title: TaskNotFoundError
+    type: object
+  TaskState:
+    description: Represents the possible states of a Task.
+    enum:
+    - submitted
+    - working
+    - input-required
+    - completed
+    - canceled
+    - failed
+    - rejected
+    - auth-required
+    - unknown
+    - trust-verification-required
+    title: TaskState
+    type: string
+  TaskStatus:
+    description: Status information for a task
+    properties:
+      message:
+        anyOf:
+        - $ref: '#/$defs/Message'
+        - type: 'null'
+        default: null
+      state:
+        $ref: '#/$defs/TaskState'
+      timestamp:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: ISO-8601 timestamp of the task status update
+        examples:
+        - '2023-10-27T10:00:00Z'
+        title: Timestamp
+    required:
+    - state
+    title: TaskStatus
+    type: object
+  TaskStatusUpdateEvent:
+    description: Event for task status updates
+    properties:
+      contextId:
+        format: uuid
+        title: Contextid
+        type: string
+      final:
+        title: Final
+        type: boolean
+      kind:
+        const: status-update
+        default: status-update
+        title: Kind
+        type: string
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      status:
+        $ref: '#/$defs/TaskStatus'
+      taskId:
+        format: uuid
+        title: Taskid
+        type: string
+    required:
+    - contextId
+    - final
+    - status
+    - taskId
+    title: TaskStatusUpdateEvent
+    type: object
+  TextPart:
+    description: Represents a text segment within parts.
+    properties:
+      kind:
+        const: text
+        default: text
+        title: Kind
+        type: string
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+      content:
+        title: Content
+        type: string
+    required:
+    - content
+    title: TextPart
+    type: object
+  TrustLevel:
+    description: Trust levels for operations and permissions
+    enum:
+    - untrusted
+    - minimal
+    - low
+    - standard
+    - medium
+    - high
+    - elevated
+    - critical
+    - super-critical
+    - emergency
+    title: TrustLevel
+    type: string
+  TrustVerificationResponse:
+    description: Success response for trust verification
+    properties:
+      id:
+        format: uuid
+        title: Id
+        type: string
+      jsonrpc:
+        const: '2.0'
+        default: '2.0'
+        title: Jsonrpc
+        type: string
+      result:
+        $ref: '#/$defs/TrustVerificationResult'
+    required:
+    - id
+    - result
+    title: TrustVerificationResponse
+    type: object
+  TrustVerificationResult:
+    description: Result of trust verification
+    properties:
+      verified:
+        description: Whether trust verification succeeded
+        title: Verified
+        type: boolean
+      trust_level:
+        $ref: '#/$defs/TrustLevel'
+        description: The verified trust level
+      allowed_operations:
+        description: Operations allowed with the verified trust level
+        items:
+          type: string
+        title: Allowed Operations
+        type: array
+      denied_operations:
+        description: Operations denied due to insufficient trust level
+        items:
+          type: string
+        title: Denied Operations
+        type: array
+      verification_timestamp:
+        description: ISO-8601 timestamp of the verification
+        examples:
+        - '2023-10-27T10:00:00Z'
+        title: Verification Timestamp
+        type: string
+      verification_token:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: Token for subsequent operations
+        examples:
+        - abc123
+        title: Verification Token
+      token_expiry:
+        anyOf:
+        - type: string
+        - type: 'null'
+        default: null
+        description: ISO-8601 timestamp when the verification token expires
+        examples:
+        - '2023-10-27T10:00:00Z'
+        title: Token Expiry
+    required:
+    - verified
+    - trust_level
+    - verification_timestamp
+    title: TrustVerificationResult
+    type: object
+  UnsupportedOperationError:
+    description: Error for unsupported operations
+    properties:
+      code:
+        const: -32010
+        default: -32010
+        title: Code
+        type: integer
+      data:
+        anyOf:
+        - {}
+        - type: 'null'
+        default: null
+        title: Data
+      message:
+        const: Unsupported operation
+        default: Unsupported operation
+        title: Message
+        type: string
+    title: UnsupportedOperationError
+    type: object
+anyOf:
+- $ref: '#/$defs/JSONRPCErrorResponse'
+- $ref: '#/$defs/SendMessageSuccessResponse'
+- $ref: '#/$defs/SendStreamingMessageSuccessResponse'
+- $ref: '#/$defs/GetTaskSuccessResponse'
+- $ref: '#/$defs/CancelTaskSuccessResponse'
+- $ref: '#/$defs/TrustVerificationResponse'
+description: Union type for all JSON-RPC responses
+title: JSONRPCResponse

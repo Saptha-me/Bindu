@@ -1,0 +1,42 @@
+$defs:
+  TaskIdParams:
+    description: Parameters for task identification
+    properties:
+      id:
+        format: uuid
+        title: Id
+        type: string
+      metadata:
+        anyOf:
+        - additionalProperties: true
+          type: object
+        - type: 'null'
+        default: null
+        title: Metadata
+    required:
+    - id
+    title: TaskIdParams
+    type: object
+description: Request to get a task
+properties:
+  id:
+    format: uuid
+    title: Id
+    type: string
+  jsonrpc:
+    const: '2.0'
+    default: '2.0'
+    title: Jsonrpc
+    type: string
+  method:
+    const: tasks/get
+    default: tasks/get
+    title: Method
+    type: string
+  params:
+    $ref: '#/$defs/TaskIdParams'
+required:
+- id
+- params
+title: GetTaskRequest
+type: object

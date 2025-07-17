@@ -1,0 +1,92 @@
+{
+  "description": "Secure mTLS configuration for agent communication",
+  "properties": {
+    "endpoint": {
+      "description": "Secure mTLS agent endpoint.",
+      "title": "Endpoint",
+      "type": "string"
+    },
+    "public_key": {
+      "description": "Agent's public key for mTLS.",
+      "title": "Public Key",
+      "type": "string"
+    },
+    "certificate_chain": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Certificate chain for validation.",
+      "title": "Certificate Chain"
+    },
+    "certificate_expiry": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "UNIX timestamp when certificate expires.",
+      "title": "Certificate Expiry"
+    },
+    "key_rotation_policy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Policy for key rotation, e.g. 'quarterly'",
+      "title": "Key Rotation Policy"
+    },
+    "cipher_suites": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Allowed cipher suites for TLS connection.",
+      "title": "Cipher Suites"
+    },
+    "min_tls_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "1.2",
+      "description": "Minimum TLS version required.",
+      "title": "Min Tls Version"
+    }
+  },
+  "required": [
+    "endpoint",
+    "public_key"
+  ],
+  "title": "MTLSConfiguration",
+  "type": "object"
+}

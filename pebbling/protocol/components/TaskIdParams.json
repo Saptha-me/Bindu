@@ -1,0 +1,28 @@
+{
+  "description": "Parameters for task identification",
+  "properties": {
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Metadata"
+    }
+  },
+  "required": [
+    "id"
+  ],
+  "title": "TaskIdParams",
+  "type": "object"
+}

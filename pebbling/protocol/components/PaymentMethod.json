@@ -1,0 +1,14 @@
+{
+  "type": "string",
+  "enum": [
+    "credit_card",
+    "debit_card",
+    "ach",
+    "wire_transfer",
+    "crypto",
+    "sepa",
+    "paypal",
+    "other"
+  ],
+  "description": "Common payment methods"
+}

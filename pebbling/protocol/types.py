@@ -166,7 +166,9 @@ class TaskStatus(PebblingProtocolBaseModel):
     message: Message | None = None
     state: TaskState
     timestamp: str | None = Field(
-        default=None, examples=['2023-10-27T10:00:00Z']
+        default=None, 
+        description="ISO-8601 timestamp of the task status update",
+        examples=['2023-10-27T10:00:00Z']
     )
 
 
@@ -193,11 +195,11 @@ class TrustVerificationResult(PebblingProtocolBaseModel):
         description="Operations denied due to insufficient trust level" 
     )
     verification_timestamp: str = Field(..., 
-        description="When verification occurred", examples=['2023-10-27T10:00:00Z'])
+        description="ISO-8601 timestamp of the verification", examples=['2023-10-27T10:00:00Z'])
     verification_token: Optional[str] = Field(None, 
         description="Token for subsequent operations", examples=['abc123'])
     token_expiry: Optional[str] = Field(None, 
-        description="When the verification token expires", examples=['2023-10-27T10:00:00Z'])
+        description="ISO-8601 timestamp when the verification token expires", examples=['2023-10-27T10:00:00Z'])
 
 
 #-----------------------------------------------------------------------------
@@ -227,7 +229,7 @@ class NegotiationProposal(PebblingProtocolBaseModel):
     to_agent: UUID = Field(..., description="Agent ID receiving the proposal")
     terms: Dict[str, Any] = Field(..., description="Negotiation terms (structured)")
     timestamp: str = Field(..., 
-        description="UNIX timestamp when the proposal was made", 
+        description="ISO-8601 timestamp when the proposal was made", 
         examples=['2023-10-27T10:00:00Z'])
     status: NegotiationStatus = Field(
         NegotiationStatus.proposed, 
@@ -312,9 +314,9 @@ class PaymentAction(PebblingProtocolBaseModel):
     
     # Time tracking
     created_timestamp: Optional[str] = Field(
-        None, description="UNIX timestamp when payment was created", examples=['2023-10-27T10:00:00Z'])
+        None, description="ISO-8601 timestamp when payment was created", examples=['2023-10-27T10:00:00Z'])
     processed_timestamp: Optional[str] = Field(
-        None, description="UNIX timestamp when payment was processed", examples=['2023-10-27T10:00:00Z'])
+        None, description="ISO-8601 timestamp when payment was processed", examples=['2023-10-27T10:00:00Z'])
     
     # Entity information
     payer_id: Optional[Union[UUID, str]] = Field(
@@ -621,7 +623,7 @@ class KeycloakRole(PebblingProtocolBaseModel):
     role_id: UUID = Field(..., description="Role ID from Keycloak IAM.")
     role_name: str = Field(..., description="Human-readable role name.")
     permissions: List[str] = Field(default_factory=list, description="Specific permissions tied to this role.")
-    trust_level: TrustLevel = Field(TrustLevel.MEDIUM, description="Default trust level for this role")
+    trust_level: TrustLevel = Field(TrustLevel.medium, description="Default trust level for this role")
     realm_name: str = Field(..., description="The Keycloak realm this role belongs to.")
     
     # For integrations with other identity providers
@@ -648,7 +650,7 @@ class AgentTrust(PebblingProtocolBaseModel):
     creator_id: Union[UUID, int, str] = Field(..., description="ID of the user who created this agent")
     creation_timestamp: str = Field(
         ..., 
-        description="UNIX timestamp of agent creation",
+        description="ISO-8601 timestamp of agent creation",
         examples=['2023-10-27T10:00:00Z']
     )
     trust_verification_required: bool = Field(True, description="Whether trust verification is required")

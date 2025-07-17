@@ -1,0 +1,10 @@
+{
+  "type": "string",
+  "enum": [
+    "initiated",
+    "ongoing",
+    "completed",
+    "rejected"
+  ],
+  "description": "Represents the possible statuses of a negotiation session."
+}

@@ -1,0 +1,50 @@
+$defs:
+  NegotiationStatus:
+    description: Represents the possible negotiation statuses.
+    enum:
+    - proposed
+    - accepted
+    - rejected
+    - countered
+    title: NegotiationStatus
+    type: string
+description: Structured negotiation proposal exchanged between agents
+properties:
+  proposal_id:
+    description: Unique ID of this specific proposal
+    format: uuid
+    title: Proposal Id
+    type: string
+  from_agent:
+    description: Agent ID initiating the proposal
+    format: uuid
+    title: From Agent
+    type: string
+  to_agent:
+    description: Agent ID receiving the proposal
+    format: uuid
+    title: To Agent
+    type: string
+  terms:
+    additionalProperties: true
+    description: Negotiation terms (structured)
+    title: Terms
+    type: object
+  timestamp:
+    description: ISO-8601 timestamp when the proposal was made
+    examples:
+    - '2023-10-27T10:00:00Z'
+    title: Timestamp
+    type: string
+  status:
+    $ref: '#/$defs/NegotiationStatus'
+    default: proposed
+    description: Status of this specific proposal
+required:
+- proposal_id
+- from_agent
+- to_agent
+- terms
+- timestamp
+title: NegotiationProposal
+type: object

@@ -1,0 +1,8 @@
+{
+  "type": "string",
+  "enum": [
+    "sync",
+    "async",
+    "stream"
+  ]
+}

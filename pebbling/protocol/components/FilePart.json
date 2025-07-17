@@ -1,0 +1,128 @@
+{
+  "$defs": {
+    "FileWithBytes": {
+      "description": "File representation with binary content",
+      "properties": {
+        "bytes": {
+          "title": "Bytes",
+          "type": "string"
+        },
+        "mimeType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mimetype"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        }
+      },
+      "required": [
+        "bytes"
+      ],
+      "title": "FileWithBytes",
+      "type": "object"
+    },
+    "FileWithUri": {
+      "description": "File representation with URI reference",
+      "properties": {
+        "bytes": {
+          "title": "Bytes",
+          "type": "string"
+        },
+        "mimeType": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mimetype"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "uri": {
+          "title": "Uri",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "uri"
+      ],
+      "title": "FileWithUri",
+      "type": "object"
+    }
+  },
+  "description": "Represents a file part in a message",
+  "properties": {
+    "kind": {
+      "const": "file",
+      "default": "file",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Metadata"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    },
+    "file": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FileWithBytes"
+        },
+        {
+          "$ref": "#/$defs/FileWithUri"
+        }
+      ],
+      "title": "File"
+    }
+  },
+  "required": [
+    "content",
+    "file"
+  ],
+  "title": "FilePart",
+  "type": "object"
+}

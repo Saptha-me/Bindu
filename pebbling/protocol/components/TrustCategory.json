@@ -1,0 +1,17 @@
+{
+  "type": "string",
+  "enum": [
+    "identity",
+    "authentication",
+    "authorization",
+    "data_access",
+    "financial",
+    "healthcare",
+    "personal",
+    "admin",
+    "system",
+    "communication",
+    "regulatory"
+  ],
+  "description": "Categories of operations requiring trust verification"
+}

@@ -1,0 +1,41 @@
+{
+  "description": "Configuration for message sending",
+  "properties": {
+    "acceptedOutputModes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Acceptedoutputmodes",
+      "type": "array"
+    },
+    "blocking": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Blocking"
+    },
+    "historyLength": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Historylength"
+    }
+  },
+  "required": [
+    "acceptedOutputModes"
+  ],
+  "title": "MessageSendConfiguration",
+  "type": "object"
+}

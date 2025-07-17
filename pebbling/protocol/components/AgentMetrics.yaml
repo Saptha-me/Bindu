@@ -1,0 +1,52 @@
+description: Agent usage and performance metrics
+properties:
+  total_requests:
+    default: 0
+    description: Total number of requests processed
+    title: Total Requests
+    type: integer
+  total_tokens:
+    anyOf:
+    - type: integer
+    - type: 'null'
+    default: null
+    description: Total tokens processed
+    title: Total Tokens
+  avg_response_time_ms:
+    anyOf:
+    - type: integer
+    - type: 'null'
+    default: null
+    description: Average response time in milliseconds
+    title: Avg Response Time Ms
+  error_rate:
+    anyOf:
+    - type: number
+    - type: 'null'
+    default: null
+    description: Error rate percentage
+    title: Error Rate
+  uptime_seconds:
+    anyOf:
+    - type: integer
+    - type: 'null'
+    default: null
+    description: Total uptime in seconds
+    title: Uptime Seconds
+  last_active:
+    anyOf:
+    - type: integer
+    - type: 'null'
+    default: null
+    description: UNIX timestamp of last activity
+    title: Last Active
+  custom_metrics:
+    anyOf:
+    - additionalProperties: true
+      type: object
+    - type: 'null'
+    default: null
+    description: Additional custom metrics
+    title: Custom Metrics
+title: AgentMetrics
+type: object

@@ -1,0 +1,10 @@
+{
+  "type": "string",
+  "enum": [
+    "proposed",
+    "accepted",
+    "rejected",
+    "countered"
+  ],
+  "description": "Represents the possible negotiation statuses."
+}

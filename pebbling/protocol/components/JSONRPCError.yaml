@@ -1,0 +1,19 @@
+description: Base JSON-RPC error representation
+properties:
+  code:
+    title: Code
+    type: integer
+  data:
+    anyOf:
+    - {}
+    - type: 'null'
+    default: null
+    title: Data
+  message:
+    title: Message
+    type: string
+required:
+- code
+- message
+title: JSONRPCError
+type: object

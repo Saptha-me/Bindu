@@ -1,0 +1,13 @@
+{
+  "type": "string",
+  "enum": [
+    "pending",
+    "processing",
+    "completed",
+    "failed",
+    "refunded",
+    "cancelled",
+    "disputed"
+  ],
+  "description": "Status of a payment in its lifecycle"
+}

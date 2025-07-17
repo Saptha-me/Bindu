@@ -1,0 +1,33 @@
+{
+  "description": "Represents a text segment within parts.",
+  "properties": {
+    "kind": {
+      "const": "text",
+      "default": "text",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Metadata"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    }
+  },
+  "required": [
+    "content"
+  ],
+  "title": "TextPart",
+  "type": "object"
+}

@@ -1,0 +1,81 @@
+{
+  "description": "Agent capabilities including supported media types and operations",
+  "properties": {
+    "supported_operations": {
+      "description": "Operations this agent can perform",
+      "items": {
+        "type": "string"
+      },
+      "title": "Supported Operations",
+      "type": "array",
+      "default": []
+    },
+    "input_content_types": {
+      "description": "Content types this agent can accept",
+      "items": {
+        "type": "string"
+      },
+      "title": "Input Content Types",
+      "type": "array",
+      "default": [
+        "text/plain"
+      ]
+    },
+    "output_content_types": {
+      "description": "Content types this agent can produce",
+      "items": {
+        "type": "string"
+      },
+      "title": "Output Content Types",
+      "type": "array",
+      "default": [
+        "text/plain"
+      ]
+    },
+    "supports_images": {
+      "default": false,
+      "description": "Whether agent can process images",
+      "title": "Supports Images",
+      "type": "boolean"
+    },
+    "supports_audio": {
+      "default": false,
+      "description": "Whether agent can process audio",
+      "title": "Supports Audio",
+      "type": "boolean"
+    },
+    "supports_video": {
+      "default": false,
+      "description": "Whether agent can process video",
+      "title": "Supports Video",
+      "type": "boolean"
+    },
+    "supports_binary": {
+      "default": false,
+      "description": "Whether agent can process binary data",
+      "title": "Supports Binary",
+      "type": "boolean"
+    },
+    "max_message_size_bytes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Maximum message size in bytes",
+      "title": "Max Message Size Bytes"
+    },
+    "streaming_supported": {
+      "default": false,
+      "description": "Whether agent supports streaming responses",
+      "title": "Streaming Supported",
+      "type": "boolean"
+    }
+  },
+  "title": "AgentCapabilities",
+  "type": "object"
+}

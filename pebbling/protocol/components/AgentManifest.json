@@ -1,0 +1,730 @@
+{
+  "$defs": {
+    "AgentCapabilities": {
+      "description": "Agent capabilities including supported media types and operations",
+      "properties": {
+        "supported_operations": {
+          "description": "Operations this agent can perform",
+          "items": {
+            "type": "string"
+          },
+          "title": "Supported Operations",
+          "type": "array"
+        },
+        "input_content_types": {
+          "description": "Content types this agent can accept",
+          "items": {
+            "type": "string"
+          },
+          "title": "Input Content Types",
+          "type": "array"
+        },
+        "output_content_types": {
+          "description": "Content types this agent can produce",
+          "items": {
+            "type": "string"
+          },
+          "title": "Output Content Types",
+          "type": "array"
+        },
+        "supports_images": {
+          "default": false,
+          "description": "Whether agent can process images",
+          "title": "Supports Images",
+          "type": "boolean"
+        },
+        "supports_audio": {
+          "default": false,
+          "description": "Whether agent can process audio",
+          "title": "Supports Audio",
+          "type": "boolean"
+        },
+        "supports_video": {
+          "default": false,
+          "description": "Whether agent can process video",
+          "title": "Supports Video",
+          "type": "boolean"
+        },
+        "supports_binary": {
+          "default": false,
+          "description": "Whether agent can process binary data",
+          "title": "Supports Binary",
+          "type": "boolean"
+        },
+        "max_message_size_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum message size in bytes",
+          "title": "Max Message Size Bytes"
+        },
+        "streaming_supported": {
+          "default": false,
+          "description": "Whether agent supports streaming responses",
+          "title": "Streaming Supported",
+          "type": "boolean"
+        }
+      },
+      "title": "AgentCapabilities",
+      "type": "object"
+    },
+    "AgentIdentity": {
+      "properties": {
+        "did": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Agent DID for decentralized identity (URI format).",
+          "title": "Did"
+        },
+        "did_document": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Complete DID document containing verification methods, services, etc.",
+          "title": "Did Document"
+        },
+        "did_resolution_metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Metadata from DID resolution process.",
+          "title": "Did Resolution Metadata"
+        },
+        "agentdns_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Agent DNS-based identity URL (agentdns.ai).",
+          "title": "Agentdns Url"
+        },
+        "endpoint": {
+          "description": "Secure mTLS agent endpoint.",
+          "title": "Endpoint",
+          "type": "string"
+        },
+        "mtls_config": {
+          "$ref": "#/$defs/MTLSConfiguration",
+          "description": "mTLS configuration for agent."
+        },
+        "identity_verification_method": {
+          "default": "certificate",
+          "description": "Primary method for identity verification.",
+          "enum": [
+            "did",
+            "agentdns",
+            "certificate"
+          ],
+          "title": "Identity Verification Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "endpoint",
+        "mtls_config"
+      ],
+      "title": "AgentIdentity",
+      "type": "object"
+    },
+    "AgentMetrics": {
+      "description": "Agent usage and performance metrics",
+      "properties": {
+        "total_requests": {
+          "default": 0,
+          "description": "Total number of requests processed",
+          "title": "Total Requests",
+          "type": "integer"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Total tokens processed",
+          "title": "Total Tokens"
+        },
+        "avg_response_time_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Average response time in milliseconds",
+          "title": "Avg Response Time Ms"
+        },
+        "error_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Error rate percentage",
+          "title": "Error Rate"
+        },
+        "uptime_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Total uptime in seconds",
+          "title": "Uptime Seconds"
+        },
+        "last_active": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "UNIX timestamp of last activity",
+          "title": "Last Active"
+        },
+        "custom_metrics": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Additional custom metrics",
+          "title": "Custom Metrics"
+        }
+      },
+      "title": "AgentMetrics",
+      "type": "object"
+    },
+    "AgentTrust": {
+      "description": "Trust configuration for an agent",
+      "properties": {
+        "identity_provider": {
+          "$ref": "#/$defs/IdentityProvider",
+          "description": "Identity provider used for authentication"
+        },
+        "inherited_roles": {
+          "description": "Roles inherited from the agent's creator",
+          "items": {
+            "$ref": "#/$defs/KeycloakRole"
+          },
+          "title": "Inherited Roles",
+          "type": "array"
+        },
+        "certificate": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Agent's security certificate for verification",
+          "title": "Certificate"
+        },
+        "certificate_fingerprint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Fingerprint of the agent's certificate",
+          "title": "Certificate Fingerprint"
+        },
+        "creator_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "ID of the user who created this agent",
+          "title": "Creator Id"
+        },
+        "creation_timestamp": {
+          "description": "ISO-8601 timestamp of agent creation",
+          "examples": [
+            "2023-10-27T10:00:00Z"
+          ],
+          "title": "Creation Timestamp",
+          "type": "string"
+        },
+        "trust_verification_required": {
+          "default": true,
+          "description": "Whether trust verification is required",
+          "title": "Trust Verification Required",
+          "type": "boolean"
+        },
+        "allowed_operations": {
+          "additionalProperties": {
+            "$ref": "#/$defs/TrustLevel"
+          },
+          "description": "Operations this agent is allowed to perform with required trust levels",
+          "title": "Allowed Operations",
+          "type": "object"
+        }
+      },
+      "required": [
+        "identity_provider",
+        "creator_id",
+        "creation_timestamp"
+      ],
+      "title": "AgentTrust",
+      "type": "object"
+    },
+    "IdentityProvider": {
+      "description": "Supported identity providers",
+      "enum": [
+        "keycloak",
+        "azure_ad",
+        "okta",
+        "auth0",
+        "custom"
+      ],
+      "title": "IdentityProvider",
+      "type": "string"
+    },
+    "KeycloakRole": {
+      "description": "Keycloak role model",
+      "properties": {
+        "role_id": {
+          "description": "Role ID from Keycloak IAM.",
+          "format": "uuid",
+          "title": "Role Id",
+          "type": "string"
+        },
+        "role_name": {
+          "description": "Human-readable role name.",
+          "title": "Role Name",
+          "type": "string"
+        },
+        "permissions": {
+          "description": "Specific permissions tied to this role.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "trust_level": {
+          "$ref": "#/$defs/TrustLevel",
+          "default": "medium",
+          "description": "Default trust level for this role"
+        },
+        "realm_name": {
+          "description": "The Keycloak realm this role belongs to.",
+          "title": "Realm Name",
+          "type": "string"
+        },
+        "external_mappings": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Mappings to equivalent roles in other identity systems",
+          "title": "External Mappings"
+        },
+        "operation_permissions": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/TrustLevel"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Operation-specific trust requirements, e.g., {'update_customer': 'high'}",
+          "title": "Operation Permissions"
+        }
+      },
+      "required": [
+        "role_id",
+        "role_name",
+        "realm_name"
+      ],
+      "title": "KeycloakRole",
+      "type": "object"
+    },
+    "MTLSConfiguration": {
+      "description": "Secure mTLS configuration for agent communication",
+      "properties": {
+        "endpoint": {
+          "description": "Secure mTLS agent endpoint.",
+          "title": "Endpoint",
+          "type": "string"
+        },
+        "public_key": {
+          "description": "Agent's public key for mTLS.",
+          "title": "Public Key",
+          "type": "string"
+        },
+        "certificate_chain": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Certificate chain for validation.",
+          "title": "Certificate Chain"
+        },
+        "certificate_expiry": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "UNIX timestamp when certificate expires.",
+          "title": "Certificate Expiry"
+        },
+        "key_rotation_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Policy for key rotation, e.g. 'quarterly'",
+          "title": "Key Rotation Policy"
+        },
+        "cipher_suites": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Allowed cipher suites for TLS connection.",
+          "title": "Cipher Suites"
+        },
+        "min_tls_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "1.2",
+          "description": "Minimum TLS version required.",
+          "title": "Min Tls Version"
+        }
+      },
+      "required": [
+        "endpoint",
+        "public_key"
+      ],
+      "title": "MTLSConfiguration",
+      "type": "object"
+    },
+    "TrustLevel": {
+      "description": "Trust levels for operations and permissions",
+      "enum": [
+        "untrusted",
+        "minimal",
+        "low",
+        "standard",
+        "medium",
+        "high",
+        "elevated",
+        "critical",
+        "super-critical",
+        "emergency"
+      ],
+      "title": "TrustLevel",
+      "type": "string"
+    }
+  },
+  "description": "Complete agent manifest with identity and capabilities",
+  "properties": {
+    "agnt_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "The unique identifier of the agent",
+      "examples": [
+        "123e4567-e89b-12d3-a456-426614174000"
+      ],
+      "title": "Agnt Id"
+    },
+    "name": {
+      "description": "The name of the agent",
+      "examples": [
+        "Japanese Restaurant Reviewer Agent"
+      ],
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Detailed description of the agent's purpose and capabilities",
+      "title": "Description"
+    },
+    "user_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "user",
+      "title": "User Id"
+    },
+    "identity": {
+      "$ref": "#/$defs/AgentIdentity",
+      "description": "Agent identity information."
+    },
+    "trust_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AgentTrust"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Trust configuration and inherited permissions"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/AgentCapabilities",
+      "description": "Agent's capabilities and supported operations"
+    },
+    "metrics": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AgentMetrics"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Agent usage and performance metrics"
+    },
+    "num_history_sessions": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Num History Sessions"
+    },
+    "storage": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Storage"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Context"
+    },
+    "extra_data": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Extra Data"
+    },
+    "stream": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stream"
+    },
+    "debug_mode": {
+      "default": false,
+      "title": "Debug Mode",
+      "type": "boolean"
+    },
+    "debug_level": {
+      "default": 1,
+      "enum": [
+        1,
+        2
+      ],
+      "title": "Debug Level",
+      "type": "integer"
+    },
+    "monitoring": {
+      "default": false,
+      "title": "Monitoring",
+      "type": "boolean"
+    },
+    "telemetry": {
+      "default": true,
+      "title": "Telemetry",
+      "type": "boolean"
+    },
+    "version": {
+      "examples": [
+        "1.0.0"
+      ],
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "agnt_id",
+    "name",
+    "user_id",
+    "identity",
+    "version"
+  ],
+  "title": "AgentManifest",
+  "type": "object"
+}

@@ -1,0 +1,220 @@
+{
+  "$defs": {
+    "BillingPeriod": {
+      "description": "Billing frequency options for recurring payments",
+      "enum": [
+        "daily",
+        "weekly",
+        "monthly",
+        "quarterly",
+        "yearly",
+        "one-time"
+      ],
+      "title": "BillingPeriod",
+      "type": "string"
+    },
+    "PaymentActionType": {
+      "description": "Types of payment actions that can be performed",
+      "enum": [
+        "submit",
+        "cancel",
+        "refund",
+        "verify",
+        "unknown"
+      ],
+      "title": "PaymentActionType",
+      "type": "string"
+    },
+    "PaymentMethod": {
+      "description": "Common payment methods",
+      "enum": [
+        "credit_card",
+        "debit_card",
+        "ach",
+        "wire_transfer",
+        "crypto",
+        "sepa",
+        "paypal",
+        "other"
+      ],
+      "title": "PaymentMethod",
+      "type": "string"
+    },
+    "PaymentStatus": {
+      "description": "Status of a payment in its lifecycle",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "refunded",
+        "cancelled",
+        "disputed"
+      ],
+      "title": "PaymentStatus",
+      "type": "string"
+    }
+  },
+  "description": "Represents the possible payment actions.",
+  "properties": {
+    "action_type": {
+      "$ref": "#/$defs/PaymentActionType",
+      "default": "submit",
+      "description": "Type of payment action"
+    },
+    "amount": {
+      "description": "The amount of the payment",
+      "examples": [
+        10.0
+      ],
+      "title": "Amount",
+      "type": "number"
+    },
+    "currency": {
+      "description": "ISO currency code clearly identified (e.g., USD)",
+      "title": "Currency",
+      "type": "string"
+    },
+    "billing_period": {
+      "$ref": "#/$defs/BillingPeriod",
+      "default": "one-time",
+      "description": "Billing frequency clearly defined if subscription-based"
+    },
+    "transaction_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Unique transaction identifier",
+      "title": "Transaction Id"
+    },
+    "payment_method": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PaymentMethod"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Method of payment"
+    },
+    "payment_status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PaymentStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Current status of the payment"
+    },
+    "created_timestamp": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ISO-8601 timestamp when payment was created",
+      "examples": [
+        "2023-10-27T10:00:00Z"
+      ],
+      "title": "Created Timestamp"
+    },
+    "processed_timestamp": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ISO-8601 timestamp when payment was processed",
+      "examples": [
+        "2023-10-27T10:00:00Z"
+      ],
+      "title": "Processed Timestamp"
+    },
+    "payer_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of the paying entity",
+      "title": "Payer Id"
+    },
+    "payee_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of the receiving entity",
+      "title": "Payee Id"
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Payment reference or memo",
+      "title": "Reference"
+    },
+    "regulatory_info": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Regulatory information for compliance",
+      "title": "Regulatory Info"
+    }
+  },
+  "required": [
+    "amount",
+    "currency"
+  ],
+  "title": "PaymentAction",
+  "type": "object"
+}

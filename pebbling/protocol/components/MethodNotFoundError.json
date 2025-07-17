@@ -1,0 +1,29 @@
+{
+  "description": "JSON-RPC method not found error",
+  "properties": {
+    "code": {
+      "const": -32601,
+      "default": -32601,
+      "title": "Code",
+      "type": "integer"
+    },
+    "data": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data"
+    },
+    "message": {
+      "const": "Method not found",
+      "default": "Method not found",
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "title": "MethodNotFoundError",
+  "type": "object"
+}

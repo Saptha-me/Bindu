@@ -1,0 +1,93 @@
+{
+  "$defs": {
+    "TrustLevel": {
+      "description": "Trust levels for operations and permissions",
+      "enum": [
+        "untrusted",
+        "minimal",
+        "low",
+        "standard",
+        "medium",
+        "high",
+        "elevated",
+        "critical",
+        "super-critical",
+        "emergency"
+      ],
+      "title": "TrustLevel",
+      "type": "string"
+    }
+  },
+  "description": "Keycloak role model",
+  "properties": {
+    "role_id": {
+      "description": "Role ID from Keycloak IAM.",
+      "format": "uuid",
+      "title": "Role Id",
+      "type": "string"
+    },
+    "role_name": {
+      "description": "Human-readable role name.",
+      "title": "Role Name",
+      "type": "string"
+    },
+    "permissions": {
+      "description": "Specific permissions tied to this role.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Permissions",
+      "type": "array",
+      "default": []
+    },
+    "trust_level": {
+      "$ref": "#/$defs/TrustLevel",
+      "default": "medium",
+      "description": "Default trust level for this role"
+    },
+    "realm_name": {
+      "description": "The Keycloak realm this role belongs to.",
+      "title": "Realm Name",
+      "type": "string"
+    },
+    "external_mappings": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Mappings to equivalent roles in other identity systems",
+      "title": "External Mappings"
+    },
+    "operation_permissions": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/TrustLevel"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Operation-specific trust requirements, e.g., {'update_customer': 'high'}",
+      "title": "Operation Permissions"
+    }
+  },
+  "required": [
+    "role_id",
+    "role_name",
+    "realm_name"
+  ],
+  "title": "KeycloakRole",
+  "type": "object"
+}

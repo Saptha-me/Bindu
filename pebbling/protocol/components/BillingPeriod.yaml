@@ -1,0 +1,9 @@
+type: string
+enum:
+- daily
+- weekly
+- monthly
+- quarterly
+- yearly
+- one-time
+description: Billing frequency options for recurring payments

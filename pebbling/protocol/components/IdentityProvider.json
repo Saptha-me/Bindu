@@ -1,0 +1,11 @@
+{
+  "type": "string",
+  "enum": [
+    "keycloak",
+    "azure_ad",
+    "okta",
+    "auth0",
+    "custom"
+  ],
+  "description": "Supported identity providers"
+}

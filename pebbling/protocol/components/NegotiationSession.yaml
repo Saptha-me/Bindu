@@ -1,0 +1,89 @@
+$defs:
+  NegotiationProposal:
+    description: Structured negotiation proposal exchanged between agents
+    properties:
+      proposal_id:
+        description: Unique ID of this specific proposal
+        format: uuid
+        title: Proposal Id
+        type: string
+      from_agent:
+        description: Agent ID initiating the proposal
+        format: uuid
+        title: From Agent
+        type: string
+      to_agent:
+        description: Agent ID receiving the proposal
+        format: uuid
+        title: To Agent
+        type: string
+      terms:
+        additionalProperties: true
+        description: Negotiation terms (structured)
+        title: Terms
+        type: object
+      timestamp:
+        description: ISO-8601 timestamp when the proposal was made
+        examples:
+        - '2023-10-27T10:00:00Z'
+        title: Timestamp
+        type: string
+      status:
+        $ref: '#/$defs/NegotiationStatus'
+        default: proposed
+        description: Status of this specific proposal
+    required:
+    - proposal_id
+    - from_agent
+    - to_agent
+    - terms
+    - timestamp
+    title: NegotiationProposal
+    type: object
+  NegotiationSessionStatus:
+    description: Represents the possible statuses of a negotiation session.
+    enum:
+    - initiated
+    - ongoing
+    - completed
+    - rejected
+    title: NegotiationSessionStatus
+    type: string
+  NegotiationStatus:
+    description: Represents the possible negotiation statuses.
+    enum:
+    - proposed
+    - accepted
+    - rejected
+    - countered
+    title: NegotiationStatus
+    type: string
+description: Session details for agent-to-agent negotiations
+properties:
+  session_id:
+    description: Unique identifier for the negotiation session
+    format: uuid
+    title: Session Id
+    type: string
+  status:
+    $ref: '#/$defs/NegotiationSessionStatus'
+    default: initiated
+    description: Current status of the negotiation
+  participants:
+    description: List of participating agent IDs
+    items:
+      format: uuid
+      type: string
+    title: Participants
+    type: array
+  proposals:
+    description: Array of negotiation proposals exchanged
+    items:
+      $ref: '#/$defs/NegotiationProposal'
+    title: Proposals
+    type: array
+required:
+- session_id
+- participants
+title: NegotiationSession
+type: object

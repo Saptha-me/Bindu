@@ -1,0 +1,29 @@
+{
+  "description": "Error for task not found",
+  "properties": {
+    "code": {
+      "const": -32007,
+      "default": -32007,
+      "title": "Code",
+      "type": "integer"
+    },
+    "data": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data"
+    },
+    "message": {
+      "const": "Task not found",
+      "default": "Task not found",
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "title": "TaskNotFoundError",
+  "type": "object"
+}

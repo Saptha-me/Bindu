@@ -1,0 +1,29 @@
+{
+  "description": "JSON-RPC internal error",
+  "properties": {
+    "code": {
+      "const": -32603,
+      "default": -32603,
+      "title": "Code",
+      "type": "integer"
+    },
+    "data": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data"
+    },
+    "message": {
+      "const": "Internal error",
+      "default": "Internal error",
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "title": "InternalError",
+  "type": "object"
+}

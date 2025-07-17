@@ -31,6 +31,10 @@ class Role(str, Enum):
     agent = 'agent'
     user = 'user'
 
+class RunMode(str, Enum):
+    sync = "sync"
+    async_ = "async"
+    stream = "stream"
 
 class TaskState(str, Enum):
     """Represents the possible states of a Task."""
@@ -46,16 +50,20 @@ class TaskState(str, Enum):
     trust_verification_required = 'trust-verification-required'
 
 
-class ErrorCode(str, Enum):
-    """Error code enum for API responses"""
-    server_error = "server_error"
-    invalid_input = "invalid_input"
-    not_found = "not_found"
+class TrustLevel(str, Enum):
+    """Trust levels for operations and permissions"""
+    LOW = "low"           # Basic operations, minimal risk
+    MEDIUM = "medium"     # Standard operations
+    HIGH = "high"         # Sensitive operations
+    CRITICAL = "critical" # Highly sensitive operations like financial transactions
 
-
-class AgentTools(PebblingProtocolBaseModel):
-    """Tools available to agents"""
-    pass
+class IdentityProvider(str, Enum):
+    """Supported identity providers"""
+    KEYCLOAK = "keycloak"
+    AZURE_AD = "azure_ad"
+    OKTA = "okta"
+    AUTH0 = "auth0"
+    CUSTOM = "custom"
 
 
 #-----------------------------------------------------------------------------
@@ -136,6 +144,22 @@ class Task(PebblingProtocolBaseModel):
     kind: Literal['task'] = 'task'
     metadata: dict[str, Any] | None = None
     status: TaskStatus
+
+class TrustVerificationResult(PebblingProtocolBaseModel):
+    """Result of trust verification"""
+    verified: bool = Field(..., description="Whether trust verification succeeded")
+    trust_level: TrustLevel = Field(..., description="The verified trust level")
+    allowed_operations: List[str] = Field(
+        default_factory=list, 
+        description="Operations allowed with the verified trust level"
+    )
+    denied_operations: List[str] = Field(
+        default_factory=list,
+        description="Operations denied due to insufficient trust level" 
+    )
+    verification_timestamp: int = Field(..., description="When verification occurred")
+    verification_token: Optional[str] = Field(None, description="Token for subsequent operations")
+    token_expiry: Optional[int] = Field(None, description="When the verification token expires")
 
 
 #-----------------------------------------------------------------------------
@@ -374,7 +398,7 @@ class TrustVerificationResponse(PebblingProtocolBaseModel):
     """Success response for trust verification"""
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
-    result: Task
+    result: TrustVerificationResult
 
 
 # Request types
@@ -407,6 +431,23 @@ class CancelTaskRequest(GetTaskRequest):
 class TaskResubscriptionRequest(GetTaskRequest):
     """Request to resubscribe to task events"""
     method: Literal['tasks/resubscribe'] = 'tasks/resubscribe'
+
+
+class TrustVerificationParams(PebblingProtocolBaseModel):
+    """Parameters for trust verification requests"""
+    agent_id: Union[UUID, int, str] = Field(..., description="ID of the agent requesting verification")
+    target_agent_id: Union[UUID, int, str] = Field(..., description="ID of the target agent to interact with")
+    operations: List[str] = Field(default_factory=list, description="Operations the agent wants to perform")
+    certificate: Optional[str] = Field(None, description="Agent's certificate for verification")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional verification metadata")
+
+
+class TrustVerificationRequest(PebblingProtocolBaseModel):
+    """Request to verify trust between agents"""
+    id: UUID
+    jsonrpc: Literal['2.0'] = '2.0'
+    method: Literal['trust/verify'] = 'trust/verify'
+    params: TrustVerificationParams
 
 
 # Union types for requests and responses
@@ -470,21 +511,6 @@ class PebblingRequest(
 # Lets handle Trust
 #-----------------------------------------------------------------------------
 
-class TrustLevel(str, Enum):
-    """Trust levels for operations and permissions"""
-    LOW = "low"           # Basic operations, minimal risk
-    MEDIUM = "medium"     # Standard operations
-    HIGH = "high"         # Sensitive operations
-    CRITICAL = "critical" # Highly sensitive operations like financial transactions
-
-class IdentityProvider(str, Enum):
-    """Supported identity providers"""
-    KEYCLOAK = "keycloak"
-    AZURE_AD = "azure_ad"
-    OKTA = "okta"
-    AUTH0 = "auth0"
-    CUSTOM = "custom"
-
 class KeycloakRole(PebblingProtocolBaseModel):
     """Keycloak role model"""
     role_id: UUID = Field(..., description="Role ID from Keycloak IAM.")
@@ -521,16 +547,65 @@ class AgentTrust(PebblingProtocolBaseModel):
         default_factory=dict,
         description="Operations this agent is allowed to perform with required trust levels"
     )
-
+    
 #-----------------------------------------------------------------------------
-# Agent 
+# Security 
 #-----------------------------------------------------------------------------
 
-class AgentIdentity(PebblingProtocolBaseModel):
-    did: Optional[str] = Field(None, description="Agent DID for decentralized identity.")
-    agentdns_url: Optional[str] = Field(None, description="Agent DNS-based identity URL (agentdns.ai).")
+class MTLSConfiguration(PebblingProtocolBaseModel):
+    """Secure mTLS configuration for agent communication"""
     endpoint: str = Field(..., description="Secure mTLS agent endpoint.")
     public_key: str = Field(..., description="Agent's public key for mTLS.")
+    certificate_chain: Optional[List[str]] = Field(None, description="Certificate chain for validation.")
+    certificate_expiry: Optional[int] = Field(None, description="UNIX timestamp when certificate expires.")
+    key_rotation_policy: Optional[str] = Field(None, description="Policy for key rotation, e.g. 'quarterly'")
+    cipher_suites: Optional[List[str]] = Field(None, description="Allowed cipher suites for TLS connection.")
+    min_tls_version: Optional[str] = Field("1.2", description="Minimum TLS version required.")
+
+class AgentIdentity(PebblingProtocolBaseModel):
+    # DID identification
+    did: Optional[str] = Field(None, description="Agent DID for decentralized identity (URI format).")
+    did_document: Optional[Dict[str, Any]] = Field(None, description="Complete DID document containing verification methods, services, etc.")
+    did_resolution_metadata: Optional[Dict[str, Any]] = Field(None, description="Metadata from DID resolution process.")
+    
+    # Alternative identification
+    agentdns_url: Optional[str] = Field(None, description="Agent DNS-based identity URL (agentdns.ai).")
+    
+    # MTLS configuration
+    endpoint: str = Field(..., description="Secure mTLS agent endpoint.")
+    mtls_config: MTLSConfiguration = Field(..., description="mTLS configuration for agent.")
+    
+    # Verification method preference
+    identity_verification_method: Literal["did", "agentdns", "certificate"] = Field(
+        "certificate", description="Primary method for identity verification."
+    )
+
+#-----------------------------------------------------------------------------
+# Security 
+#-----------------------------------------------------------------------------
+
+class AgentCapabilities(PebblingProtocolBaseModel):
+    """Agent capabilities including supported media types and operations"""
+    supported_operations: List[str] = Field(default_factory=list, description="Operations this agent can perform")
+    input_content_types: List[str] = Field(default_factory=lambda: ["text/plain"], description="Content types this agent can accept")
+    output_content_types: List[str] = Field(default_factory=lambda: ["text/plain"], description="Content types this agent can produce")
+    supports_images: bool = Field(False, description="Whether agent can process images")
+    supports_audio: bool = Field(False, description="Whether agent can process audio")
+    supports_video: bool = Field(False, description="Whether agent can process video")
+    supports_binary: bool = Field(False, description="Whether agent can process binary data")
+    max_message_size_bytes: Optional[int] = Field(None, description="Maximum message size in bytes")
+    streaming_supported: bool = Field(False, description="Whether agent supports streaming responses")
+
+
+class AgentMetrics(PebblingProtocolBaseModel):
+    """Agent usage and performance metrics"""
+    total_requests: int = Field(0, description="Total number of requests processed")
+    total_tokens: Optional[int] = Field(None, description="Total tokens processed")
+    avg_response_time_ms: Optional[int] = Field(None, description="Average response time in milliseconds")
+    error_rate: Optional[float] = Field(None, description="Error rate percentage")
+    uptime_seconds: Optional[int] = Field(None, description="Total uptime in seconds")
+    last_active: Optional[int] = Field(None, description="UNIX timestamp of last activity")
+    custom_metrics: Optional[Dict[str, Any]] = Field(None, description="Additional custom metrics")
 
 
 class AgentManifest(PebblingProtocolBaseModel):
@@ -545,12 +620,28 @@ class AgentManifest(PebblingProtocolBaseModel):
         description="The name of the agent", 
         examples=["Japanese Restaurant Reviewer Agent"]
     )
+    description: Optional[str] = Field(None, description="Detailed description of the agent's purpose and capabilities")
     user_id: Union[UUID, int, str] = Field(..., description="user")
+    
+    # Identity
+    identity: AgentIdentity = Field(..., description="Agent identity information.")
 
     # Trust
     trust_config: Optional[AgentTrust] = Field(
         None, 
         description="Trust configuration and inherited permissions"
+    )
+    
+    # Capabilities
+    capabilities: AgentCapabilities = Field(
+        default_factory=AgentCapabilities,
+        description="Agent's capabilities and supported operations"
+    )
+    
+    # Metrics
+    metrics: Optional[AgentMetrics] = Field(
+        None, 
+        description="Agent usage and performance metrics"
     )
     
     # Configuration
@@ -568,6 +659,4 @@ class AgentManifest(PebblingProtocolBaseModel):
     monitoring: bool = False
     telemetry: bool = True
     
-    # Tools and versioning
-    tools: Optional[List[AgentTools]] = None
     version: str = Field(..., examples=['1.0.0'])

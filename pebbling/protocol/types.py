@@ -5,7 +5,7 @@
 # |                                                  |
 # |--------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul && Claude
+#  Thank you!!! We ❤️ you! - Raahul && Claude
 
 """
 Pebbling Protocol Type Definitions
@@ -20,7 +20,7 @@ from uuid import UUID
 
 from pydantic import Field, RootModel
 
-from pebble.protocol._base import PebblingProtocolBaseModel
+from pebbling.protocol._base import PebblingProtocolBaseModel
 
 #-----------------------------------------------------------------------------
 # Base Types and Enums
@@ -52,18 +52,53 @@ class TaskState(str, Enum):
 
 class TrustLevel(str, Enum):
     """Trust levels for operations and permissions"""
-    LOW = "low"           # Basic operations, minimal risk
-    MEDIUM = "medium"     # Standard operations
-    HIGH = "high"         # Sensitive operations
-    CRITICAL = "critical" # Highly sensitive operations like financial transactions
+    untrusted = "untrusted"  # No trust established, restricted operations only
+    minimal = "minimal"      # Very low trust, highly restricted operations
+    low = "low"              # Basic operations, minimal risk
+    standard = "standard"    # Standard operations for authenticated users
+    medium = "medium"        # Standard operations with some sensitive capabilities
+    high = "high"            # Sensitive operations requiring strong verification
+    elevated = "elevated"    # Operations requiring multi-factor or multi-party verification
+    critical = "critical"    # Highly sensitive operations like financial transactions
+    super_critical = "super-critical" # Operations with regulatory or extreme risk implications
+    emergency = "emergency"  # Special case operations requiring override in critical situations
+
+
+class TrustCategory(str, Enum):
+    """Categories of operations requiring trust verification"""
+    identity = "identity"                # Identity verification operations
+    authentication = "authentication"    # Authentication-related operations
+    authorization = "authorization"      # Authorization and permissions management
+    data_access = "data_access"          # Access to sensitive data
+    financial = "financial"              # Financial transactions and account management
+    healthcare = "healthcare"            # Healthcare and medical data operations
+    personal = "personal"                # Access to personal identifiable information
+    admin = "admin"                      # Administrative functions
+    system = "system"                    # Core system operations
+    communication = "communication"      # Communication between agents/systems
+    regulatory = "regulatory"            # Operations subject to regulatory requirements
+
+
+class TrustVerificationMethod(str, Enum):
+    """Methods used to verify trust between agents"""
+    certificate = "certificate"         # Using X.509 certificates
+    oauth = "oauth"                     # OAuth 2.0 based verification
+    did = "did"                         # Decentralized Identity verification
+    mtls = "mtls"                       # Mutual TLS verification
+    jwt = "jwt"                         # JWT token based verification
+    multi_party = "multi_party"         # Multiple parties must approve
+    biometric = "biometric"             # Biometric verification required
+    zero_knowledge = "zero_knowledge"   # Zero-knowledge proof verification
+    multi_factor = "multi_factor"       # Multiple verification factors
+
 
 class IdentityProvider(str, Enum):
     """Supported identity providers"""
-    KEYCLOAK = "keycloak"
-    AZURE_AD = "azure_ad"
-    OKTA = "okta"
-    AUTH0 = "auth0"
-    CUSTOM = "custom"
+    keycloak = "keycloak"
+    azure_ad = "azure_ad"
+    okta = "okta"
+    auth0 = "auth0"
+    custom = "custom"
 
 
 #-----------------------------------------------------------------------------
@@ -157,9 +192,12 @@ class TrustVerificationResult(PebblingProtocolBaseModel):
         default_factory=list,
         description="Operations denied due to insufficient trust level" 
     )
-    verification_timestamp: int = Field(..., description="When verification occurred")
-    verification_token: Optional[str] = Field(None, description="Token for subsequent operations")
-    token_expiry: Optional[int] = Field(None, description="When the verification token expires")
+    verification_timestamp: str = Field(..., 
+        description="When verification occurred", examples=['2023-10-27T10:00:00Z'])
+    verification_token: Optional[str] = Field(None, 
+        description="Token for subsequent operations", examples=['abc123'])
+    token_expiry: Optional[str] = Field(None, 
+        description="When the verification token expires", examples=['2023-10-27T10:00:00Z'])
 
 
 #-----------------------------------------------------------------------------
@@ -188,7 +226,9 @@ class NegotiationProposal(PebblingProtocolBaseModel):
     from_agent: UUID = Field(..., description="Agent ID initiating the proposal")
     to_agent: UUID = Field(..., description="Agent ID receiving the proposal")
     terms: Dict[str, Any] = Field(..., description="Negotiation terms (structured)")
-    timestamp: int = Field(..., description="UNIX timestamp when the proposal was made")
+    timestamp: str = Field(..., 
+        description="UNIX timestamp when the proposal was made", 
+        examples=['2023-10-27T10:00:00Z'])
     status: NegotiationStatus = Field(
         NegotiationStatus.proposed, 
         description="Status of this specific proposal"
@@ -215,53 +255,53 @@ class NegotiationSession(PebblingProtocolBaseModel):
 
 class PaymentActionType(str, Enum):
     """Types of payment actions that can be performed"""
-    SUBMIT = 'submit'
-    CANCEL = 'cancel'
-    REFUND = 'refund'
-    VERIFY = 'verify'
-    UNKNOWN = 'unknown'
+    submit = 'submit'
+    cancel = 'cancel'
+    refund = 'refund'
+    verify = 'verify'
+    unknown = 'unknown'
 
 
 class PaymentStatus(str, Enum):
     """Status of a payment in its lifecycle"""
-    PENDING = 'pending'
-    PROCESSING = 'processing'
-    COMPLETED = 'completed'
-    FAILED = 'failed'
-    REFUNDED = 'refunded'
-    CANCELLED = 'cancelled'
-    DISPUTED = 'disputed'
+    pending = 'pending'
+    processing = 'processing'
+    completed = 'completed'
+    failed = 'failed'
+    refunded = 'refunded'
+    cancelled = 'cancelled'
+    disputed = 'disputed'
 
 
 class PaymentMethod(str, Enum):
     """Common payment methods"""
-    CREDIT_CARD = 'credit_card'
-    DEBIT_CARD = 'debit_card'
-    ACH = 'ach'
-    WIRE_TRANSFER = 'wire_transfer'
-    CRYPTO = 'crypto'
-    SEPA = 'sepa'
-    PAYPAL = 'paypal'
-    OTHER = 'other'
+    credit_card = 'credit_card'
+    debit_card = 'debit_card'
+    ach = 'ach'
+    wire_transfer = 'wire_transfer'
+    crypto = 'crypto'
+    sepa = 'sepa'
+    paypal = 'paypal'
+    other = 'other'
 
 
 class BillingPeriod(str, Enum):
     """Billing frequency options for recurring payments"""
-    DAILY = 'daily'
-    WEEKLY = 'weekly'
-    MONTHLY = 'monthly'
-    QUARTERLY = 'quarterly'
-    YEARLY = 'yearly'
-    ONE_TIME = 'one-time'
+    daily = 'daily'
+    weekly = 'weekly'
+    monthly = 'monthly'
+    quarterly = 'quarterly'
+    yearly = 'yearly'
+    one_time = 'one-time'
 
 
 class PaymentAction(PebblingProtocolBaseModel):
     """Represents the possible payment actions."""
-    action_type: PaymentActionType = Field(PaymentActionType.SUBMIT, description="Type of payment action")
+    action_type: PaymentActionType = Field(PaymentActionType.submit, description="Type of payment action")
     amount: float = Field(..., description="The amount of the payment", examples=[10.0])
     currency: str = Field(..., description="ISO currency code clearly identified (e.g., USD)")
     billing_period: BillingPeriod = Field(
-        BillingPeriod.ONE_TIME, 
+        BillingPeriod.one_time, 
         description="Billing frequency clearly defined if subscription-based"
     )
     
@@ -271,16 +311,22 @@ class PaymentAction(PebblingProtocolBaseModel):
     payment_status: Optional[PaymentStatus] = Field(None, description="Current status of the payment")
     
     # Time tracking
-    created_timestamp: Optional[int] = Field(None, description="UNIX timestamp when payment was created")
-    processed_timestamp: Optional[int] = Field(None, description="UNIX timestamp when payment was processed")
+    created_timestamp: Optional[str] = Field(
+        None, description="UNIX timestamp when payment was created", examples=['2023-10-27T10:00:00Z'])
+    processed_timestamp: Optional[str] = Field(
+        None, description="UNIX timestamp when payment was processed", examples=['2023-10-27T10:00:00Z'])
     
     # Entity information
-    payer_id: Optional[Union[UUID, str]] = Field(None, description="ID of the paying entity")
-    payee_id: Optional[Union[UUID, str]] = Field(None, description="ID of the receiving entity")
+    payer_id: Optional[Union[UUID, str]] = Field(
+        None, description="ID of the paying entity")
+    payee_id: Optional[Union[UUID, str]] = Field(
+        None, description="ID of the receiving entity")
     
     # Banking specific
-    reference: Optional[str] = Field(None, description="Payment reference or memo")
-    regulatory_info: Optional[Dict[str, Any]] = Field(None, description="Regulatory information for compliance")
+    reference: Optional[str] = Field(
+        None, description="Payment reference or memo")
+    regulatory_info: Optional[Dict[str, Any]] = Field(
+        None, description="Regulatory information for compliance")
 
 
 #-----------------------------------------------------------------------------
@@ -600,7 +646,11 @@ class AgentTrust(PebblingProtocolBaseModel):
     certificate: Optional[str] = Field(None, description="Agent's security certificate for verification")
     certificate_fingerprint: Optional[str] = Field(None, description="Fingerprint of the agent's certificate")
     creator_id: Union[UUID, int, str] = Field(..., description="ID of the user who created this agent")
-    creation_timestamp: int = Field(..., description="UNIX timestamp of agent creation")
+    creation_timestamp: str = Field(
+        ..., 
+        description="UNIX timestamp of agent creation",
+        examples=['2023-10-27T10:00:00Z']
+    )
     trust_verification_required: bool = Field(True, description="Whether trust verification is required")
     allowed_operations: Dict[str, TrustLevel] = Field(
         default_factory=dict,

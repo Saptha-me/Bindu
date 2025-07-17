@@ -5,7 +5,7 @@
 # |                                                  |
 # |--------------------------------------------------|
 #
-#  Thank you!!! We ❤️ you! - Raahul && Claude
+#  Thank you!!! We ❤️ you! - Raahul
 
 """
 Pebbling Protocol Type Definitions

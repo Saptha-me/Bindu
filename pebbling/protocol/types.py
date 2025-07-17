@@ -213,15 +213,74 @@ class NegotiationSession(PebblingProtocolBaseModel):
 # Payment Models
 #-----------------------------------------------------------------------------
 
+class PaymentActionType(str, Enum):
+    """Types of payment actions that can be performed"""
+    SUBMIT = 'submit'
+    CANCEL = 'cancel'
+    REFUND = 'refund'
+    VERIFY = 'verify'
+    UNKNOWN = 'unknown'
+
+
+class PaymentStatus(str, Enum):
+    """Status of a payment in its lifecycle"""
+    PENDING = 'pending'
+    PROCESSING = 'processing'
+    COMPLETED = 'completed'
+    FAILED = 'failed'
+    REFUNDED = 'refunded'
+    CANCELLED = 'cancelled'
+    DISPUTED = 'disputed'
+
+
+class PaymentMethod(str, Enum):
+    """Common payment methods"""
+    CREDIT_CARD = 'credit_card'
+    DEBIT_CARD = 'debit_card'
+    ACH = 'ach'
+    WIRE_TRANSFER = 'wire_transfer'
+    CRYPTO = 'crypto'
+    SEPA = 'sepa'
+    PAYPAL = 'paypal'
+    OTHER = 'other'
+
+
+class BillingPeriod(str, Enum):
+    """Billing frequency options for recurring payments"""
+    DAILY = 'daily'
+    WEEKLY = 'weekly'
+    MONTHLY = 'monthly'
+    QUARTERLY = 'quarterly'
+    YEARLY = 'yearly'
+    ONE_TIME = 'one-time'
+
+
 class PaymentAction(PebblingProtocolBaseModel):
     """Represents the possible payment actions."""
-    action_type: Literal['submit', 'cancel', 'unknown'] = 'submit'
+    action_type: PaymentActionType = Field(PaymentActionType.SUBMIT, description="Type of payment action")
     amount: float = Field(..., description="The amount of the payment", examples=[10.0])
     currency: str = Field(..., description="ISO currency code clearly identified (e.g., USD)")
-    billing_period: Literal["daily", "weekly", "monthly", "yearly", "one-time"] = Field(
-        "one-time", 
+    billing_period: BillingPeriod = Field(
+        BillingPeriod.ONE_TIME, 
         description="Billing frequency clearly defined if subscription-based"
     )
+    
+    # Additional fields for comprehensive payment handling
+    transaction_id: Optional[str] = Field(None, description="Unique transaction identifier")
+    payment_method: Optional[PaymentMethod] = Field(None, description="Method of payment")
+    payment_status: Optional[PaymentStatus] = Field(None, description="Current status of the payment")
+    
+    # Time tracking
+    created_timestamp: Optional[int] = Field(None, description="UNIX timestamp when payment was created")
+    processed_timestamp: Optional[int] = Field(None, description="UNIX timestamp when payment was processed")
+    
+    # Entity information
+    payer_id: Optional[Union[UUID, str]] = Field(None, description="ID of the paying entity")
+    payee_id: Optional[Union[UUID, str]] = Field(None, description="ID of the receiving entity")
+    
+    # Banking specific
+    reference: Optional[str] = Field(None, description="Payment reference or memo")
+    regulatory_info: Optional[Dict[str, Any]] = Field(None, description="Regulatory information for compliance")
 
 
 #-----------------------------------------------------------------------------

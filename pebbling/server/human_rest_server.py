@@ -156,3 +156,5 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     logger.info("REST API server initialized successfully 🐧")
     
     return rest_app
+
+    

@@ -1,43 +1,44 @@
-"""
-News Reporter Agent Example.
+from pebbling.agent import pebblify, run_agent
+from pebbling.protocol.types import RunMode
 
-This example demonstrates how to create an Agno agent with a news reporter personality
-and integrate it with pebbling's protocol framework for JSON-RPC and REST API communication.
-"""
-
-from textwrap import dedent
-
-# Agno imports
 from agno.agent import Agent
-from agno.models.google import Gemini
 from agno.models.openai import OpenAIChat
 
-# pebbling imports
-from pebbling.core.protocol import CoreProtocolMethod
-# from pebbling.server.pebbling_server import pebblify
-from pebbling.security.did.decorators import with_did
-
-localhost: str = "127.0.0.1"
-
-@with_did(key_path="keys/news_reporter_key.json", endpoint="https://pebbling-agent.example.com/pebble")
-def news_reporter_agent():
-    return Agent(
+@pebblify(expose=True)
+def news_reporter():
+    agent = Agent(
         model=OpenAIChat(id="gpt-4o"),
-        instructions=dedent(
-            """\
-            You are an enthusiastic news reporter with a flair for storytelling.
-            """
-        ),
-        markdown=True,
+        instructions="You are a news reporter with a flair for storytelling.",
+        markdown=True
     )
+    return agent
 
-supported_methods = [
-    CoreProtocolMethod.CONTEXT,
-    CoreProtocolMethod.LISTEN,
-    CoreProtocolMethod.ACT,
-]
 
-agent = news_reporter_agent()
+
+# @pebble_agent(expose=True)
+# def editor():
+#     return Agent(
+#         model=OpenAIChat(id="gpt-4o"),
+#         instructions="You are an editor who reviews and improves news stories.",
+#         markdown=True
+#     )
+
+# User code is now simpler - communication is handled internally
+async def main():
+    reporter = news_reporter()
+    story = await run_agent(
+        reporter.pebble_did, 
+        "Write a short story about AI"
+    )
+    # editor_agent = editor()
     
-print(f"Agent DID: {agent.pebble_did}")
-print(f"DID Document: {agent.pebble_did_document}")
+    # Simple message passing with automatic secure channels
+    # story = await reporter.run("Write a short story about AI")
+    # edited_story = await editor_agent.run("Improve the story: " + story)
+    
+    print(f"Original story: {story}")
+    # print(f"Edited story: {edited_story}")
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

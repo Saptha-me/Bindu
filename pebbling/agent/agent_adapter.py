@@ -6,7 +6,7 @@ import inspect
 from collections.abc import AsyncGenerator, Coroutine, Generator
 from typing import Callable
 
-from pebbling.models.types import AgentName, Message, Metadata
+from pebbling.protocol.types import Message, Metadata, AgentName
 from acp_sdk.server.context import Context
 from acp_sdk.server.types import RunYield, RunYieldResume
 

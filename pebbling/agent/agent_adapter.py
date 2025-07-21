@@ -4,16 +4,12 @@
 import abc
 import inspect
 from collections.abc import AsyncGenerator, Coroutine, Generator
-from typing import Callable
-
-from pebbling.protocol.types import Message, Metadata, AgentName
-from acp_sdk.server.context import Context
-from acp_sdk.server.types import RunYield, RunYieldResume
+from typing import Any, Callable
 
 
 class AgentManifest(abc.ABC):
     @property
-    def name(self) -> AgentName:
+    def name(self) -> str:
         return self.__class__.__name__
 
     @property
@@ -29,16 +25,16 @@ class AgentManifest(abc.ABC):
         return []
 
     @property
-    def metadata(self) -> Metadata:
-        return Metadata()
+    def metadata(self) -> dict[str, Any]:
+        return {}
 
-    @abc.abstractmethod
-    def run(
-        self, input: list[Message], context: Context
-    ) -> (
-        AsyncGenerator[RunYield, RunYieldResume] | Generator[RunYield, RunYieldResume] | Coroutine[RunYield] | RunYield
-    ):
-        pass
+    #@abc.abstractmethod
+    # def run(
+    #     self, input: list[Message], context: dict[str, Any]
+    # ) -> (
+    #     AsyncGenerator[RunYield, RunYieldResume] | Generator[RunYield, RunYieldResume] | Coroutine[RunYield] | RunYield
+    # ):
+    #     pass
 
 
 Agent = AgentManifest
@@ -48,7 +44,7 @@ def agent(
     name: str | None = None,
     description: str | None = None,
     *,
-    metadata: Metadata | None = None,
+    metadata: dict[str, Any] | None = None,
     input_content_types: list[str] | None = None,
     output_content_types: list[str] | None = None,
 ) -> Callable[[Callable], AgentManifest]:

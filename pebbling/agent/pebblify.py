@@ -14,23 +14,24 @@ import inspect
 import uuid
 import sys
 from pathlib import Path
-from typing import Any, Optional, Callable, Union
+from typing import Any, Optional, Callable, Union, List, Dict
 
 from fastapi import FastAPI
 
 # Import necessary components
 from pebbling.security.did.manager import DIDManager
-from pebbling.security.mlts import MLTSManager
-from pebbling.hibiscus import HibiscusClient
-from pebbling.agent.agent_adapter import AgentAdapter
-from pebbling.server.pebbling_server import create_server
+from pebbling.security.common.keys import generate_key_pair
+#from pebbling.security.mlts import MLTSManager
+#from pebbling.hibiscus.registry import HibiscusRegistry
+#from pebbling.server.pebbling_server import create_server
 
 def pebblify(
     agent_name: Optional[str] = None,
     expose: bool = False,
     keys_required: Optional[bool] = True,
-    key_path: Optional[str] = None,
+    keys_dir: Optional[str] = None,
     did_required: Optional[bool] = True,
+    recreate_keys: Optional[bool] = True,
     agentdns_required: Optional[bool] = True,
     store_in_registry: Optional[bool] = True,
     agent_registry: Optional[Union[str, None]] = "hibiscus",
@@ -75,7 +76,7 @@ def pebblify(
             Whether to generate cryptographic keys for the agent. Required for DID and
             certificate generation. Default: True
         
-        key_path (Optional[str]): 
+        keys_dir (Optional[str]): 
             Path to store or load the agent's cryptographic keys. If None, keys will be
             generated in a 'keys' directory relative to the calling script with an 
             agent-specific filename. Default: None
@@ -83,6 +84,10 @@ def pebblify(
         did_required (Optional[bool]): 
             Whether to generate a Decentralized Identifier (DID) for the agent.
             DIDs are used for identity verification and trust establishment. Default: True
+
+        recreate_keys (Optional[bool]): 
+            Whether to recreate the agent's cryptographic keys. If True, will generate
+            new keys and update the agent's key file. Default: False
         
         agentdns_required (Optional[bool]): 
             Whether to register the agent with AgentDNS service for name resolution.
@@ -206,49 +211,65 @@ def pebblify(
     def decorator(obj: Any) -> Any:
         @functools.wraps(obj)
         def wrapper(*args, **kwargs):
-            # 1. Get the base agent from the wrapped function
+            # Get the base agent from the wrapped function
             agent = obj(*args, **kwargs)
+
+            # Ensure agent has an ID
+            agent.id = getattr(agent, 'id', str(uuid.uuid4()))
             
-            # 2. Generate keys and DID document (or load existing)
-            # Generate key path if not provided
-            if key_path is None:
-                # Get the directory of the calling script (e.g., example.py)
-                caller_frame = inspect.currentframe().f_back
-                caller_file = inspect.getframeinfo(caller_frame).filename
+            # Access the keys_dir from the outer scope
+            nonlocal keys_dir
+            current_keys_dir = keys_dir
+            
+            # Set up keys directory if needed
+            if not current_keys_dir:
+                # Create keys directory relative to the calling script
+                caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
                 caller_dir = os.path.dirname(os.path.abspath(caller_file))
+                current_keys_dir = os.path.join(caller_dir, 'keys')
+                os.makedirs(current_keys_dir, exist_ok=True)
                 
-                # Create keys directory relative to the caller's location
-                keys_dir = os.path.join(caller_dir, 'keys')
-                os.makedirs(keys_dir, exist_ok=True)
-                
-                # Generate agent-specific key file
-                agent_id = getattr(agent, 'name', str(uuid.uuid4()))
-                key_path_actual = os.path.join(keys_dir, f"{agent_id}_key.json")
-            else:
-                key_path_actual = key_path
-                
-            # Create DID manager and attach to agent
+            # Generate keys if needed
+            if keys_required:
+                generate_key_pair(current_keys_dir, recreate=recreate_keys)
+                agent.setattr("keys_dir", current_keys_dir)
+
+            # Get Agent Capabilities
+            capabilities = get_agent_capabilities(agent)
+
+            # Get Agent Skills
+            skills = get_agent_skills(agent)
+        
+            # Set up DID if required
+            did_manager = None
             if did_required:
-                did_manager = DIDManager(key_path=key_path_actual)
-            else:
-                did_manager = None
-            
-            # 3. Register with Hibiscus (agent registry)
-            # Store agent metadata and capabilities
-            hibiscus = HibiscusClient()
-            if store_in_registry:
-                hibiscus.register_agent(
+                if not current_keys_dir:
+                    raise ValueError("Keys are required for DID functionality")
+                
+                did_config_path = os.path.join(current_keys_dir, "did.json")
+                did_manager = DIDManager(
+                    config_path=did_config_path,
+                    keys_dir=current_keys_dir,
+                    capabilities=capabilities,
+                    skills=skills,
+                    recreate=recreate_keys
+                )
+                
+            # Register with Hibiscus registry if requested
+            if store_in_registry and did_manager:
+                HibiscusClient().register_agent(
                     did=did_manager.get_did(),
-                    capabilities=get_agent_capabilities(agent),
-                    endpoint=f"https://{agent_id}.api.pebbling.ai"
+                    capabilities=capabilities,
+                    skills=skills,
+                    endpoint=f"https://{agent.id}.api.pebbling.ai"
                 )
             
-            # 4. If expose=True, create server and fetch certificate
+            # If expose=True, create server and fetch certificate
             if expose:
                 # Create CSR for Sheldon
                 if cert_authority == "sheldon":
                     csr = did_manager.create_csr(
-                        common_name=f"{agent_id}.api.pebbling.ai",
+                        common_name=f"{agent.id}.api.pebbling.ai",
                         organization="Pebbling",
                         org_unit="Agent",
                         country="US"
@@ -261,7 +282,7 @@ def pebblify(
                         did=did_manager.get_did()
                     )
                     
-                # 5. Create and configure FastAPI app
+                # Create and configure FastAPI app
                 app = FastAPI()
                 
                 # Create MLTS server with the certificate
@@ -274,10 +295,10 @@ def pebblify(
                     # Setup MLTS configuration for the server
                     mlts_config = mlts_manager.get_server_config()
                     
-                # 6. Create Adapter for the agent
+                # Create Adapter for the agent
                 adapter = AgentAdapter(agent)
                 
-                # 7. Create and start the server (non-blocking)
+                # Create and start the server (non-blocking)
                 server = create_server(
                     app=app,
                     agent_adapter=adapter,
@@ -292,8 +313,8 @@ def pebblify(
                 agent._pebble_server = server
             
             # Attach Pebble attributes to agent
-            agent.pebble_did = did_manager.get_did()
-            agent.pebble_did_document = did_manager.get_did_document()
+            agent.pebble_did = did_manager.get_did() if did_manager else None
+            agent.pebble_did_document = did_manager.get_did_document() if did_manager else None
             
             # Return the enhanced agent
             return agent
@@ -303,6 +324,11 @@ def pebblify(
 # Helper functions
 def get_agent_capabilities(agent):
     """Extract capabilities from agent for registration."""
+    # Implementation depends on agent type
+    pass
+
+def get_agent_skills(agent):
+    """Extract skills from agent for registration."""
     # Implementation depends on agent type
     pass
 

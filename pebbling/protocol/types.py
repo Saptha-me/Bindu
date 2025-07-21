@@ -33,10 +33,10 @@ integration with various AI backends and agent architectures.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 
 class Role(Enum):
@@ -634,7 +634,7 @@ class TextPart(BaseModel):
         )
         ```
     """
-    kind: str = Field('text', const=True, title='Kind')
+    kind: Literal['text'] = Field('text', title='Kind')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     content: str = Field(..., title='Content')
 
@@ -676,7 +676,7 @@ class DataPart(BaseModel):
         )
         ```
     """
-    kind: str = Field('data', const=True, title='Kind')
+    kind: str = Field('data', title='Kind')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     content: str = Field(..., title='Content')
     data: Dict[str, Any] = Field(..., title='Data')
@@ -992,89 +992,89 @@ class JSONRPCError(BaseModel):
 
 class GetTaskRequest(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
-    method: str = Field('tasks/get', const=True, title='Method')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
+    method: Literal['tasks/get'] = Field('tasks/get', title='Method')
     params: TaskIdParams
 
 
 class CancelTaskRequest(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
-    method: str = Field('tasks/cancel', const=True, title='Method')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
+    method: Literal['tasks/cancel'] = Field('tasks/cancel', title='Method')
     params: TaskIdParams
 
 
 class TaskResubscriptionRequest(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
-    method: str = Field('tasks/resubscribe', const=True, title='Method')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
+    method: Literal['tasks/resubscribe'] = Field('tasks/resubscribe', title='Method')
     params: TaskIdParams
 
 
 class JSONParseError(BaseModel):
-    code: int = Field(-32700, const=True, title='Code')
+    code: int = Field(-32700, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Invalid JSON', const=True, title='Message')
+    message: Literal['Invalid JSON'] = Field('Invalid JSON', title='Message')
 
 
 class InvalidRequestError(BaseModel):
-    code: int = Field(-32600, const=True, title='Code')
+    code: int = Field(-32600, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Validation error', const=True, title='Message')
+    message: Literal['Validation error'] = Field('Validation error', title='Message')
 
 
 class MethodNotFoundError(BaseModel):
-    code: int = Field(-32601, const=True, title='Code')
+    code: int = Field(-32601, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Method not found', const=True, title='Message')
+    message: Literal['Method not found'] = Field('Method not found', title='Message')
 
 
 class InvalidParamsError(BaseModel):
-    code: int = Field(-32602, const=True, title='Code')
+    code: int = Field(-32602, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Invalid parameters', const=True, title='Message')
+    message: Literal['Invalid parameters'] = Field('Invalid parameters', title='Message')
 
 
 class InternalError(BaseModel):
-    code: int = Field(-32603, const=True, title='Code')
+    code: int = Field(-32603, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Internal error', const=True, title='Message')
+    message: Literal['Internal error'] = Field('Internal error', title='Message')
 
 
 class TaskNotFoundError(BaseModel):
-    code: int = Field(-32007, const=True, title='Code')
+    code: int = Field(-32007, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Task not found', const=True, title='Message')
+    message: Literal['Task not found'] = Field('Task not found', title='Message')
 
 
 class TaskNotCancelableError(BaseModel):
-    code: int = Field(-32008, const=True, title='Code')
+    code: int = Field(-32008, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Task not cancelable', const=True, title='Message')
+    message: Literal['Task not cancelable'] = Field('Task not cancelable', title='Message')
 
 
 class PushNotificationNotSupportedError(BaseModel):
-    code: int = Field(-32009, const=True, title='Code')
+    code: int = Field(-32009, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Push notification not supported', const=True, title='Message')
+    message: Literal['Push notification not supported'] = Field('Push notification not supported', title='Message')
 
 
 class UnsupportedOperationError(BaseModel):
-    code: int = Field(-32010, const=True, title='Code')
+    code: int = Field(-32010, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Unsupported operation', const=True, title='Message')
+    message: Literal['Unsupported operation'] = Field('Unsupported operation', title='Message')
 
 
 class ContentTypeNotSupportedError(BaseModel):
-    code: int = Field(-32011, const=True, title='Code')
+    code: int = Field(-32011, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Content type not supported', const=True, title='Message')
+    message: Literal['Content type not supported'] = Field('Content type not supported', title='Message')
 
 
 class InvalidAgentResponseError(BaseModel):
-    code: int = Field(-32006, const=True, title='Code')
+    code: int = Field(-32006, title='Code')
     data: Any = Field(None, title='Data')
-    message: str = Field('Invalid agent response', const=True, title='Message')
+    message: Literal['Invalid agent response'] = Field('Invalid agent response', title='Message')
 
 
 class AgentIdentity(BaseModel):
@@ -1141,19 +1141,19 @@ class KeycloakRole(BaseModel):
 
 class TrustVerificationRequest(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
-    method: str = Field('trust/verify', const=True, title='Method')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
+    method: Literal['trust/verify'] = Field('trust/verify', title='Method')
     params: TrustVerificationParams
 
 
 class TrustVerificationResponse(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
     result: TrustVerificationResult
 
 
 class FilePart(BaseModel):
-    kind: str = Field('file', const=True, title='Kind')
+    kind: Literal['file'] = Field('file', title='Kind')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     content: str = Field(..., title='Content')
     file: Union[FileWithBytes, FileWithUri] = Field(..., title='File')
@@ -1175,7 +1175,7 @@ class JSONRPCErrorResponse(BaseModel):
         InvalidAgentResponseError,
     ] = Field(..., title='Error')
     id: Optional[Union[str, int]] = Field(None, title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
 
 
 class AgentTrust(BaseModel):
@@ -1218,10 +1218,12 @@ class AgentTrust(BaseModel):
     )
 
 
-class Part(BaseModel):
-    __root__: Union[TextPart, FilePart, DataPart] = Field(
-        ..., description='Union type for all possible message parts', title='Part'
-    )
+class Part(RootModel[Union[TextPart, FilePart, DataPart]]):
+    """Union type for all possible message parts"""
+    
+    model_config = {
+        "title": "Part",
+    }
 
 
 class Artifact(BaseModel):
@@ -1238,7 +1240,7 @@ class TaskArtifactUpdateEvent(BaseModel):
     append: Optional[bool] = Field(None, title='Append')
     artifact: Artifact
     contextId: UUID = Field(..., title='Contextid')
-    kind: str = Field('artifact-update', const=True, title='Kind')
+    kind: Literal['artifact-update'] = Field('artifact-update', title='Kind')
     lastChunk: Optional[bool] = Field(None, title='Lastchunk')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     taskId: UUID = Field(..., title='Taskid')
@@ -1287,7 +1289,7 @@ class AgentManifest(BaseModel):
 
 class Message(BaseModel):
     contextId: UUID = Field(..., title='Contextid')
-    kind: str = Field('message', const=True, title='Kind')
+    kind: Literal['message'] = Field('message', title='Kind')
     messageId: UUID = Field(..., title='Messageid')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     parts: List[Part] = Field(..., title='Parts')
@@ -1315,7 +1317,7 @@ class TaskStatus(BaseModel):
 class TaskStatusUpdateEvent(BaseModel):
     contextId: UUID = Field(..., title='Contextid')
     final: bool = Field(..., title='Final')
-    kind: str = Field('status-update', const=True, title='Kind')
+    kind: Literal['status-update'] = Field('status-update', title='Kind')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     status: TaskStatus
     taskId: UUID = Field(..., title='Taskid')
@@ -1323,15 +1325,15 @@ class TaskStatusUpdateEvent(BaseModel):
 
 class SendMessageRequest(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
-    method: str = Field('message/send', const=True, title='Method')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
+    method: Literal['message/send'] = Field('message/send', title='Method')
     params: MessageSendParams
 
 
 class SendStreamingMessageRequest(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
-    method: str = Field('message/stream', const=True, title='Method')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
+    method: Literal['message/stream'] = Field('message/stream', title='Method')
     params: MessageSendParams
 
 
@@ -1340,20 +1342,20 @@ class Task(BaseModel):
     contextId: UUID = Field(..., title='Contextid')
     history: Optional[List[Message]] = Field(None, title='History')
     id: str = Field(..., title='Id')
-    kind: str = Field('task', const=True, title='Kind')
+    kind: Literal['task'] = Field('task', title='Kind')
     metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
     status: TaskStatus
 
 
 class SendMessageSuccessResponse(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
     result: Union[Task, Message] = Field(..., title='Result')
 
 
 class SendStreamingMessageSuccessResponse(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
     result: Union[Task, Message, TaskStatusUpdateEvent, TaskArtifactUpdateEvent] = (
         Field(..., title='Result')
     )
@@ -1361,29 +1363,29 @@ class SendStreamingMessageSuccessResponse(BaseModel):
 
 class GetTaskSuccessResponse(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
     result: Task
 
 
 class CancelTaskSuccessResponse(BaseModel):
     id: UUID = Field(..., title='Id')
-    jsonrpc: str = Field('2.0', const=True, title='Jsonrpc')
+    jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
     result: Task
 
 
-class JSONRPCResponse(BaseModel):
-    __root__: Union[
-        JSONRPCErrorResponse,
-        SendMessageSuccessResponse,
-        SendStreamingMessageSuccessResponse,
-        GetTaskSuccessResponse,
-        CancelTaskSuccessResponse,
-        TrustVerificationResponse,
-    ] = Field(
-        ...,
-        description='Union type for all JSON-RPC responses',
-        title='JSONRPCResponse',
-    )
+class JSONRPCResponse(RootModel[Union[
+    JSONRPCErrorResponse,
+    SendMessageSuccessResponse,
+    SendStreamingMessageSuccessResponse,
+    GetTaskSuccessResponse,
+    CancelTaskSuccessResponse,
+    TrustVerificationResponse,
+]]):
+    """Union type for all JSON-RPC responses"""
+    
+    model_config = {
+        "title": "JSONRPCResponse",
+    }
 
 
 class PebblingProtocol(BaseModel):

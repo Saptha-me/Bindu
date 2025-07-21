@@ -1,4 +1,5 @@
-from pebbling.agent import pebblify, run_agent
+from pebbling.agent import pebblify
+from pebbling.agent.runner import run_agent
 from pebbling.protocol.types import RunMode
 
 from agno.agent import Agent

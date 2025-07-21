@@ -232,7 +232,7 @@ def pebblify(
             # Generate keys if needed
             if keys_required:
                 generate_key_pair(current_keys_dir, recreate=recreate_keys)
-                agent.setattr("keys_dir", current_keys_dir)
+                setattr(agent, "keys_dir", current_keys_dir)
 
             # Get Agent Capabilities
             capabilities = get_agent_capabilities(agent)

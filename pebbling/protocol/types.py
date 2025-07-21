@@ -36,7 +36,8 @@ from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import Field
+from pebbling.protocol._base import PebblingProtocolBaseModel
 
 
 class Role(Enum):
@@ -123,7 +124,7 @@ class IdentityVerificationMethod(Enum):
     certificate = 'certificate'  # X.509 certificate verification
 
 
-class AgentCapabilities(BaseModel):
+class AgentCapabilities(PebblingProtocolBaseModel):
     """
     Describes the capabilities of an agent in the Pebbling framework.
     
@@ -182,8 +183,7 @@ class AgentCapabilities(BaseModel):
         title='Streaming Supported',
     )
 
-
-class AgentMetrics(BaseModel):
+class AgentMetrics(PebblingProtocolBaseModel):
     """
     Performance and usage metrics for an agent in the Pebbling framework.
     
@@ -238,7 +238,7 @@ class AgentMetrics(BaseModel):
     )
 
 
-class MTLSConfiguration(BaseModel):
+class MTLSConfiguration(PebblingProtocolBaseModel):
     """
     Configuration for mutual TLS (mTLS) communication between agents.
     
@@ -329,13 +329,16 @@ class TrustLevel(Enum):
                     trust_hierarchy.index(required_level))
         ```
     """
-    untrusted = 'untrusted'
-    minimal = 'minimal'
-    high = 'high'
-    elevated = 'elevated'
-    critical = 'critical'
-    super_critical = 'super-critical'
-    emergency = 'emergency'
+    admin = 'admin'
+    analyst = 'analyst'
+    auditor = 'auditor'
+    editor = 'editor'
+    guest = 'guest'
+    manager = 'manager'
+    operator = 'operator'
+    super_admin = 'super_admin'
+    support = 'support'
+    viewer = 'viewer'
 
 
 class TrustCategory(Enum):
@@ -374,17 +377,18 @@ class TrustCategory(Enum):
             return category_trust >= required['level']
         ```
     """
-    identity = 'identity'
-    authentication = 'authentication'
-    authorization = 'authorization'
-    data_access = 'data_access'
-    financial = 'financial'
-    healthcare = 'healthcare'
-    personal = 'personal'
-    admin = 'admin'
-    system = 'system'
-    communication = 'communication'
-    regulatory = 'regulatory'
+    approve = 'approve'
+    audit = 'audit'
+    configure_settings = 'configure_settings'
+    create = 'create'
+    delete = 'delete'
+    export = 'export'
+    generate_reports = 'generate_reports'
+    manage_users = 'manage_users'
+    read = 'read'
+    support_access = 'support_access'
+    update = 'update'
+    view_sensitive_data = 'view_sensitive_data'
 
 
 class TrustVerificationMethod(Enum):
@@ -429,7 +433,7 @@ class TrustVerificationMethod(Enum):
     multi_factor = 'multi_factor'
 
 
-class TrustVerificationResult(BaseModel):
+class TrustVerificationResult(PebblingProtocolBaseModel):
     """
     Result of a trust verification operation between agents.
     
@@ -505,7 +509,7 @@ class TrustVerificationResult(BaseModel):
     )
 
 
-class TrustVerificationParams(BaseModel):
+class TrustVerificationParams(PebblingProtocolBaseModel):
     """
     Parameters for initiating a trust verification request.
     
@@ -570,7 +574,7 @@ class TrustVerificationParams(BaseModel):
     )
 
 
-class MessageSendConfiguration(BaseModel):
+class MessageSendConfiguration(PebblingProtocolBaseModel):
     """
     Configuration for sending messages to an agent.
     
@@ -604,7 +608,7 @@ class MessageSendConfiguration(BaseModel):
     historyLength: Optional[int] = Field(None, title='Historylength')
 
 
-class TextPart(BaseModel):
+class TextPart(PebblingProtocolBaseModel):
     """
     A text message part in the Pebbling communication protocol.
     
@@ -639,7 +643,7 @@ class TextPart(BaseModel):
     content: str = Field(..., title='Content')
 
 
-class DataPart(BaseModel):
+class DataPart(TextPart):
     """
     A structured data message part in the Pebbling communication protocol.
     
@@ -677,12 +681,10 @@ class DataPart(BaseModel):
         ```
     """
     kind: str = Field('data', title='Kind')
-    metadata: Optional[Dict[str, Any]] = Field(None, title='Metadata')
-    content: str = Field(..., title='Content')
     data: Dict[str, Any] = Field(..., title='Data')
 
 
-class FileWithBytes(BaseModel):
+class FileWithBytes(TextPart):
     """
     File representation with raw byte content for message attachments.
     
@@ -717,7 +719,7 @@ class FileWithBytes(BaseModel):
     name: Optional[str] = Field(None, title='Name')
 
 
-class FileWithUri(BaseModel):
+class FileWithUri(TextPart):
     """
     File representation with URI reference for message attachments.
     
@@ -1272,6 +1274,9 @@ class AgentManifest(BaseModel):
     capabilities: Optional[AgentCapabilities] = Field(
         None, description="Agent's capabilities and supported operations"
     )
+    skills: Optional[AgentSkills] = Field(
+        None, description="Agent's skills and expertise"
+    )
     metrics: Optional[AgentMetrics] = Field(
         None, description='Agent usage and performance metrics'
     )
@@ -1347,7 +1352,7 @@ class Task(BaseModel):
     status: TaskStatus
 
 
-class SendMessageSuccessResponse(BaseModel):
+class SendMessageSuccessResponse(PebblingProtocolBaseModel):
     id: UUID = Field(..., title='Id')
     jsonrpc: Literal['2.0'] = Field('2.0', title='Jsonrpc')
     result: Union[Task, Message] = Field(..., title='Result')
@@ -1388,7 +1393,7 @@ class JSONRPCResponse(RootModel[Union[
     }
 
 
-class PebblingProtocol(BaseModel):
+class PebblingProtocol(PebblingProtocolBaseModel):
     Role: Optional[Role] = None
     RunMode: Optional[RunMode] = None
     AgentManifest: Optional[AgentManifest] = None

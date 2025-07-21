@@ -1,8 +1,0 @@
-{
-  "type": "string",
-  "enum": [
-    "agent",
-    "user"
-  ],
-  "description": "Message sender's role"
-}

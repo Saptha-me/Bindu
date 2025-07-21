@@ -1,4 +1,4 @@
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# Copyright 2025 BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
 import abc
@@ -27,6 +27,16 @@ class AgentManifest(abc.ABC):
     @property
     def metadata(self) -> dict[str, Any]:
         return {}
+        
+    @property
+    def capabilities(self) -> dict[str, Any]:
+        """Agent capabilities like streaming, state history, etc."""
+        return {}
+        
+    @property
+    def skills(self) -> list[dict[str, Any]]:
+        """List of skills the agent supports."""
+        return []
 
     #@abc.abstractmethod
     # def run(
@@ -73,8 +83,8 @@ def agent(
                 return description or inspect.getdoc(fn) or ""
 
             @property
-            def metadata(self) -> Metadata:
-                return metadata or Metadata()
+            def metadata(self) -> dict[str, Any]:
+                return metadata or {}
 
             @property
             def input_content_types(self) -> list[str]:

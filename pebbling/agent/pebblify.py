@@ -14,13 +14,23 @@ import inspect
 import uuid
 import sys
 from pathlib import Path
-from typing import Any, Optional, Callable, Union, List, Dict
-
-from fastapi import FastAPI
+from typing import Any, Callable, Dict, List, Optional, Type, Union
+import json
+import logging
+from pydantic.types import SecretStr
 
 # Import necessary components
 from pebbling.security.did.manager import DIDManager
 from pebbling.security.common.keys import generate_key_pair
+from pebbling.protocol.types import (
+    AgentManifest, 
+    AgentCapabilities, 
+    AgentSkill,
+    AgentSecurity,
+    AgentTrust,
+    AgentIdentity
+)
+from pebbling.hibiscus.registry import HibiscusClient
 #from pebbling.security.mlts import MLTSManager
 #from pebbling.hibiscus.registry import HibiscusRegistry
 #from pebbling.server.pebbling_server import create_server
@@ -35,8 +45,8 @@ def pebblify(
     agentdns_required: Optional[bool] = True,
     store_in_registry: Optional[bool] = True,
     agent_registry: Optional[Union[str, None]] = "hibiscus",
-    agent_registry_url: Optional[str] = "https://api.pebbling.ai",
-    agent_registry_personal_access_token: Optional[str] = None,
+    agent_registry_url: Optional[str] = "http://localhost:19191",
+    agent_registry_pat_token: Optional[SecretStr] = None,
     endpoint_type: str = "mlts",
     cert_authority: str = "sheldon", 
     issue_certificate: Optional[bool] = True,
@@ -97,14 +107,14 @@ def pebblify(
             Whether to register the agent in the specified agent registry for discovery
             by other agents. Default: True
         
-        agent_registry (Optional[Union[str, None]]): 
+        agent_registry (Optional[Union[str, None]] = "hibiscus"):
             Name of the registry service to use. Currently supported: "hibiscus".
             Default: "hibiscus"
         
         agent_registry_url (Optional[str]): 
             URL of the agent registry service. Default: "https://api.pebbling.ai"
         
-        agent_registry_personal_access_token (Optional[str]): 
+        agent_registry_pat_token (Optional[SecretStr]): 
             PAT for authentication with the registry service. If None, will try to use
             environment variables. Default: None
         
@@ -210,12 +220,16 @@ def pebblify(
     """
     def decorator(obj: Any) -> Any:
         @functools.wraps(obj)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> AgentManifest:
             # Get the base agent from the wrapped function
-            agent = obj(*args, **kwargs)
+            agent_manifest: AgentManifest = obj(*args, **kwargs)
 
+            agent = agent_manifest.agent
+            capabilities = agent_manifest.capabilities
+            skills = agent_manifest.skills
+            
             # Ensure agent has an ID
-            agent.id = getattr(agent, 'id', str(uuid.uuid4()))
+            agent_id = getattr(agent, 'id', str(uuid.uuid4()))
             
             # Access the keys_dir from the outer scope
             nonlocal keys_dir
@@ -233,12 +247,6 @@ def pebblify(
             if keys_required:
                 generate_key_pair(current_keys_dir, recreate=recreate_keys)
                 setattr(agent, "keys_dir", current_keys_dir)
-
-            # Get Agent Capabilities
-            capabilities = get_agent_capabilities(agent)
-
-            # Get Agent Skills
-            skills = get_agent_skills(agent)
         
             # Set up DID if required
             did_manager = None
@@ -254,15 +262,29 @@ def pebblify(
                     skills=skills,
                     recreate=recreate_keys
                 )
+
+            
                 
             # Register with Hibiscus registry if requested
             if store_in_registry and did_manager:
-                HibiscusClient().register_agent(
-                    did=did_manager.get_did(),
-                    capabilities=capabilities,
-                    skills=skills,
-                    endpoint=f"https://{agent.id}.api.pebbling.ai"
-                )
+                if agent_registry == "hibiscus":
+                    hibiscus_client = HibiscusClient(
+                        hibiscus_url=agent_registry_url,
+                        pat_token=agent_registry_pat_token
+                    )
+                    import asyncio
+                    asyncio.run(hibiscus_client.register_agent(
+                        did=did_manager.get_did(),
+                        agent_manifest=agent_manifest,
+                        did_document=did_manager.get_did_document(),
+                        **kwargs
+                    ))
+                elif agent_registry == "custom":
+                    pass
+                else:
+                    raise ValueError(f"Unknown agent registry: {agent_registry}")
+
+                
             
             # If expose=True, create server and fetch certificate
             if expose:
@@ -316,21 +338,139 @@ def pebblify(
             agent.pebble_did = did_manager.get_did() if did_manager else None
             agent.pebble_did_document = did_manager.get_did_document() if did_manager else None
             
-            # Return the enhanced agent
-            return agent
+            # Return the AgentManifest with enhanced agent
+            return agent_manifest
         return wrapper
     return decorator
 
 # Helper functions
 def get_agent_capabilities(agent):
-    """Extract capabilities from agent for registration."""
-    # Implementation depends on agent type
-    pass
+    """
+    Extract capabilities from agent for registration.
+    
+    This function checks if the agent already has capabilities defined in the proper format.
+    If not, it tries to extract capability-related attributes from the agent object.
+    
+    Args:
+        agent: The agent object
+        
+    Returns:
+        AgentCapabilities: Object containing the agent's capabilities
+    """
+    from pebbling.protocol.types import AgentCapabilities, AgentExtension
+    
+    # If agent is an AgentManifest with capabilities already set, return those
+    if hasattr(agent, 'capabilities') and isinstance(agent.capabilities, AgentCapabilities):
+        return agent.capabilities
+        
+    # If agent has capabilities as a property/method
+    if hasattr(agent, 'capabilities') and callable(getattr(agent, 'capabilities')):
+        caps = agent.capabilities()
+        # If the returned value is already an AgentCapabilities, return it
+        if isinstance(caps, AgentCapabilities):
+            return caps
+        # Otherwise try to convert to AgentCapabilities
+        elif isinstance(caps, dict):
+            return AgentCapabilities(**caps)
+    
+    # Extract capabilities from agent attributes
+    streaming = getattr(agent, 'streaming', None)
+    push_notifications = getattr(agent, 'push_notifications', None)
+    state_transition_history = getattr(agent, 'state_transition_history', None)
+    
+    # Get extensions if available
+    extensions = []
+    if hasattr(agent, 'extensions'):
+        ext_list = agent.extensions
+        if isinstance(ext_list, list):
+            for ext in ext_list:
+                if isinstance(ext, AgentExtension):
+                    extensions.append(ext)
+                elif isinstance(ext, dict) and 'uri' in ext:
+                    extensions.append(AgentExtension(**ext))
+    
+    # Create and return capabilities
+    return AgentCapabilities(
+        streaming=streaming,
+        push_notifications=push_notifications,
+        state_transition_history=state_transition_history,
+        extensions=extensions if extensions else None
+    )
 
 def get_agent_skills(agent):
-    """Extract skills from agent for registration."""
-    # Implementation depends on agent type
-    pass
+    """
+    Extract skills from agent for registration.
+    
+    This function checks if the agent already has skills defined in the proper format.
+    If not, it tries to extract skill-related attributes from the agent object.
+    
+    Args:
+        agent: The agent object
+        
+    Returns:
+        list[AgentSkill]: List of skills the agent supports
+    """
+    from pebbling.protocol.types import AgentSkill
+    
+    # If agent is an AgentManifest with skills already set, return those
+    if hasattr(agent, 'skills'):
+        skills = agent.skills
+        if isinstance(skills, list):
+            # If skills is already a list of AgentSkill objects
+            if all(isinstance(skill, AgentSkill) for skill in skills):
+                return skills
+            # If skills is a list of dicts, try to convert them
+            elif all(isinstance(skill, dict) for skill in skills):
+                return [AgentSkill(**skill) for skill in skills if 'id' in skill and 'name' in skill]
+    
+    # If agent has skills as a property/method
+    if hasattr(agent, 'skills') and callable(getattr(agent, 'skills')):
+        skill_list = agent.skills()
+        if isinstance(skill_list, list):
+            # If already AgentSkill objects
+            if all(isinstance(skill, AgentSkill) for skill in skill_list):
+                return skill_list
+            # If dicts with required fields
+            elif all(isinstance(skill, dict) for skill in skill_list):
+                return [AgentSkill(**skill) for skill in skill_list if 'id' in skill and 'name' in skill]
+    
+    # If we can't extract skills, return a single basic skill based on agent properties
+    if hasattr(agent, 'name') and hasattr(agent, 'description'):
+        name = agent.name
+        description = agent.description
+        
+        # Extract input/output modes from content types if available
+        input_modes = None
+        output_modes = None
+        
+        if hasattr(agent, 'input_content_types') and agent.input_content_types:
+            input_modes = ["text"]  # Default to text
+            if any("image" in content_type for content_type in agent.input_content_types):
+                input_modes.append("image")
+            if any("audio" in content_type for content_type in agent.input_content_types):
+                input_modes.append("audio")
+                
+        if hasattr(agent, 'output_content_types') and agent.output_content_types:
+            output_modes = ["text"]  # Default to text
+            if any("image" in content_type for content_type in agent.output_content_types):
+                output_modes.append("image")
+            if any("audio" in content_type for content_type in agent.output_content_types):
+                output_modes.append("audio")
+        
+        # Create a default skill from agent properties
+        default_skill = AgentSkill(
+            id=getattr(agent, 'id', str(uuid.uuid4())),
+            name=name,
+            description=description,
+            input_modes=input_modes,
+            output_modes=output_modes,
+            tags=["ai", "agent"],  # Default tags
+        )
+        
+        return [default_skill]
+    
+    # If we can't create a skill, return empty list
+    return []
 
 def request_certificate_from_sheldon(csr, did):
     """Request certificate from Sheldon CA service."""

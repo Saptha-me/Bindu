@@ -20,7 +20,7 @@ from uuid import UUID
 
 from pydantic import Field, RootModel
 
-from pebble.protocol._base import PebblingProtocolBaseModel
+from pebbling.protocol._base import PebblingProtocolBaseModel
 
 #-----------------------------------------------------------------------------
 # Base Types and Enums
@@ -53,9 +53,11 @@ class ErrorCode(str, Enum):
     not_found = "not_found"
 
 
-class AgentTools(PebblingProtocolBaseModel):
-    """Tools available to agents"""
-    pass
+class RunMode(str, Enum):
+    """Run mode options for agent execution"""
+    sync = "sync"           # Synchronous execution, wait for complete response
+    async_mode = "async"    # Asynchronous execution, don't wait for response
+    stream = "stream"       # Streaming execution, receive partial results
 
 
 #-----------------------------------------------------------------------------
@@ -408,6 +410,10 @@ class TaskResubscriptionRequest(GetTaskRequest):
     """Request to resubscribe to task events"""
     method: Literal['tasks/resubscribe'] = 'tasks/resubscribe'
 
+class TrustVerificationRequest(GetTaskRequest):
+    """Request to verify trust"""
+    method: Literal['trust/verify'] = 'trust/verify'
+
 
 # Union types for requests and responses
 class JSONRPCResponse(
@@ -467,6 +473,65 @@ class PebblingRequest(
     """A2A supported request types"""
 
 #-----------------------------------------------------------------------------
+# Lets handle Security
+#-----------------------------------------------------------------------------
+
+class AgentSecurity(PebblingProtocolBaseModel):
+    """
+    Security configuration for agents in the Pebbling framework.
+    """
+    # DID-based security settings
+    challenge_expiration_seconds: int = Field(
+        300, 
+        description="Seconds until a challenge expires for DID-based verification"
+    )
+    require_challenge_response: bool = Field(
+        True, 
+        description="Whether to require challenge-response verification for agent communication"
+    )
+    signature_algorithm: str = Field(
+        "Ed25519", 
+        description="Algorithm used for digital signatures"
+    )
+    key_storage_path: Optional[str] = Field(
+        None, 
+        description="Path where security keys are stored"
+    )
+    
+    # Server security settings
+    endpoint_type: str = Field(
+        "json-rpc", 
+        description="Type of endpoint (json-rpc, mlts, or http)"
+    )
+    verify_requests: bool = Field(
+        True, 
+        description="Whether to verify incoming requests"
+    )
+    
+    # Certificate settings
+    certificate_type: Optional[str] = Field(
+        None, 
+        description="Type of certificate (self-signed, letsencrypt, sheldon)"
+    )
+    certificate_path: Optional[str] = Field(
+        None, 
+        description="Path to certificate file"
+    )
+    
+    # Policies
+    max_retries: int = Field(
+        3, 
+        description="Maximum number of retries for failed security operations"
+    )
+    allow_anonymous: bool = Field(
+        False, 
+        description="Whether to allow anonymous access"
+    )
+    
+    class Config:
+        extra = "allow"
+
+#-----------------------------------------------------------------------------
 # Lets handle Trust
 #-----------------------------------------------------------------------------
 
@@ -496,7 +561,7 @@ class KeycloakRole(PebblingProtocolBaseModel):
     role_id: UUID = Field(..., description="Role ID from Keycloak IAM.")
     role_name: str = Field(..., description="Human-readable role name.")
     permissions: List[str] = Field(default_factory=list, description="Specific permissions tied to this role.")
-    trust_level: TrustLevel = Field(TrustLevel.MEDIUM, description="Default trust level for this role")
+    trust_level: TrustLevel = Field(TrustLevel.GUEST, description="Default trust level for this role")
     realm_name: str = Field(..., description="The Keycloak realm this role belongs to.")
     
     # For integrations with other identity providers
@@ -538,10 +603,47 @@ class AgentIdentity(PebblingProtocolBaseModel):
     endpoint: str = Field(..., description="Secure mTLS agent endpoint.")
     public_key: str = Field(..., description="Agent's public key for mTLS.")
 
+class AgentSkill(PebblingProtocolBaseModel):
+    """
+    Represents a distinct capability or function that an agent can perform.
+    """
+
+    description: str
+    examples: list[str] | None = Field(
+        default=None, examples=[['I need a recipe for bread']]
+    )
+    id: str
+    input_modes: list[str] | None = None
+    name: str
+    output_modes: list[str] | None = None
+    tags: list[str] = Field(
+        ..., examples=[['cooking', 'customer support', 'billing']]
+    )
+
+class AgentExtension(PebblingProtocolBaseModel):
+    """
+    A declaration of a protocol extension supported by an Agent.
+    """
+
+    description: str | None = None
+    params: dict[str, Any] | None = None
+    required: bool | None = None
+    uri: str
+
+class AgentCapabilities(PebblingProtocolBaseModel):
+    """
+    Defines optional capabilities supported by an agent.
+    """
+
+    extensions: list[AgentExtension] | None = None
+    push_notifications: bool | None = None
+    state_transition_history: bool | None = None
+    streaming: bool | None = None
+
 
 class AgentManifest(PebblingProtocolBaseModel):
     """Complete agent manifest with identity and capabilities"""
-    agnt_id: Union[UUID, int, str] = Field(
+    agent_id: Union[UUID, int, str] = Field(
         ..., 
         description="The unique identifier of the agent", 
         examples=["123e4567-e89b-12d3-a456-426614174000"]
@@ -558,13 +660,36 @@ class AgentManifest(PebblingProtocolBaseModel):
         None, 
         description="Trust configuration and inherited permissions"
     )
+
+    capabilities: Optional[AgentCapabilities] = Field(
+        None, 
+        description="Optional capabilities supported by the agent"
+    )
+    skills: Optional[list[AgentSkill]] = Field(
+        None, 
+        description="Optional skills supported by the agent"
+    )
+
+    agent: Optional[Any] = Field(
+        None, 
+        description="The agent instance"
+    )
+    
+    # DID-related fields
+    did: Optional[str] = Field(
+        None,
+        description="Decentralized Identifier of the agent"
+    )
+    did_document: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Full DID document"
+    )
     
     # Configuration
     num_history_sessions: Optional[int] = None
     storage: Optional[Dict[str, Any]] = None
     context: Optional[Dict[str, Any]] = None
     extra_data: Optional[Dict[str, Any]] = None
-    stream: Optional[bool] = None
     
     # Debug settings
     debug_mode: bool = False
@@ -573,7 +698,24 @@ class AgentManifest(PebblingProtocolBaseModel):
     # Monitoring
     monitoring: bool = False
     telemetry: bool = True
+
+    # Security
+    security: Optional[AgentSecurity] = Field(
+        None, 
+        description="Security configuration for the agent"
+    )
+
+    # Trust
+    trust: Optional[AgentTrust] = Field(
+        None, 
+        description="Trust configuration for the agent"
+    )
+
+    # Identity
+    identity: Optional[AgentIdentity] = Field(
+        None, 
+        description="Identity configuration for the agent"
+    )
     
-    # Tools and versioning
-    tools: Optional[List[AgentTools]] = None
+    # Versioning
     version: str = Field(..., examples=['1.0.0'])

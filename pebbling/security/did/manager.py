@@ -2,18 +2,26 @@ import os
 import orjson
 import uuid
 from typing import Dict, Any, Tuple
+from typing import Optional, List
 
-from pebbling.security.common.keys import generate_key_pair, load_public_key
+from pebbling.security.common.keys import load_public_key
 from pebbling.security.did.document import (
     create_did_document, 
     update_service_endpoint
 )
+from pebbling.protocol.types import AgentCapabilities, AgentSkill
 
 class DIDManager:
     """DID manager for pebbling agents."""
 
     @staticmethod
-    def get_or_create_did(config_path: str, keys_dir: str, recreate: bool = False) -> Tuple[str, Dict[str, Any]]:
+    def get_or_create_did(
+        config_path: str, 
+        keys_dir: str, 
+        recreate: bool = False,
+        capabilities: Optional[AgentCapabilities] = None,
+        skills: Optional[List[AgentSkill]] = None
+    ) -> Tuple[str, Dict[str, Any]]:
         """Get or create a DID for the agent.
         
         Args:
@@ -47,7 +55,12 @@ class DIDManager:
         did = f"did:pebble:{did_uuid}"
         
         # Create a DID document
-        did_document = create_did_document(did, public_key_pem)
+        did_document = create_did_document(
+            did=did,
+            public_key_pem=public_key_pem,
+            capabilities=capabilities,
+            skills=skills
+        )
         
         # Save the DID configuration
         with open(config_path, "wb") as f:
@@ -58,7 +71,14 @@ class DIDManager:
     
         return did, did_document
 
-    def __init__(self, config_path="did.json", keys_dir="keys", endpoint=None, recreate: bool = False):
+    def __init__(
+        self, 
+        config_path="did.json", 
+        keys_dir="keys", 
+        endpoint=None, 
+        recreate: bool = False,
+        capabilities: Optional[AgentCapabilities] = None,
+        skills: Optional[List[AgentSkill]] = None):
         """Initialize the DID manager.
         
         Args:
@@ -66,10 +86,16 @@ class DIDManager:
             keys_dir: Directory containing the key files
             endpoint: Optional service endpoint to update in the DID document
             recreate: Whether to recreate the key file if it exists
+            capabilities: Optional capabilities to include in the DID document
+            skills: Optional skills to include in the DID document
         """
         self.config_path = config_path
-        self.keys_dir = keys_dir
-        self.did, self.did_document = self.get_or_create_did(config_path, keys_dir, recreate)
+        self.did, self.did_document = self.get_or_create_did(
+            config_path=config_path, 
+            keys_dir=keys_dir, 
+            recreate=recreate,
+            capabilities=capabilities,
+            skills=skills)
         
         # Update service endpoint if provided
         if endpoint:

@@ -1,5 +1,12 @@
-# Copyright 2025 BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - Raahul
 
 import abc
 import inspect

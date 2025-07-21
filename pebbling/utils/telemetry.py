@@ -5,7 +5,7 @@
 # |                                                  |
 # |--------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul && Claude
+#  Thank you users! We ❤️ you! - Raahul
 
 from fastapi import FastAPI
 from opentelemetry import metrics, trace

@@ -1,3 +1,13 @@
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - Raahul
+
 """
 Pebblify decorator for transforming regular agents into secure, networked Pebble agents.
 
@@ -16,8 +26,10 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 import json
-import logging
 from pydantic.types import SecretStr
+
+# Import logging from pebbling utils
+from pebbling.utils.logging import logger, configure_logger
 
 # Import necessary components
 from pebbling.security.did.manager import DIDManager
@@ -34,6 +46,9 @@ from pebbling.hibiscus.registry import HibiscusClient
 #from pebbling.security.mlts import MLTSManager
 #from pebbling.hibiscus.registry import HibiscusRegistry
 #from pebbling.server.pebbling_server import create_server
+
+# Configure logging for the module
+configure_logger()
 
 def pebblify(
     agent_name: Optional[str] = None,
@@ -222,14 +237,12 @@ def pebblify(
         @functools.wraps(obj)
         def wrapper(*args, **kwargs) -> AgentManifest:
             # Get the base agent from the wrapped function
+            logger.debug(f"Creating agent with pebblify decorator")
             agent_manifest: AgentManifest = obj(*args, **kwargs)
-
-            agent = agent_manifest.agent
-            capabilities = agent_manifest.capabilities
-            skills = agent_manifest.skills
             
             # Ensure agent has an ID
-            agent_id = getattr(agent, 'id', str(uuid.uuid4()))
+            agent_id = getattr(agent_manifest.agent, 'id', str(uuid.uuid4()))
+            logger.debug(f"Agent ID: {agent_id}")
             
             # Access the keys_dir from the outer scope
             nonlocal keys_dir
@@ -242,54 +255,74 @@ def pebblify(
                 caller_dir = os.path.dirname(os.path.abspath(caller_file))
                 current_keys_dir = os.path.join(caller_dir, 'keys')
                 os.makedirs(current_keys_dir, exist_ok=True)
+                logger.debug(f"Created keys directory: {current_keys_dir}")
                 
             # Generate keys if needed
             if keys_required:
+                logger.info(f"Generating key pair in {current_keys_dir}")
                 generate_key_pair(current_keys_dir, recreate=recreate_keys)
-                setattr(agent, "keys_dir", current_keys_dir)
         
             # Set up DID if required
             did_manager = None
             if did_required:
                 if not current_keys_dir:
+                    logger.error("Keys directory not set but required for DID functionality")
                     raise ValueError("Keys are required for DID functionality")
                 
+                logger.info("Initializing DID Manager")
                 did_config_path = os.path.join(current_keys_dir, "did.json")
                 did_manager = DIDManager(
                     config_path=did_config_path,
                     keys_dir=current_keys_dir,
-                    capabilities=capabilities,
-                    skills=skills,
+                    capabilities=agent_manifest.capabilities,
+                    skills=agent_manifest.skills,
                     recreate=recreate_keys
                 )
+
+            # Set up the agent identity
+            agent_manifest.identity = AgentIdentity(
+                did=did_manager.get_did(),
+                agentdns_url=did_manager.get_agentdns_url(),
+                endpoint=did_manager.get_endpoint(),
+                public_key=did_manager.get_public_key()
+            )   
 
             
                 
             # Register with Hibiscus registry if requested
             if store_in_registry and did_manager:
                 if agent_registry == "hibiscus":
+                    logger.info(f"Registering agent with Hibiscus at {agent_registry_url}")
                     hibiscus_client = HibiscusClient(
                         hibiscus_url=agent_registry_url,
                         pat_token=agent_registry_pat_token
                     )
                     import asyncio
-                    asyncio.run(hibiscus_client.register_agent(
-                        did=did_manager.get_did(),
-                        agent_manifest=agent_manifest,
-                        did_document=did_manager.get_did_document(),
-                        **kwargs
-                    ))
+                    try:
+                        asyncio.run(hibiscus_client.register_agent(
+                            did=did_manager.get_did(),
+                            agent_manifest=agent_manifest,
+                            did_document=did_manager.get_did_document(),
+                            **kwargs
+                        ))
+                        logger.info(f"Successfully registered agent with DID: {did_manager.get_did()}")
+                    except Exception as e:
+                        logger.error(f"Failed to register agent with Hibiscus: {str(e)}")
                 elif agent_registry == "custom":
+                    logger.info("Using custom agent registry")
                     pass
                 else:
+                    logger.error(f"Unknown agent registry: {agent_registry}")
                     raise ValueError(f"Unknown agent registry: {agent_registry}")
 
                 
             
             # If expose=True, create server and fetch certificate
             if expose:
+                logger.info("Setting up server for exposed agent")
                 # Create CSR for Sheldon
                 if cert_authority == "sheldon":
+                    logger.debug("Creating CSR for Sheldon CA")
                     csr = did_manager.create_csr(
                         common_name=f"{agent.id}.api.pebbling.ai",
                         organization="Pebbling",
@@ -299,16 +332,19 @@ def pebblify(
                     
                     # Get certificate from Sheldon
                     # Certificate will be stored in agent's key directory
+                    logger.info("Requesting certificate from Sheldon CA")
                     certificate = request_certificate_from_sheldon(
                         csr=csr, 
                         did=did_manager.get_did()
                     )
                     
                 # Create and configure FastAPI app
+                logger.debug("Creating FastAPI app")
                 app = FastAPI()
                 
                 # Create MLTS server with the certificate
                 if endpoint_type == "mlts":
+                    logger.debug("Setting up MLTS server")
                     mlts_manager = MLTSManager(
                         private_key=did_manager.get_private_key(),
                         certificate=certificate
@@ -318,9 +354,11 @@ def pebblify(
                     mlts_config = mlts_manager.get_server_config()
                     
                 # Create Adapter for the agent
+                logger.debug("Creating agent adapter")
                 adapter = AgentAdapter(agent)
                 
                 # Create and start the server (non-blocking)
+                logger.info(f"Creating server on port {port}")
                 server = create_server(
                     app=app,
                     agent_adapter=adapter,
@@ -329,6 +367,7 @@ def pebblify(
                 )
                 
                 # Start server in background thread
+                logger.info("Starting server in background thread")
                 server.start()
                 
                 # Attach server to agent for lifecycle management
@@ -339,6 +378,7 @@ def pebblify(
             agent.pebble_did_document = did_manager.get_did_document() if did_manager else None
             
             # Return the AgentManifest with enhanced agent
+            logger.debug("Returning enhanced agent manifest")
             return agent_manifest
         return wrapper
     return decorator
@@ -359,12 +399,16 @@ def get_agent_capabilities(agent):
     """
     from pebbling.protocol.types import AgentCapabilities, AgentExtension
     
+    logger.debug("Extracting agent capabilities")
+    
     # If agent is an AgentManifest with capabilities already set, return those
     if hasattr(agent, 'capabilities') and isinstance(agent.capabilities, AgentCapabilities):
+        logger.debug("Using existing AgentCapabilities from agent")
         return agent.capabilities
         
     # If agent has capabilities as a property/method
     if hasattr(agent, 'capabilities') and callable(getattr(agent, 'capabilities')):
+        logger.debug("Calling agent.capabilities() method")
         caps = agent.capabilities()
         # If the returned value is already an AgentCapabilities, return it
         if isinstance(caps, AgentCapabilities):
@@ -374,6 +418,7 @@ def get_agent_capabilities(agent):
             return AgentCapabilities(**caps)
     
     # Extract capabilities from agent attributes
+    logger.debug("Extracting capabilities from agent attributes")
     streaming = getattr(agent, 'streaming', None)
     push_notifications = getattr(agent, 'push_notifications', None)
     state_transition_history = getattr(agent, 'state_transition_history', None)
@@ -412,19 +457,24 @@ def get_agent_skills(agent):
     """
     from pebbling.protocol.types import AgentSkill
     
+    logger.debug("Extracting agent skills")
+    
     # If agent is an AgentManifest with skills already set, return those
     if hasattr(agent, 'skills'):
         skills = agent.skills
         if isinstance(skills, list):
             # If skills is already a list of AgentSkill objects
             if all(isinstance(skill, AgentSkill) for skill in skills):
+                logger.debug(f"Using existing {len(skills)} skills from agent")
                 return skills
             # If skills is a list of dicts, try to convert them
             elif all(isinstance(skill, dict) for skill in skills):
+                logger.debug(f"Converting {len(skills)} skill dictionaries to AgentSkill objects")
                 return [AgentSkill(**skill) for skill in skills if 'id' in skill and 'name' in skill]
     
     # If agent has skills as a property/method
     if hasattr(agent, 'skills') and callable(getattr(agent, 'skills')):
+        logger.debug("Calling agent.skills() method")
         skill_list = agent.skills()
         if isinstance(skill_list, list):
             # If already AgentSkill objects
@@ -435,6 +485,7 @@ def get_agent_skills(agent):
                 return [AgentSkill(**skill) for skill in skill_list if 'id' in skill and 'name' in skill]
     
     # If we can't extract skills, return a single basic skill based on agent properties
+    logger.debug("Creating default skill from agent properties")
     if hasattr(agent, 'name') and hasattr(agent, 'description'):
         name = agent.name
         description = agent.description
@@ -470,9 +521,11 @@ def get_agent_skills(agent):
         return [default_skill]
     
     # If we can't create a skill, return empty list
+    logger.warning("Could not extract or create skills for agent")
     return []
 
 def request_certificate_from_sheldon(csr, did):
     """Request certificate from Sheldon CA service."""
+    logger.info(f"Requesting certificate from Sheldon for DID: {did}")
     # Implementation for certificate request
     pass

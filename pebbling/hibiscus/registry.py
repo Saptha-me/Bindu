@@ -6,6 +6,10 @@ from pydantic.types import SecretStr
 from pebbling.protocol.types import AgentManifest, AgentCapabilities, AgentSkill
 from pebbling.security.did.manager import DIDManager
 from pebbling.utils.http_helper import make_api_request
+from pebbling.utils.logging import get_logger
+
+# Initialize logger for this module
+logger = get_logger("pebbling.hibiscus")
 
 
 class HibiscusClient:
@@ -48,7 +52,6 @@ class HibiscusClient:
                 payload = {
                     "name": agent_manifest.name,
                     "did": did,
-                    "api_endpoint": agent_manifest.api_endpoint,
                     "version": getattr(agent_manifest, "version", "1.0.0"),
                     "description": getattr(agent_manifest, "description", "")
                 }

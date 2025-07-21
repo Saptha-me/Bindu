@@ -1,11 +1,12 @@
-# |--------------------------------------------------|
-# |                                                  |
-# |           Give Feedback / Get Help               |
-# | https://github.com/Pebbling-ai/pebble/issues/new |
-# |                                                  |
-# |--------------------------------------------------|
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul && Claude
+#  Thank you users! We ❤️ you! - Raahul
 
 """
 Pebbling Protocol Type Definitions

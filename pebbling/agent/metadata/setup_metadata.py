@@ -11,12 +11,14 @@
 import uuid
 from typing import List, Optional
 
-from pebbling.utils.logging import get_logger
+from pebbling.agent.metadata.agent_capabilities import get_agent_capabilities
+from pebbling.agent.metadata.agent_skills import get_agent_skills
 from pebbling.protocol.types import (
+    AgentCapabilities,
     AgentManifest,
-    AgentCapabilities, 
     AgentSkill,
 )
+from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.agent.metadata.setup_metadata")
 

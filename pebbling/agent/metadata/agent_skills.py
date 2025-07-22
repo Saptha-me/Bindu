@@ -9,10 +9,10 @@
 #  Thank you users! We ❤️ you! - Raahul
 
 import uuid
-
-from pebbling.utils.logging import get_logger
-from pebbling.protocol.types import AgentSkill, AgentManifest
 from typing import List
+
+from pebbling.protocol.types import AgentManifest, AgentSkill
+from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.agent.metadata.agent_skills")
 
@@ -33,7 +33,7 @@ def get_agent_skills(agent: AgentManifest):
     
     # If agent already has skills property
     if hasattr(agent, 'skills'):
-        if callable(getattr(agent, 'skills')):
+        if callable(agent.skills):
             skill_list: List[AgentSkill] = agent.skills()
             if isinstance(skill_list, list):
                 if all(isinstance(skill, AgentSkill) for skill in skill_list):

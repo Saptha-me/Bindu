@@ -1,11 +1,11 @@
 """Hibiscus DID registry integration for Pebbling servers."""
 
-from typing import Any, Dict, List, Optional, Union
-from pydantic.types import SecretStr
 import json
+from typing import Any, Dict, Optional
 
-from pebbling.protocol.types import AgentManifest, AgentCapabilities, AgentSkill
-from pebbling.security.did.manager import DIDManager
+from pydantic.types import SecretStr
+
+from pebbling.protocol.types import AgentManifest
 from pebbling.utils.http_helper import make_api_request
 from pebbling.utils.logging import get_logger
 
@@ -33,12 +33,16 @@ class HibiscusClient:
     
     async def register_agent(
         self,
+        did: Optional[str] = None,
+        endpoint: Optional[str] = None,
         agent_manifest: Optional[AgentManifest] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """Register an agent with Hibiscus registry.
         
         Args:
+            did: DID of the agent
+            endpoint: API endpoint of the agent
             agent_manifest: Agent manifest with capabilities and skills
             **kwargs: Additional fields to include in the registration
             
@@ -61,19 +65,25 @@ class HibiscusClient:
                 
                 # Process capabilities
                 capabilities = []
-                if agent_manifest.capabilities:
-                    caps_dict = agent_manifest.capabilities.model_dump(exclude_none=True)
-                    for cap_name, cap_details in caps_dict.items():
-                        desc = cap_details.get("description", "No description") if isinstance(cap_details, dict) else "No description"
-                        capabilities.append({"name": cap_name, "description": desc})
-                payload["capabilities"] = capabilities
+                if agent_manifest and hasattr(agent_manifest, 'capabilities'):
+                    if hasattr(agent_manifest.capabilities, 'model_dump'):
+                        try:
+                            # Get capabilities from pydantic model
+                            caps_dict = agent_manifest.capabilities.model_dump(exclude_none=True)
+                            for cap_name, cap_details in caps_dict.items():
+                                desc = ("No description" if not isinstance(cap_details, dict) 
+                                       else cap_details.get("description", "No description"))
+                                capabilities.append({"name": cap_name, "description": desc})
+                        except Exception as e:
+                            logger.error(f"Error processing capabilities: {e}")
+                    payload["capabilities"] = capabilities
                 
                 # Process skills and extract domains/tags
                 skills = []
                 domains = set()
                 tags = set()
                 
-                if agent_manifest.skills:
+                if agent_manifest and hasattr(agent_manifest, 'skills'):
                     for skill in agent_manifest.skills:
                         skill_dict = skill.model_dump(exclude_none=True)
                         skills.append({
@@ -117,9 +127,14 @@ class HibiscusClient:
                     metadata.update(agent_manifest.metadata)
                 payload["metadata"] = metadata
             else:
+                # Ensure did and endpoint are provided if no manifest
+                if not did or not endpoint:
+                    logger.error("Missing required parameters (did or endpoint) for agent registration")
+                    return None
+                    
                 # Basic payload if no manifest
                 payload = {
-                    "name": kwargs.get("name", f"agent-{did[-8:]}"),
+                    "name": kwargs.get("name", f"agent-{did[-8:] if did else 'unknown'}"),
                     "did": did,
                     "api_endpoint": endpoint
                 }

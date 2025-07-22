@@ -11,11 +11,12 @@
 
 import asyncio
 from typing import Any
+
 from pydantic.types import SecretStr
 
-from pebbling.utils.logging import get_logger
-from pebbling.protocol.types import AgentManifest
 from pebbling.hibiscus.registry import HibiscusClient
+from pebbling.protocol.types import AgentManifest
+from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.hibiscus.agent_registry")
 
@@ -43,7 +44,7 @@ def register_with_registry(
             logger.error(f"Failed to register agent with Hibiscus: {str(e)}")
     elif agent_registry == "custom":
         logger.info("Using custom agent registry")
-        raise ValueError(f"Custom agent registry not implemented yet")
+        raise ValueError("Custom agent registry not implemented yet")
     else:
         logger.error(f"Unknown agent registry: {agent_registry}")
         raise ValueError(f"Unknown agent registry: {agent_registry}")

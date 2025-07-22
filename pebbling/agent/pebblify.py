@@ -19,16 +19,17 @@ This module provides the core decorator that handles:
 """
 
 import functools
-import asyncio
 from typing import Any, Callable, Dict, List, Optional, Union
+
 from pydantic.types import SecretStr
+
+from pebbling.agent.metadata.setup_metadata import setup_agent_metadata
+from pebbling.hibiscus.agent_registry import register_with_registry
+from pebbling.protocol.types import AgentManifest
+from pebbling.security.setup_security import setup_security
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
-from pebbling.protocol.types import AgentManifest
-from pebbling.agent.metadata.setup_metadata import setup_agent_metadata
-from pebbling.security.setup_security import setup_security
-from pebbling.hibiscus.agent_registry import register_with_registry
 
 # Configure logging for the module
 logger = get_logger("pebbling.agent.pebblify")
@@ -67,29 +68,39 @@ def pebblify(
     def decorator(obj: Any) -> Any:
         @functools.wraps(obj)
         def wrapper(*args, **kwargs) -> AgentManifest:
-            logger.debug(f"Creating agent with pebblify decorator")
+            logger.debug("Creating agent with pebblify decorator")
             agent_manifest = obj(*args, **kwargs)
             
             # Extract basic agent information
             setup_agent_metadata(agent_manifest, name)
             
-            # Set up security features if required
+            # Setup security if requested
             if did_required or keys_required:
-                logger.info(f"Setting up security features for agent '{agent_manifest.name}' (did_required={did_required}, keys_required={keys_required})")
+                logger.info(
+                    f"Setting up security for agent '{agent_manifest.name}' "
+                    f"(did_required={did_required}, keys_required={keys_required})"
+                )
                 agent_manifest = setup_security(
                     agent_manifest=agent_manifest,
+                    name=agent_manifest.name,
+                    keys_required=keys_required,
                     keys_dir=keys_dir,
                     did_required=did_required,
-                    keys_required=keys_required,
-                    recreate_keys=recreate_keys,
+                    recreate_keys=recreate_keys
                 )
-                logger.debug(f"Security setup completed for agent '{agent_manifest.name}'")
             else:
-                logger.info(f"Security features not required for agent '{agent_manifest.name}' (did_required={did_required}, keys_required={keys_required})")
+                logger.info(f"Skipping security setup for agent '{agent_manifest.name}'")
+                logger.debug(
+                    f"Security setup skipped for agent '{agent_manifest.name}' "
+                    f"(did_required={did_required}, keys_required={keys_required})"
+                )
                 
             # Register with registry if requested
             if store_in_registry and hasattr(agent_manifest, 'did') and agent_manifest.did:
-                logger.info(f"Registering agent '{agent_manifest.name}' with registry '{agent_registry}' at {agent_registry_url}")
+                logger.info(
+                    f"Registering agent '{agent_manifest.name}' with registry '{agent_registry}' "
+                    f"at {agent_registry_url}"
+                )
                 agent_manifest = register_with_registry(
                     agent_manifest=agent_manifest,
                     agent_registry=agent_registry,

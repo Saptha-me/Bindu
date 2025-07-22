@@ -8,6 +8,13 @@
 #
 #  Thank you users! We ❤️ you! - 🐧
 
+"""DID (Decentralized Identifier) document handling for Pebbling.
+
+This module provides classes and functions for creating, managing, and
+validating DID documents used for agent identity verification in the
+Pebbling framework.
+"""
+
 from typing import Any, Dict, List, Optional
 
 import orjson

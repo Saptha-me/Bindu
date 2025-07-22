@@ -8,6 +8,13 @@
 #
 #  Thank you users! We ❤️ you! - 🐧
 
+"""Security setup utilities for the Pebbling framework.
+
+This module provides functionality for setting up security features
+including DID (Decentralized Identifier) configuration and key management
+for Pebbling agents.
+"""
+
 import inspect
 import os
 
@@ -29,6 +36,21 @@ def setup_security(
     keys_required: bool = False,
     recreate_keys: bool = False,
 ) -> AgentManifest:
+    """Set up security features for an agent.
+    
+    Configures cryptographic keys and DID (Decentralized Identifier) for an agent,
+    updating its manifest with the necessary security information.
+    
+    Args:
+        agent_manifest: The agent manifest to update with security information
+        keys_dir: Directory to store cryptographic keys
+        did_required: Whether a DID is required for the agent
+        keys_required: Whether keys are required for the agent
+        recreate_keys: Whether to recreate keys if they already exist
+        
+    Returns:
+        Updated agent manifest with security information
+    """
     # Access the keys_dir from the outer scope
     current_keys_dir = keys_dir
     

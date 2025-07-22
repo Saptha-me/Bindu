@@ -1,3 +1,9 @@
+"""Version information for the Pebbling framework.
+
+This module provides the version information of the Pebbling package
+by accessing the installed package metadata.
+"""
+
 # 
 # |---------------------------------------------------------|
 # |                                                         |

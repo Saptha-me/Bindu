@@ -8,6 +8,13 @@
 #
 #  Thank you users! We ❤️ you! - 🐧
 
+"""DID (Decentralized Identifier) management functionality for Pebbling.
+
+This module implements the DIDManager class which provides comprehensive
+capabilities for DID creation, storage, verification, and challenge-response
+authentication for agents in the Pebbling framework.
+"""
+
 import os
 import uuid
 from typing import Any, Dict, List, Optional, Tuple

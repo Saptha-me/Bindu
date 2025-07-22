@@ -5,6 +5,6 @@
 # |                                                  |
 # |--------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul
+#  Thank you users! We ❤️ you! - 🐧
 
-"""The Pebbling Protocol 🐧"""
+"""The Pebbling Protocol."""

@@ -6,8 +6,14 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul
+#  Thank you users! We ❤️ you! - 🐧
 
+"""
+Agent registry integration module for registering Pebbling agents with Hibiscus registry.
+
+This module handles agent registration with external registries, primarily Hibiscus,
+allowing agents to be discovered and accessed by other systems.
+"""
 
 import asyncio
 from typing import Any

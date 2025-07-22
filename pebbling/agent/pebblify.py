@@ -6,7 +6,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul
+#  Thank you users! We ❤️ you! - 🐧
 
 """
 Pebblify decorator for transforming regular agents into secure, networked Pebble agents.

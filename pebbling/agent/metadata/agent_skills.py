@@ -6,7 +6,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul
+#  Thank you users! We ❤️ you! - 🐧
 
 import uuid
 from typing import List

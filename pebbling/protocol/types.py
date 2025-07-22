@@ -6,10 +6,10 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul
+#  Thank you users! We ❤️ you! - 🐧
 
 """
-Pebbling Protocol Type Definitions
+Pebbling Protocol Type Definitions.
 
 This module contains all the protocol data models used for communication between
 agents and the Pebbling framework.
@@ -28,13 +28,15 @@ from pebbling.protocol._base import PebblingProtocolBaseModel
 #-----------------------------------------------------------------------------
 
 class Role(str, Enum):
-    """Message sender's role"""
+    """Message sender's role."""
+    
     agent = 'agent'
     user = 'user'
 
 
 class TaskState(str, Enum):
     """Represents the possible states of a Task."""
+    
     submitted = 'submitted'
     working = 'working'
     input_required = 'input-required'
@@ -48,14 +50,16 @@ class TaskState(str, Enum):
 
 
 class ErrorCode(str, Enum):
-    """Error code enum for API responses"""
+    """Error code enum for API responses."""
+    
     server_error = "server_error"
     invalid_input = "invalid_input"
     not_found = "not_found"
 
 
 class RunMode(str, Enum):
-    """Run mode options for agent execution"""
+    """Run mode options for agent execution."""
+    
     sync = "sync"           # Synchronous execution, wait for complete response
     async_mode = "async"    # Asynchronous execution, don't wait for response
     stream = "stream"       # Streaming execution, receive partial results
@@ -67,42 +71,49 @@ class RunMode(str, Enum):
 
 class TextPart(PebblingProtocolBaseModel):
     """Represents a text segment within parts."""
+    
     kind: Literal['text'] = 'text'
     metadata: dict[str, Any] | None = None
     content: str
 
 
 class FileWithBytes(PebblingProtocolBaseModel):
-    """File representation with binary content"""
+    """File representation with binary content."""
+    
     bytes: str
     mimeType: str | None = None
     name: str | None = None
 
 
 class FileWithUri(FileWithBytes):
-    """File representation with URI reference"""
+    """File representation with URI reference."""
+    
     uri: str
 
 
 class FilePart(TextPart):
-    """Represents a file part in a message"""
+    """Represents a file part in a message."""
+    
     kind: Literal['file'] = 'file'
     file: FileWithBytes | FileWithUri
 
 
 class DataPart(TextPart):
-    """Represents a structured data part in a message"""
+    """Represents a structured data part in a message."""
+    
     kind: Literal['data'] = 'data'
     data: dict[str, Any]
 
 
 class Part(RootModel[TextPart | FilePart | DataPart]):
-    """Union type for all possible message parts"""
+    """Union type for all possible message parts."""
+    
     root: TextPart | FilePart | DataPart
 
 
 class Artifact(PebblingProtocolBaseModel):
     """Represents an artifact generated for a task."""
+    
     artifact_id: UUID = Field(..., description="Unique identifier for the artifact")
     name: str | None = None
     description: str | None = None
@@ -111,7 +122,8 @@ class Artifact(PebblingProtocolBaseModel):
 
 
 class Message(PebblingProtocolBaseModel):
-    """Message exchanged between agents or users"""
+    """Message exchanged between agents or users."""
+    
     contextId: UUID
     kind: Literal['message'] = 'message'
     messageId: UUID
@@ -122,7 +134,8 @@ class Message(PebblingProtocolBaseModel):
 
 
 class TaskStatus(PebblingProtocolBaseModel):
-    """Status information for a task"""
+    """Status information for a task."""
+    
     message: Message | None = None
     state: TaskState
     timestamp: str | None = Field(
@@ -131,7 +144,8 @@ class TaskStatus(PebblingProtocolBaseModel):
 
 
 class Task(PebblingProtocolBaseModel):
-    """Top-level task representation"""
+    """Top-level task representation."""
+    
     artifacts: list[Artifact] | None = None
     contextId: UUID
     history: list[Message] | None = None
@@ -147,6 +161,7 @@ class Task(PebblingProtocolBaseModel):
 
 class NegotiationStatus(str, Enum):
     """Represents the possible negotiation statuses."""
+    
     proposed = 'proposed'
     accepted = 'accepted'
     rejected = 'rejected'
@@ -155,6 +170,7 @@ class NegotiationStatus(str, Enum):
 
 class NegotiationSessionStatus(str, Enum):
     """Represents the possible statuses of a negotiation session."""
+    
     initiated = 'initiated'
     ongoing = 'ongoing'
     completed = 'completed'
@@ -162,7 +178,8 @@ class NegotiationSessionStatus(str, Enum):
 
 
 class NegotiationProposal(PebblingProtocolBaseModel):
-    """Structured negotiation proposal exchanged between agents"""
+    """Structured negotiation proposal exchanged between agents."""
+    
     proposal_id: UUID = Field(..., description="Unique ID of this specific proposal")
     from_agent: UUID = Field(..., description="Agent ID initiating the proposal")
     to_agent: UUID = Field(..., description="Agent ID receiving the proposal")
@@ -175,7 +192,8 @@ class NegotiationProposal(PebblingProtocolBaseModel):
 
 
 class NegotiationSession(PebblingProtocolBaseModel):
-    """Session details for agent-to-agent negotiations"""
+    """Session details for agent-to-agent negotiations."""
+    
     session_id: UUID = Field(..., description="Unique identifier for the negotiation session")
     status: NegotiationSessionStatus = Field(
         NegotiationSessionStatus.initiated,
@@ -194,6 +212,7 @@ class NegotiationSession(PebblingProtocolBaseModel):
 
 class PaymentAction(PebblingProtocolBaseModel):
     """Represents the possible payment actions."""
+    
     action_type: Literal['submit', 'cancel', 'unknown'] = 'submit'
     amount: float = Field(..., description="The amount of the payment", examples=[10.0])
     currency: str = Field(..., description="ISO currency code clearly identified (e.g., USD)")
@@ -208,74 +227,86 @@ class PaymentAction(PebblingProtocolBaseModel):
 #-----------------------------------------------------------------------------
 
 class JSONRPCError(PebblingProtocolBaseModel):
-    """Base JSON-RPC error representation"""
+    """Base JSON-RPC error representation."""
+    
     code: int
     data: Any | None = None
     message: str
 
 
 class JSONParseError(JSONRPCError):
-    """JSON-RPC parse error"""
+    """JSON-RPC parse error."""
+    
     code: Literal[-32700] = -32700
     message: Literal['Invalid JSON'] = 'Invalid JSON'
 
 
 class InvalidRequestError(JSONRPCError):
-    """JSON-RPC invalid request error"""
+    """JSON-RPC invalid request error."""
+    
     code: Literal[-32600] = -32600
     message: Literal['Validation error'] = 'Validation error'
 
 
 class MethodNotFoundError(JSONRPCError):
-    """JSON-RPC method not found error"""
+    """JSON-RPC method not found error."""
+    
     code: Literal[-32601] = -32601
     message: Literal['Method not found'] = 'Method not found'
 
 
 class InvalidParamsError(JSONRPCError):
-    """JSON-RPC invalid parameters error"""
+    """JSON-RPC invalid parameters error."""
+    
     code: Literal[-32602] = -32602
     message: Literal['Invalid parameters'] = 'Invalid parameters'
 
 
 class InternalError(JSONRPCError):
-    """JSON-RPC internal error"""
+    """JSON-RPC internal error."""
+    
     code: Literal[-32603] = -32603
     message: Literal['Internal error'] = 'Internal error'
 
 
 class InvalidAgentResponseError(JSONRPCError):
-    """Error for invalid agent responses"""
+    """Error for invalid agent responses."""
+    
     code: Literal[-32006] = -32006
     message: Literal['Invalid agent response'] = 'Invalid agent response'
 
 
 class TaskNotFoundError(JSONRPCError):
-    """Error for task not found"""
+    """Error for task not found."""
+    
     code: Literal[-32007] = -32007
     message: Literal['Task not found'] = 'Task not found'
 
 
 class TaskNotCancelableError(JSONRPCError):
-    """Error for task not cancelable"""
+    """Error for task not cancelable."""
+    
     code: Literal[-32008] = -32008
     message: Literal['Task not cancelable'] = 'Task not cancelable'
 
 
 class PushNotificationNotSupportedError(JSONRPCError):
-    """Error for push notification not supported"""
+    """Error for push notification not supported."""
+    
     code: Literal[-32009] = -32009
     message: Literal['Push notification not supported'] = 'Push notification not supported'
 
 
 class UnsupportedOperationError(JSONRPCError):
-    """Error for unsupported operations"""
+    """Error for unsupported operations."""
+    
     code: Literal[-32010] = -32010
     message: Literal['Unsupported operation'] = 'Unsupported operation'
 
 
 class ContentTypeNotSupportedError(JSONRPCError):
-    """Error for unsupported content types"""
+    """Error for unsupported content types."""
+    
     code: Literal[-32011] = -32011
     message: Literal['Content type not supported'] = 'Content type not supported'
 
@@ -285,7 +316,8 @@ class ContentTypeNotSupportedError(JSONRPCError):
 #-----------------------------------------------------------------------------
 
 class JSONRPCErrorResponse(PebblingProtocolBaseModel):
-    """JSON-RPC error response"""
+    """JSON-RPC error response."""
+    
     error: (
         JSONRPCError
         | JSONParseError
@@ -305,7 +337,8 @@ class JSONRPCErrorResponse(PebblingProtocolBaseModel):
 
 
 class TaskStatusUpdateEvent(PebblingProtocolBaseModel):
-    """Event for task status updates"""
+    """Event for task status updates."""
+    
     contextId: UUID
     final: bool
     kind: Literal['status-update'] = 'status-update'
@@ -315,7 +348,8 @@ class TaskStatusUpdateEvent(PebblingProtocolBaseModel):
 
 
 class TaskArtifactUpdateEvent(PebblingProtocolBaseModel):
-    """Event for task artifact updates"""
+    """Event for task artifact updates."""
+    
     append: bool | None = None
     artifact: Artifact
     contextId: UUID
@@ -326,20 +360,23 @@ class TaskArtifactUpdateEvent(PebblingProtocolBaseModel):
 
 
 class TaskIdParams(PebblingProtocolBaseModel):
-    """Parameters for task identification"""
+    """Parameters for task identification."""
+    
     id: UUID
     metadata: dict[str, Any] | None = None
 
 
 class MessageSendConfiguration(PebblingProtocolBaseModel):
-    """Configuration for message sending"""
+    """Configuration for message sending."""
+    
     acceptedOutputModes: list[str]
     blocking: bool | None = None
     historyLength: int | None = None
 
 
 class MessageSendParams(PebblingProtocolBaseModel):
-    """Parameters for sending messages"""
+    """Parameters for sending messages."""
+    
     configuration: MessageSendConfiguration | None = None
     message: Message
     metadata: dict[str, Any] | None = None
@@ -347,34 +384,39 @@ class MessageSendParams(PebblingProtocolBaseModel):
 
 # Response types
 class SendMessageSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for sending a message"""
+    """Success response for sending a message."""
+    
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
     result: Task | Message
 
 
 class SendStreamingMessageSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for sending a streaming message"""
+    """Success response for sending a streaming message."""
+    
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
     result: Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent
 
 
 class GetTaskSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for getting a task"""
+    """Success response for getting a task."""
+    
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
     result: Task
 
 
 class CancelTaskSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for canceling a task"""
+    """Success response for canceling a task."""
+    
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
     result: Task
 
 class TrustVerificationResponse(PebblingProtocolBaseModel):
-    """Success response for trust verification"""
+    """Success response for trust verification."""
+    
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
     result: Task
@@ -382,7 +424,8 @@ class TrustVerificationResponse(PebblingProtocolBaseModel):
 
 # Request types
 class SendMessageRequest(PebblingProtocolBaseModel):
-    """Request to send a message"""
+    """Request to send a message."""
+    
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
     method: Literal['message/send'] = 'message/send'
@@ -390,12 +433,14 @@ class SendMessageRequest(PebblingProtocolBaseModel):
 
 
 class SendStreamingMessageRequest(SendMessageRequest):
-    """Request to send a streaming message"""
+    """Request to send a streaming message."""
+    
     method: Literal['message/stream'] = 'message/stream'
 
 
 class GetTaskRequest(PebblingProtocolBaseModel):
-    """Request to get a task"""
+    """Request to get a task."""
+    
     id: UUID
     jsonrpc: Literal['2.0'] = '2.0'
     method: Literal['tasks/get'] = 'tasks/get'
@@ -403,16 +448,19 @@ class GetTaskRequest(PebblingProtocolBaseModel):
 
 
 class CancelTaskRequest(GetTaskRequest):
-    """Request to cancel a task"""
+    """Request to cancel a task."""
+    
     method: Literal['tasks/cancel'] = 'tasks/cancel'
 
 
 class TaskResubscriptionRequest(GetTaskRequest):
-    """Request to resubscribe to task events"""
+    """Request to resubscribe to task events."""
+    
     method: Literal['tasks/resubscribe'] = 'tasks/resubscribe'
 
 class TrustVerificationRequest(GetTaskRequest):
-    """Request to verify trust"""
+    """Request to verify trust."""
+    
     method: Literal['trust/verify'] = 'trust/verify'
 
 
@@ -427,7 +475,8 @@ class JSONRPCResponse(
         | TrustVerificationResponse
     ]
 ):
-    """Union type for all JSON-RPC responses"""
+    """Union type for all JSON-RPC responses."""
+    
     root: (
         JSONRPCErrorResponse
         | SendMessageSuccessResponse
@@ -441,14 +490,16 @@ class JSONRPCResponse(
 class SendMessageResponse(
     RootModel[JSONRPCErrorResponse | SendMessageSuccessResponse]
 ):
-    """Union type for send message responses"""
+    """Union type for send message responses."""
+    
     root: JSONRPCErrorResponse | SendMessageSuccessResponse
 
 
 class SendStreamingMessageResponse(
     RootModel[JSONRPCErrorResponse | SendStreamingMessageSuccessResponse]
 ):
-    """Union type for streaming message responses"""
+    """Union type for streaming message responses."""
+    
     root: JSONRPCErrorResponse | SendStreamingMessageSuccessResponse
 
 
@@ -462,7 +513,8 @@ class PebblingRequest(
         | TrustVerificationRequest
     ]
 ):
-    """Union type for all Pebbling requests"""
+    """Union type for all Pebbling requests."""
+    
     root: (
         SendMessageRequest
         | SendStreamingMessageRequest
@@ -478,9 +530,8 @@ class PebblingRequest(
 #-----------------------------------------------------------------------------
 
 class AgentSecurity(PebblingProtocolBaseModel):
-    """
-    Security configuration for agents in the Pebbling framework.
-    """
+    """Security configuration for agents in the Pebbling framework."""
+    
     # DID-based security settings
     challenge_expiration_seconds: int = Field(
         300, 
@@ -534,7 +585,8 @@ class AgentSecurity(PebblingProtocolBaseModel):
 #-----------------------------------------------------------------------------
 
 class TrustLevel(str, Enum):
-    """Trust levels for operations and permissions"""
+    """Trust levels for operations and permissions."""
+    
     ADMIN = "admin"           # Admin operations, minimal risk
     ANALYST = "analyst"     # Standard operations
     AUDITOR = "auditor"         # Sensitive operations
@@ -547,7 +599,8 @@ class TrustLevel(str, Enum):
     VIEWER = "viewer"         # View-only access, minimal permissions
 
 class IdentityProvider(str, Enum):
-    """Supported identity providers"""
+    """Supported identity providers."""
+    
     KEYCLOAK = "keycloak"
     AZURE_AD = "azure_ad"
     OKTA = "okta"
@@ -555,7 +608,7 @@ class IdentityProvider(str, Enum):
     CUSTOM = "custom"
 
 class KeycloakRole(PebblingProtocolBaseModel):
-    """Keycloak role model"""
+    """Keycloak role model."""
     role_id: UUID = Field(..., description="Role ID from Keycloak IAM.")
     role_name: str = Field(..., description="Human-readable role name.")
     permissions: List[str] = Field(default_factory=list, description="Specific permissions tied to this role.")
@@ -575,7 +628,7 @@ class KeycloakRole(PebblingProtocolBaseModel):
     )
 
 class AgentTrust(PebblingProtocolBaseModel):
-    """Trust configuration for an agent"""
+    """Trust configuration for an agent."""
     identity_provider: IdentityProvider = Field(..., description="Identity provider used for authentication")
     inherited_roles: List[KeycloakRole] = Field(
         default_factory=list, 
@@ -596,6 +649,7 @@ class AgentTrust(PebblingProtocolBaseModel):
 #-----------------------------------------------------------------------------
 
 class AgentIdentity(PebblingProtocolBaseModel):
+    """Agent identity configuration with DID and other identifiers."""
     did: Optional[str] = Field(None, description="Agent DID string.")
     did_document: Optional[Dict[str, Any]] = Field(None, description="Agent DID document for decentralized identity.")
     agentdns_url: Optional[str] = Field(None, description="Agent DNS-based identity URL (agentdns.ai).")
@@ -603,10 +657,7 @@ class AgentIdentity(PebblingProtocolBaseModel):
     public_key: Optional[str] = Field(None, description="Agent's public key for mTLS.")
 
 class AgentSkill(PebblingProtocolBaseModel):
-    """
-    Represents a distinct capability or function that an agent can perform.
-    """
-
+    """Represents a distinct capability or function that an agent can perform."""
     description: str
     examples: list[str] | None = Field(
         default=None, examples=[['I need a recipe for bread']]
@@ -620,20 +671,14 @@ class AgentSkill(PebblingProtocolBaseModel):
     )
 
 class AgentExtension(PebblingProtocolBaseModel):
-    """
-    A declaration of a protocol extension supported by an Agent.
-    """
-
+    """A declaration of a protocol extension supported by an Agent."""
     description: str | None = None
     params: dict[str, Any] | None = None
     required: bool | None = None
     uri: str
 
 class AgentCapabilities(PebblingProtocolBaseModel):
-    """
-    Defines optional capabilities supported by an agent.
-    """
-
+    """Defines optional capabilities supported by an agent."""
     extensions: list[AgentExtension] | None = None
     push_notifications: bool | None = None
     state_transition_history: bool | None = None
@@ -641,7 +686,7 @@ class AgentCapabilities(PebblingProtocolBaseModel):
 
 
 class AgentManifest(PebblingProtocolBaseModel):
-    """Complete agent manifest with identity and capabilities"""
+    """Complete agent manifest with identity and capabilities."""
     id: Union[UUID, int, str] = Field(
         ..., 
         description="The unique identifier of the agent", 

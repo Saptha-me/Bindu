@@ -1,0 +1,1 @@
+"""Hibiscus registry integration package for Pebbling agents."""

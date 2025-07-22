@@ -8,6 +8,12 @@
 #
 #  Thank you users! We ❤️ you! - 🐧
 
+"""Cryptographic key management utilities for Pebbling security.
+
+This module provides functionality for generating, storing, loading, and
+managing cryptographic keys used in the Pebbling security framework.
+"""
+
 import os
 from typing import Literal, Tuple, Union
 

@@ -1,3 +1,13 @@
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
+
 """Display utilities for the Pebbling server."""
 from rich import box
 from rich.console import Console

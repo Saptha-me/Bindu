@@ -7,6 +7,8 @@
 #
 #  Thank you users! We ❤️ you! - 🐧
 
+"""OpenTelemetry integration for Pebbling telemetry and monitoring."""
+
 from fastapi import FastAPI
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
@@ -33,8 +35,7 @@ root_logger = get_logger()
 
 
 def configure_telemetry(app: FastAPI) -> None:
-    """Utility that configures opentelemetry with OTLP exporter and FastAPI instrumentation"""
-
+    """Configure OpenTelemetry with OTLP exporter and FastAPI instrumentation."""
     FastAPIInstrumentor.instrument_app(app)
 
     resource = Resource(

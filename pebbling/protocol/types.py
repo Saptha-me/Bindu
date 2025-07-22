@@ -650,14 +650,17 @@ class AgentTrust(PebblingProtocolBaseModel):
 
 class AgentIdentity(PebblingProtocolBaseModel):
     """Agent identity configuration with DID and other identifiers."""
+    
     did: Optional[str] = Field(None, description="Agent DID string.")
     did_document: Optional[Dict[str, Any]] = Field(None, description="Agent DID document for decentralized identity.")
     agentdns_url: Optional[str] = Field(None, description="Agent DNS-based identity URL (agentdns.ai).")
     endpoint: Optional[str] = Field(None, description="Secure mTLS agent endpoint.")
     public_key: Optional[str] = Field(None, description="Agent's public key for mTLS.")
 
+
 class AgentSkill(PebblingProtocolBaseModel):
     """Represents a distinct capability or function that an agent can perform."""
+    
     description: str
     examples: list[str] | None = Field(
         default=None, examples=[['I need a recipe for bread']]
@@ -670,15 +673,19 @@ class AgentSkill(PebblingProtocolBaseModel):
         ..., examples=[['cooking', 'customer support', 'billing']]
     )
 
+
 class AgentExtension(PebblingProtocolBaseModel):
     """A declaration of a protocol extension supported by an Agent."""
+    
     description: str | None = None
     params: dict[str, Any] | None = None
     required: bool | None = None
     uri: str
 
+
 class AgentCapabilities(PebblingProtocolBaseModel):
     """Defines optional capabilities supported by an agent."""
+    
     extensions: list[AgentExtension] | None = None
     push_notifications: bool | None = None
     state_transition_history: bool | None = None
@@ -687,6 +694,7 @@ class AgentCapabilities(PebblingProtocolBaseModel):
 
 class AgentManifest(PebblingProtocolBaseModel):
     """Complete agent manifest with identity and capabilities."""
+    
     id: Union[UUID, int, str] = Field(
         ..., 
         description="The unique identifier of the agent", 

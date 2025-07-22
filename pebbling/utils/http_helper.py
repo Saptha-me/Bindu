@@ -1,3 +1,13 @@
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
+
 """HTTP utility functions for Pebbling services."""
 
 from typing import Any, Dict, Optional

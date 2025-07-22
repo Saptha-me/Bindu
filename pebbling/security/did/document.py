@@ -1,3 +1,13 @@
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
+
 from typing import Any, Dict, List, Optional
 
 import orjson

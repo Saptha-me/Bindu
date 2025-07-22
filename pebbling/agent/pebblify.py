@@ -65,6 +65,25 @@ def pebblify(
     extra_metadata: Optional[Dict[str, Any]] = None,
     **kwargs: Any
 ) -> Callable:
+    """Transform a function into a Pebbling-compatible agent.
+    
+    This decorator handles agent setup, security configuration, registry integration,
+    and protocol compatibility. It configures DID-based security, manages keys,
+    and enables agent discovery through registry services.
+    
+    Args:
+        name: Optional name for the agent. If not provided, the function name is used.
+        expose: Whether to expose the agent as a web service.
+        keys_required: Whether cryptographic keys are required for security.
+        keys_dir: Directory to store keys. If None, uses default location.
+        did_required: Whether DID identity is required for the agent.
+        recreate_keys: Whether to recreate keys if they already exist.
+        agentdns_required: Whether AgentDNS integration is required.
+        store_in_registry: Whether to register the agent with Hibiscus registry.
+        
+    Returns:
+        A decorated function that implements the Pebbling agent protocol.
+    """
     def decorator(obj: Any) -> Any:
         @functools.wraps(obj)
         def wrapper(*args, **kwargs) -> AgentManifest:

@@ -2047,6 +2047,7 @@ dev = [
 [package.dev-dependencies]
 dev = [
     { name = "pebbling" },
+    { name = "ty" },
 ]
 
 [package.metadata]
@@ -2098,7 +2099,10 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pebbling", editable = "." }]
+dev = [
+    { name = "pebbling", editable = "." },
+    { name = "ty", specifier = ">=0.0.1a14" },
+]
 
 [[package]]
 name = "peewee"

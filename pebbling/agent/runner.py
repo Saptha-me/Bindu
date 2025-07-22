@@ -1,3 +1,13 @@
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
+
 """
 Framework-agnostic agent runner for Pebbling framework.
 
@@ -82,17 +92,17 @@ async def run_agent(
 
 # Implementation of the execution functions (placeholders)
 async def _run_sync(agent_did, message, config, timeout):
-    """Synchronous execution - waits for complete response"""
+    """Execute request synchronously and wait for complete response."""
     # Implementation would resolve DID to endpoint and call agent
     pass
 
 async def _run_async(agent_did, message, config):
-    """Asynchronous execution - returns task ID immediately"""
+    """Execute request asynchronously and return task ID immediately."""
     # Implementation would submit task and return ID
     pass
 
 async def _run_stream(agent_did, message, config):
-    """Streaming execution - yields response chunks as they arrive"""
+    """Stream response chunks as they arrive from the agent."""
     # Implementation would stream responses
     pass
 

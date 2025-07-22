@@ -27,6 +27,7 @@ from pebbling.agent.metadata.setup_metadata import setup_agent_metadata
 from pebbling.hibiscus.agent_registry import register_with_registry
 from pebbling.protocol.types import AgentManifest
 from pebbling.security.setup_security import setup_security
+from pebbling.security.ca.sheldon import issue_certificate
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
@@ -136,8 +137,8 @@ def pebblify(
                 
             # Issue certificate if requested
             if issue_certificate and callable(issue_certificate):
-                logger.info("Issuing certificate for agent")
-                issue_certificate(agent_manifest)
+                logger.info("Generating CSR for agent")
+                generate_csr(keys_dir=keys_dir, agent_name=agent_manifest.did)
                 
             return agent_manifest
             

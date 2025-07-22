@@ -561,6 +561,10 @@ class AgentSecurity(PebblingProtocolBaseModel):
     )
     
     # Certificate settings
+    csr_path: Optional[str] = Field(
+        None, 
+        description="Path to CSR file"
+    )
     certificate_type: Optional[str] = Field(
         None, 
         description="Type of certificate (self-signed, letsencrypt, sheldon)"

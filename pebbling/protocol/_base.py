@@ -5,7 +5,7 @@
 # |                                                  |
 # |--------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - Raahul
+#  Thank you users! We ❤️ you! - 🐧
 
 from pydantic import BaseModel, ConfigDict
 

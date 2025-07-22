@@ -1,3 +1,10 @@
+"""
+Example implementation of a Pebbling agent with registry integration.
+
+This example demonstrates how to create a news reporter agent using the pebblify
+decorator, configure logging, and register the agent with Hibiscus registry.
+"""
+
 import os
 
 from agno.agent import Agent

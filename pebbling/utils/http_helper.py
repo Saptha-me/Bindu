@@ -1,9 +1,10 @@
 """HTTP utility functions for Pebbling services."""
 
-import httpx
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
+import httpx
 from pydantic import SecretStr
+
 
 async def make_api_request(
     url: str,

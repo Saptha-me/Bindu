@@ -6,10 +6,10 @@ from typing import Optional
 
 from loguru import logger
 from rich.console import Console
-from rich.theme import Theme
 from rich.logging import RichHandler
-from rich.traceback import install as install_rich_traceback
 from rich.panel import Panel
+from rich.theme import Theme
+from rich.traceback import install as install_rich_traceback
 
 # Set up Rich console with custom theme
 PEBBLING_THEME = Theme({

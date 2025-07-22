@@ -4,6 +4,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
+
 def prepare_server_display() -> str:
     """Prepare the colorful ASCII display for the server.
     

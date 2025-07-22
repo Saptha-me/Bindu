@@ -8,8 +8,10 @@
 #
 #  Thank you users! We ❤️ you! - Raahul
 
+from typing import Dict, List, Optional
+
+from pebbling.protocol.types import AgentCapabilities, AgentExtension, AgentManifest
 from pebbling.utils.logging import get_logger
-from pebbling.protocol.types import AgentCapabilities, AgentManifest, AgentExtension
 
 logger = get_logger("pebbling.agent.metadata.agent_capabilities")
 
@@ -30,7 +32,7 @@ def get_agent_capabilities(agent: AgentManifest):
     
     # If agent already has AgentCapabilities property
     if hasattr(agent, 'capabilities'):
-        if callable(getattr(agent, 'capabilities')):
+        if callable(agent.capabilities):
             caps: AgentCapabilities = agent.capabilities()
             if isinstance(caps, AgentCapabilities):
                 return caps
@@ -61,4 +63,3 @@ def get_agent_capabilities(agent: AgentManifest):
         state_transition_history=state_transition_history,
         extensions=extensions if extensions else None
     )
-

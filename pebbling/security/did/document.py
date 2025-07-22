@@ -1,7 +1,9 @@
+from typing import Any, Dict, List, Optional
+
 import orjson
-from typing import Dict, Any, Optional, List
 
 from pebbling.protocol.types import AgentCapabilities, AgentSkill
+
 
 def create_did_document(
     did: str, 

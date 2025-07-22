@@ -1,25 +1,20 @@
 """REST server implementation for pebbling."""
 
-import os
 import uuid
 from typing import Any, Dict, Optional, Union
 
-from fastapi import FastAPI, APIRouter
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
-from pebbling.server.schemas.model import (
-    AgentResponse,
-    ErrorResponse,
-    HealthResponse,
-    MessageRole
-)
 from loguru import logger
+
+from pebbling.server.schemas.model import AgentResponse, ErrorResponse, HealthResponse, MessageRole
+from pebbling.utils.logging import configure_logger
+
 
 def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     """Create a REST API server for user interaction."""
     # Configure logging
-    _configure_logger()
+    configure_logger()
     logger.info("Initializing REST API server")
     
     rest_app = FastAPI(title="pebbling User API")
@@ -156,5 +151,3 @@ def create_rest_server(protocol_handler: Optional[Any] = None) -> FastAPI:
     logger.info("REST API server initialized successfully 🐧")
     
     return rest_app
-
-    

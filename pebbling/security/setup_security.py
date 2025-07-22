@@ -8,20 +8,17 @@
 #
 #  Thank you users! We ❤️ you! - Raahul
 
-import os
 import inspect
-from typing import Optional
+import os
 
-# Import logging from pebbling utils
-from pebbling.utils.logging import get_logger
+from pebbling.protocol.types import AgentIdentity, AgentManifest
+from pebbling.security.common.keys import generate_key_pair, load_public_key
 
 # Import necessary components
 from pebbling.security.did.manager import DIDManager
-from pebbling.security.common.keys import generate_key_pair, load_public_key
-from pebbling.protocol.types import (
-    AgentManifest,
-    AgentIdentity
-)
+
+# Import logging from pebbling utils
+from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.security.setup_security")
 

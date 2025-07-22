@@ -1,15 +1,13 @@
 import os
-import orjson
 import uuid
-from typing import Dict, Any, Tuple
-from typing import Optional, List
+from typing import Any, Dict, List, Optional, Tuple
 
-from pebbling.security.common.keys import load_public_key
-from pebbling.security.did.document import (
-    create_did_document, 
-    update_service_endpoint
-)
+import orjson
+
 from pebbling.protocol.types import AgentCapabilities, AgentSkill
+from pebbling.security.common.keys import load_public_key
+from pebbling.security.did.document import create_did_document, update_service_endpoint
+
 
 class DIDManager:
     """DID manager for pebbling agents."""

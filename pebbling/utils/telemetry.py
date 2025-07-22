@@ -25,9 +25,9 @@ from opentelemetry.sdk.resources import (
 )
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from pebble.version import __version__
 
 from pebbling.utils.logging import get_logger
-from pebble.version import __version__
 
 root_logger = get_logger()
 

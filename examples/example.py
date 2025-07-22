@@ -1,11 +1,12 @@
-from pebbling.agent import pebblify
-from pebbling.protocol.types import AgentCapabilities, AgentSkill, AgentManifest
-from pebbling.utils.logging import get_logger, configure_logger
+import os
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from pydantic.types import SecretStr
-import os
+
+from pebbling.agent import pebblify
+from pebbling.protocol.types import AgentCapabilities, AgentManifest, AgentSkill
+from pebbling.utils.logging import configure_logger, get_logger
 
 # Initialize logger first with proper configuration
 configure_logger(docker_mode=False)  # Pass docker_mode=True if running in Docker

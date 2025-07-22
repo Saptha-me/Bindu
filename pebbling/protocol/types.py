@@ -16,7 +16,6 @@ agents and the Pebbling framework.
 """
 
 from enum import Enum
-import json
 from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 

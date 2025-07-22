@@ -16,6 +16,7 @@ agents and the Pebbling framework.
 """
 
 from enum import Enum
+import json
 from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
@@ -528,9 +529,6 @@ class AgentSecurity(PebblingProtocolBaseModel):
         False, 
         description="Whether to allow anonymous access"
     )
-    
-    class Config:
-        extra = "allow"
 
 #-----------------------------------------------------------------------------
 # Lets handle Trust
@@ -599,10 +597,11 @@ class AgentTrust(PebblingProtocolBaseModel):
 #-----------------------------------------------------------------------------
 
 class AgentIdentity(PebblingProtocolBaseModel):
-    did: Optional[str] = Field(None, description="Agent DID for decentralized identity.")
+    did: Optional[str] = Field(None, description="Agent DID string.")
+    did_document: Optional[Dict[str, Any]] = Field(None, description="Agent DID document for decentralized identity.")
     agentdns_url: Optional[str] = Field(None, description="Agent DNS-based identity URL (agentdns.ai).")
-    endpoint: str = Field(..., description="Secure mTLS agent endpoint.")
-    public_key: str = Field(..., description="Agent's public key for mTLS.")
+    endpoint: Optional[str] = Field(None, description="Secure mTLS agent endpoint.")
+    public_key: Optional[str] = Field(None, description="Agent's public key for mTLS.")
 
 class AgentSkill(PebblingProtocolBaseModel):
     """
@@ -644,7 +643,7 @@ class AgentCapabilities(PebblingProtocolBaseModel):
 
 class AgentManifest(PebblingProtocolBaseModel):
     """Complete agent manifest with identity and capabilities"""
-    agent_id: Union[UUID, int, str] = Field(
+    id: Union[UUID, int, str] = Field(
         ..., 
         description="The unique identifier of the agent", 
         examples=["123e4567-e89b-12d3-a456-426614174000"]
@@ -654,6 +653,7 @@ class AgentManifest(PebblingProtocolBaseModel):
         description="The name of the agent", 
         examples=["Japanese Restaurant Reviewer Agent"]
     )
+    description: str | None = Field(None, description="Description of the agent")
     user_id: Union[UUID, int, str] = Field(..., description="user")
 
     # Trust
@@ -671,9 +671,9 @@ class AgentManifest(PebblingProtocolBaseModel):
         description="Optional skills supported by the agent"
     )
 
-    agent: Optional[Any] = Field(
+    instance: Optional[Any] = Field(
         None, 
-        description="The agent instance"
+        description="The agent/team/workflow instance"
     )
     
     # DID-related fields

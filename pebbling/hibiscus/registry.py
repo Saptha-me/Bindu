@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, List, Optional, Union
 from pydantic.types import SecretStr
+import json
 
 from pebbling.protocol.types import AgentManifest, AgentCapabilities, AgentSkill
 from pebbling.security.did.manager import DIDManager
@@ -28,18 +29,16 @@ class HibiscusClient:
         """
         self.hibiscus_url = hibiscus_url
         self.pat_token = pat_token
-        self.agents_endpoint = f"{self.hibiscus_url}/api/v1/agents/"
+        self.agents_endpoint = f"{self.hibiscus_url}/agents/"
     
     async def register_agent(
         self,
-        did: str,
         agent_manifest: Optional[AgentManifest] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """Register an agent with Hibiscus registry.
         
         Args:
-            did: DID of the agent
             agent_manifest: Agent manifest with capabilities and skills
             **kwargs: Additional fields to include in the registration
             
@@ -48,12 +47,16 @@ class HibiscusClient:
         """
         try:
             # Extract data from manifest if provided
+            agent_name = agent_manifest.name if agent_manifest else kwargs.get("name")
             if agent_manifest:
                 payload = {
-                    "name": agent_manifest.name,
-                    "did": did,
+                    "name": agent_name,
+                    "description": getattr(agent_manifest, "description", ""),
                     "version": getattr(agent_manifest, "version", "1.0.0"),
-                    "description": getattr(agent_manifest, "description", "")
+                    "author_name": "Your Name",
+                    "did": agent_manifest.identity.did,
+                    "public_key": agent_manifest.identity.public_key,
+                    "did_document": agent_manifest.identity.did_document,
                 }
                 
                 # Process capabilities
@@ -86,6 +89,24 @@ class HibiscusClient:
                 payload["skills"] = skills
                 payload["domains"] = list(domains)
                 payload["tags"] = list(tags)
+
+                # Add Dependencies
+                if hasattr(agent_manifest, "instance") and hasattr(agent_manifest.instance, "model"):
+                    model = agent_manifest.instance.model
+                    dependency = {
+                        "type": "model",
+                        "name": getattr(model, "name", model.__class__.__name__),
+                        "version": getattr(model, "version", "latest"),
+                    }
+                    payload["dependencies"] = [dependency]  # Array of dependencies
+                else:
+                    payload["dependencies"] = []  # Empty array instead of missing field
+                
+                # Fix DID document - ensure publicKeyPem is properly set
+                if "did_document" in payload and payload["did_document"]:
+                    for method in payload["did_document"].get("verificationMethod", []):
+                        if method.get("publicKeyPem") is None and "public_key" in payload:
+                            method["publicKeyPem"] = payload["public_key"]
                 
                 # Add metadata
                 metadata = {
@@ -118,14 +139,32 @@ class HibiscusClient:
                 if key not in payload and value is not None:
                     payload[key] = value
             
-            # Make API request
-            logger.info(f"Registering agent '{payload.get('name')}' with Hibiscus")
-            return await make_api_request(
-                url=self.agents_endpoint,
-                method="POST",
-                payload=payload,
-                api_key=self.pat_token
-            )
+            # Make the API call
+            headers = {"Authorization": f"Bearer {self.pat_token}"}
+            try:
+                logger.debug(f"Sending registration to Hibiscus: {self.agents_endpoint}")
+                response = await make_api_request(
+                    url=self.agents_endpoint,
+                    api_key=self.pat_token,
+                    method="POST",
+                    payload=payload,
+                    headers=headers
+                )
+                
+                if response["success"]:
+                    logger.info(f"Successfully registered agent with Hibiscus: {agent_name}")
+                    return response["data"]
+                else:
+                    error_msg = response.get("error", "Unknown error")
+                    if response.get("status_code") == 422:
+                        logger.error(f"Validation error (422) from Hibiscus API: {error_msg}")
+                        logger.debug("Payload that caused the error: " + json.dumps(payload, indent=2, default=str))
+                    else:
+                        logger.error(f"Failed to register agent: {error_msg}")
+                    raise Exception(f"Failed to register agent: {error_msg}")
+            except Exception as e:
+                logger.error(f"Error during agent registration: {str(e)}")
+                raise
         
         except Exception as e:
             logger.error(f"Error registering agent with Hibiscus: {e}")

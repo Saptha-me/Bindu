@@ -96,6 +96,51 @@ def generate_key_pair(
     
     return private_key_obj, private_key_pem, public_key_pem
 
+def generate_csr(
+    keys_dir: str,
+    agent_id: str
+) -> str:
+    """Generate a minimal Certificate Signing Request (CSR) using existing keys.
+    
+    Args:
+        keys_dir: Directory containing the key files
+        agent_name: Common Name (CN) for the certificate (typically agent ID or DID)
+        output_file: Optional file path to save the CSR
+        
+    Returns:
+        The CSR in PEM format
+    """
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes
+    
+    # Load private key
+    private_key, _ = load_private_key(keys_dir)
+    
+    # Build subject name
+    subject_name = x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, agent_name),
+    ])
+    
+    # Create CSR builder with minimal settings
+    builder = x509.CertificateSigningRequestBuilder().subject_name(subject_name)
+    
+    # Sign the CSR with the private key
+    csr = builder.sign(
+        private_key=private_key,
+        algorithm=hashes.SHA256()
+    )
+    
+    # Get PEM format
+    csr_pem = csr.public_bytes(serialization.Encoding.PEM).decode('utf-8')
+    
+    # Save to file if output_file is provided
+    if output_file:
+        with open(output_file, "wb") as f:
+            f.write(csr_pem.encode('utf-8'))
+    
+    return csr_pem
+
 def load_private_key(keys_dir: str) -> Tuple[PrivateKeyTypes, str]:
     """Load the private key from the keys directory."""
     private_key_file = os.path.join(keys_dir, PRIVATE_KEY_FILENAME)

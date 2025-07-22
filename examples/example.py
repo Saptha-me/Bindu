@@ -1,5 +1,4 @@
 from pebbling.agent import pebblify
-from pebbling.agent.runner import run_agent
 from pebbling.protocol.types import AgentCapabilities, AgentSkill, AgentManifest
 from pebbling.utils.logging import get_logger, configure_logger
 
@@ -25,7 +24,7 @@ def news_reporter() -> AgentManifest:
     logger.debug("Creating news reporter agent")
     
     # Create the base agent for the core functionality
-    agent = Agent(
+    agent_instance = Agent(
         model=OpenAIChat(id="gpt-4o"),
         instructions="You are a news reporter with a flair for storytelling.",
         markdown=True
@@ -33,10 +32,11 @@ def news_reporter() -> AgentManifest:
     
     # Return a proper AgentManifest with all metadata
     return AgentManifest(
-        agent_id="news-reporter",
+        id="news-reporter",
         name="News Reporter",
+        description="You are a news reporter with a flair for storytelling.",
         user_id="default-user",
-        agent=agent,
+        instance=agent_instance,
         capabilities=AgentCapabilities(
             streaming=True,
             push_notifications=True,
@@ -56,38 +56,8 @@ def news_reporter() -> AgentManifest:
         version="1.0.0"
     )
 
-def main() -> None:
-    """Main entry point demonstrating agent execution."""
-    try:
-        logger.info("Initializing agent...")
-        agent_manifest = news_reporter()
-        
-        # Show the DID information if available
-        if agent_manifest.did:
-            logger.info(f"Agent registered with DID: {agent_manifest.did}")
-        
-        # Access the agent directly from the manifest
-        agent = agent_manifest.agent
-        if not agent:
-            logger.error("Agent not found in manifest")
-            return
-            
-        # Generate a story
-        logger.info("Generating story...")
-        story = agent.generate("Write a short story about AI and its impact on society in 2025")
-        
-        # Display results
-        print("\n===== GENERATED STORY =====")
-        print(story)
-        
-        # Show metadata
-        print("\n===== AGENT METADATA =====")
-        print(f"Agent ID: {agent_manifest.agent_id}")
-        print(f"Agent Name: {agent_manifest.name}")
-        
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        raise
-
 if __name__ == "__main__":
-    main()
+    try:
+        news_reporter()
+    except KeyboardInterrupt:
+        print("\nShutting down gracefully...")

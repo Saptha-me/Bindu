@@ -99,43 +99,27 @@ def _load_key_file(file_path: str, private: bool = True) -> Tuple[PrivateKeyType
         )
     return key_obj
 
-def load_private_key(key_path: str) -> Tuple[Optional[PrivateKeyTypes], Optional[str]]:
-    """Load a private key from a file.
-    
-    Args:
-        key_path: Path to the directory containing the keys
-        
-    Returns:
-        Tuple of (private_key_obj, private_key_pem)
-    """
-    private_key_file = os.path.join(key_path, PRIVATE_KEY_FILENAME)
+def load_private_key(keys_dir: str) -> Tuple[PrivateKeyTypes, str]:
+    """Load the private key from the keys directory."""
+    private_key_file = os.path.join(keys_dir, "private_key.pem")
     
     if not os.path.exists(private_key_file):
-        return None, None
+        raise FileNotFoundError(f"Private key file not found at {private_key_file}")
     
-    try:
-        return _load_key_file(private_key_file, private=True)
-    except Exception:
-        return None, None
+    return _load_key_file(private_key_file, private=True)
 
-def load_public_key(key_path: str) -> Tuple[Optional[PublicKeyTypes], Optional[str]]:
-    """Load a public key from a file.
-    
-    Args:
-        key_path: Path to the directory containing the keys
-        
-    Returns:
-        Tuple of (public_key_pem)
-    """
-    public_key_file = os.path.join(key_path, PUBLIC_KEY_FILENAME)
+def load_public_key(keys_dir: str) -> str:
+    """Load the public key from the keys directory as a string."""
+    public_key_file = os.path.join(keys_dir, "public_key.pem")
     
     if not os.path.exists(public_key_file):
-        return None
+        raise FileNotFoundError(f"Public key file not found at {public_key_file}")
     
-    try:
-        return _load_key_file(public_key_file, private=False)
-    except Exception:
-        return None
+    # Read the file directly as string instead of using _load_key_file to avoid encoding issues
+    with open(public_key_file, "rb") as f:
+        public_key_pem = f.read().decode('utf-8')
+    
+    return public_key_pem
 
 # Aliases for backward compatibility
 generate_rsa_key_pair = lambda key_path, recreate=False: generate_key_pair(key_path, "rsa", recreate)

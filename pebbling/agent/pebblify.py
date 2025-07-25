@@ -32,7 +32,7 @@ from pebbling.agent.runner import register_agent_adapter
 from pebbling.hibiscus.agent_registry import register_with_registry
 from pebbling.protocol.types import AgentCapabilities, AgentManifest, AgentSkill
 from pebbling.security.setup_security import setup_security
-from pebbling.security.ca.sheldon import issue_certificate
+#from pebbling.security.ca.sheldon import issue_certificate
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger

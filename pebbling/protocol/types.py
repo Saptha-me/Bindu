@@ -776,3 +776,67 @@ class AgentManifest(PebblingProtocolBaseModel):
     
     # Versioning
     version: str = Field(..., examples=['1.0.0'])
+
+
+#-----------------------------------------------------------------------------
+# Pebbling Agent Adapter Types
+#-----------------------------------------------------------------------------
+
+class PebblingMessage:
+    """Wrapper class for protocol messages in AgentAdapter functions."""
+    
+    def __init__(self, content: str, role: str = "user", metadata: Optional[Dict[str, Any]] = None):
+        """
+        Initialize a PebblingMessage.
+        
+        Args:
+            content: The message content
+            role: The role of the message sender (default: "user")
+            metadata: Optional metadata dictionary
+        """
+        self.content = content
+        self.role = role
+        self.metadata = metadata or {}
+    
+    def to_protocol_message(self) -> Message:
+        """Convert to protocol Message format."""
+        from uuid import uuid4
+        
+        return Message(
+            contextId=uuid4(),
+            messageId=uuid4(),
+            role=Role(self.role),
+            parts=[TextPart(text=self.content)],
+            metadata=self.metadata
+        )
+
+
+class PebblingContext:
+    """Context wrapper for agent functions providing execution context."""
+    
+    def __init__(self, 
+                 task_id: Optional[str] = None,
+                 session_id: Optional[str] = None,
+                 metadata: Optional[Dict[str, Any]] = None,
+                 user_id: Optional[str] = None):
+        """
+        Initialize PebblingContext.
+        
+        Args:
+            task_id: Current task identifier
+            session_id: Current session identifier  
+            metadata: Additional context metadata
+            user_id: User identifier for the current context
+        """
+        self.task_id = task_id
+        self.session_id = session_id
+        self.metadata = metadata or {}
+        self.user_id = user_id
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get a value from the context metadata."""
+        return self.metadata.get(key, default)
+    
+    def set(self, key: str, value: Any) -> None:
+        """Set a value in the context metadata."""
+        self.metadata[key] = value

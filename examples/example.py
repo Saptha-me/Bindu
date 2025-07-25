@@ -1,10 +1,15 @@
 from pebbling.protocol import PebblingMessage, PebblingContext
+from pebbling.agent.pebblify import pebblify
+from pebbling.security.setup_security import setup_security
+from pebbling.registry.setup_registry import setup_registry
+from pebbling.deployment.setup_deployment import DeploymentConfig
+
 
 @pebblify(
     name="News Reporter",
     description="Reports news with flair",
-    security=SecurityConfig(did_required=True),
-    registry=RegistryConfig(store_in_hibiscus=True),
+    security=setup_security(did_required=True),
+    registry=setup_registry(store_in_hibiscus=True),
     deployment=DeploymentConfig(expose=True, port=3773)
 )
 async def news_reporter(

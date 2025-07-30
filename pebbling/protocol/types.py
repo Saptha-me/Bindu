@@ -732,16 +732,6 @@ class AgentManifest(PebblingProtocolBaseModel):
         description="The agent/team/workflow instance"
     )
     
-    # DID-related fields
-    did: Optional[str] = Field(
-        None,
-        description="Decentralized Identifier of the agent"
-    )
-    did_document: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Full DID document"
-    )
-    
     # Configuration
     num_history_sessions: Optional[int] = None
     storage: Optional[Dict[str, Any]] = None
@@ -760,12 +750,6 @@ class AgentManifest(PebblingProtocolBaseModel):
     security: Optional[AgentSecurity] = Field(
         None, 
         description="Security configuration for the agent"
-    )
-
-    # Trust
-    trust: Optional[AgentTrust] = Field(
-        None, 
-        description="Trust configuration for the agent"
     )
 
     # Identity

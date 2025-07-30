@@ -1,0 +1,34 @@
+
+
+class InMemoryScheduler(Scheduler):
+    """A scheduler that schedules tasks in memory."""
+
+    async def __aenter__(self):
+        self.aexit_stack = AsyncExitStack()
+        await self.aexit_stack.__aenter__()
+
+        self._write_stream, self._read_stream = anyio.create_memory_object_stream[TaskOperation]()
+        await self.aexit_stack.enter_async_context(self._read_stream)
+        await self.aexit_stack.enter_async_context(self._write_stream)
+
+        return self
+
+    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any):
+        await self.aexit_stack.__aexit__(exc_type, exc_value, traceback)
+
+    async def run_task(self, params: TaskSendParams) -> None:
+        await self._write_stream.send(_RunTask(operation='run', params=params, _current_span=get_current_span()))
+
+    async def cancel_task(self, params: TaskIdParams) -> None:
+        await self._write_stream.send(_CancelTask(operation='cancel', params=params, _current_span=get_current_span()))
+
+    async def pause_task(self, params: TaskIdParams) -> None:
+        await self._write_stream.send(_PauseTask(operation='pause', params=params, _current_span=get_current_span()))
+
+    async def resume_task(self, params: TaskIdParams) -> None:
+        await self._write_stream.send(_ResumeTask(operation='resume', params=params, _current_span=get_current_span()))
+
+    async def receive_task_operations(self) -> AsyncIterator[TaskOperation]:
+        """Receive task operations from the broker."""
+        async for task_operation in self._read_stream:
+            yield task_operation

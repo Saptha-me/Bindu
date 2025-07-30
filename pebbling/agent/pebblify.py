@@ -108,94 +108,18 @@ def pebblify(
     version: str = "1.0.0",
     user_id: str = "default-user",
     
-    # Legacy parameters for backward compatibility
-    expose: bool = False,
-    keys_required: Optional[bool] = True,
-    keys_dir: Optional[str] = None,
-    did_required: Optional[bool] = True,
-    recreate_keys: Optional[bool] = False,
-    agentdns_required: Optional[bool] = True,
-    store_in_registry: Optional[bool] = True,
-    agent_registry: Optional[Union[str, None]] = "hibiscus",
-    agent_registry_url: Optional[str] = "http://localhost:19191",
-    agent_registry_pat_token: Optional[SecretStr] = None,
-    endpoint_type: str = "json-rpc",
-    cert_authority: str = "sheldon", 
-    issue_certificate: Optional[bool] = True,
-    verify_requests: Optional[bool] = True,
-    port: int = 3773,
-    proxy_urls: Optional[List[str]] = None,
-    cors_origins: Optional[List[str]] = None,
-    opentelemetry: Optional[bool] = False,
-    opentelemetry_url: Optional[str] = "http://localhost:4317",
-    opentelemetry_service_name: Optional[str] = "pebble-agent",
-    openapi_schema: Optional[str] = "http://localhost:3773/openapi.json",
-    openapi_schema_path: Optional[str] = "openapi.json",
-    openapi_schema_name: Optional[str] = "pebble-agent",
-    show_trust_values: Optional[bool] = False,
-    debug: Optional[bool] = False,
-    use_colors: Optional[bool] = True,
+    # Configuration objects (preferred approach)
+    security: SecurityConfig = None,  
+    registry: RegistryConfig = None,  
+    ca: CAConfig = None,        
+    deployment: DeploymentConfig = None, 
+    
+    # Extra metadata for extensibility
     extra_metadata: Optional[Dict[str, Any]] = None,
     
-    # New config objects (preferred)
-    security: Optional[SecurityConfig] = None,
-    registry: Optional[RegistryConfig] = None,
-    deployment: Optional[DeploymentConfig] = None,
-    
-    **kwargs: Any
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
     
-    This decorator handles agent setup, security configuration, registry integration,
-    and protocol compatibility. It configures DID-based security, manages keys,
-    and enables agent discovery through registry services.
-    
-    The decorated function should accept PebblingMessage and optionally PebblingContext,
-    and return/yield PebblingMessage objects.
-    
-    Args:
-        name: Agent name. If not provided, uses function name.
-        description: Agent description. If not provided, uses function docstring.
-        skills: List of skills (strings or AgentSkill objects).
-        domains: List of domain tags.
-        capabilities: Agent capabilities configuration.
-        version: Agent version.
-        user_id: User ID for the agent.
-        
-        # Configuration objects (preferred)
-        security: Security configuration object.
-        registry: Registry configuration object.
-        deployment: Deployment configuration object.
-        
-        # Legacy parameters maintained for backward compatibility
-        expose: Whether to expose the agent as a web service.
-        keys_required: Whether cryptographic keys are required for security.
-        keys_dir: Directory to store keys. If None, uses default location.
-        did_required: Whether DID identity is required for the agent.
-        recreate_keys: Whether to recreate keys if they already exist.
-        store_in_registry: Whether to register the agent with Hibiscus registry.
-        
-    Returns:
-        A decorated function that implements the Pebbling agent protocol.
-        
-    Example:
-        @pebblify(
-            name="News Reporter",
-            description="Reports news with flair",
-            skills=["news-reporting", "storytelling"],
-            security=SecurityConfig(did_required=True),
-            registry=RegistryConfig(store_in_hibiscus=True),
-            deployment=DeploymentConfig(expose=True, port=3773)
-        )
-        async def news_reporter(
-            input: PebblingMessage, 
-            context: PebblingContext
-        ) -> AsyncGenerator[PebblingMessage, None]:
-            text = input.get_text()
-            # Use any framework internally
-            agent = Agent(model=OpenAIChat(id="gpt-4o"))
-            result = await agent.arun(text)
-            yield PebblingMessage.from_text(result.content)
     """
     def decorator(agent_function: Callable) -> AgentManifest:
         # Validate that this is a protocol-compliant function
@@ -205,6 +129,7 @@ def pebblify(
         def wrapper(*args, **kwargs) -> AgentManifest:
             logger.debug("Creating agent with pebblify decorator")
             
+            skills: AgentSkill = 
             # Create agent manifest from function metadata
             agent_manifest = _create_agent_manifest(
                 agent_function=agent_function,
@@ -223,29 +148,29 @@ def pebblify(
             
             # Merge config objects with legacy parameters
             security_config = security or SecurityConfig(
-                did_required=did_required,
-                keys_required=keys_required,
-                keys_dir=keys_dir,
-                recreate_keys=recreate_keys,
-                issue_certificate=issue_certificate,
-                cert_authority=cert_authority,
-                verify_requests=verify_requests
+                did_required=True,
+                keys_required=True,
+                keys_dir=None,
+                recreate_keys=False,
+                issue_certificate=True,
+                cert_authority="sheldon",
+                verify_requests=True
             )
             
             registry_config = registry or RegistryConfig(
-                store_in_hibiscus=store_in_registry,
-                registry_url=agent_registry_url,
-                pat_token=agent_registry_pat_token,
-                registry_type=agent_registry
+                store_in_hibiscus=True,
+                registry_url="http://localhost:19191",
+                pat_token=None,
+                registry_type="hibiscus"
             )
             
             deployment_config = deployment or DeploymentConfig(
-                expose=expose,
-                port=port,
-                endpoint_type=endpoint_type,
-                proxy_urls=proxy_urls,
-                cors_origins=cors_origins,
-                openapi_schema=openapi_schema
+                expose=False,
+                port=3773,
+                endpoint_type="json-rpc",
+                proxy_urls=None,
+                cors_origins=None,
+                openapi_schema=None
             )
             
             # Setup security if requested

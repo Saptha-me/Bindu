@@ -20,6 +20,7 @@ import os
 
 from pebbling.protocol.types import AgentIdentity, AgentManifest, AgentSecurity
 from pebbling.security.common.keys import generate_key_pair, load_public_key, generate_csr
+from pebbling.common.models.models import SecurityConfig
 
 # Import necessary components
 from pebbling.security.did.manager import DIDManager
@@ -29,14 +30,13 @@ from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.security.setup_security")
 
-def setup_security(
-    agent_manifest: AgentManifest,
+def create_security_config(
     keys_dir: str,
     did_required: bool = False,
     keys_required: bool = False,
     recreate_keys: bool = False,
     create_csr: bool = False
-) -> AgentManifest:
+) -> SecurityConfig:
     """Set up security features for an agent.
     
     Configures cryptographic keys and DID (Decentralized Identifier) for an agent,
@@ -81,22 +81,9 @@ def setup_security(
         did_manager = DIDManager(
             config_path=did_config_path,
             keys_dir=current_keys_dir,
-            capabilities=agent_manifest.capabilities,
-            skills=agent_manifest.skills,
             recreate=recreate_keys
         )
         
-        # Set the DID and DID document in the agent manifest
-        # This directly follows the memory about enhancing AgentManifest with DID-related fields
-        agent_manifest.did = did_manager.get_did()
-        agent_manifest.did_document = did_manager.get_did_document()
-        
-        # Set up the agent identity
-        agent_manifest.identity = AgentIdentity(
-            did=did_manager.get_did(),
-            did_document=did_manager.get_did_document(),
-            public_key=load_public_key(current_keys_dir)
-        )
 
     # Create CSR if requested and set up security configuration
     if create_csr:
@@ -111,19 +98,7 @@ def setup_security(
     else:
         cert_type = None
         cert_path = None
-    
-    # Set up security configuration aligned with DID-based security architecture
-    agent_manifest.security = AgentSecurity(
-        challenge_expiration_seconds=300,
-        require_challenge_response=False,  # Default to False, can be enabled when needed
-        signature_algorithm="Ed25519",     # Using Ed25519 which is optimal for DIDs
-        key_storage_path=current_keys_dir,
-        endpoint_type="json-rpc",          # For Docker/Fly.io deployed JSON-RPC servers
-        verify_requests=True,
-        certificate_type=cert_type,
-        certificate_path=cert_path,
-        max_retries=3,
-        allow_anonymous=False
-    )
 
-    return agent_manifest
+    return SecurityConfig(
+        
+    )

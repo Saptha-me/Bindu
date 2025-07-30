@@ -44,8 +44,21 @@ def generate_key_pair(
         keys_dir: str,
         key_type: KeyType = "rsa", 
         recreate: bool = False
-    ) -> Tuple[PrivateKeyTypes, str, str]:
-    """Generate a cryptographic key pair or load existing keys."""
+    ) -> bool:
+    """Generate a cryptographic key pair or load existing keys.
+    
+    Args:
+        keys_dir: Directory to store key files
+        key_type: Type of key to generate ('rsa' or 'ed25519')
+        recreate: Whether to force recreation of keys
+        
+    Returns:
+        Tuple containing:
+        - Private key object
+        - Private key PEM string
+        - Public key PEM string
+        - Status boolean (True if successful, keys were newly generated; False if loaded existing)
+    """
     # Create directory if needed
     os.makedirs(keys_dir, exist_ok=True)
     
@@ -53,12 +66,12 @@ def generate_key_pair(
     public_key_file = os.path.join(keys_dir, PUBLIC_KEY_FILENAME)
     
     # Try to load existing keys if not recreating
-    if os.path.exists(private_key_file) and not recreate:
+    if os.path.exists(private_key_file) and os.path.exists(public_key_file):
         try:
             private_key_obj, private_key_pem = _load_key_file(private_key_file, private=True)
             with open(public_key_file, "rb") as f:
                 public_key_pem = f.read().decode('utf-8')
-            return private_key_obj, private_key_pem, public_key_pem
+            return private_key_obj, private_key_pem, public_key_pem, False  # False indicates keys were loaded, not generated
         except Exception:
             # Fall through to create new keys
             pass
@@ -69,32 +82,37 @@ def generate_key_pair(
             if os.path.exists(file_path):
                 os.remove(file_path)
     
-    # Generate new key pair based on type
-    private_key_obj = (
-        rsa.generate_private_key(public_exponent=RSA_PUBLIC_EXPONENT, key_size=RSA_KEY_SIZE)
-        if key_type == "rsa" else ed25519.Ed25519PrivateKey.generate()
-    )
+    try: 
+        # Generate new key pair based on type
+        private_key_obj = (
+            rsa.generate_private_key(public_exponent=RSA_PUBLIC_EXPONENT, key_size=RSA_KEY_SIZE)
+            if key_type == "rsa" else ed25519.Ed25519PrivateKey.generate()
+        )
     
-    # Convert to PEM format
-    private_key_pem = private_key_obj.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
-    ).decode('utf-8')
+        # Convert to PEM format
+        private_key_pem = private_key_obj.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode('utf-8')
+        
+        public_key_obj = private_key_obj.public_key()
+        public_key_pem = public_key_obj.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
     
-    public_key_obj = private_key_obj.public_key()
-    public_key_pem = public_key_obj.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    ).decode('utf-8')
+        # Save keys
+        with open(private_key_file, "wb") as f:
+            f.write(private_key_pem.encode('utf-8'))
+        with open(public_key_file, "wb") as f:
+            f.write(public_key_pem.encode('utf-8'))
+        
+    except Exception as e:
+        logger.error(f"Failed to generate key pair: {e}")
+        return False
     
-    # Save keys
-    with open(private_key_file, "wb") as f:
-        f.write(private_key_pem.encode('utf-8'))
-    with open(public_key_file, "wb") as f:
-        f.write(public_key_pem.encode('utf-8'))
-    
-    return private_key_obj, private_key_pem, public_key_pem
+    return private_key_obj, private_key_pem, public_key_pem, True  # True indicates keys were newly generated
 
 def generate_csr(
     keys_dir: str,
@@ -119,7 +137,7 @@ def generate_csr(
     
     # Build subject name
     subject_name = x509.Name([
-        x509.NameAttribute(NameOID.COMMON_NAME, agent_name),
+        x509.NameAttribute(NameOID.COMMON_NAME, agent_id),
     ])
     
     # Create CSR builder with minimal settings
@@ -161,10 +179,10 @@ def load_public_key(keys_dir: str) -> str:
         return f.read().decode('utf-8')
 
 # Aliases for backward compatibility
-def generate_rsa_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str]:
+def generate_rsa_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an RSA key pair (for backward compatibility)."""
     return generate_key_pair(key_path, "rsa", recreate)
 
-def generate_ed25519_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str]:
+def generate_ed25519_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an Ed25519 key pair (for backward compatibility)."""
     return generate_key_pair(key_path, "ed25519", recreate)

@@ -15,21 +15,31 @@ managing cryptographic keys used in the Pebbling security framework.
 """
 
 import os
-from typing import Literal, Tuple, Union
+from typing import Tuple, Union, Dict, Any
+from datetime import datetime, timedelta
+import jwt
 
 from cryptography.hazmat.primitives import serialization
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
 
-# Constants
-PRIVATE_KEY_FILENAME = "private_key.pem"
-PUBLIC_KEY_FILENAME = "public_key.pem"
-RSA_KEY_SIZE = 4096
-RSA_PUBLIC_EXPONENT = 65537
+# Import constants from central location
+from pebbling.utils.constants import (
+    PRIVATE_KEY_FILENAME, 
+    PUBLIC_KEY_FILENAME, 
+    RSA_KEY_SIZE, 
+    RSA_PUBLIC_EXPONENT,
+    KeyType, 
+    PrivateKeyTypes, 
+    PublicKeyTypes
+)
 
-KeyType = Literal["rsa", "ed25519"]
-PrivateKeyTypes = Union[rsa.RSAPrivateKey, ed25519.Ed25519PrivateKey]
-PublicKeyTypes = Union[rsa.RSAPublicKey, ed25519.Ed25519PublicKey]
+from pebbling.utils.logging import get_logger
+
+logger = get_logger("pebbling.security.common.keys")
 
 def _load_key_file(file_path: str, private: bool = True) -> Tuple[Union[PrivateKeyTypes, PublicKeyTypes], str]:
     """Load a key from a file path."""
@@ -127,12 +137,7 @@ def generate_csr(
         
     Returns:
         The CSR in PEM format
-    """
-    from cryptography import x509
-    from cryptography.x509.oid import NameOID
-    from cryptography.hazmat.primitives import hashes
-    
-    # Load private key
+    """    
     private_key, _ = load_private_key(keys_dir)
     
     # Build subject name
@@ -181,20 +186,20 @@ def load_public_key(keys_dir: str) -> str:
 # Aliases for backward compatibility
 def generate_rsa_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an RSA key pair (for backward compatibility)."""
-    return generate_key_pair(key_path, "rsa", recreate)
+    return generate_key_pair(key_path, KEY_ALGORITHMS["rsa"], recreate)
 
 def generate_ed25519_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an Ed25519 key pair (for backward compatibility)."""
-    return generate_key_pair(key_path, "ed25519", recreate)
+    return generate_key_pair(key_path, KEY_ALGORITHMS["ed25519"], recreate)
 
 def generate_jwt_token(
     payload: Dict[str, Any],
     secret: str,
-    expiry_hours: int = 24
+    expiry_hours: int = DEFAULT_JWT_EXPIRY_HOURS
 ) -> str:
     """Generate JWT token for MCP server authentication."""
     payload.update({
-        'exp': datetime.utcnow() + timedelta(hours=expiry_hours),
-        'iat': datetime.utcnow()
+        'exp': datetime.now(timezone.utc) + timedelta(hours=expiry_hours),
+        'iat': datetime.now(timezone.utc)
     })
-    return jwt.encode(payload, secret, algorithm='HS256')
+    return jwt.encode(payload, secret, algorithm=JWT_ALGORITHM)

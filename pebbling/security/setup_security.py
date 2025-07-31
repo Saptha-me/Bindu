@@ -50,10 +50,13 @@ with just one function call. This module orchestrates a symphony of security tec
 
 import inspect
 import os
+import uuid
 from typing import Dict, Any
 
 from pebbling.security.common.keys import generate_key_pair, generate_csr, generate_jwt_token
+from pebbling.common.models.models import SecurityCredentials
 from pebbling.security.did.manager import DIDManager
+from pebbling.utils.constants import PKI_DIR
 
 from pebbling.utils.logging import get_logger
 
@@ -62,15 +65,15 @@ logger = get_logger("pebbling.security.setup_security")
 
 def create_security_config(
     server_type: str = "agent",
-    keys_dir: str = None,
+    pki_dir: str = None,
     agent_id: str = None,
     # Security features
     did_required: bool = False,
     keys_required: bool = True,
-    jwt_required: bool = None,  # Auto-detect based on server_type
+    jwt_required: bool = True,  # Auto-detect based on server_type
     # Key management
     recreate_keys: bool = False,
-    create_csr: bool = False,
+    create_csr: bool = True,
     # JWT configuration
     jwt_payload: Dict[str, Any] = None,
     jwt_expiry_hours: int = 24
@@ -79,7 +82,7 @@ def create_security_config(
     
     Args:
         server_type: Type of server ("agent" or "mcp")
-        keys_dir: Directory for cryptographic keys (auto-created if None)
+        pki_dir: Directory for cryptographic keys (auto-created if None)
         agent_id: Agent identifier (required for CSR and JWT)
         did_required: Enable DID-based identity (for agent-to-agent communication)
         keys_required: Generate cryptographic key pairs
@@ -97,46 +100,49 @@ def create_security_config(
         jwt_required = (server_type == "mcp")
     
     # Set up keys directory
-    if not keys_dir:
+    if pki_dir:
         caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
         caller_dir = os.path.dirname(os.path.abspath(caller_file))
-        keys_dir = os.path.join(caller_dir, 'keys')
-        os.makedirs(keys_dir, exist_ok=True)
-        logger.debug(f"Auto-created keys directory: {keys_dir}")
+        pki_dir = os.path.join(caller_dir, PKI_DIR)
+        os.makedirs(pki_dir, exist_ok=True)
+        logger.debug(f"Auto-created keys directory: {pki_dir}")
+    
+    if not agent_id:
+        agent_id = uuid.uuid4().hex
     
     credentials = SecurityCredentials(
-        keys_dir=keys_dir,
-        server_type=server_type
+        pki_dir=pki_dir,
+        server_type=server_type,
+        agent_id=agent_id
     )
     
     # Generate cryptographic keys
     if keys_required:
         logger.info(f"Setting up cryptographic keys for {server_type} server")
-        credentials.private_key_path, credentials.public_key_path = generate_key_pair(
-            keys_dir, recreate=recreate_keys
+        credentials.key_paths = generate_key_pair(
+            pki_dir, recreate=recreate_keys
         )
     
     # Set up DID identity (primarily for agent servers)
     if did_required:
-        if not credentials.private_key_path:
+        if not credentials.key_paths:
             raise ValueError("Keys are required for DID functionality")
         
         logger.info("Setting up DID identity")
-        did_config_path = os.path.join(keys_dir, "did.json")
-        credentials.did_manager = DIDManager(
+        did_config_path = os.path.join(pki_dir, "did.json")
+        credentials.did_document = DIDManager(
+            agent_id=agent_id,
             config_path=did_config_path,
-            keys_dir=keys_dir,
+            pki_dir=pki_dir,
             recreate=recreate_keys
-        )
-        credentials.did_document = credentials.did_manager.get_did_document()
+        ).get_did_document()
     
     # Generate Certificate Signing Request
     if create_csr:
         if not agent_id:
             raise ValueError("agent_id is required for CSR generation")
         logger.info("Generating Certificate Signing Request")
-        credentials.csr_path = generate_csr(keys_dir=keys_dir, agent_id=agent_id)
-        credentials.cert_path = os.path.join(keys_dir, "agent.cert")
+        credentials.csr_path = generate_csr(pki_dir=pki_dir, agent_id=agent_id)
     
     # Generate JWT tokens (primarily for MCP servers)
     if jwt_required:

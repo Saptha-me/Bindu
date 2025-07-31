@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import orjson
 
-from pebbling.protocol.types import AgentCapabilities, AgentSkill
 from pebbling.security.common.keys import load_public_key
 from pebbling.security.did.document import create_did_document, update_service_endpoint
 
@@ -31,17 +30,17 @@ class DIDManager:
 
     @staticmethod
     def get_or_create_did(
+        agent_id: str,
         config_path: str, 
-        keys_dir: str, 
-        recreate: bool = False,
-        capabilities: Optional[AgentCapabilities] = None,
-        skills: Optional[List[AgentSkill]] = None
+        pki_dir: str, 
+        recreate: bool = False
     ) -> Tuple[str, Dict[str, Any]]:
         """Get or create a DID for the agent.
         
         Args:
+
             config_path: Path to the DID configuration file
-            keys_dir: Directory containing the key files
+            pki_dir: Directory containing the key files
             recreate: Whether to recreate the DID if it exists
             
         Returns:
@@ -63,18 +62,15 @@ class DIDManager:
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
         
         # Generate keys if needed
-        public_key_pem = load_public_key(keys_dir)
+        public_key_pem = load_public_key(pki_dir)
         
         # Create a new DID
-        did_uuid = str(uuid.uuid4())
-        did = f"did:pebble:{did_uuid}"
+        did = f"did:pebble:{agent_id}"
         
         # Create a DID document
         did_document = create_did_document(
             did=did,
             public_key_pem=public_key_pem,
-            capabilities=capabilities,
-            skills=skills
         )
         
         # Save the DID configuration
@@ -88,29 +84,29 @@ class DIDManager:
 
     def __init__(
         self, 
+        agent_id: str,
         config_path="did.json", 
-        keys_dir="keys", 
+        pki_dir="keys", 
         endpoint=None, 
-        recreate: bool = False,
-        capabilities: Optional[AgentCapabilities] = None,
-        skills: Optional[List[AgentSkill]] = None):
+        recreate: bool = False):
         """Initialize the DID manager.
         
         Args:
+            agent_id: The agent ID to use for the DID
             config_path: Path to the DID configuration file
-            keys_dir: Directory containing the key files
+            pki_dir: Directory containing the key files
             endpoint: Optional service endpoint to update in the DID document
             recreate: Whether to recreate the key file if it exists
             capabilities: Optional capabilities to include in the DID document
             skills: Optional skills to include in the DID document
         """
+        self.agent_id = agent_id
         self.config_path = config_path
         self.did, self.did_document = self.get_or_create_did(
+            agent_id=agent_id,
             config_path=config_path, 
-            keys_dir=keys_dir, 
-            recreate=recreate,
-            capabilities=capabilities,
-            skills=skills)
+            pki_dir=pki_dir, 
+            recreate=recreate)
         
         # Update service endpoint if provided
         if endpoint:

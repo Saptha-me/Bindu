@@ -29,8 +29,11 @@ from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
 # =============================================================================
 
 # Cryptographic Key Configuration
+PKI_DIR = "pki"
 PRIVATE_KEY_FILENAME = "private_key.pem"
 PUBLIC_KEY_FILENAME = "public_key.pem"
+CSR_FILENAME = "agent.csr"
+CERT_FILENAME = "agent.cert"
 RSA_KEY_SIZE = 4096
 RSA_PUBLIC_EXPONENT = 65537
 

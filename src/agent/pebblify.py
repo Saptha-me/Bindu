@@ -102,7 +102,7 @@ class DeploymentConfig:
 def pebblify(
     name: Optional[str] = None,
     description: Optional[str] = None,
-    skills: Optional[List[Union[str, AgentSkill]]] = None,
+    skills: Optional[AgentSkill] = None,
     domains: Optional[List[str]] = None,
     capabilities: Optional[AgentCapabilities] = None,
     version: str = "1.0.0",

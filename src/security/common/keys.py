@@ -186,3 +186,15 @@ def generate_rsa_key_pair(key_path: str, recreate: bool = False) -> Tuple[Privat
 def generate_ed25519_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an Ed25519 key pair (for backward compatibility)."""
     return generate_key_pair(key_path, "ed25519", recreate)
+
+def generate_jwt_token(
+    payload: Dict[str, Any],
+    secret: str,
+    expiry_hours: int = 24
+) -> str:
+    """Generate JWT token for MCP server authentication."""
+    payload.update({
+        'exp': datetime.utcnow() + timedelta(hours=expiry_hours),
+        'iat': datetime.utcnow()
+    })
+    return jwt.encode(payload, secret, algorithm='HS256')

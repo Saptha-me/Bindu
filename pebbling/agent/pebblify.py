@@ -24,15 +24,8 @@ import functools
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from pydantic.types import SecretStr
-
-from pebbling.agent.agent_adapter import AgentAdapter, create_agent_adapter, PebblingContext, PebblingMessage
-from pebbling.agent.metadata.setup_metadata import setup_agent_metadata
-from pebbling.agent.runner import register_agent_adapter
-from pebbling.hibiscus.agent_registry import register_with_registry
 from pebbling.protocol.types import AgentCapabilities, AgentManifest, AgentSkill
-from pebbling.security.setup_security import setup_security
-#from pebbling.security.ca.sheldon import issue_certificate
+from pebbling.common.models.models import SecurityCredentials
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
@@ -81,7 +74,7 @@ def pebblify(
             # security_config = security or SecurityConfig(
             #     did_required=True,
             #     keys_required=True,
-            #     keys_dir=None,
+            #     pki_dir=None,
             #     recreate_keys=False,
             #     issue_certificate=True,
             #     cert_authority="sheldon",
@@ -114,7 +107,7 @@ def pebblify(
             #         agent_manifest=agent_manifest,
             #         name=agent_manifest.name,
             #         keys_required=security_config.keys_required,
-            #         keys_dir=security_config.keys_dir,
+            #         pki_dir=security_config.pki_dir,
             #         did_required=security_config.did_required,
             #         recreate_keys=security_config.recreate_keys
             #     )
@@ -154,7 +147,7 @@ def pebblify(
             # if security_config.issue_certificate and hasattr(agent_manifest, 'did'):
             #     logger.info("Generating CSR for agent")
             #     # Note: generate_csr function needs to be imported if used
-            #     # generate_csr(keys_dir=security_config.keys_dir, agent_name=agent_manifest.did)
+            #     # generate_csr(pki_dir=security_config.pki_dir, agent_name=agent_manifest.did)
             
             # return agent_manifest
             

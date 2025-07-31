@@ -16,7 +16,7 @@ managing cryptographic keys used in the Pebbling security framework.
 
 import os
 from typing import Tuple, Union, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 
 from cryptography.hazmat.primitives import serialization
@@ -32,10 +32,13 @@ from pebbling.utils.constants import (
     PUBLIC_KEY_FILENAME, 
     RSA_KEY_SIZE, 
     RSA_PUBLIC_EXPONENT,
+    DEFAULT_JWT_EXPIRY_HOURS,
+    CSR_FILENAME,
     KeyType, 
     PrivateKeyTypes, 
     PublicKeyTypes
 )
+from pebbling.common.models.models import KeyPaths
 
 from pebbling.utils.logging import get_logger
 
@@ -51,40 +54,27 @@ def _load_key_file(file_path: str, private: bool = True) -> Tuple[Union[PrivateK
     return key_obj, key_pem
 
 def generate_key_pair(
-        keys_dir: str,
+        pki_dir: str,
         key_type: KeyType = "rsa", 
         recreate: bool = False
-    ) -> bool:
+    ) -> KeyPaths:
     """Generate a cryptographic key pair or load existing keys.
     
     Args:
-        keys_dir: Directory to store key files
+        pki_dir: Directory to store key files
         key_type: Type of key to generate ('rsa' or 'ed25519')
         recreate: Whether to force recreation of keys
         
     Returns:
-        Tuple containing:
-        - Private key object
-        - Private key PEM string
-        - Public key PEM string
-        - Status boolean (True if successful, keys were newly generated; False if loaded existing)
+        KeyPaths containing:
+        - Private key file path
+        - Public key file path
     """
     # Create directory if needed
-    os.makedirs(keys_dir, exist_ok=True)
+    os.makedirs(pki_dir, exist_ok=True)
     
-    private_key_file = os.path.join(keys_dir, PRIVATE_KEY_FILENAME)
-    public_key_file = os.path.join(keys_dir, PUBLIC_KEY_FILENAME)
-    
-    # Try to load existing keys if not recreating
-    if os.path.exists(private_key_file) and os.path.exists(public_key_file):
-        try:
-            private_key_obj, private_key_pem = _load_key_file(private_key_file, private=True)
-            with open(public_key_file, "rb") as f:
-                public_key_pem = f.read().decode('utf-8')
-            return private_key_obj, private_key_pem, public_key_pem, False  # False indicates keys were loaded, not generated
-        except Exception:
-            # Fall through to create new keys
-            pass
+    private_key_file = os.path.join(pki_dir, PRIVATE_KEY_FILENAME)
+    public_key_file = os.path.join(pki_dir, PUBLIC_KEY_FILENAME)
     
     # Remove existing files if recreating
     if recreate:
@@ -92,90 +82,96 @@ def generate_key_pair(
             if os.path.exists(file_path):
                 os.remove(file_path)
     
-    try: 
-        # Generate new key pair based on type
-        private_key_obj = (
-            rsa.generate_private_key(public_exponent=RSA_PUBLIC_EXPONENT, key_size=RSA_KEY_SIZE)
-            if key_type == "rsa" else ed25519.Ed25519PrivateKey.generate()
-        )
-    
-        # Convert to PEM format
-        private_key_pem = private_key_obj.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        ).decode('utf-8')
+    # Generate keys if they don't exist or if recreating
+    if not os.path.exists(private_key_file) or not os.path.exists(public_key_file) or recreate:
+        try: 
+            # Generate new key pair based on type
+            private_key_obj = (
+                rsa.generate_private_key(public_exponent=RSA_PUBLIC_EXPONENT, key_size=RSA_KEY_SIZE)
+                if key_type == "rsa" else ed25519.Ed25519PrivateKey.generate()
+            )
         
-        public_key_obj = private_key_obj.public_key()
-        public_key_pem = public_key_obj.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        ).decode('utf-8')
-    
-        # Save keys
-        with open(private_key_file, "wb") as f:
-            f.write(private_key_pem.encode('utf-8'))
-        with open(public_key_file, "wb") as f:
-            f.write(public_key_pem.encode('utf-8'))
+            # Convert to PEM format
+            private_key_pem = private_key_obj.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            ).decode('utf-8')
+            
+            public_key_obj = private_key_obj.public_key()
+            public_key_pem = public_key_obj.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ).decode('utf-8')
         
-    except Exception as e:
-        logger.error(f"Failed to generate key pair: {e}")
-        return False
+            # Save keys
+            with open(private_key_file, "wb") as f:
+                f.write(private_key_pem.encode('utf-8'))
+            with open(public_key_file, "wb") as f:
+                f.write(public_key_pem.encode('utf-8'))
+        
+        except Exception as e:
+            logger.error(f"Failed to generate key pair: {e}")
+            return None
     
-    return private_key_obj, private_key_pem, public_key_pem, True  # True indicates keys were newly generated
+    return KeyPaths(private_key_path=private_key_file, public_key_path=public_key_file)
 
 def generate_csr(
-    keys_dir: str,
+    pki_dir: str,
     agent_id: str
 ) -> str:
     """Generate a minimal Certificate Signing Request (CSR) using existing keys.
     
     Args:
-        keys_dir: Directory containing the key files
-        agent_name: Common Name (CN) for the certificate (typically agent ID or DID)
-        output_file: Optional file path to save the CSR
+        pki_dir: Directory containing the key files
+        agent_id: Common Name (CN) for the certificate (typically agent ID or DID)
         
     Returns:
-        The CSR in PEM format
+        The CSR file path if successful, None if failed
     """    
-    private_key, _ = load_private_key(keys_dir)
-    
-    # Build subject name
-    subject_name = x509.Name([
-        x509.NameAttribute(NameOID.COMMON_NAME, agent_id),
-    ])
-    
-    # Create CSR builder with minimal settings
-    builder = x509.CertificateSigningRequestBuilder().subject_name(subject_name)
-    
-    # Sign the CSR with the private key
-    csr = builder.sign(
-        private_key=private_key,
-        algorithm=hashes.SHA256()
-    )
-    
-    # Get PEM format
-    csr_pem = csr.public_bytes(serialization.Encoding.PEM).decode('utf-8')
-    
-    # Save to file if output_file is provided
-    if output_file:
-        with open(output_file, "wb") as f:
+    try:
+        private_key, _ = load_private_key(pki_dir)
+        
+        # Build subject name
+        subject_name = x509.Name([
+            x509.NameAttribute(NameOID.COMMON_NAME, agent_id),
+        ])
+        
+        # Create CSR builder with minimal settings
+        builder = x509.CertificateSigningRequestBuilder().subject_name(subject_name)
+        
+        # Sign the CSR with the private key
+        csr = builder.sign(
+            private_key=private_key,
+            algorithm=hashes.SHA256()
+        )
+        
+        # Get PEM format
+        csr_pem = csr.public_bytes(serialization.Encoding.PEM).decode('utf-8')
+        
+        # Save to file and return path
+        csr_file_path = os.path.join(pki_dir, CSR_FILENAME)
+        with open(csr_file_path, "wb") as f:
             f.write(csr_pem.encode('utf-8'))
-    
-    return csr_pem
+        
+        return csr_file_path
+        
+    except Exception as e:
+        logger.error(f"Failed to generate CSR: {e}")
+        return None
 
-def load_private_key(keys_dir: str) -> Tuple[PrivateKeyTypes, str]:
+def load_private_key(pki_dir: str) -> Tuple[PrivateKeyTypes, str]:
     """Load the private key from the keys directory."""
-    private_key_file = os.path.join(keys_dir, PRIVATE_KEY_FILENAME)
+    private_key_file = os.path.join(pki_dir, PRIVATE_KEY_FILENAME)
     
     if not os.path.exists(private_key_file):
         raise FileNotFoundError(f"Private key file not found at {private_key_file}")
     
     return _load_key_file(private_key_file, private=True)
 
-def load_public_key(keys_dir: str) -> str:
+def load_public_key(pki_dir: str) -> str:
     """Load the public key from the keys directory as a string."""
-    public_key_file = os.path.join(keys_dir, PUBLIC_KEY_FILENAME)
+    public_key_file = os.path.join(pki_dir, PUBLIC_KEY_FILENAME)
     
     if not os.path.exists(public_key_file):
         raise FileNotFoundError(f"Public key file not found at {public_key_file}")
@@ -186,11 +182,11 @@ def load_public_key(keys_dir: str) -> str:
 # Aliases for backward compatibility
 def generate_rsa_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an RSA key pair (for backward compatibility)."""
-    return generate_key_pair(key_path, KEY_ALGORITHMS["rsa"], recreate)
+    return generate_key_pair(key_path, "rsa", recreate)
 
 def generate_ed25519_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an Ed25519 key pair (for backward compatibility)."""
-    return generate_key_pair(key_path, KEY_ALGORITHMS["ed25519"], recreate)
+    return generate_key_pair(key_path, "ed25519", recreate)
 
 def generate_jwt_token(
     payload: Dict[str, Any],
@@ -202,4 +198,4 @@ def generate_jwt_token(
         'exp': datetime.now(timezone.utc) + timedelta(hours=expiry_hours),
         'iat': datetime.now(timezone.utc)
     })
-    return jwt.encode(payload, secret, algorithm=JWT_ALGORITHM)
+    return jwt.encode(payload, secret, algorithm="HS256")

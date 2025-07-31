@@ -4,8 +4,8 @@ from pebbling.protocol.types import AgentCapabilities, AgentSkill
 from pebbling.agent.pebblify import pebblify
 from pebbling.security.setup_security import create_security_config
 
-from agno import Agent
-from agno.openai import OpenAIChat
+from agno.agent import Agent
+from agno.models.openai import OpenAIChat
 
 
 @pebblify(
@@ -18,7 +18,7 @@ from agno.openai import OpenAIChat
         tags=["news","reporting","storytelling"]
     ),
     capabilities=AgentCapabilities(streaming=True),
-    credentials=create_security_config(did_required=True, keys_required=True, recreate_keys=True),
+    credentials=create_security_config(did_required=True, pki_dir=True, recreate_keys=True),
 )
 async def news_reporter(
     input: str

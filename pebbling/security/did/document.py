@@ -25,16 +25,12 @@ from pebbling.protocol.types import AgentCapabilities, AgentSkill
 def create_did_document(
     did: str, 
     public_key_pem: str,
-    capabilities: Optional[AgentCapabilities] = None,
-    skills: Optional[List[AgentSkill]] = None
 ) -> Dict[str, Any]:
     """Create a DID document from a public key.
     
     Args:
         did: The DID to use
         public_key_pem: Public key in PEM format
-        capabilities: Optional capabilities to include in the DID document
-        skills: Optional skills to include in the DID document
         
     Returns:
         DID document as dictionary
@@ -55,18 +51,6 @@ def create_did_document(
             "serviceEndpoint": "http://localhost:8000"
         }]
     }
-    
-    # Add capabilities if provided
-    if capabilities:
-        # Convert capabilities to dict for storage in DID document
-        caps_dict = capabilities.model_dump(exclude_none=True)
-        did_document["capabilities"] = caps_dict
-    
-    # Add skills if provided
-    if skills:
-        # Convert each skill to dict for storage in DID document
-        skills_list = [skill.model_dump(exclude_none=True) for skill in skills]
-        did_document["skills"] = skills_list
     
     return did_document
 

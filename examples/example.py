@@ -3,9 +3,13 @@ import os
 from typing import AsyncGenerator
 
 from pebbling.protocol.types import AgentCapabilities, AgentSkill
-from pebbling.agent.pebblify import pebblify
-from pebbling.security.setup_security import create_security_config
-from pebbling.common.models.models import AgentRegistration, CAConfig, DeploymentConfig
+from pebbling.penguin.pebblify import pebblify
+from pebbling.common.models.models import (
+    SecurityConfig, 
+    AgentRegistrationConfig, 
+    CAConfig, 
+    DeploymentConfig
+)
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
@@ -27,8 +31,8 @@ config = load_config()
 @pebblify(
     skill=AgentSkill(**config["skill"]),
     capabilities=AgentCapabilities(**config["capabilities"]),
-    credentials=create_security_config(**config["security"]),
-    registration_config=AgentRegistration(**config["registration"]),
+    security_config=SecurityConfig(**config["security"]),
+    registration_config=AgentRegistrationConfig(**config["registration"]),
     ca_config=CAConfig(**config["ca"]),
     deployment_config=DeploymentConfig(**config["deployment"]),
 )

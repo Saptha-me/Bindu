@@ -545,7 +545,7 @@ class AgentSecurity(PebblingProtocolBaseModel):
         "Ed25519", 
         description="Algorithm used for digital signatures"
     )
-    key_storage_path: Optional[str] = Field(
+    pki_dir: Optional[str] = Field(
         None, 
         description="Path where security keys are stored"
     )
@@ -561,24 +561,16 @@ class AgentSecurity(PebblingProtocolBaseModel):
     )
     
     # Certificate settings
-    csr_path: Optional[str] = Field(
-        None, 
-        description="Path to CSR file"
-    )
-    certificate_type: Optional[str] = Field(
-        None, 
-        description="Type of certificate (self-signed, letsencrypt, sheldon)"
-    )
-    certificate_path: Optional[str] = Field(
+    cert_dir: Optional[str] = Field(
         None, 
         description="Path to certificate file"
     )
+    certificate_authority: Optional[str] = Field(
+        None, 
+        description="Type of certificate authority (self-signed, letsencrypt, sheldon)"
+    )
     
     # Policies
-    max_retries: int = Field(
-        3, 
-        description="Maximum number of retries for failed security operations"
-    )
     allow_anonymous: bool = Field(
         False, 
         description="Whether to allow anonymous access"
@@ -660,6 +652,8 @@ class AgentIdentity(PebblingProtocolBaseModel):
     agentdns_url: Optional[str] = Field(None, description="Agent DNS-based identity URL (agentdns.ai).")
     endpoint: Optional[str] = Field(None, description="Secure mTLS agent endpoint.")
     public_key: Optional[str] = Field(None, description="Agent's public key for mTLS.")
+    csr: Optional[str] = Field(None, description="Agent's Certificate Signing Request.")
+    
 
 
 class AgentSkill(PebblingProtocolBaseModel):
@@ -722,9 +716,9 @@ class AgentManifest(PebblingProtocolBaseModel):
         None, 
         description="Optional capabilities supported by the agent"
     )
-    skills: Optional[list[AgentSkill]] = Field(
+    skill: Optional[AgentSkill] = Field(
         None, 
-        description="Optional skills supported by the agent"
+        description="Optional skill supported by the agent"
     )
 
     instance: Optional[Any] = Field(

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional, NamedTuple, List
+from pebbling.protocol.types import AgentSecurity, AgentIdentity
 
 
 class KeyPaths(NamedTuple):
@@ -7,27 +8,22 @@ class KeyPaths(NamedTuple):
     public_key_path: str
 
 @dataclass
-class SecurityCredentials:
-    """Organized security credentials for different server types."""
-    #Agent ID
-    agent_id: Optional[str]
-
-    # Core cryptographic keys
-    pki_dir: str
-    key_paths: Optional[KeyPaths] = None
-    
-    # Certificate-based security
-    cert_path: Optional[str] = None
-    csr_path: Optional[str] = None
-
-    # DID Document
-    did_document: Optional[str] = None
-    
-    # Server type configuration
-    server_type: str = "agent"  # "agent" or "mcp"
+class SecurityConfig:
+    recreate_keys: bool = False
+    did_required: bool = False
+    require_challenge_response: bool = False
+    create_csr: bool = False
+    verify_requests: bool = False
+    allow_anonymous: bool = False
 
 @dataclass
-class AgentRegistration:
+class SecuritySetupResult:
+    """Complete security setup result with all components."""
+    security_config: AgentSecurity
+    identity: AgentIdentity
+
+@dataclass
+class AgentRegistrationConfig:
     """Organized agent registration information."""
     #Agent ID
     agent_id: Optional[str]

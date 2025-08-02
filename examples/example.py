@@ -1,6 +1,8 @@
 import json
 import os
 from typing import AsyncGenerator
+from dotenv import load_dotenv
+from pydantic.types import SecretStr
 
 from pebbling.protocol.types import AgentCapabilities, AgentSkill
 from pebbling.penguin.pebblify import pebblify
@@ -13,6 +15,9 @@ from pebbling.common.models.models import (
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 def load_config(config_path: str = "agent_config.json"):
@@ -28,13 +33,20 @@ def load_config(config_path: str = "agent_config.json"):
 
 config = load_config()
 
+# Load PAT token from .env file
+pat_token_str = SecretStr(os.getenv("HIBISCUS_PAT_TOKEN"))
+if not pat_token_str:
+    raise ValueError("HIBISCUS_PAT_TOKEN environment variable is required in .env file")
+
 @pebblify(
+    author=config["author"],
     skill=AgentSkill(**config["skill"]),
     capabilities=AgentCapabilities(**config["capabilities"]),
     security_config=SecurityConfig(**config["security"]),
     registration_config=AgentRegistrationConfig(**config["registration"]),
     ca_config=CAConfig(**config["ca"]),
     deployment_config=DeploymentConfig(**config["deployment"]),
+    pat_token=pat_token_str
 )
 async def news_reporter_agent(
     input: str

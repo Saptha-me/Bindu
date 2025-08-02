@@ -710,7 +710,7 @@ class AgentManifest(PebblingProtocolBaseModel):
         examples=["Japanese Restaurant Reviewer Agent"]
     )
     description: str | None = Field(None, description="Description of the agent")
-    user_id: Union[UUID, int, str] = Field(..., description="user")
+    user_id: Optional[Union[UUID, int, str]] = Field(None, description="user")
 
     # Trust
     trust_config: Optional[AgentTrust] = Field(
@@ -729,7 +729,7 @@ class AgentManifest(PebblingProtocolBaseModel):
 
     instance: Optional[Any] = Field(
         None, 
-        description="The agent/team/workflow instance"
+        description="The agent/team/workflow/mcp instance"
     )
     
     # Configuration

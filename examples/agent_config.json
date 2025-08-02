@@ -1,0 +1,36 @@
+{
+  "skill": {
+    "description": "You are a news reporter with a flair for storytelling.",
+    "id": "news-reporting",
+    "input_modes": ["text"],
+    "name": "News Reporting",
+    "output_modes": ["text"],
+    "tags": ["news", "reporting", "storytelling"]
+  },
+  "capabilities": {
+    "streaming": true
+  },
+  "security": {
+    "did_required": true,
+    "pki_dir": true,
+    "recreate_keys": false
+  },
+  "registration": {
+    "agent_id": "news-reporter",
+    "registry_url": "http://localhost:19191",
+    "registry_type": "hibiscus",
+    "registry_pat_token": ""
+  },
+  "ca": {
+    "ca_url": "http://localhost:19191",
+    "ca_type": "hibiscus"
+  },
+  "deployment": {
+    "expose": true,
+    "port": 3773,
+    "endpoint_type": "json-rpc",
+    "proxy_urls": ["http://localhost:8000"],
+    "cors_origins": ["http://localhost:8000"],
+    "openapi_schema": "http://localhost:3773/openapi.json"
+  }
+}

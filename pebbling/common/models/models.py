@@ -25,37 +25,23 @@ class SecuritySetupResult:
 @dataclass
 class AgentRegistrationConfig:
     """Organized agent registration information."""
-    #Agent ID
-    agent_id: Optional[str]
-    #Registry URL
-    registry_url: str
-    #Registry Type
-    registry_type: str
-    #Registry PAT Token
-    registry_pat_token: Optional[str] = None
+    url: str
+    type: str
 
 @dataclass
 class CAConfig:
     """Organized CA configuration."""
-    #CA URL
-    ca_url: str 
-    #CA Type
-    ca_type: str
+    url: str 
+    type: str
 
 @dataclass
 class DeploymentConfig:
     """Organized deployment configuration."""
-    #Expose
     expose: bool
-    #Port
     port: int
-    #Endpoint Type
     endpoint_type: str
-    #Proxy URLs
     proxy_urls: Optional[List[str]] = None
-    #CORS Origins
     cors_origins: Optional[List[str]] = None
-    #OpenAPI Schema
     openapi_schema: Optional[str] = None
 
     

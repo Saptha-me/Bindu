@@ -16,8 +16,7 @@ allowing agents to be discovered and accessed by other systems.
 """
 
 import asyncio
-from typing import Any
-
+from typing import Any, Dict
 from pydantic.types import SecretStr
 
 from pebbling.hibiscus.registry import HibiscusClient
@@ -27,11 +26,12 @@ from pebbling.utils.logging import get_logger
 logger = get_logger("pebbling.hibiscus.agent_registry")
 
 def register_with_registry(
+    author: str,
     agent_manifest: AgentManifest,
     agent_registry_pat_token: SecretStr,
     agent_registry: str = "hibiscus",
     agent_registry_url: str = "http://localhost:19191",
-    **kwargs: Any
+    **kwargs: Dict[str, Any]
 ):
     if agent_registry == "hibiscus":
         logger.info(f"Registering agent with Hibiscus at {agent_registry_url}")
@@ -41,6 +41,7 @@ def register_with_registry(
         )
         try:
             asyncio.run(hibiscus_client.register_agent(
+                author=author,
                 agent_manifest=agent_manifest,
                 **kwargs
             ))

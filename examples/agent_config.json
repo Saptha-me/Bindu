@@ -1,4 +1,5 @@
 {
+  "author": "Pebbling AI",
   "skill": {
     "description": "You are a news reporter with a flair for storytelling.",
     "id": "news-reporting",
@@ -16,14 +17,11 @@
     "require_challenge_response": false
   },
   "registration": {
-    "agent_id": "news-reporter",
-    "registry_url": "http://localhost:19191",
-    "registry_type": "hibiscus",
-    "registry_pat_token": ""
+    "url": "http://localhost:19191",
+    "type": "hibiscus"
   },
   "ca": {
-    "ca_url": "http://localhost:19191",
-    "ca_type": "sheldon"
+    "url": "http://localhost:19190"
   },
   "deployment": {
     "expose": true,

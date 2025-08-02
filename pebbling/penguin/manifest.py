@@ -67,50 +67,69 @@ def create_manifest(
     has_context_param = 'context' in param_names
     has_execution_state = 'execution_state' in param_names
     
-    # Use function name if name not provided
-    name = name or agent_function.__name__.replace('_', '-')
-    description = description or inspect.getdoc(agent_function) or f"Agent: {name}"
+    # Use function name if name not provided - store with different variable names
+    _name = name or agent_function.__name__.replace('_', '-')
+    _description = description or inspect.getdoc(agent_function) or f"Agent: {_name}"
+    _id = id
+    _version = version
+    _security = security
+    _identity = identity
+    _skills = skills
+    _capabilities = capabilities
     
     # Create default capabilities if not provided
-    if capabilities is None:
-        capabilities = AgentCapabilities(
+    if _capabilities is None:
+        _capabilities = AgentCapabilities(
             streaming=True,
             push_notifications=False,
             state_transition_history=False
         )
 
     class DecoratorBase(AgentManifest):
+        def __init__(self):
+            # Initialize Pydantic model with the captured values
+            super().__init__(
+                id=_id,
+                name=_name,
+                description=_description,
+                capabilities=_capabilities,
+                skill=_skills[0] if _skills else None,
+                version=_version,
+                security=_security,
+                identity=_identity
+            )
+        
         @property
         def id(self) -> str:
-            return id
+            return self.id
         
         @property
         def name(self) -> str:
-            return name
+            return self.name
         
         @property
         def description(self) -> str:
-            return description
+            return self.description
         
         @property
         def capabilities(self) -> AgentCapabilities:
-            return capabilities
+            return self.capabilities
         
         @property
         def skill(self) -> Optional[AgentSkill]:
-            return skills[0] if skills else None
+            return self.skill
         
         @property
         def version(self) -> str:
-            return version
+            return self.version
         
         @property
         def security(self) -> Optional[AgentSecurity]:
-            return security
+            return self.security
         
         @property  
         def identity(self) -> Optional[AgentIdentity]:
-            return identity
+            return self.identity
     
     # Create agent based on function type
     agent: AgentManifest

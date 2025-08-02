@@ -24,8 +24,17 @@ import functools
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from pebbling.protocol.types import AgentCapabilities, AgentManifest, AgentSkill
-from pebbling.common.models.models import SecurityCredentials
+from pebbling.protocol.types import (
+    AgentCapabilities, 
+    AgentManifest, 
+    AgentSkill
+)
+from pebbling.common.models.models import (
+    SecurityCredentials, 
+    AgentRegistration, 
+    CAConfig, 
+    DeploymentConfig
+)
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
@@ -35,13 +44,15 @@ logger = get_logger("pebbling.agent.pebblify")
 
 def pebblify(
     name: Optional[str] = None,
-    description: Optional[str] = None,
-    skills: Optional[AgentSkill] = None,
-    capabilities: Optional[AgentCapabilities] = None,
+    id: Optional[str] = None,
     version: str = "1.0.0",
-    
-    # Configuration objects (preferred approach)
+    skill: Optional[AgentSkill] = None,
+    capabilities: Optional[AgentCapabilities] = None,
     credentials: SecurityCredentials = None,  
+    registration_config: Optional[AgentRegistration] = None,
+    ca_config: Optional[CAConfig] = None,
+    deployment_config: Optional[DeploymentConfig] = None,
+    
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
     
@@ -50,36 +61,22 @@ def pebblify(
         # Validate that this is a protocol-compliant function
         _validate_agent_function(agent_function)
         
-        @functools.wraps(agent_function)
-        def wrapper(*args, **kwargs) -> AgentManifest:
-            logger.debug("Creating agent with pebblify decorator")
-            
-            # skills: AgentSkill = 
-            # # Create agent manifest from function metadata
-            # agent_manifest = _create_agent_manifest(
-            #     agent_function=agent_function,
-            #     name=name,
-            #     description=description,
-            #     skills=skills,
-            #     capabilities=capabilities,
-            #     version=version,
-            #     user_id=user_id,
-            #     extra_metadata=extra_metadata
-            # )
+        _manifest = _create_manifest(
+            agent_function=agent_function,
+            name=name,
+            description=None,
+            skills=[skill] if skill else None,
+            capabilities=capabilities,
+            version=version,
+            extra_metadata=None,
+            credentials=credentials,
+            registration_config=registration_config,
+            ca_config=ca_config,
+            deployment_config=deployment_config
+        )
             
             # # Setup basic agent metadata
             # setup_agent_metadata(agent_manifest, name)
-            
-            # # Merge config objects with legacy parameters
-            # security_config = security or SecurityConfig(
-            #     did_required=True,
-            #     keys_required=True,
-            #     pki_dir=None,
-            #     recreate_keys=False,
-            #     issue_certificate=True,
-            #     cert_authority="sheldon",
-            #     verify_requests=True
-            # )
             
             # registry_config = registry or RegistryConfig(
             #     store_in_hibiscus=True,
@@ -165,7 +162,7 @@ def _validate_agent_function(agent_function: Callable):
             "Agent function must have at least 'input' parameter of type PebblingMessage"
         )
     
-    if len(params) > 2:
+    if len(params) > 1:
         raise ValueError(
             "Agent function must have only 'input' and optional 'context' parameters"
         )
@@ -174,44 +171,33 @@ def _validate_agent_function(agent_function: Callable):
     if params[0].name != "input":
         raise ValueError("First parameter must be named 'input'")
     
-    if len(params) == 2 and params[1].name != "context":
-        raise ValueError("Second parameter must be named 'context'")
 
 
-def _create_agent_manifest(
-    agent_function: Callable,
+def _create_manifest(
+    id: Optional[str],
+    function: Callable,
     name: Optional[str],
     description: Optional[str],
     skills: Optional[List[Union[str, AgentSkill]]],
-    domains: Optional[List[str]],
     capabilities: Optional[AgentCapabilities],
     version: str,
-    user_id: str,
-    extra_metadata: Optional[Dict[str, Any]]
+    extra_metadata: Optional[Dict[str, Any]],
+    credentials: Optional[SecurityCredentials] = None,
+    registration_config: Optional[AgentRegistration] = None,
+    ca_config: Optional[CAConfig] = None,
+    deployment_config: Optional[DeploymentConfig] = None
 ) -> AgentManifest:
-    """Create an AgentManifest from function metadata and parameters."""
+    """Create dynamic agent class from function analysis."""
+    
+    # Since function is already validated, we can directly check parameter names
+    sig = inspect.signature(function)
+    param_names = list(sig.parameters.keys())
+    has_context_param = 'context' in param_names
+    has_execution_state = 'execution_state' in param_names
     
     # Use function name if name not provided
-    agent_name = name or agent_function.__name__.replace('_', '-')
-    
-    # Use docstring if description not provided
-    agent_description = description or inspect.getdoc(agent_function) or f"Agent: {agent_name}"
-    
-    # Convert skills to AgentSkill objects
-    agent_skills = []
-    if skills:
-        for skill in skills:
-            if isinstance(skill, str):
-                agent_skills.append(AgentSkill(
-                    id=skill.lower().replace(' ', '-'),
-                    name=skill.title(),
-                    description=f"Skill: {skill}",
-                    input_modes=["text"],
-                    output_modes=["text"],
-                    tags=domains or [skill.lower()]
-                ))
-            elif isinstance(skill, AgentSkill):
-                agent_skills.append(skill)
+    name = name or function.__name__.replace('_', '-')
+    description = description or inspect.getdoc(function) or f"Agent: {name}"
     
     # Create default capabilities if not provided
     if capabilities is None:
@@ -221,20 +207,119 @@ def _create_agent_manifest(
             state_transition_history=True
         )
     
-    # Create the manifest
-    manifest = AgentManifest(
-        id=agent_name,
-        name=agent_name.title(),
-        description=agent_description,
-        user_id=user_id,
-        capabilities=capabilities,
-        skills=agent_skills,
-        version=version
-    )
+    # Convert skills to AgentSkill objects if needed
+    skills = []
+    if skills:
+        for skill in skills:
+            if isinstance(skill, str):
+                skills.append(AgentSkill(
+                    id=skill.lower().replace(' ', '-'),
+                    name=skill.title(),
+                    description=f"Skill: {skill}",
+                    input_modes=["text"],
+                    output_modes=["text"],
+                    tags=[skill.lower()]
+                ))
+            elif isinstance(skill, AgentSkill):
+                skills.append(skill)
+    elif isinstance(skills, AgentSkill):
+        skills = [skills]
+    
+    class DecoratorBase(AgentManifest):
+        @property
+        def id(self) -> str:
+            return id
+        
+        @property
+        def name(self) -> str:
+            return name
+        
+        @property
+        def description(self) -> str:
+            return description
+        
+        @property
+        def capabilities(self) -> AgentCapabilities:
+            return capabilities
+        
+        @property
+        def skills(self) -> List[AgentSkill]:
+            return skills
+        
+        @property
+        def version(self) -> str:
+            return version
+    
+    # Create agent based on function type
+    agent: AgentManifest
+    
+    if inspect.isasyncgenfunction(_function):
+        class AsyncGenDecoratorAgent(DecoratorBase):
+            async def run(self, input_msg: str, context=None, **kwargs):
+                """Run async generator agent function."""
+                try:
+                    if has_execution_state:
+                        # Handle execution state for pause/resume
+                        execution_state = kwargs.get('execution_state')
+                        gen = _function(input_msg, execution_state)
+                    elif has_context_param:
+                        gen = _function(input_msg, context)
+                    else:
+                        gen = _function(input_msg)
+                    
+                    async for result in gen:
+                        yield result
+                        
+                except StopAsyncIteration:
+                    pass
+        
+        agent = AsyncGenDecoratorAgent()
+        
+    elif inspect.iscoroutinefunction(agent_function):
+        class CoroDecoratorAgent(DecoratorAgentBase):
+            async def run(self, input_msg: str, context=None, **kwargs):
+                """Run coroutine agent function."""
+                if has_execution_state:
+                    execution_state = kwargs.get('execution_state')
+                    return await agent_function(input_msg, execution_state)
+                elif has_context_param:
+                    return await agent_function(input_msg, context)
+                else:
+                    return await agent_function(input_msg)
+        
+        agent = CoroDecoratorAgent()
+        
+    elif inspect.isgeneratorfunction(agent_function):
+        class GenDecoratorAgent(DecoratorAgentBase):
+            def run(self, input_msg: str, context=None, **kwargs):
+                """Run generator agent function."""
+                if has_execution_state:
+                    execution_state = kwargs.get('execution_state')
+                    yield from agent_function(input_msg, execution_state)
+                elif has_context_param:
+                    yield from agent_function(input_msg, context)
+                else:
+                    yield from agent_function(input_msg)
+        
+        agent = GenDecoratorAgent()
+        
+    else:
+        class FuncDecoratorAgent(DecoratorAgentBase):
+            def run(self, input_msg: str, context=None, **kwargs):
+                """Run regular function agent."""
+                if has_execution_state:
+                    execution_state = kwargs.get('execution_state')
+                    return agent_function(input_msg, execution_state)
+                elif has_context_param:
+                    return agent_function(input_msg, context)
+                else:
+                    return agent_function(input_msg)
+        
+        agent = FuncDecoratorAgent()
     
     # Add extra metadata if provided
     if extra_metadata:
         for key, value in extra_metadata.items():
-            setattr(manifest, key, value)
+            setattr(agent, key, value)
     
-    return manifest
+    return agent

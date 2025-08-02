@@ -70,13 +70,10 @@ def create_security_config(
     # Security features
     did_required: bool = False,
     keys_required: bool = True,
-    jwt_required: bool = True,  # Auto-detect based on server_type
+
     # Key management
     recreate_keys: bool = False,
     create_csr: bool = True,
-    # JWT configuration
-    jwt_payload: Dict[str, Any] = None,
-    jwt_expiry_hours: int = 24
 ) -> SecurityCredentials:
     """Optimized security setup for both agent servers and MCP servers.
     
@@ -86,19 +83,12 @@ def create_security_config(
         agent_id: Agent identifier (required for CSR and JWT)
         did_required: Enable DID-based identity (for agent-to-agent communication)
         keys_required: Generate cryptographic key pairs
-        jwt_required: Generate JWT tokens (auto-enabled for MCP servers)
         recreate_keys: Force regeneration of existing keys
         create_csr: Generate Certificate Signing Request
-        jwt_payload: Custom payload for JWT token
-        jwt_expiry_hours: JWT token expiry time in hours
         
     Returns:
         SecurityCredentials with all necessary security information
     """
-    # Auto-configure based on server type
-    if jwt_required is None:
-        jwt_required = (server_type == "mcp")
-    
     # Set up keys directory
     if pki_dir:
         caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
@@ -143,41 +133,6 @@ def create_security_config(
             raise ValueError("agent_id is required for CSR generation")
         logger.info("Generating Certificate Signing Request")
         credentials.csr_path = generate_csr(pki_dir=pki_dir, agent_id=agent_id)
-    
-    # Generate JWT tokens (primarily for MCP servers)
-    if jwt_required:
-        if not agent_id:
-            raise ValueError("agent_id is required for JWT token generation")
-        
-        logger.info(f"Generating JWT tokens for {server_type} server")
-        
-        # Generate JWT secret
-        import secrets
-        credentials.jwt_secret = secrets.token_urlsafe(32)
-        
-        # Default JWT payload
-        default_payload = {
-            'sub': agent_id,
-            'server_type': server_type,
-            'scope': 'mcp:access' if server_type == 'mcp' else 'agent:access'
-        }
-        
-        # Merge with custom payload
-        if jwt_payload:
-            default_payload.update(jwt_payload)
-        
-        # Generate JWT token
-        credentials.jwt_token = generate_jwt_token(
-            payload=default_payload,
-            secret=credentials.jwt_secret,
-            expiry_hours=jwt_expiry_hours
-        )
-        
-        # For MCP servers, also generate a simple access token
-        if server_type == "mcp":
-            credentials.access_token = f"mcp_{secrets.token_urlsafe(24)}"
-        
-        logger.debug(f"JWT token generated with {jwt_expiry_hours}h expiry")
     
     logger.info(f"Security setup complete for {server_type} server")
     return credentials

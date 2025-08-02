@@ -13,50 +13,28 @@
 Transform your agents from vulnerable processes into cryptographically secured entities
 with just one function call. This module orchestrates a symphony of security technologies:
 
-🌊 Like pebbles creating ripples across a digital pond, each agent generates its own
-   unique identity that reverberates through the entire network, establishing trust
-   through mathematical certainty rather than blind faith.
-
-🚀 Features:
-   • DID-Based Identity: Each agent becomes a sovereign digital citizen
-   • JWT Powerhouse: MCP servers get instant bearer token authentication  
-   • Auto-Magic Setup: One call configures everything (keys, certs, tokens)
-   • Framework Agnostic: Works with any agent architecture
-   • Production Ready: Fly.io, Docker, localhost - deploy anywhere
-
-💡 Example - From Zero to Secure in Seconds:
-   ```python
-   # For MCP servers (fastmcp compatible)
-   security = create_security_config(
-       server_type="mcp",
-       agent_id="weather_oracle",
-       jwt_expiry_hours=48
-   )
-   # Now your agent has: JWT tokens, DID identity, crypto keys, certificates
-   # Ready for: fastmcp.Client(auth=security.jwt_token) 🎯
-   
-   # For agent-to-agent networks
-   security = create_security_config(
-       server_type="agent", 
-       did_required=True,
-       agent_id="social_coordinator"
-   )
-   # Now your agents can verify each other's identity cryptographically 🤝
-   ```
-
-🎭 Philosophy: Security shouldn't be an afterthought or a complexity burden.
-   It should be as natural as breathing - invisible when working, impenetrable when needed.
 """
 
 import inspect
 import os
 import uuid
-from typing import Dict, Any
+from pathlib import Path
+from typing import Dict, Any, Optional, Tuple
 
-from pebbling.security.common.keys import generate_key_pair, generate_csr, generate_jwt_token
-from pebbling.common.models.models import SecurityCredentials
+from pebbling.protocol.types import AgentSecurity, AgentIdentity
+from pebbling.security.common.keys import generate_csr, generate_key_pair
 from pebbling.security.did.manager import DIDManager
-from pebbling.utils.constants import PKI_DIR
+from pebbling.common.models.models import SecuritySetupResult
+from pebbling.utils.constants import (
+    PKI_DIR, 
+    CERTIFICATE_DIR,
+    CHALLENGE_EXPIRATION_SECONDS, 
+    DEFAULT_KEY_ALGORITHM,
+    ENDPOINT_TYPE_JSON_RPC,
+    CERTIFICATE_AUTHORITY,
+    PRIVATE_KEY_FILENAME,
+    PUBLIC_KEY_FILENAME
+)
 
 from pebbling.utils.logging import get_logger
 
@@ -64,75 +42,170 @@ logger = get_logger("pebbling.security.setup_security")
 
 
 def create_security_config(
-    server_type: str = "agent",
-    pki_dir: str = None,
-    agent_id: str = None,
-    # Security features
+    id: str,
     did_required: bool = False,
-    keys_required: bool = True,
-
-    # Key management
     recreate_keys: bool = False,
-    create_csr: bool = True,
-) -> SecurityCredentials:
+    require_challenge_response: bool = False,
+    verify_requests: bool = False,
+    allow_anonymous: bool = False,
+    create_csr: bool = False
+) -> SecuritySetupResult:
     """Optimized security setup for both agent servers and MCP servers.
     
     Args:
-        server_type: Type of server ("agent" or "mcp")
-        pki_dir: Directory for cryptographic keys (auto-created if None)
-        agent_id: Agent identifier (required for CSR and JWT)
+        id: Agent ID (required, must be valid string)
         did_required: Enable DID-based identity (for agent-to-agent communication)
-        keys_required: Generate cryptographic key pairs
         recreate_keys: Force regeneration of existing keys
-        create_csr: Generate Certificate Signing Request
+        require_challenge_response: Require challenge-response verification for agent communication
+        verify_requests: Whether to verify incoming requests
+        allow_anonymous: Whether to allow anonymous access
+        create_csr: Whether to generate Certificate Signing Request
         
     Returns:
-        SecurityCredentials with all necessary security information
-    """
-    # Set up keys directory
-    if pki_dir:
-        caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
-        caller_dir = os.path.dirname(os.path.abspath(caller_file))
-        pki_dir = os.path.join(caller_dir, PKI_DIR)
-        os.makedirs(pki_dir, exist_ok=True)
-        logger.debug(f"Auto-created keys directory: {pki_dir}")
-    
-    if not agent_id:
-        agent_id = uuid.uuid4().hex
-    
-    credentials = SecurityCredentials(
-        pki_dir=pki_dir,
-        server_type=server_type,
-        agent_id=agent_id
-    )
-    
-    # Generate cryptographic keys
-    if keys_required:
-        logger.info(f"Setting up cryptographic keys for {server_type} server")
-        credentials.key_paths = generate_key_pair(
-            pki_dir, recreate=recreate_keys
-        )
-    
-    # Set up DID identity (primarily for agent servers)
-    if did_required:
-        if not credentials.key_paths:
-            raise ValueError("Keys are required for DID functionality")
+        Tuple of AgentSecurity and AgentIdentity with all necessary security information
         
-        logger.info("Setting up DID identity")
-        did_config_path = os.path.join(pki_dir, "did.json")
-        credentials.did_document = DIDManager(
+    Raises:
+        ValueError: If id is empty, None, or contains invalid characters
+        OSError: If directory creation fails
+        RuntimeError: If key generation or DID setup fails
+    """
+    
+    # Input validation
+    if not id or not isinstance(id, str) or not id.strip():
+        raise ValueError("Agent ID must be a non-empty string")
+    
+    # Sanitize agent ID - remove invalid characters for filesystem
+    sanitized_id = "".join(c for c in id if c.isalnum() or c in "-_").strip()
+    if not sanitized_id:
+        raise ValueError(f"Agent ID '{id}' contains only invalid characters")
+    
+    logger.info(f"Setting up security for agent: {sanitized_id}")
+    
+    try:
+        # Set up directory paths
+        caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
+        if not caller_file:
+            raise RuntimeError("Unable to determine caller file path")
+            
+        caller_dir = Path(os.path.abspath(caller_file)).parent
+        pki_dir = caller_dir / PKI_DIR
+        cert_dir = caller_dir / CERTIFICATE_DIR
+        
+        # Create directories with proper error handling
+        _ensure_directories_exist(pki_dir, cert_dir)
+        
+        # Handle key generation/recreation
+        if recreate_keys or not _keys_exist(pki_dir):
+            logger.info(f"{'Recreating' if recreate_keys else 'Generating'} cryptographic keys")
+            try:
+                generate_key_pair(
+                    pki_dir=str(pki_dir),
+                    key_type=DEFAULT_KEY_ALGORITHM,
+                    recreate=recreate_keys
+                )
+            except Exception as e:
+                logger.error(f"Failed to generate key pair: {e}")
+                raise RuntimeError(f"Key generation failed: {e}") from e
+        else:
+            logger.debug("Using existing cryptographic keys")
+        
+        # Create security configuration
+        security_config = AgentSecurity(
+            challenge_expiration_seconds=CHALLENGE_EXPIRATION_SECONDS,
+            require_challenge_response=require_challenge_response,
+            signature_algorithm=DEFAULT_KEY_ALGORITHM,
+            pki_dir=str(pki_dir),
+            endpoint_type=ENDPOINT_TYPE_JSON_RPC,
+            verify_requests=verify_requests,
+            cert_dir=str(cert_dir),
+            certificate_authority=CERTIFICATE_AUTHORITY,
+            allow_anonymous=allow_anonymous,
+            did_required=did_required,
+            recreate_keys=recreate_keys
+        )
+        
+        # Initialize identity
+        identity = AgentIdentity()
+        
+        # Set up DID identity if required
+        if did_required:
+            try:
+                identity = _setup_did_identity(sanitized_id, pki_dir, recreate_keys)
+            except Exception as e:
+                logger.error(f"Failed to setup DID identity: {e}")
+                raise RuntimeError(f"DID setup failed: {e}") from e
+        
+        # Generate Certificate Signing Request if requested
+        if create_csr:
+            try:
+                logger.info("Generating Certificate Signing Request")
+                csr_content = generate_csr(pki_dir=str(pki_dir), agent_id=sanitized_id)
+                identity.csr = csr_content
+            except Exception as e:
+                logger.error(f"Failed to generate CSR: {e}")
+                raise RuntimeError(f"CSR generation failed: {e}") from e
+        
+        logger.info(f"Security setup complete for agent: {sanitized_id}")
+        return SecuritySetupResult(security_config, identity)
+        
+    except Exception as e:
+        logger.error(f"Security setup failed for agent {sanitized_id}: {e}")
+        raise RuntimeError(f"Security setup failed for agent {sanitized_id}: {e}") from e
+
+
+def _ensure_directories_exist(pki_path: Path, cert_path: Path) -> None:
+    """Ensure required directories exist with proper error handling."""
+    for path_obj in [pki_path, cert_path]:
+        try:
+            if not path_obj.exists():
+                path_obj.mkdir(parents=True, exist_ok=True)
+                logger.debug(f"Created directory: {path_obj}")
+            else:
+                logger.debug(f"Using existing directory: {path_obj}")
+                
+            # Verify directory is writable
+            if not os.access(str(path_obj), os.W_OK):
+                raise OSError(f"Directory {path_obj} is not writable")
+                
+        except OSError as e:
+            logger.error(f"Failed to create/access directory {path_obj}: {e}")
+            raise OSError(f"Directory setup failed for {path_obj}: {e}") from e
+
+
+def _keys_exist(pki_path: Path) -> bool:
+    """Check if cryptographic keys already exist."""
+    private_key_path = pki_path / PRIVATE_KEY_FILENAME
+    public_key_path = pki_path / PUBLIC_KEY_FILENAME
+    
+    exists = private_key_path.exists() and public_key_path.exists()
+    logger.debug(f"Keys exist check: {exists} (private: {private_key_path.exists()}, public: {public_key_path.exists()})")
+    return exists
+
+
+def _setup_did_identity(agent_id: str, pki_path: Path, recreate: bool) -> AgentIdentity:
+    """Set up DID identity with proper error handling."""
+    logger.info("Setting up DID identity")
+    
+    identity = AgentIdentity()
+    did_config_path = pki_path / "did.json"
+    
+    try:
+        did_manager = DIDManager(
             agent_id=agent_id,
-            config_path=did_config_path,
-            pki_dir=pki_dir,
-            recreate=recreate_keys
-        ).get_did_document()
-    
-    # Generate Certificate Signing Request
-    if create_csr:
-        if not agent_id:
-            raise ValueError("agent_id is required for CSR generation")
-        logger.info("Generating Certificate Signing Request")
-        credentials.csr_path = generate_csr(pki_dir=pki_dir, agent_id=agent_id)
-    
-    logger.info(f"Security setup complete for {server_type} server")
-    return credentials
+            config_path=str(did_config_path),
+            pki_dir=str(pki_path),
+            recreate=recreate
+        )
+        
+        identity.did = did_manager.get_did()
+        identity.did_document = did_manager.get_did_document()
+        
+        if not identity.did:
+            raise ValueError("DID generation returned empty result")
+            
+        logger.debug(f"DID identity created: {identity.did}")
+        return identity
+        
+    except Exception as e:
+        logger.error(f"DID identity setup failed: {e}")
+        raise RuntimeError(f"Failed to setup DID identity: {e}") from e

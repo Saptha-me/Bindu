@@ -30,12 +30,18 @@ from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
 
 # Cryptographic Key Configuration
 PKI_DIR = "pki"
+CERTIFICATE_DIR = "certs"
 PRIVATE_KEY_FILENAME = "private_key.pem"
 PUBLIC_KEY_FILENAME = "public_key.pem"
 CSR_FILENAME = "agent.csr"
-CERT_FILENAME = "agent.cert"
+CERTIFICATE_FILENAME = "agent.cert"
+ROOT_CERTIFICATE_FILENAME = "root.cert"
+CERTIFICATE_AUTHORITY = "sheldon"
+
+
 RSA_KEY_SIZE = 4096
 RSA_PUBLIC_EXPONENT = 65537
+CHALLENGE_EXPIRATION_SECONDS = 300
 
 # Key Types
 KeyType = Literal["rsa", "ed25519"]
@@ -54,6 +60,7 @@ DID_METHOD = "key"
 KEY_TYPES = ["rsa", "ed25519"]
 KEY_SIZES = {"rsa": 4096, "ed25519": 256}
 KEY_ALGORITHMS = {"rsa": "RS256", "ed25519": "EdDSA"}
+DEFAULT_KEY_ALGORITHM = KEY_ALGORITHMS["rsa"]
 
 # =============================================================================
 # 🌐 NETWORKING CONSTANTS  

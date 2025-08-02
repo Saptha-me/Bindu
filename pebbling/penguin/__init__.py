@@ -15,11 +15,10 @@ Transform agents from any framework (Agno, CrewAI, LangChain) into production-re
 """
 
 from .pebblify import pebblify
-from .agent_adapter import AgentAdapter, PebblingMessage, PebblingContext
+from .manifest import validate_agent_function, create_manifest
 
 __all__ = [
     "pebblify",
-    "AgentAdapter", 
-    "PebblingMessage",
-    "PebblingContext",
+    "validate_agent_function", 
+    "create_manifest",
 ]

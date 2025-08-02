@@ -11,9 +11,9 @@
     "streaming": true
   },
   "security": {
+    "recreate_keys": true,
     "did_required": true,
-    "pki_dir": true,
-    "recreate_keys": false
+    "require_challenge_response": false
   },
   "registration": {
     "agent_id": "news-reporter",
@@ -23,7 +23,7 @@
   },
   "ca": {
     "ca_url": "http://localhost:19191",
-    "ca_type": "hibiscus"
+    "ca_type": "sheldon"
   },
   "deployment": {
     "expose": true,

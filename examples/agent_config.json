@@ -21,7 +21,8 @@
     "type": "hibiscus"
   },
   "ca": {
-    "url": "http://localhost:19190"
+    "url": "http://localhost:19190",
+    "type": "sheldon"
   },
   "deployment": {
     "expose": true,

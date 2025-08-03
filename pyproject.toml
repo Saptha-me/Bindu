@@ -59,6 +59,7 @@ dependencies = [
     "ty>=0.0.1a14",
     "pyyaml>=6.0.2",
     "datamodel-code-generator>=0.31.2",
+    "aiofiles>=24.1.0",
 ]
 
 [project.optional-dependencies]

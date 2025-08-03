@@ -9,10 +9,10 @@ class KeyPaths(NamedTuple):
 
 @dataclass
 class SecurityConfig:
-    recreate_keys: bool = False
-    did_required: bool = False
+    recreate_keys: bool = True
+    did_required: bool = True
     require_challenge_response: bool = False
-    create_csr: bool = False
+    create_csr: bool = True
     verify_requests: bool = False
     allow_anonymous: bool = False
 

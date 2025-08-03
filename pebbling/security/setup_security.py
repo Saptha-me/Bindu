@@ -26,8 +26,6 @@ from pebbling.security.common.keys import generate_csr, generate_key_pair
 from pebbling.security.did.manager import DIDManager
 from pebbling.common.models.models import SecuritySetupResult
 from pebbling.utils.constants import (
-    PKI_DIR, 
-    CERTIFICATE_DIR,
     CHALLENGE_EXPIRATION_SECONDS, 
     DEFAULT_KEY_ALGORITHM,
     ENDPOINT_TYPE_JSON_RPC,
@@ -48,7 +46,9 @@ def create_security_config(
     require_challenge_response: bool = False,
     verify_requests: bool = False,
     allow_anonymous: bool = False,
-    create_csr: bool = False
+    create_csr: bool = False,
+    pki_dir: Optional[Path] = None,
+    cert_dir: Optional[Path] = None,
 ) -> SecuritySetupResult:
     """Optimized security setup for both agent servers and MCP servers.
     
@@ -60,6 +60,8 @@ def create_security_config(
         verify_requests: Whether to verify incoming requests
         allow_anonymous: Whether to allow anonymous access
         create_csr: Whether to generate Certificate Signing Request
+        pki_dir: Directory for cryptographic keys
+        cert_dir: Directory for certificates
         
     Returns:
         Tuple of AgentSecurity and AgentIdentity with all necessary security information
@@ -81,16 +83,7 @@ def create_security_config(
     
     logger.info(f"Setting up security for agent: {sanitized_id}")
     
-    try:
-        # Set up directory paths
-        caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
-        if not caller_file:
-            raise RuntimeError("Unable to determine caller file path")
-            
-        caller_dir = Path(os.path.abspath(caller_file)).parent
-        pki_dir = caller_dir / PKI_DIR
-        cert_dir = caller_dir / CERTIFICATE_DIR
-        
+    try:        
         # Create directories with proper error handling
         _ensure_directories_exist(pki_dir, cert_dir)
         

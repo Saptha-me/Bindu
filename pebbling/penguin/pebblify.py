@@ -24,6 +24,8 @@ import functools
 import inspect
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
+from pathlib import Path
+import os
 
 from pebbling.protocol.types import (
     AgentCapabilities, 
@@ -37,9 +39,14 @@ from pebbling.common.models.models import (
     DeploymentConfig,
     SecuritySetupResult
 )
+from pebbling.utils.constants import (
+    PKI_DIR,
+    CERTIFICATE_DIR
+)
 from pebbling.security.setup_security import create_security_config
 from pebbling.penguin.manifest import validate_agent_function, create_manifest
 from pebbling.hibiscus.agent_registry import register_with_registry
+from pebbling.security.ca.sheldon.certificates import fetch_certificate
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
@@ -58,7 +65,7 @@ def pebblify(
     registration_config: Optional[AgentRegistrationConfig] = None,
     ca_config: Optional[CAConfig] = None,
     deployment_config: Optional[DeploymentConfig] = None,
-    pat_token: Optional[str] = None,    
+    pat_token: Optional[str] = None,   
     
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
@@ -72,6 +79,12 @@ def pebblify(
         agent_id = id or uuid.uuid4().hex
         logger.info(f"🔍 Agent ID: {agent_id}")
 
+        caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
+        if not caller_file:
+            raise RuntimeError("Unable to determine caller file path")
+            
+        caller_dir = Path(os.path.abspath(caller_file)).parent
+
         security_setup_result: SecuritySetupResult = create_security_config(
             id=agent_id,
             did_required=security_config.did_required,
@@ -79,7 +92,9 @@ def pebblify(
             require_challenge_response=security_config.require_challenge_response,
             create_csr=security_config.create_csr,
             verify_requests=security_config.verify_requests,
-            allow_anonymous=security_config.allow_anonymous
+            allow_anonymous=security_config.allow_anonymous,
+            pki_dir=Path(os.path.join(caller_dir, PKI_DIR)),
+            cert_dir=Path(os.path.join(caller_dir, CERTIFICATE_DIR)),
         )
        
         # Extract security and identity from setup result
@@ -118,10 +133,11 @@ def pebblify(
 
         if ca_config:
             logger.info("📋 Setting up CA...")
-            setup_ca(
-                ca_config=ca_config,
-                security=security,
-                identity=identity
+            fetch_certificate(
+                agent_manifest=_manifest,
+                ca_url=ca_config.url,
+                ca_type=ca_config.type,
+                save_to_disk=True,
             )
             logger.info("✅ CA setup complete!")
 

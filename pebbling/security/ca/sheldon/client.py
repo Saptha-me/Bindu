@@ -1,20 +1,10 @@
-# 
-# |---------------------------------------------------------|
-# |                                                         |
-# |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
-# |                                                         |
-# |---------------------------------------------------------|
-#
-#  Thank you users! We ❤️ you! - 🐧
-
 """Sheldon CA integration for Pebbling servers."""
 
 from typing import Any, Dict, Optional
 import os
 
 from pebbling.protocol.types import AgentManifest
-from pebbling.utils.http_helper import make_api_request
+from pebbling.utils.http_helper import make_api_request, make_multipart_request
 from pebbling.utils.logging import get_logger
 from pebbling.security.common.keys import generate_challenge_response_jwt
 from pebbling.utils.constants import (
@@ -57,18 +47,14 @@ class SheldonClient:
         try:
             url = f"{self.sheldon_url}/{PUBLIC_CERTIFICATE_ENDPOINT}"
             
-            # No authentication required for public certificates
-            response = await make_api_request(
-                url=url,
-                method="GET"
-            )
+            response = await make_api_request(url=url, method="GET")
             
             if response["success"]:
                 logger.info(f"Successfully fetched public certificate for {ca_name}")
-                return response["data"]
             else:
                 logger.error(f"Failed to fetch public certificate: {response['error']}")
-                return response
+                
+            return response
                 
         except Exception as e:
             logger.error(f"Error fetching public certificate: {e}")
@@ -98,10 +84,10 @@ class SheldonClient:
             
             if response["success"]:
                 logger.info(f"Successfully requested challenge for DID: {did}")
-                return response["data"]
             else:
                 logger.error(f"Failed to request challenge: {response['error']}")
-                return response
+                
+            return response
                 
         except Exception as e:
             logger.error(f"Error requesting challenge: {e}")
@@ -129,93 +115,69 @@ class SheldonClient:
             Response from Sheldon CA
         """
         try:
-            # Step 1: Request authentication challenge
+            # Step 1: Validate DID
             did = agent_manifest.identity.did if agent_manifest.identity else None
             if not did:
                 return {"success": False, "error": "Agent DID is required for certificate issuance"}
             
+            # Step 2: Request authentication challenge
             challenge_response = await self.request_challenge(did)
-            if not challenge_response.get("challenge"):
+            if not challenge_response.get("success"):
                 return challenge_response
             
-            challenge = challenge_response.get("challenge")
+            challenge_data = challenge_response.get("data", {})
+            challenge = challenge_data.get("challenge")
             if not challenge:
                 return {"success": False, "error": "No challenge received from CA"}
             
-            # Step 2: Create JWT with challenge response
+            # Step 3: Create JWT with challenge response
             jwt_token = generate_challenge_response_jwt(
                 agent_manifest=agent_manifest,
                 challenge=challenge,
                 expiry_minutes=5  # Short-lived for security
             )
             
-            # Step 3: Prepare form data for certificate issuance
+            # Step 4: Prepare CSR file path
             if not csr_file_path:
-                # Try to generate CSR path from security config
                 if hasattr(agent_manifest, 'security') and hasattr(agent_manifest.security, 'pki_dir'):
                     csr_file_path = os.path.join(agent_manifest.security.pki_dir, CSR_FILENAME)
                 else:
                     return {"success": False, "error": "CSR file path is required for certificate issuance"}
             
-            # Check if CSR file exists
+            # Step 5: Validate CSR file exists
             if not os.path.exists(csr_file_path):
                 return {"success": False, "error": f"CSR file not found: {csr_file_path}"}
             
-            # Step 4: Submit certificate request with form data
+            # Step 6: Submit certificate request with multipart form data
             url = f"{self.sheldon_url}/{ISSUE_CERTIFICATE_ENDPOINT}"
             
-            # Prepare form data
-            try:
-                with open(csr_file_path, 'rb') as csr_file:
-                    files = {
-                        'csr': ('agent_csr.pem', csr_file.read(), 'application/x-pem-file')
-                    }
-                    
-                    form_data = {
-                        'agent_did': did
-                    }
-                    
-                    # Add any additional form fields from kwargs
-                    form_data.update(kwargs)
-                    
-                    # Include JWT in Authorization header
-                    headers = {
-                        "Authorization": f"Bearer {jwt_token}",
-                        "accept": "application/json"
-                    }
-                    
-                    # Use different approach for multipart form data
-                    import aiohttp
-                    import aiofiles
-                    
-                    async with aiohttp.ClientSession() as session:
-                        # Read CSR file content
-                        async with aiofiles.open(csr_file_path, 'r') as f:
-                            csr_content = await f.read()
-                        
-                        # Create multipart form data
-                        data = aiohttp.FormData()
-                        data.add_field('csr', csr_content, filename='agent_csr.pem', content_type='application/x-pem-file')
-                        data.add_field('agent_did', did)
-                        
-                        # Add additional form fields
-                        for key, value in kwargs.items():
-                            data.add_field(key, str(value))
-                        
-                        async with session.post(url, data=data, headers=headers) as response:
-                            if response.status == 200:
-                                result = await response.json()
-                                logger.info(f"Successfully issued certificate for agent: {agent_manifest.name}")
-                                return {"success": True, "data": result}
-                            else:
-                                error_text = await response.text()
-                                logger.error(f"Failed to issue certificate: {response.status} - {error_text}")
-                                return {"success": False, "error": f"HTTP {response.status}: {error_text}"}
-                                
-            except FileNotFoundError:
-                return {"success": False, "error": f"CSR file not found: {csr_file_path}"}
-            except Exception as e:
-                return {"success": False, "error": f"Failed to read CSR file: {str(e)}"}
+            # Prepare files and form data
+            files = {
+                'csr': csr_file_path  # Will be handled by make_multipart_request
+            }
+            
+            form_data = {
+                'agent_did': did,
+                **{k: str(v) for k, v in kwargs.items()}  # Convert all values to strings
+            }
+            
+            headers = {
+                "Authorization": f"Bearer {jwt_token}"
+            }
+            
+            response = await make_multipart_request(
+                url=url,
+                files=files,
+                form_data=form_data,
+                headers=headers
+            )
+            
+            if response["success"]:
+                logger.info(f"Successfully issued certificate for agent: {agent_manifest.name}")
+            else:
+                logger.error(f"Failed to issue certificate: {response['error']}")
+                
+            return response
                 
         except Exception as e:
             logger.error(f"Error issuing certificate: {e}")

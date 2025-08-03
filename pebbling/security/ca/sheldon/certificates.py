@@ -9,80 +9,29 @@
 #  Thank you users! We ❤️ you! - 🐧
 
 """
-Certificate fetching module for fetching Pebbling agents with Sheldon CA.
+Certificate management for Sheldon CA.
+
+This module handles certificate operations including fetching public certificates
+and issuing agent certificates through the Sheldon CA infrastructure.
 """
 
-import asyncio
 import os
-from typing import Any, Dict
-from pydantic.types import SecretStr
+from typing import Dict, Any
+import asyncio
 
-from pebbling.security.ca.sheldon.client import SheldonClient
 from pebbling.protocol.types import AgentManifest
+from pebbling.security.ca.sheldon.client import SheldonClient
 from pebbling.utils.logging import get_logger
 from pebbling.utils.constants import (
-    CERTIFICATE_DIR,
     CERTIFICATE_FILENAME,
     ROOT_CERTIFICATE_FILENAME,
-    CERT_FILE_EXTENSION
+)
+from pebbling.utils.cert_helper import (
+    save_certificate_to_file,
+    get_cert_directory,
 )
 
 logger = get_logger("pebbling.security.ca.sheldon.certificates")
-
-
-def save_certificate_to_file(cert_content: str, file_path: str) -> bool:
-    """Save certificate content to file.
-    
-    Args:
-        cert_content: Certificate content (PEM format)
-        file_path: Full path to save the certificate
-        
-    Returns:
-        True if successful, False otherwise
-    """
-    try:
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        
-        # Write certificate to file
-        with open(file_path, 'w') as f:
-            f.write(cert_content)
-        
-        logger.info(f"Certificate saved to: {file_path}")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Failed to save certificate to {file_path}: {e}")
-        return False
-
-
-def get_cert_directory(agent_manifest: AgentManifest) -> str:
-    """Get certificate directory from agent manifest or use default.
-    
-    Args:
-        agent_manifest: Agent manifest with security configuration
-        
-    Returns:
-        Path to certificate directory
-    """
-    # Check if agent manifest has cert_dir specified
-    if (hasattr(agent_manifest, 'security') and 
-        hasattr(agent_manifest.security, 'cert_dir') and 
-        agent_manifest.security.cert_dir):
-        return agent_manifest.security.cert_dir
-    
-    # Check alternative location in security config
-    if (hasattr(agent_manifest, 'security_config') and 
-        hasattr(agent_manifest.security_config, 'cert_dir') and 
-        agent_manifest.security_config.cert_dir):
-        return agent_manifest.security_config.cert_dir
-    
-    # Use default examples/certs directory
-    return os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-        "examples",
-        CERTIFICATE_DIR
-    )
 
 
 def fetch_certificate(
@@ -120,14 +69,14 @@ def fetch_certificate(
                 ca_name="root"
             ))
             
-            if not root_cert_response.get("certificate"):
+            if not root_cert_response.get("data").get("certificate"):
                 logger.error(f"Failed to fetch root certificate: {root_cert_response.get('error')}")
                 return {
                     "success": False, 
                     "error": f"Root certificate fetch failed: {root_cert_response.get('error')}"
                 }
             
-            root_certificate = root_cert_response.get("certificate")
+            root_certificate = root_cert_response.get("data").get("certificate")
             logger.info("Successfully fetched root certificate")
             
             # Step 2: Issue agent certificate (requires authentication)

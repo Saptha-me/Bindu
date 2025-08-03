@@ -141,15 +141,15 @@ def pebblify(
             )
             logger.info("✅ CA setup complete!")
 
-        if deployment_config:
-            logger.info("📋 Deploying agent...")
-            deploy_agent(
-                agent_id=agent_id,
-                deployment_config=deployment_config,
-                security=security,
-                identity=identity
-            )
-            logger.info("✅ Agent deployed successfully!")
+        # if deployment_config:
+        #     logger.info("📋 Deploying agent...")
+        #     deploy_agent(
+        #         agent_id=agent_id,
+        #         deployment_config=deployment_config,
+        #         security=security,
+        #         identity=identity
+        #     )
+        #     logger.info("✅ Agent deployed successfully!")
             
         return _manifest
     return decorator

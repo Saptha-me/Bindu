@@ -28,42 +28,127 @@ class HibiscusClient:
     
     def __init__(
         self,
+        pat_token: SecretStr,
+        email: str,
         hibiscus_url: str = "http://localhost:19191",
-        pat_token: Optional[SecretStr] = None
     ):
         """Initialize Hibiscus client.
         
         Args:
             hibiscus_url: URL of Hibiscus registry
-            pat_token: PAT token for authentication with Hibiscus registry
+            pat_token: API key for authentication with Hibiscus registry
+            email: Email address associated with the API key
         """
         self.hibiscus_url = hibiscus_url
         self.pat_token = pat_token
-        self.agents_endpoint = f"{self.hibiscus_url}/agents/"
+        self.email = email
+        self.agents_endpoint = f"{self.hibiscus_url}/agents"
+        self.auth_challenge_endpoint = f"{self.hibiscus_url}/auth/api-challenge"
+        self.auth_token_endpoint = f"{self.hibiscus_url}/auth/api-token"
+    
+    async def request_api_challenge(self) -> Dict[str, Any]:
+        """Request an authentication challenge using API key.
+            
+        Returns:
+            Challenge response containing challenge string and expiration
+        """
+        payload = {
+            "api_key": str(self.pat_token.get_secret_value()),
+            "email": self.email
+        }
+        
+        try:
+            response = await make_api_request(
+                url=self.auth_challenge_endpoint,
+                method="POST",
+                payload=payload
+            )
+            
+            if response["success"]:
+                return response["data"]
+            else:
+                error_msg = response.get("error", "Unknown error")
+                logger.error(f"Failed to request API challenge: {error_msg}")
+                raise Exception(f"Failed to request API challenge: {error_msg}")
+        except Exception as e:
+            logger.error(f"Error requesting API challenge: {str(e)}")
+            raise
+    
+    async def get_api_token(self, challenge: str) -> str:
+        """Get JWT access token using API key and challenge.
+        
+        Args:
+            challenge: Challenge string from previous request
+            
+        Returns:
+            JWT access token
+        """
+        payload = {
+            "api_key": str(self.pat_token.get_secret_value()),
+            "email": self.email,
+            "challenge": challenge
+        }
+        
+        try:
+            response = await make_api_request(
+                url=self.auth_token_endpoint,
+                method="POST",
+                payload=payload
+            )
+            
+            if response["success"]:
+                return response["data"]["access_token"]
+            else:
+                error_msg = response.get("error", "Unknown error")
+                logger.error(f"Failed to get API token: {error_msg}")
+                raise Exception(f"Failed to get API token: {error_msg}")
+        except Exception as e:
+            logger.error(f"Error getting API token: {str(e)}")
+            raise
+    
+    async def authenticate(self) -> str:
+        """Perform full authentication flow to get JWT token.
+            
+        Returns:
+            JWT access token
+        """
+        try:
+            # Step 1: Request challenge
+            challenge_response = await self.request_api_challenge()
+            challenge = challenge_response["challenge"]
+            
+            # Step 2: Get token using challenge
+            access_token = await self.get_api_token(challenge)
+            
+            logger.info(f"Successfully authenticated for email: {self.email}")
+            return access_token
+        except Exception as e:
+            logger.error(f"Authentication failed for email {self.email}: {str(e)}")
+            raise
     
     async def register_agent(
         self,
-        author: Optional[str],
         agent_manifest: AgentManifest,
         **kwargs: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Register an agent with Hibiscus registry.
         
         Args:
-            author: Author of the agent
             agent_manifest: Agent manifest with capabilities and skills
             **kwargs: Additional fields to include in the registration
             
         Returns:
             Response from Hibiscus registry
         """
+        # First authenticate to get JWT token
+        access_token = await self.authenticate()
         try:
             # Extract data from manifest - access properties correctly
             payload = {
                 "name": agent_manifest.name,
                 "description": agent_manifest.description,
                 "version": agent_manifest.version,
-                "author_name": author,
+                "author_name": self.email,
                 "did": agent_manifest.identity.did if agent_manifest.identity else None,
                 "public_key": agent_manifest.identity.public_key if agent_manifest.identity else None,
                 "did_document": agent_manifest.identity.did_document if agent_manifest.identity else None,
@@ -147,13 +232,12 @@ class HibiscusClient:
                 if key not in payload and value is not None:
                     payload[key] = value
             
-            # Make the API call
-            headers = {"Authorization": f"Bearer {self.pat_token}"}
+            # Make the API call with JWT token
+            headers = {"Authorization": f"Bearer {access_token}"}
             try:
                 logger.debug(f"Sending registration to Hibiscus: {self.agents_endpoint}")
                 response = await make_api_request(
                     url=self.agents_endpoint,
-                    api_key=self.pat_token,
                     method="POST",
                     payload=payload,
                     headers=headers

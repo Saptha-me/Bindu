@@ -37,16 +37,16 @@ def register_with_registry(
         logger.info(f"Registering agent with Hibiscus at {agent_registry_url}")
         hibiscus_client: HibiscusClient = HibiscusClient(
             hibiscus_url=agent_registry_url,
-            pat_token=agent_registry_pat_token
+            pat_token=agent_registry_pat_token,
+            email=author
         )
         try:
             asyncio.run(hibiscus_client.register_agent(
-                author=author,
                 agent_manifest=agent_manifest,
                 **kwargs
             ))
-            if agent_manifest.did:
-                logger.info(f"Agent registered with DID: {agent_manifest.did}")
+            if agent_manifest.identity and agent_manifest.identity.did:
+                logger.info(f"Agent registered with DID: {agent_manifest.identity.did}")
         except Exception as e:
             logger.error(f"Failed to register agent with Hibiscus: {str(e)}")
     elif agent_registry == "custom":

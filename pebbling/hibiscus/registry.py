@@ -148,80 +148,105 @@ class HibiscusClient:
                 "name": agent_manifest.name,
                 "description": agent_manifest.description,
                 "version": agent_manifest.version,
-                "author_name": self.email,
                 "did": agent_manifest.identity.did if agent_manifest.identity else None,
                 "public_key": agent_manifest.identity.public_key if agent_manifest.identity else None,
                 "did_document": agent_manifest.identity.did_document if agent_manifest.identity else None,
             }
             
-            # Process capabilities
-            capabilities = []
+            # Process capabilities - convert to AgentCapabilities format
+            capabilities = {
+                "push_notifications": None,
+                "state_transition_history": None,
+                "streaming": None
+            }
+            
             if agent_manifest and hasattr(agent_manifest, 'capabilities'):
                 if hasattr(agent_manifest.capabilities, 'model_dump'):
                     try:
-                        # Get capabilities from pydantic model
+                        # Get capabilities from pydantic model and map to expected format
                         caps_dict = agent_manifest.capabilities.model_dump(exclude_none=True)
-                        for cap_name, cap_details in caps_dict.items():
-                            desc = ("No description" if not isinstance(cap_details, dict) 
-                                       else cap_details.get("description", "No description"))
-                            capabilities.append({"name": cap_name, "description": desc})
+                        # Map common capability names to expected fields
+                        if "push_notifications" in caps_dict:
+                            capabilities["push_notifications"] = bool(caps_dict["push_notifications"])
+                        if "state_transition_history" in caps_dict:
+                            capabilities["state_transition_history"] = bool(caps_dict["state_transition_history"])
+                        if "streaming" in caps_dict:
+                            capabilities["streaming"] = bool(caps_dict["streaming"])
                     except Exception as e:
                         logger.error(f"Error processing capabilities: {e}")
-                    payload["capabilities"] = capabilities
-                
-                # Process skills and extract domains/tags
-                skills = []
-                domains = set()
-                tags = set()
-                
-                if agent_manifest and hasattr(agent_manifest, 'skill'):
-                    skill_dict = agent_manifest.skill.model_dump(exclude_none=True)
-                    skills.append({
-                        "name": skill_dict.get("name", ""),
-                        "description": skill_dict.get("description", "")
-                    })
-                        
-                    if "domains" in skill_dict:
-                        domains.update(skill_dict["domains"])
-                    if "tags" in skill_dict:
-                        tags.update(skill_dict["tags"])
-                
-                payload["skills"] = skills
-                payload["domains"] = list(domains)
-                payload["tags"] = list(tags)
-
-                # Add Dependencies
-                if hasattr(agent_manifest, "instance") and hasattr(agent_manifest.instance, "model"):
-                    model = agent_manifest.instance.model
-                    dependency = {
-                        "type": "model",
-                        "name": getattr(model, "name", model.__class__.__name__),
-                        "version": getattr(model, "version", "latest"),
-                    }
-                    payload["dependencies"] = [dependency]  # Array of dependencies
-                else:
-                    payload["dependencies"] = []  # Empty array instead of missing field
-                
-                # Fix DID document - ensure publicKeyPem is properly set
-                if "did_document" in payload and payload["did_document"]:
-                    for method in payload["did_document"].get("verificationMethod", []):
-                        if method.get("publicKeyPem") is None and "public_key" in payload:
-                            method["publicKeyPem"] = payload["public_key"]
-                
-                # Add metadata
-                metadata = {
-                    "framework": "Pebbling",
-                    "programming_language": "Python"
-                }
-                if hasattr(agent_manifest, "metadata") and agent_manifest.metadata:
-                    metadata.update(agent_manifest.metadata)
-                payload["metadata"] = metadata
             
-            # Add DID document if provided
-            if agent_manifest and agent_manifest.identity and hasattr(agent_manifest.identity, "did_document") and agent_manifest.identity.did_document:
+            payload["capabilities"] = capabilities
+            
+            # Process skills - convert to AgentSkill format
+            skills = []
+            
+            if agent_manifest and hasattr(agent_manifest, 'skill'):
+                try:
+                    skill_dict = agent_manifest.skill.model_dump(exclude_none=True)
+                    
+                    # Create AgentSkill object with required fields
+                    skill = {
+                        "id": skill_dict.get("id", skill_dict.get("name", "default").lower().replace(" ", "_")),
+                        "name": skill_dict.get("name", ""),
+                        "description": skill_dict.get("description", ""),
+                        "tags": skill_dict.get("tags", ["general"]),  # Required field, default to "general"
+                        "examples": skill_dict.get("examples", [])  # Optional field
+                    }
+                    
+                    # Ensure tags are lowercase and within limits (1-16 items)
+                    if skill["tags"]:
+                        skill["tags"] = [tag.lower() for tag in skill["tags"][:16]]
+                    else:
+                        skill["tags"] = ["general"]
+                    
+                    skills.append(skill)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing skill: {e}")
+                    # Add default skill if processing fails
+                    skills.append({
+                        "id": "default",
+                        "name": "General Purpose",
+                        "description": "General purpose agent capability",
+                        "tags": ["general"],
+                        "examples": []
+                    })
+            else:
+                # Add default skill if no skill is provided
+                skills.append({
+                    "id": "default",
+                    "name": "General Purpose", 
+                    "description": "General purpose agent capability",
+                    "tags": ["general"],
+                    "examples": []
+                })
+            
+            payload["skills"] = skills
+            
+            # Add optional fields if available
+            if hasattr(agent_manifest, "documentation") and agent_manifest.documentation:
+                payload["documentation"] = agent_manifest.documentation
+            
+            if hasattr(agent_manifest, "api_endpoint") and agent_manifest.api_endpoint:
+                payload["api_endpoint"] = str(agent_manifest.api_endpoint)
+                
+            if hasattr(agent_manifest, "image_url") and agent_manifest.image_url:
+                payload["image_url"] = str(agent_manifest.image_url)
+                
+            if hasattr(agent_manifest, "website_url") and agent_manifest.website_url:
+                payload["website_url"] = str(agent_manifest.website_url)
+                
+            if hasattr(agent_manifest, "contact_email") and agent_manifest.contact_email:
+                payload["contact_email"] = agent_manifest.contact_email
+            
+            # Extract public key from DID document if available
+            if (agent_manifest and agent_manifest.identity and 
+                hasattr(agent_manifest.identity, "did_document") and 
+                agent_manifest.identity.did_document):
+                
                 payload["did_document"] = agent_manifest.identity.did_document
                 
-                # Extract public key from DID document
+                # Extract public key from DID document verification methods
                 for vm in payload["did_document"].get("verificationMethod", []):
                     if "publicKeyPem" in vm:
                         payload["public_key"] = vm.get("publicKeyPem", "")

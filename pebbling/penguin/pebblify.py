@@ -45,8 +45,6 @@ from pebbling.utils.constants import (
 )
 from pebbling.security.setup_security import create_security_config
 from pebbling.penguin.manifest import validate_agent_function, create_manifest
-from pebbling.hibiscus.agent_registry import register_with_registry
-from pebbling.security.ca.sheldon.certificates import fetch_certificate
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
@@ -62,10 +60,7 @@ def pebblify(
     skill: Optional[AgentSkill] = None,
     capabilities: Optional[AgentCapabilities] = None,
     security_config: SecurityConfig = None,  
-    registration_config: Optional[AgentRegistrationConfig] = None,
-    ca_config: Optional[CAConfig] = None,
     deployment_config: Optional[DeploymentConfig] = None,
-    pat_token: Optional[str] = None,   
     
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.

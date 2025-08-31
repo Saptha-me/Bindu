@@ -31,18 +31,12 @@ def load_config(config_path: str = "agent_config.json"):
 
 config = load_config()
 
-# Load PAT token from .env file
-pat_token_str = SecretStr(os.getenv("HIBISCUS_PAT_TOKEN"))
-if not pat_token_str:
-    raise ValueError("HIBISCUS_PAT_TOKEN environment variable is required in .env file")
-
 @pebblify(
     author=config["author"],
     skill=AgentSkill(**config["skill"]),
     capabilities=AgentCapabilities(**config["capabilities"]),
     security_config=SecurityConfig(**config["security"]),
     deployment_config=DeploymentConfig(**config["deployment"]),
-    pat_token=pat_token_str
 )
 async def news_reporter_agent(
     input: str

@@ -179,3 +179,4 @@ pebble-project/*
 pebble-project_private_key.json
 pebble_project_certificates/*
 pebble_project_private_key.json
+examples/*

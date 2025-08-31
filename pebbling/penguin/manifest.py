@@ -59,7 +59,116 @@ def create_manifest(
     security: Optional[AgentSecurity] = None,
     identity: Optional[AgentIdentity] = None,
 ) -> AgentManifest:
-    """Create dynamic agent class from function analysis."""
+    """
+    Create a protocol-compliant AgentManifest from any Python function.
+    
+    This function is the core of the Pebbling framework's agent creation system. It analyzes
+    user-defined functions and transforms them into fully-featured agents that can be deployed,
+    discovered, and communicated with in the Pebbling distributed agent network.
+    
+    The function automatically detects the type of user function (async generator, coroutine,
+    generator, or regular function) and creates appropriate wrapper classes that maintain
+    protocol compliance while preserving the original function's behavior.
+    
+    Args:
+        agent_function: The user's agent function to wrap. Must have 'input' as first parameter.
+                       Can optionally have 'context' or 'execution_state' parameters.
+        name: Human-readable agent name. If None, uses function name with underscores → hyphens.
+        id: Unique identifier for the agent in the registry.
+        description: Agent description. If None, uses function docstring or generates default.
+        skills: List of AgentSkill objects defining agent capabilities.
+        capabilities: AgentCapabilities defining technical features (streaming, notifications, etc.).
+        version: Agent version string (e.g., "1.0.0").
+        extra_metadata: Additional metadata to attach to the agent manifest.
+        security: Optional AgentSecurity configuration for DID-based authentication.
+        identity: Optional AgentIdentity for decentralized identity management.
+    
+    Returns:
+        AgentManifest: A protocol-compliant agent manifest with proper execution methods.
+    
+    Raises:
+        ValueError: If agent_function doesn't have required 'input' parameter or has invalid signature.
+    
+    Function Type Detection:
+        The function automatically detects and handles four types of Python functions:
+        
+        1. **Async Generator Functions** (`async def` + `yield`):
+           - Detected with: inspect.isasyncgenfunction()
+           - Creates: AsyncGenDecoratorAgent with async streaming support
+           - Use case: Agents that stream multiple responses over time
+           
+        2. **Coroutine Functions** (`async def` + `return`):
+           - Detected with: inspect.iscoroutinefunction()
+           - Creates: CoroDecoratorAgent with async execution
+           - Use case: Agents that perform async operations and return single result
+           
+        3. **Generator Functions** (`def` + `yield`):
+           - Detected with: inspect.isgeneratorfunction()
+           - Creates: GenDecoratorAgent with sync streaming
+           - Use case: Agents that yield multiple results synchronously
+           
+        4. **Regular Functions** (`def` + `return`):
+           - Default case when others don't match
+           - Creates: FuncDecoratorAgent with direct execution
+           - Use case: Simple agents with synchronous processing
+    
+    Examples:
+        
+        # Async Generator Agent (Streaming Weather Forecast)
+        @pebblify(name="Weather Agent", version="1.0.0")
+        async def weather_agent(input: str, context=None):
+            '''Provides streaming weather updates.'''
+            yield f"🌤️ Fetching weather for: {input}"
+            await asyncio.sleep(1)  # Simulate API call
+            yield f"☀️ Current temp: 22°C, Sunny"
+            yield f"📅 3-day forecast: Sunny, Cloudy, Rainy"
+        
+        # Coroutine Agent (Single Response)
+        @pebblify(name="Translator", version="1.0.0")
+        async def translator_agent(input: str):
+            '''Translates text to different languages.'''
+            await asyncio.sleep(0.5)  # Simulate translation API
+            return f"Translated: {input} → Bonjour le monde"
+        
+        # Generator Agent (Batch Processing)
+        @pebblify(name="Data Processor", version="1.0.0")
+        def batch_processor(input: str):
+            '''Processes data in batches.'''
+            data_items = input.split(',')
+            for i, item in enumerate(data_items):
+                yield f"Processed batch {i+1}: {item.strip()}"
+        
+        # Regular Function Agent (Simple Processing)
+        @pebblify(name="Echo Agent", version="1.0.0")
+        def echo_agent(input: str):
+            '''Simple echo agent.'''
+            return f"Echo: {input.upper()}"
+    
+    Parameter Detection:
+        The function analyzes the user function's parameters to determine execution context:
+        
+        - **input**: Required first parameter for agent input
+        - **context**: Optional parameter for execution context (user preferences, session data)
+        - **execution_state**: Optional parameter for pause/resume functionality
+    
+    Dynamic Class Generation:
+        Creates a DecoratorBase class that inherits from AgentManifest and implements:
+        - All required AgentManifest properties (id, name, description, etc.)
+        - Protocol-compliant run() method that wraps the original function
+        - Proper async/sync execution based on function type
+        - Context and execution state handling
+    
+    Security Integration:
+        When security and identity parameters are provided:
+        - Integrates with DID-based authentication system
+        - Supports JWT token generation and verification
+        - Enables secure agent-to-agent communication
+        - Works with Hibiscus registry for agent discovery
+    
+    Note:
+        Agent names automatically convert underscores to hyphens since underscores
+        are not allowed in agent names in the Pebbling protocol.
+    """
     
     # Since function is already validated, we can directly check parameter names
     sig = inspect.signature(agent_function)
@@ -68,7 +177,7 @@ def create_manifest(
     has_execution_state = 'execution_state' in param_names
     
     # Use function name if name not provided - store with different variable names
-    _name = name or agent_function.__name__.replace('_', '-')
+    _name = name or agent_function.__name__.replace('_', '-') # underscores are not allowed in agent names so replace them with hyphens
     _description = description or inspect.getdoc(agent_function) or f"Agent: {_name}"
     _id = id
     _version = version

@@ -120,36 +120,15 @@ def pebblify(
         logger.info(f"🚀 Agent '{_manifest.name}' successfully pebblified!")
         logger.debug(f"📊 Manifest details: {_manifest}")
 
-        if registration_config:
-            logger.info("📋 Registering agent...")
-            register_with_registry(
-                author=author,
-                agent_manifest=_manifest,
-                agent_registry_pat_token=pat_token,
-                agent_registry=registration_config.type,
-                agent_registry_url=registration_config.url,
+        if deployment_config:
+            logger.info("📋 Deploying agent...")
+            deploy_agent(
+                agent_id=agent_id,
+                deployment_config=deployment_config,
+                security=security,
+                identity=identity
             )
-            logger.info("✅ Agent registered successfully!")
-
-        if ca_config:
-            logger.info("📋 Setting up CA...")
-            fetch_certificate(
-                agent_manifest=_manifest,
-                ca_url=ca_config.url,
-                ca_type=ca_config.type,
-                save_to_disk=True,
-            )
-            logger.info("✅ CA setup complete!")
-
-        # if deployment_config:
-        #     logger.info("📋 Deploying agent...")
-        #     deploy_agent(
-        #         agent_id=agent_id,
-        #         deployment_config=deployment_config,
-        #         security=security,
-        #         identity=identity
-        #     )
-        #     logger.info("✅ Agent deployed successfully!")
+            logger.info("✅ Agent deployed successfully!")
             
         return _manifest
     return decorator

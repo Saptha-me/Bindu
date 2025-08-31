@@ -124,6 +124,8 @@ def pebblify(
                 identity=identity
             )
             logger.info("✅ Agent deployed successfully!")
+        else:
+            logger.info("📋 Deployment configuration not provided. Agent will not be deployed.")
             
         return _manifest
     return decorator

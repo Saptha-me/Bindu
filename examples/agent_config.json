@@ -16,14 +16,6 @@
     "did_required": true,
     "require_challenge_response": false
   },
-  "registration": {
-    "url": "http://localhost:19191",
-    "type": "hibiscus"
-  },
-  "ca": {
-    "url": "http://localhost:19190",
-    "type": "sheldon"
-  },
   "deployment": {
     "expose": true,
     "port": 3773,

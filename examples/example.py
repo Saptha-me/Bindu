@@ -8,8 +8,6 @@ from pebbling.protocol.types import AgentCapabilities, AgentSkill
 from pebbling.penguin.pebblify import pebblify
 from pebbling.common.models.models import (
     SecurityConfig, 
-    AgentRegistrationConfig, 
-    CAConfig, 
     DeploymentConfig
 )
 
@@ -43,8 +41,6 @@ if not pat_token_str:
     skill=AgentSkill(**config["skill"]),
     capabilities=AgentCapabilities(**config["capabilities"]),
     security_config=SecurityConfig(**config["security"]),
-    registration_config=AgentRegistrationConfig(**config["registration"]),
-    ca_config=CAConfig(**config["ca"]),
     deployment_config=DeploymentConfig(**config["deployment"]),
     pat_token=pat_token_str
 )

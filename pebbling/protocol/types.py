@@ -20,7 +20,7 @@ from enum import Enum
 from typing import Annotated, Any, Generic, Literal, TypeVar, Union
 from uuid import UUID
 
-from pydantic import Discriminator, Field, RootModel
+from pydantic import Discriminator, Field, RootModel, TypeAdapter
 from pydantic.alias_generators import to_camel
 from typing_extensions import Required, NotRequired, TypedDict, TypeAlias
 
@@ -368,11 +368,38 @@ class PaymentAction(PebblingProtocolBaseModel):
 
 
 #-----------------------------------------------------------------------------
-# JSON-RPC Error Types
+# JSON-RPC Definition and Error Types
 #-----------------------------------------------------------------------------
 
 CodeT = TypeVar('CodeT', bound=int)
 MessageT = TypeVar('MessageT', bound=str)
+
+Method = TypeVar('Method')
+Params = TypeVar('Params')
+
+ResultT = TypeVar('ResultT')
+ErrorT = TypeVar('ErrorT', bound=JSONRPCError[Any, Any])
+
+
+class JSONRPCMessage(TypedDict):
+    """A JSON RPC message."""
+
+    jsonrpc: Required[Literal['2.0']]
+    id: Required[UUID]
+
+
+class JSONRPCRequest(JSONRPCMessage, Generic[Method, Params]):
+    """A JSON RPC request."""
+
+    method: Required[Method]
+    params: Required[Params]
+
+
+class JSONRPCResponse(JSONRPCMessage, Generic[ResultT, ErrorT]):
+    """A JSON RPC response."""
+
+    result: NotRequired[ResultT]
+    error: NotRequired[ErrorT]
 
 
 class JSONRPCError(TypedDict, Generic[CodeT, MessageT]):
@@ -381,17 +408,6 @@ class JSONRPCError(TypedDict, Generic[CodeT, MessageT]):
     code: Required[CodeT]
     message: Required[MessageT]
     data: NotRequired[Any]
-
-
-ResultT = TypeVar('ResultT')
-ErrorT = TypeVar('ErrorT', bound=JSONRPCError[Any, Any])
-
-
-class JSONRPCResponse(JSONRPCMessage, Generic[ResultT, ErrorT]):
-    """A JSON RPC response."""
-
-    result: NotRequired[ResultT]
-    error: NotRequired[ErrorT]
 
 JSONParseError = JSONRPCError[Literal[-32700], Literal['Failed to parse JSON payload. Please ensure the request body contains valid JSON syntax. See: https://www.jsonrpc.org/specification#error_object']]
 InvalidRequestError = JSONRPCError[Literal[-32600], Literal['Request payload validation failed. The request structure does not conform to JSON-RPC 2.0 specification. See: https://www.jsonrpc.org/specification#request_object']]
@@ -410,169 +426,40 @@ InvalidAgentResponseError = JSONRPCError[Literal[-32006], Literal['The agent ret
 # JSON-RPC Request & Response Types
 #-----------------------------------------------------------------------------
 
-class JSONRPCErrorResponse(PebblingProtocolBaseModel):
-    """JSON-RPC error response."""
-    
-    error: (
-        JSONRPCError
-        | JSONParseError
-        | InvalidRequestError
-        | MethodNotFoundError
-        | InvalidParamsError
-        | InternalError
-        | TaskNotFoundError
-        | TaskNotCancelableError
-        | PushNotificationNotSupportedError
-        | UnsupportedOperationError
-        | ContentTypeNotSupportedError
-        | InvalidAgentResponseError
-    )
-    id: str | int | None = None
-    jsonrpc: Literal['2.0'] = '2.0'
-
-
-
-
-
-
-
-
-
-
-
-
-# Response types
-class SendMessageSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for sending a message."""
-    
-    id: UUID
-    jsonrpc: Literal['2.0'] = '2.0'
-    result: Task | Message
-
-
-class SendStreamingMessageSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for sending a streaming message."""
-    
-    id: UUID
-    jsonrpc: Literal['2.0'] = '2.0'
-    result: Task | Message | TaskStatusUpdateEvent | TaskArtifactUpdateEvent
-
-
-class GetTaskSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for getting a task."""
-    
-    id: UUID
-    jsonrpc: Literal['2.0'] = '2.0'
-    result: Task
-
-@pydantic.with_config({'alias_generator': to_camel})
-class CancelTaskSuccessResponse(PebblingProtocolBaseModel):
-    """Success response for canceling a task."""
-    
-    id: UUID
-    jsonrpc: Literal['2.0'] = '2.0'
-    result: Task
-
-@pydantic.with_config({'alias_generator': to_camel})
-class TrustVerificationResponse(PebblingProtocolBaseModel):
-    """Success response for trust verification."""
-    
-    id: UUID
-    jsonrpc: Literal['2.0'] = '2.0'
-    result: Task
-
-
-###############################################################################################
-#######################################   Requests and responses   ############################
-###############################################################################################
-
 SendMessageRequest = JSONRPCRequest[Literal['message/send'], MessageSendParams]
-"""A JSON RPC request to send a message."""
-
 SendMessageResponse = JSONRPCResponse[Union[Task, Message], JSONRPCError[Any, Any]]
-"""A JSON RPC response to send a message."""
 
 StreamMessageRequest = JSONRPCRequest[Literal['message/stream'], MessageSendParams]
-"""A JSON RPC request to stream a message."""
+StreamMessageResponse = JSONRPCResponse[Union[Task, Message], JSONRPCError[Any, Any]]
 
 GetTaskRequest = JSONRPCRequest[Literal['tasks/get'], TaskQueryParams]
-"""A JSON RPC request to get a task."""
-
 GetTaskResponse = JSONRPCResponse[Task, TaskNotFoundError]
-"""A JSON RPC response to get a task."""
 
 CancelTaskRequest = JSONRPCRequest[Literal['tasks/cancel'], TaskIdParams]
-"""A JSON RPC request to cancel a task."""
-
 CancelTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
-"""A JSON RPC response to cancel a task."""
 
 SetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/set'], TaskPushNotificationConfig]
-"""A JSON RPC request to set a task push notification."""
-
 SetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
-"""A JSON RPC response to set a task push notification."""
 
 GetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/get'], TaskIdParams]
-"""A JSON RPC request to get a task push notification."""
-
 GetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
-"""A JSON RPC response to get a task push notification."""
 
 ResubscribeTaskRequest = JSONRPCRequest[Literal['tasks/resubscribe'], TaskIdParams]
-"""A JSON RPC request to resubscribe to a task."""
+ResubscribeTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
 
 ListTaskPushNotificationConfigRequest = JSONRPCRequest[
     Literal['tasks/pushNotificationConfig/list'], ListTaskPushNotificationConfigParams
 ]
-"""A JSON RPC request to list task push notification configs."""
+ListTaskPushNotificationConfigResponse = JSONRPCResponse[
+    List[TaskPushNotificationConfig], PushNotificationNotSupportedError
+]
 
 DeleteTaskPushNotificationConfigRequest = JSONRPCRequest[
     Literal['tasks/pushNotificationConfig/delete'], DeleteTaskPushNotificationConfigParams
 ]
-"""A JSON RPC request to delete a task push notification config."""
-
-DeleteTaskPushNotificationConfigResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
-"""A JSON RPC response to delete a task push notification config."""
-
-
-# Union types for requests and responses
-class JSONRPCResponse(
-    RootModel[
-        JSONRPCErrorResponse
-        | SendMessageSuccessResponse
-        | SendStreamingMessageSuccessResponse
-        | GetTaskSuccessResponse
-        | CancelTaskSuccessResponse
-        | TrustVerificationResponse
-    ]
-):
-    """Union type for all JSON-RPC responses."""
-    
-    root: (
-        JSONRPCErrorResponse
-        | SendMessageSuccessResponse
-        | SendStreamingMessageSuccessResponse
-        | GetTaskSuccessResponse
-        | CancelTaskSuccessResponse
-        | TrustVerificationResponse
-    )
-
-
-class SendMessageResponse(
-    RootModel[JSONRPCErrorResponse | SendMessageSuccessResponse]
-):
-    """Union type for send message responses."""
-    
-    root: JSONRPCErrorResponse | SendMessageSuccessResponse
-
-
-class SendStreamingMessageResponse(
-    RootModel[JSONRPCErrorResponse | SendStreamingMessageSuccessResponse]
-):
-    """Union type for streaming message responses."""
-    
-    root: JSONRPCErrorResponse | SendStreamingMessageSuccessResponse
+DeleteTaskPushNotificationConfigResponse = JSONRPCResponse[
+    TaskPushNotificationConfig, PushNotificationNotSupportedError
+]
 
 PebblingRequest = Annotated[
     Union[
@@ -585,31 +472,23 @@ PebblingRequest = Annotated[
         ResubscribeTaskRequest,
         ListTaskPushNotificationConfigRequest,
         DeleteTaskPushNotificationConfigRequest,
+    ],
     Discriminator('method'),
 ]
 
+PebblingResponse: TypeAlias = Union[
+    SendMessageResponse,
+    GetTaskResponse,
+    CancelTaskResponse,
+    SetTaskPushNotificationResponse,
+    GetTaskPushNotificationResponse,
+]
 
-PebblingRequest = 
-    RootModel[
-        SendMessageRequest
-        | SendStreamingMessageRequest
-        | GetTaskRequest
-        | CancelTaskRequest
-        | TaskResubscriptionRequest
-        | TrustVerificationRequest
-    ]
-):
-    """Union type for all Pebbling requests."""
-    
-    root: (
-        SendMessageRequest
-        | SendStreamingMessageRequest
-        | GetTaskRequest
-        | CancelTaskRequest
-        | TaskResubscriptionRequest
-        | TrustVerificationRequest
-    )
-    """A2A supported request types"""
+pebble_request_ta: TypeAdapter[PebblingRequest] = TypeAdapter(PebblingRequest)
+pebble_response_ta: TypeAdapter[PebblingResponse] = TypeAdapter(PebblingResponse)
+send_message_request_ta: TypeAdapter[SendMessageRequest] = TypeAdapter(SendMessageRequest)
+send_message_response_ta: TypeAdapter[SendMessageResponse] = TypeAdapter(SendMessageResponse)
+stream_message_request_ta: TypeAdapter[StreamMessageRequest] = TypeAdapter(StreamMessageRequest)
 
 #-----------------------------------------------------------------------------
 # Lets handle Security
@@ -839,65 +718,5 @@ class AgentManifest(PebblingProtocolBaseModel):
     version: str = Field(..., examples=['1.0.0'])
 
 
-#-----------------------------------------------------------------------------
-# Pebbling Agent Adapter Types
-#-----------------------------------------------------------------------------
-
-class PebblingMessage:
-    """Wrapper class for protocol messages in AgentAdapter functions."""
-    
-    def __init__(self, content: str, role: str = "user", metadata: Optional[Dict[str, Any]] = None):
-        """
-        Initialize a PebblingMessage.
-        
-        Args:
-            content: The message content
-            role: The role of the message sender (default: "user")
-            metadata: Optional metadata dictionary
-        """
-        self.content = content
-        self.role = role
-        self.metadata = metadata or {}
-    
-    def to_protocol_message(self) -> Message:
-        """Convert to protocol Message format."""
-        from uuid import uuid4
-        
-        return Message(
-            contextId=uuid4(),
-            messageId=uuid4(),
-            role=Role(self.role),
-            parts=[TextPart(text=self.content)],
-            metadata=self.metadata
-        )
 
 
-class PebblingContext:
-    """Context wrapper for agent functions providing execution context."""
-    
-    def __init__(self, 
-                 task_id: UUID = None,
-                 session_id: UUID = None,
-                 metadata: UUID = None,
-                 user_id: UUID = None):
-        """
-        Initialize PebblingContext.
-        
-        Args:
-            task_id: Current task identifier
-            session_id: Current session identifier  
-            metadata: Additional context metadata
-            user_id: User identifier for the current context
-        """
-        self.task_id = task_id
-        self.session_id = session_id
-        self.metadata = metadata or {}
-        self.user_id = user_id
-    
-    def get(self, key: str, default: Any = None) -> Any:
-        """Get a value from the context metadata."""
-        return self.metadata.get(key, default)
-    
-    def set(self, key: str, value: Any) -> None:
-        """Set a value in the context metadata."""
-        self.metadata[key] = value

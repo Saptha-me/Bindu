@@ -1,18 +1,66 @@
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+# IN-MEMORY STORAGE IMPLEMENTATION:
+# 
+# This is the in-memory implementation of the Storage interface for the Pebbling framework.
+# It provides fast, temporary storage for tasks and contexts during agent execution.
+#
+# BURGER STORE ANALOGY:
+# 
+# Think of this as the restaurant's whiteboard order tracking system:
+# 
+# 1. WHITEBOARD ORDERS (InMemoryStorage):
+#    - Orders written on whiteboard for current shift
+#    - Fast to read and update during busy periods
+#    - Gets erased at end of day (when server restarts)
+#    - Perfect for high-speed order processing
+# 
+# 2. ORDER TRACKING:
+#    - self.tasks: Dictionary of all current orders on the whiteboard
+#    - self.contexts: Customer preferences and conversation history
+#    - Quick lookup by order ID or customer ID
+#    - Immediate updates when order status changes
+# 
+# 3. PERFORMANCE CHARACTERISTICS:
+#    - Lightning fast: O(1) lookups and updates
+#    - Memory efficient: Only stores current active orders
+#    - No persistence: Data lost when restaurant closes (server restarts)
+#    - Perfect for development and testing environments
+#
+# WHEN TO USE IN-MEMORY STORAGE:
+# - Development and testing environments
+# - High-performance scenarios with temporary data
+# - Prototyping and experimentation
+# - Single-server deployments without persistence needs
+# - Agent interactions that don't require durability
+#
+# LIMITATIONS:
+# - Data lost on server restart
+# - Not suitable for production with persistence requirements
+# - Memory usage grows with number of tasks
+# - No data sharing between multiple server instances
+#
+#  Thank you users! We ❤️ you! - 🐧
+
 from __future__ import annotations as _annotations
 
 import uuid
-from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Generic
-
+from typing import Any
 from typing_extensions import TypeVar
 
-from .schema import Artifact, Message, Task, TaskState, TaskStatus
+from pebbling.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from pebbling.storage.base import Storage
 
 ContextT = TypeVar('ContextT', default=Any)
 
 
-class InMemoryStore(Store[ContextT]):
+class InMemoryStorage(Storage[ContextT]):
     """A store to retrieve and save tasks in memory."""
 
     def __init__(self):

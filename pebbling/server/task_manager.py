@@ -1,61 +1,90 @@
-"""This module defines the TaskManager class, which is responsible for managing tasks.
+"""
+|---------------------------------------------------------|
+|                                                         |
+|                 Give Feedback / Get Help                |
+| https://github.com/Pebbling-ai/pebble/issues/new/choose |
+|                                                         |
+|---------------------------------------------------------|
 
-In our structure, we have the following components:
+🍔 **The Pebbling Task Manager: A Burger Restaurant Architecture**
 
-- TaskManager: A class that manages tasks.
-- Scheduler: A class that schedules tasks to be sent to the worker.
-- Worker: A class that executes tasks.
-- Runner: A class that defines how tasks run and how history is structured.
-- Storage: A class that stores tasks and artifacts.
+This module defines the TaskManager - the **Restaurant Manager** of our AI agent ecosystem.
+Think of it like running a high-end burger restaurant where customers place orders,
+and we coordinate the entire kitchen operation to deliver perfect results.
 
-Architecture:
+## 🏢 **Restaurant Components**
+
+- **TaskManager** (Restaurant Manager): Coordinates the entire operation, handles customer requests
+- **Scheduler** (Order Queue System): Manages the flow of orders to the kitchen  
+- **Worker** (Chef): Actually cooks the burgers (executes AI agent tasks)
+- **Runner** (Recipe Book): Defines how each dish is prepared and plated
+- **Storage** (Restaurant Database): Keeps track of orders, ingredients, and completed dishes
+
+## 🏗️ **Restaurant Architecture**
+
 ```
   +-----------------+
-  |   HTTP Server   |
+  |   Front Desk    |  🎯 Customer Interface
+  |  (HTTP Server)  |     (Takes Orders)
   +-------+---------+
-          ^
-          | Sends Requests/
-          | Receives Results
+          |
+          | 📝 Order Placed
           v
   +-------+---------+
-  |                 |
-  |   TaskManager   |<-----------------+
-  |  (coordinates)  |                  |
-  |                 |                  |
+  |                 |  👨‍💼 Restaurant Manager
+  |   TaskManager   |     (Coordinates Everything)
+  |   (Manager)     |<-----------------+
   +-------+---------+                  |
           |                            |
-          |  Schedules Tasks           |
+          | 📋 Send to Kitchen         | 💾 Track Everything
           v                            v
   +------------------+         +----------------+
-  |                  |         |                |
-  |      Scheduler   | .       |    Storage     |
-  |     (queues) .   |         | (persistence)  |
-  |                  |         |                |
+  |                  |         |                |  📊 Restaurant Database
+  |    Scheduler     |         |    Storage     |     (Orders & History)
+  |  (Order Queue)   |         |  (Database)    |
   +------------------+         +----------------+
-          ^                            ^
-          |                            |
-          | Delegates Execution        |
-          v                            |
+          |                            ^
+          | 🍳 Kitchen Ready           |
+          v                            | 📝 Update Status
   +------------------+                 |
-  |                  |                 |
-  |      Worker      |                 |
-  | (implementation) |-----------------+
-  |                  |
+  |                  |                 |  👨‍🍳 Head Chef
+  |     Worker       |-----------------+     (Executes Tasks)
+  |     (Chef)       |
+  +------------------+
+          |
+          | 📖 Follow Recipe
+          v
+  +------------------+
+  |     Runner       |  📚 Recipe Book
+  |  (Recipe Book)   |     (Task Execution Logic)
   +------------------+
 ```
 
-The flow:
-1. The HTTP server sends a task to TaskManager
-2. TaskManager stores initial task state in Storage
-3. TaskManager passes task to Scheduler
-4. Scheduler determines when to send tasks to Worker
-5. Worker delegates to Runner for task execution
-6. Runner defines how tasks run and how history is structured
-7. Worker processes task results from Runner
-8. Worker reads from and writes to Storage directly
-9. Worker updates task status in Storage as execution progresses
-10. TaskManager can also read/write from Storage for task management
-11. Client queries TaskManager for results, which reads from Storage
+## 🔄 **Restaurant Workflow**
+
+1. **📞 Order Received**: Customer places order at Front Desk (HTTP Server)
+2. **👨‍💼 Manager Takes Control**: TaskManager receives the order and logs it
+3. **💾 Order Logged**: Initial order details stored in Restaurant Database (Storage)
+4. **📋 Kitchen Queue**: TaskManager sends order to Scheduler (Order Queue System)
+5. **🍳 Chef Assignment**: Scheduler determines when Chef (Worker) is available
+6. **📖 Recipe Lookup**: Worker consults Runner (Recipe Book) for execution steps
+7. **👨‍🍳 Cooking Process**: Runner defines how the task is prepared and executed
+8. **📝 Progress Updates**: Worker continuously updates order status in Database
+9. **🍔 Order Complete**: Final result stored and marked as ready
+10. **📞 Customer Notification**: Manager can provide status updates anytime
+11. **✅ Order Delivered**: Customer receives their perfectly prepared result
+
+## 🎯 **Key Benefits**
+
+- **🔄 Scalable**: Multiple chefs can work simultaneously
+- **📊 Trackable**: Every order is logged and monitored
+- **🛡️ Reliable**: Failed orders can be retried or cancelled
+- **⚡ Efficient**: Smart queue management prevents kitchen overload
+- **📈 Observable**: Full visibility into restaurant operations
+
+*"Just like a well-run restaurant, every task gets the attention it deserves!"* 🌟
+
+Thank you users! We ❤️ you! - 🐧
 """
 
 from __future__ import annotations as _annotations

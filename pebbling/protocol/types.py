@@ -14,9 +14,10 @@ Pebbling Protocol Type Definitions.
 This module contains all the protocol data models used for communication between
 agents and the Pebbling framework.
 """
+from __future__ import annotations as _annotations
 
 from enum import Enum
-from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Generic, Literal, TypeVar, Union
 from uuid import UUID
 
 from pydantic import Discriminator, Field, RootModel
@@ -64,6 +65,20 @@ RunMode: TypeAlias = Literal[
     "stream"       # Streaming execution, receive partial results
 ]
 
+NegotiationStatus: TypeAlias = Literal[
+    "proposed",
+    "accepted",
+    "rejected",
+    "countered"
+]
+
+NegotiationSessionStatus: TypeAlias = Literal[
+    "initiated",
+    "ongoing",
+    "completed",
+    "rejected"
+]
+
 
 #-----------------------------------------------------------------------------
 # Content & Message Parts
@@ -108,10 +123,6 @@ class DataPart(TextPart):
 
 
 Part = Annotated[RootModel[TextPart | FilePart | DataPart], Field(discriminator='kind')]
-
-#-----------------------------------------------------------------------------
-# Content & Message Parts End
-#-----------------------------------------------------------------------------
 
 
 #-----------------------------------------------------------------------------
@@ -265,7 +276,7 @@ class TaskArtifactUpdateEvent(PebblingProtocolBaseModel):
     taskId: Required[UUID]
 
 @pydantic.with_config({'alias_generator': to_camel})
-class TaskSendParams(TypedDict):
+class TaskSendParams(PebblingProtocolBaseModel):
     """Internal parameters for task execution within the framework."""
 
     id: Required[UUID]
@@ -297,11 +308,12 @@ class MessageSendConfiguration(PebblingProtocolBaseModel):
     historyLength: NotRequired[int]
     pushNotificationConfig: NotRequired[PushNotificationConfig]
 
+
 @pydantic.with_config({'alias_generator': to_camel})
 class MessageSendParams(PebblingProtocolBaseModel):
     """Parameters for sending messages."""
     
-    configuration: MessageSendConfiguration | None = None
+    configuration: Required[MessageSendConfiguration]
     message: Required[Message]
     metadata: NotRequired[dict[str, Any]]
 
@@ -309,24 +321,7 @@ class MessageSendParams(PebblingProtocolBaseModel):
 # Agent-to-Agent Negotiation Models
 #-----------------------------------------------------------------------------
 
-class NegotiationStatus(str, Enum):
-    """Represents the possible negotiation statuses."""
-    
-    proposed = 'proposed'
-    accepted = 'accepted'
-    rejected = 'rejected'
-    countered = 'countered'
-
-
-class NegotiationSessionStatus(str, Enum):
-    """Represents the possible statuses of a negotiation session."""
-    
-    initiated = 'initiated'
-    ongoing = 'ongoing'
-    completed = 'completed'
-    rejected = 'rejected'
-
-
+@pydantic.with_config({'alias_generator': to_camel})
 class NegotiationProposal(PebblingProtocolBaseModel):
     """Structured negotiation proposal exchanged between agents."""
     
@@ -340,7 +335,7 @@ class NegotiationProposal(PebblingProtocolBaseModel):
         description="Status of this specific proposal"
     )
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class NegotiationSession(PebblingProtocolBaseModel):
     """Session details for agent-to-agent negotiations."""
     
@@ -376,89 +371,39 @@ class PaymentAction(PebblingProtocolBaseModel):
 # JSON-RPC Error Types
 #-----------------------------------------------------------------------------
 
-class JSONRPCError(PebblingProtocolBaseModel):
-    """Base JSON-RPC error representation."""
-    
-    code: int
-    data: Any | None = None
-    message: str
+CodeT = TypeVar('CodeT', bound=int)
+MessageT = TypeVar('MessageT', bound=str)
 
 
-class JSONParseError(JSONRPCError):
-    """JSON-RPC parse error."""
-    
-    code: Literal[-32700] = -32700
-    message: Literal['Invalid JSON'] = 'Invalid JSON'
+class JSONRPCError(TypedDict, Generic[CodeT, MessageT]):
+    """A JSON RPC error."""
+
+    code: Required[CodeT]
+    message: Required[MessageT]
+    data: NotRequired[Any]
 
 
-class InvalidRequestError(JSONRPCError):
-    """JSON-RPC invalid request error."""
-    
-    code: Literal[-32600] = -32600
-    message: Literal['Validation error'] = 'Validation error'
+ResultT = TypeVar('ResultT')
+ErrorT = TypeVar('ErrorT', bound=JSONRPCError[Any, Any])
 
 
-class MethodNotFoundError(JSONRPCError):
-    """JSON-RPC method not found error."""
-    
-    code: Literal[-32601] = -32601
-    message: Literal['Method not found'] = 'Method not found'
+class JSONRPCResponse(JSONRPCMessage, Generic[ResultT, ErrorT]):
+    """A JSON RPC response."""
 
+    result: NotRequired[ResultT]
+    error: NotRequired[ErrorT]
 
-class InvalidParamsError(JSONRPCError):
-    """JSON-RPC invalid parameters error."""
-    
-    code: Literal[-32602] = -32602
-    message: Literal['Invalid parameters'] = 'Invalid parameters'
-
-
-class InternalError(JSONRPCError):
-    """JSON-RPC internal error."""
-    
-    code: Literal[-32603] = -32603
-    message: Literal['Internal error'] = 'Internal error'
-
-
-class InvalidAgentResponseError(JSONRPCError):
-    """Error for invalid agent responses."""
-    
-    code: Literal[-32006] = -32006
-    message: Literal['Invalid agent response'] = 'Invalid agent response'
-
-
-class TaskNotFoundError(JSONRPCError):
-    """Error for task not found."""
-    
-    code: Literal[-32007] = -32007
-    message: Literal['Task not found'] = 'Task not found'
-
-
-class TaskNotCancelableError(JSONRPCError):
-    """Error for task not cancelable."""
-    
-    code: Literal[-32008] = -32008
-    message: Literal['Task not cancelable'] = 'Task not cancelable'
-
-
-class PushNotificationNotSupportedError(JSONRPCError):
-    """Error for push notification not supported."""
-    
-    code: Literal[-32009] = -32009
-    message: Literal['Push notification not supported'] = 'Push notification not supported'
-
-
-class UnsupportedOperationError(JSONRPCError):
-    """Error for unsupported operations."""
-    
-    code: Literal[-32010] = -32010
-    message: Literal['Unsupported operation'] = 'Unsupported operation'
-
-
-class ContentTypeNotSupportedError(JSONRPCError):
-    """Error for unsupported content types."""
-    
-    code: Literal[-32011] = -32011
-    message: Literal['Content type not supported'] = 'Content type not supported'
+JSONParseError = JSONRPCError[Literal[-32700], Literal['Failed to parse JSON payload. Please ensure the request body contains valid JSON syntax. See: https://www.jsonrpc.org/specification#error_object']]
+InvalidRequestError = JSONRPCError[Literal[-32600], Literal['Request payload validation failed. The request structure does not conform to JSON-RPC 2.0 specification. See: https://www.jsonrpc.org/specification#request_object']]
+MethodNotFoundError = JSONRPCError[Literal[-32601], Literal['The requested method is not available on this server. Please check the method name and try again. See API docs: /docs']]
+InvalidParamsError = JSONRPCError[Literal[-32602], Literal['Invalid or missing parameters for the requested method. Please verify parameter types and required fields. See API docs: /docs']]
+InternalError = JSONRPCError[Literal[-32603], Literal['An internal server error occurred while processing the request. Please try again or contact support if the issue persists. See: /health']]
+TaskNotFoundError = JSONRPCError[Literal[-32001], Literal['The specified task ID was not found. The task may have been completed, canceled, or expired. Check task status: GET /tasks/{id}']]
+TaskNotCancelableError = JSONRPCError[Literal[-32002], Literal['This task cannot be canceled in its current state. Tasks can only be canceled while pending or running. See task lifecycle: /docs/tasks']]
+PushNotificationNotSupportedError = JSONRPCError[Literal[-32003], Literal['Push notifications are not supported by this server configuration. Please use polling to check task status. See: GET /tasks/{id}']]
+UnsupportedOperationError = JSONRPCError[Literal[-32004], Literal['The requested operation is not supported by this agent or server configuration. See supported operations: /docs/capabilities']]
+ContentTypeNotSupportedError = JSONRPCError[Literal[-32005], Literal['The content type in the request is not supported. Please use application/json or check supported content types. See: /docs/content-types']]
+InvalidAgentResponseError = JSONRPCError[Literal[-32006], Literal['The agent returned an invalid or malformed response. This may indicate an agent configuration issue. See troubleshooting: /docs/troubleshooting']]
 
 
 #-----------------------------------------------------------------------------

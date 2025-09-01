@@ -18,7 +18,7 @@ from starlette.types import Lifespan
 from starlette.applications import Starlette
 
 class PebbleApplication(Starlette):
-    """Pebble application class for creating A2A-compatible servers."""
+    """Pebble application class for creating Pebble-compatible servers."""
     
     def __init__(
         self,

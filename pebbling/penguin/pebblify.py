@@ -207,7 +207,7 @@ def deploy_agent(
     
     # Update app title for specific agent
     app.title = f"Pebble Agent: {agent_id}"
-    app.description = f"A2A-compatible agent server for {agent_id}"
+    app.description = f"Pebble-compatible agent server for {agent_id}"
     
     logger.info(f"✅ Agent {agent_id} deployed successfully")
     logger.info(f"📡 Server endpoints: /message/send, /task/{{task_id}}, /agents, /health")

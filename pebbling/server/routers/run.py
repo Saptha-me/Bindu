@@ -5,7 +5,7 @@ from pebbling.protocol.types import pebble_request_ta, pebble_response_ta
 
 
 async def agent_run_endpoint(request: Request) -> Response:
-    """This is the main endpoint for the A2A server.
+    """This is the main endpoint for the Pebble server.
 
     Although the specification allows freedom of choice and implementation, I'm pretty sure about some decisions.
 

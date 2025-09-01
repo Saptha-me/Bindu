@@ -115,7 +115,7 @@ class TaskManager:
         self._aexit_stack = None
 
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
-        """Send a message using the A2A v0.2.5 protocol."""
+        """Send a message using the Pebble protocol."""
         request_id = request['id']
         message = request['params']['message']
         context_id = message.get('context_id', str(uuid.uuid4()))

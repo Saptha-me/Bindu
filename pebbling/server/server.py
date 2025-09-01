@@ -19,8 +19,8 @@ from pebbling.server.scheduler.redis_scheduler import RedisScheduler
 from pebbling.protocol.types import AgentSkill
 
 
-class Server:
-    """Pebble server for hosting agents with A2A protocol support."""
+class PebbleServer:
+    """Pebble server for hosting agents with Pebble protocol support."""
     
     def __init__(self) -> None:
         """Initialize the Pebble server."""
@@ -29,68 +29,7 @@ class Server:
         self._storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None
         self._scheduler: Optional[InMemoryScheduler | RedisScheduler] = None
 
-    def agent(
-        self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        version: str = "1.0.0",
-        skills: Optional[list[AgentSkill]] = None,
-    ) -> Callable:
-        """Decorator to register an agent with the server.
-        
-        Args:
-            name: Agent name
-            description: Agent description  
-            version: Agent version
-            skills: List of agent skills
-            
-        Returns:
-            Decorator function
-        """
-        def decorator(fn: Callable) -> Callable:
-            # Create agent manifest from function
-            agent_manifest = AgentManifest(
-                id=name or fn.__name__,
-                name=name or fn.__name__.replace('_', ' ').title(),
-                description=description or fn.__doc__ or f"Agent {name or fn.__name__}",
-                version=version,
-                skills=skills or [],
-                function=fn
-            )
-            self.register(agent_manifest)
-            return fn
-
-        return decorator
-
-    def register(self, *agents: AgentManifest) -> None:
-        """Register agent manifests with the server.
-        
-        Args:
-            *agents: Agent manifests to register
-        """
-        self.agents.extend(agents)
-
-    @asynccontextmanager
-    async def lifespan(self, app: FastAPI) -> AsyncGenerator[None, None]:
-        """Default lifespan manager for the server."""
-        yield
-
-    def set_storage(self, storage: InMemoryStorage | PostgreSQLStorage | QdrantStorage) -> None:
-        """Set the storage backend for the server.
-        
-        Args:
-            storage: Storage backend instance
-        """
-        self._storage = storage
-
-    def set_scheduler(self, scheduler: InMemoryScheduler | RedisScheduler) -> None:
-        """Set the task scheduler for the server.
-        
-        Args:
-            scheduler: Scheduler instance
-        """
-        self._scheduler = scheduler
-
+    
     async def serve(
         self,
         *,
@@ -98,8 +37,6 @@ class Server:
         host: str = "127.0.0.1",
         port: int = 8000,
         debug: bool = False,
-        configure_logger: bool = True,
-        self_registration: bool = True,
         storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None,
         scheduler: Optional[InMemoryScheduler | RedisScheduler] = None,
         # Uvicorn parameters
@@ -156,11 +93,53 @@ class Server:
             host: Host to bind to
             port: Port to bind to
             debug: Enable debug mode
-            configure_logger: Configure logging
-            self_registration: Enable self-registration
             storage: Storage backend
             scheduler: Task scheduler
-            **kwargs: Additional uvicorn configuration parameters
+            uds: Unix domain socket
+            fd: File descriptor
+            loop: Event loop
+            http: HTTP protocol
+            ws: WebSocket protocol
+            ws_max_size: Maximum size of WebSocket message
+            ws_max_queue: Maximum queue size of WebSocket message
+            ws_ping_interval: Ping interval
+            ws_ping_timeout: Ping timeout
+            ws_per_message_deflate: Enable per-message deflate
+            lifespan: Lifespan
+            env_file: Environment file
+            log_config: Logging configuration
+            log_level: Logging level
+            access_log: Enable access log
+            use_colors: Enable colors
+            interface: Interface
+            reload: Enable auto-reload
+            reload_dirs: Directories to watch for auto-reload
+            reload_delay: Delay between auto-reload checks
+            reload_includes: Files to include for auto-reload
+            reload_excludes: Files to exclude for auto-reload
+            workers: Number of workers
+            proxy_headers: Enable proxy headers
+            server_header: Enable server header
+            date_header: Enable date header
+            forwarded_allow_ips: Forwarded allow IPs
+            root_path: Root path
+            limit_concurrency: Limit concurrency
+            limit_max_requests: Limit max requests
+            backlog: Backlog
+            timeout_keep_alive: Timeout keep alive
+            timeout_notify: Timeout notify
+            timeout_graceful_shutdown: Timeout graceful shutdown
+            callback_notify: Callback notify
+            ssl_keyfile: SSL keyfile
+            ssl_certfile: SSL certfile
+            ssl_keyfile_password: SSL keyfile password
+            ssl_version: SSL version
+            ssl_cert_reqs: SSL cert reqs
+            ssl_ca_certs: SSL CA certs
+            ssl_ciphers: SSL ciphers
+            headers: Headers
+            factory: Factory
+            h11_max_incomplete_event_size: H11 max incomplete event size
         """
         if self.server:
             raise RuntimeError("The server is already running")
@@ -239,131 +218,4 @@ class Server:
         self.server = uvicorn.Server(config)
         await self.server.serve()
 
-    def run(
-        self,
-        *,
-        penguin_id: str = "pebble-server",
-        host: str = "127.0.0.1",
-        port: int = 8000,
-        debug: bool = False,
-        configure_logger: bool = True,
-        self_registration: bool = True,
-        storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None,
-        scheduler: Optional[InMemoryScheduler | RedisScheduler] = None,
-        # Uvicorn parameters
-        uds: Optional[str] = None,
-        fd: Optional[int] = None,
-        loop: uvicorn.config.LoopSetupType = "auto",
-        http: type[asyncio.Protocol] | uvicorn.config.HTTPProtocolType = "auto",
-        ws: type[asyncio.Protocol] | uvicorn.config.WSProtocolType = "auto",
-        ws_max_size: int = 16 * 1024 * 1024,
-        ws_max_queue: int = 32,
-        ws_ping_interval: Optional[float] = 20.0,
-        ws_ping_timeout: Optional[float] = 20.0,
-        ws_per_message_deflate: bool = True,
-        lifespan: uvicorn.config.LifespanType = "auto",
-        env_file: Optional[str | os.PathLike[str]] = None,
-        log_config: Optional[dict[str, Any] | str | uvicorn.config.RawConfigParser | uvicorn.config.IO[Any]] = uvicorn.config.LOGGING_CONFIG,
-        log_level: Optional[str | int] = None,
-        access_log: bool = True,
-        use_colors: Optional[bool] = None,
-        interface: uvicorn.config.InterfaceType = "auto",
-        reload: bool = False,
-        reload_dirs: Optional[list[str] | str] = None,
-        reload_delay: float = 0.25,
-        reload_includes: Optional[list[str] | str] = None,
-        reload_excludes: Optional[list[str] | str] = None,
-        workers: Optional[int] = None,
-        proxy_headers: bool = True,
-        server_header: bool = True,
-        date_header: bool = True,
-        forwarded_allow_ips: Optional[list[str] | str] = None,
-        root_path: str = "",
-        limit_concurrency: Optional[int] = None,
-        limit_max_requests: Optional[int] = None,
-        backlog: int = 2048,
-        timeout_keep_alive: int = 5,
-        timeout_notify: int = 30,
-        timeout_graceful_shutdown: Optional[int] = None,
-        callback_notify: Optional[Callable[..., Awaitable[None]]] = None,
-        ssl_keyfile: Optional[str | os.PathLike[str]] = None,
-        ssl_certfile: Optional[str | os.PathLike[str]] = None,
-        ssl_keyfile_password: Optional[str] = None,
-        ssl_version: int = uvicorn.config.SSL_PROTOCOL_VERSION,
-        ssl_cert_reqs: int = uvicorn.config.ssl.CERT_NONE,
-        ssl_ca_certs: Optional[str] = None,
-        ssl_ciphers: str = "TLSv1",
-        headers: Optional[list[tuple[str, str]]] = None,
-        factory: bool = False,
-        h11_max_incomplete_event_size: Optional[int] = None,
-    ) -> None:
-        """Run the Pebble server (blocking).
-        
-        Args:
-            penguin_id: Unique server identifier
-            host: Host to bind to
-            port: Port to bind to
-            debug: Enable debug mode
-            configure_logger: Configure logging
-            self_registration: Enable self-registration
-            storage: Storage backend
-            scheduler: Task scheduler
-            **kwargs: Additional uvicorn configuration parameters
-        """
-        asyncio.run(
-            self.serve(
-                penguin_id=penguin_id,
-                host=host,
-                port=port,
-                debug=debug,
-                configure_logger=configure_logger,
-                self_registration=self_registration,
-                storage=storage,
-                scheduler=scheduler,
-                uds=uds,
-                fd=fd,
-                loop=loop,
-                http=http,
-                ws=ws,
-                ws_max_size=ws_max_size,
-                ws_max_queue=ws_max_queue,
-                ws_ping_interval=ws_ping_interval,
-                ws_ping_timeout=ws_ping_timeout,
-                ws_per_message_deflate=ws_per_message_deflate,
-                lifespan=lifespan,
-                env_file=env_file,
-                log_config=log_config,
-                log_level=log_level,
-                access_log=access_log,
-                use_colors=use_colors,
-                interface=interface,
-                reload=reload,
-                reload_dirs=reload_dirs,
-                reload_delay=reload_delay,
-                reload_includes=reload_includes,
-                reload_excludes=reload_excludes,
-                workers=workers,
-                proxy_headers=proxy_headers,
-                server_header=server_header,
-                date_header=date_header,
-                forwarded_allow_ips=forwarded_allow_ips,
-                root_path=root_path,
-                limit_concurrency=limit_concurrency,
-                limit_max_requests=limit_max_requests,
-                backlog=backlog,
-                timeout_keep_alive=timeout_keep_alive,
-                timeout_notify=timeout_notify,
-                timeout_graceful_shutdown=timeout_graceful_shutdown,
-                callback_notify=callback_notify,
-                ssl_keyfile=ssl_keyfile,
-                ssl_certfile=ssl_certfile,
-                ssl_keyfile_password=ssl_keyfile_password,
-                ssl_version=ssl_version,
-                ssl_cert_reqs=ssl_cert_reqs,
-                ssl_ca_certs=ssl_ca_certs,
-                ssl_ciphers=ssl_ciphers,
-                headers=headers,
-                factory=factory,
-                h11_max_incomplete_event_size=h11_max_incomplete_event_size,
-            )
-        )
+    

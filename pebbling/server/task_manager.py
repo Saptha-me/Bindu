@@ -66,7 +66,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from pebbling.server.scheduler.base import Scheduler
-from pebbling.server.schema import (
+from pebbling.storage.base import Storage
+
+from pebbling.protocol.types import (
     CancelTaskRequest,
     CancelTaskResponse,
     GetTaskPushNotificationRequest,
@@ -83,7 +85,7 @@ from pebbling.server.schema import (
     TaskNotFoundError,
     TaskSendParams,
 )
-from pebbling.server.storage.base import Storage
+
 
 
 @dataclass
@@ -98,7 +100,7 @@ class TaskManager:
     async def __aenter__(self):
         self._aexit_stack = AsyncExitStack()
         await self._aexit_stack.__aenter__()
-        await self._aexit_stack.enter_async_context(self.broker)
+        await self._aexit_stack.enter_async_context(self.scheduler)
 
         return self
 
@@ -120,13 +122,13 @@ class TaskManager:
 
         task = await self.storage.submit_task(context_id, message)
 
-        broker_params: TaskSendParams = {'id': task['id'], 'context_id': context_id, 'message': message}
+        scheduler_params: TaskSendParams = {'id': task['id'], 'context_id': context_id, 'message': message}
         config = request['params'].get('configuration', {})
         history_length = config.get('history_length')
         if history_length is not None:
-            broker_params['history_length'] = history_length
+            scheduler_params['history_length'] = history_length
 
-        await self.broker.run_task(broker_params)
+        await self.scheduler.run_task(scheduler_params)
         return SendMessageResponse(jsonrpc='2.0', id=request_id, result=task)
 
     async def get_task(self, request: GetTaskRequest) -> GetTaskResponse:
@@ -146,7 +148,7 @@ class TaskManager:
         return GetTaskResponse(jsonrpc='2.0', id=request['id'], result=task)
 
     async def cancel_task(self, request: CancelTaskRequest) -> CancelTaskResponse:
-        await self.broker.cancel_task(request['params'])
+        await self.scheduler.cancel_task(request['params'])
         task = await self.storage.load_task(request['params']['id'])
         if task is None:
             return CancelTaskResponse(

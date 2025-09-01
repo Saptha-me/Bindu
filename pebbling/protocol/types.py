@@ -494,7 +494,7 @@ class GetTaskSuccessResponse(PebblingProtocolBaseModel):
     jsonrpc: Literal['2.0'] = '2.0'
     result: Task
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class CancelTaskSuccessResponse(PebblingProtocolBaseModel):
     """Success response for canceling a task."""
     
@@ -502,6 +502,7 @@ class CancelTaskSuccessResponse(PebblingProtocolBaseModel):
     jsonrpc: Literal['2.0'] = '2.0'
     result: Task
 
+@pydantic.with_config({'alias_generator': to_camel})
 class TrustVerificationResponse(PebblingProtocolBaseModel):
     """Success response for trust verification."""
     
@@ -511,6 +512,7 @@ class TrustVerificationResponse(PebblingProtocolBaseModel):
 
 
 # Request types
+@pydantic.with_config({'alias_generator': to_camel})
 class SendMessageRequest(PebblingProtocolBaseModel):
     """Request to send a message."""
     
@@ -519,13 +521,13 @@ class SendMessageRequest(PebblingProtocolBaseModel):
     method: Literal['message/send'] = 'message/send'
     params: MessageSendParams
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class SendStreamingMessageRequest(SendMessageRequest):
     """Request to send a streaming message."""
     
     method: Literal['message/stream'] = 'message/stream'
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class GetTaskRequest(PebblingProtocolBaseModel):
     """Request to get a task."""
     
@@ -743,45 +745,42 @@ class AgentIdentity(PebblingProtocolBaseModel):
     csr: Optional[str] = Field(None, description="Agent's Certificate Signing Request.")
     
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class AgentSkill(PebblingProtocolBaseModel):
     """Represents a distinct capability or function that an agent can perform."""
     
-    description: str
-    examples: list[str] | None = Field(
-        default=None, examples=[['I need a recipe for bread']]
-    )
-    id: str
-    input_modes: list[str] | None = None
-    name: str
-    output_modes: list[str] | None = None
-    tags: list[str] = Field(
-        ..., examples=[['cooking', 'customer support', 'billing']]
-    )
+    id: Required[UUID]
+    description: NotRequired[str]
+    examples: NotRequired[list[str]]
+    input_modes: NotRequired[list[str]]
+    name: Required[str]
+    output_modes: NotRequired[list[str]]
+    tags: NotRequired[list[str]]
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class AgentExtension(PebblingProtocolBaseModel):
     """A declaration of a protocol extension supported by an Agent."""
     
-    description: str | None = None
-    params: dict[str, Any] | None = None
-    required: bool | None = None
-    uri: str
+    description: NotRequired[str]
+    params: NotRequired[dict[str, Any]]
+    required: Required[bool]
+    uri: Required[str]
 
 
+@pydantic.with_config({'alias_generator': to_camel})
 class AgentCapabilities(PebblingProtocolBaseModel):
     """Defines optional capabilities supported by an agent."""
     
-    extensions: list[AgentExtension] | None = None
-    push_notifications: bool | None = None
-    state_transition_history: bool | None = None
-    streaming: bool | None = None
+    extensions: NotRequired[list[AgentExtension]]
+    push_notifications: NotRequired[bool]
+    state_transition_history: NotRequired[bool]
+    streaming: NotRequired[bool]
 
 
 class AgentManifest(PebblingProtocolBaseModel):
     """Complete agent manifest with identity and capabilities."""
     
-    id: Union[UUID, int, str] = Field(
+    id: Required[UUID] = Field(
         ..., 
         description="The unique identifier of the agent", 
         examples=["123e4567-e89b-12d3-a456-426614174000"]
@@ -881,10 +880,10 @@ class PebblingContext:
     """Context wrapper for agent functions providing execution context."""
     
     def __init__(self, 
-                 task_id: Optional[str] = None,
-                 session_id: Optional[str] = None,
-                 metadata: Optional[Dict[str, Any]] = None,
-                 user_id: Optional[str] = None):
+                 task_id: UUID = None,
+                 session_id: UUID = None,
+                 metadata: UUID = None,
+                 user_id: UUID = None):
         """
         Initialize PebblingContext.
         

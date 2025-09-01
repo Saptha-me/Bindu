@@ -1,12 +1,14 @@
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, Union, Sequence
 
 from fastapi import FastAPI
 
 from pebbling.server.scheduler.memory_scheduler import InMemoryScheduler
-from pebbling.server.storage import Storage
-from pebbling.server.broker import Broker
-
+from pebbling.server.scheduler.redis_scheduler import RedisScheduler
+from pebbling.storage.memory_storage import InMemoryStorage
+from pebbling.storage.postgres_storage import PostgresStorage
+from pebbling.storage.qdrant_storage import QdrantStorage
+from pebbling.protocol.types import AgentSkill, AgentProvider
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -23,22 +25,19 @@ async def default_lifespan(app: FastAPI):
 
 
 def create_app(
-    memory_scheduler: InMemoryScheduler,
-    storage: Storage,
-    broker: Broker,
-    # Agent card
-    name: str | None = None,
+    scheduler: Union[InMemoryScheduler, RedisScheduler],
+    storage: Union[InMemoryStorage, PostgresStorage, QdrantStorage],
+    penguin_id: str,
     url: str = 'http://localhost:8000',
     version: str = '1.0.0',
-        description: str | None = None,
-        provider: AgentProvider | None = None,
-        skills: list[Skill] | None = None,
-        # Starlette
-        debug: bool = False,
-        routes: Sequence[Route] | None = None,
-        middleware: Sequence[Middleware] | None = None,
-        exception_handlers: dict[Any, ExceptionHandler] | None = None,
-        lifespan: Lifespan[FastA2A] | None = None,
+    description: str | None = None,
+    provider: AgentProvider | None = None,
+    skills: list[AgentSkill] | None = None,
+    debug: bool = False,
+    routes: Sequence[Route] | None = None,
+    middleware: Sequence[Middleware] | None = None,
+    exception_handlers: dict[Any, ExceptionHandler] | None = None,
+    lifespan: Lifespan[FastA2A] | None = None,
 ) -> Starlette:
     """Create a Pebble FastAPI application with A2A protocol support.
     

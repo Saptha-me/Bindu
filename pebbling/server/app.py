@@ -5,8 +5,16 @@ from fastapi import FastAPI
 
 from pebbling.protocol.types import AgentManifest
 from pebbling.server.task_manager import TaskManager
+from pebbling.server.scheduler import Scheduler
 from pebbling.server.storage import Storage
 from pebbling.server.broker import Broker
+
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.requests import Request
+from starlette.responses import FileResponse, Response
+from starlette.routing import Route
+from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
 
 
 @asynccontextmanager
@@ -15,13 +23,24 @@ async def default_lifespan(app: FastAPI):
     yield
 
 
-def create_app(
-    *agents: AgentManifest,
-    lifespan=None,
-    task_manager: TaskManager | None = None,
-    storage: Storage | None = None,
-    broker: Broker | None = None,
-) -> FastAPI:
+
+def create_starlette_app(
+    storage: Storage,
+        broker: Broker,
+        # Agent card
+        name: str | None = None,
+        url: str = 'http://localhost:8000',
+        version: str = '1.0.0',
+        description: str | None = None,
+        provider: AgentProvider | None = None,
+        skills: list[Skill] | None = None,
+        # Starlette
+        debug: bool = False,
+        routes: Sequence[Route] | None = None,
+        middleware: Sequence[Middleware] | None = None,
+        exception_handlers: dict[Any, ExceptionHandler] | None = None,
+        lifespan: Lifespan[FastA2A] | None = None,
+) -> Starlette:
     """Create a Pebble FastAPI application with A2A protocol support.
     
     Args:
@@ -34,6 +53,12 @@ def create_app(
     Returns:
         FastAPI application instance
     """
+    storage = storage or InMemoryStorage()
+    scheduler = scheduler or InMemoryScheduler()
+    worker = AgentWorker(agent=agent, broker=broker, storage=storage)
+
+    lifespan = lifespan or partial(worker_lifespan, worker=worker, agent=agent)
+
     app = FastAPI(
         title="Pebble Server",
         description="A2A-compatible server for Pebble agents",

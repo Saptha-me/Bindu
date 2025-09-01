@@ -1,4 +1,23 @@
 
+from __future__ import annotations as _annotations
+
+from collections.abc import AsyncIterator
+from contextlib import AsyncExitStack
+from typing import Any
+
+import anyio
+from opentelemetry.trace import get_current_span
+
+from pebbling.server.scheduler.base import (
+    Scheduler,
+    TaskOperation,
+    _CancelTask,
+    _PauseTask,
+    _ResumeTask,
+    _RunTask,
+)
+from pebbling.protocol.types import TaskIdParams, TaskSendParams
+
 
 class InMemoryScheduler(Scheduler):
     """A scheduler that schedules tasks in memory."""
@@ -29,6 +48,6 @@ class InMemoryScheduler(Scheduler):
         await self._write_stream.send(_ResumeTask(operation='resume', params=params, _current_span=get_current_span()))
 
     async def receive_task_operations(self) -> AsyncIterator[TaskOperation]:
-        """Receive task operations from the broker."""
+        """Receive task operations from the scheduler."""
         async for task_operation in self._read_stream:
             yield task_operation

@@ -65,8 +65,8 @@ from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from typing import Any
 
-from .broker import Broker
-from .schema import (
+from pebbling.server.scheduler.base import Scheduler
+from pebbling.server.schema import (
     CancelTaskRequest,
     CancelTaskResponse,
     GetTaskPushNotificationRequest,
@@ -83,14 +83,14 @@ from .schema import (
     TaskNotFoundError,
     TaskSendParams,
 )
-from .storage import Storage
+from pebbling.server.storage.base import Storage
 
 
 @dataclass
 class TaskManager:
     """A task manager responsible for managing tasks."""
 
-    broker: Broker
+    scheduler: Scheduler
     storage: Storage[Any]
 
     _aexit_stack: AsyncExitStack | None = field(default=None, init=False)

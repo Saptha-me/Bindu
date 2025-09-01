@@ -16,10 +16,10 @@ agents and the Pebbling framework.
 """
 
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, RootModel
+from pydantic import Discriminator, Field, RootModel
 from pydantic.alias_generators import to_camel
 from typing_extensions import Required, NotRequired, TypedDict, TypeAlias
 
@@ -69,46 +69,54 @@ RunMode: TypeAlias = Literal[
 # Content & Message Parts
 #-----------------------------------------------------------------------------
 
+@pydantic.with_config({'alias_generator': to_camel})
 class TextPart(PebblingProtocolBaseModel):
     """Represents a text segment within parts."""
     
-    kind: Literal['text'] = 'text'
-    metadata: dict[str, Any] | None = None
-    content: str
+    kind: Required[Literal['text']]
+    metadata: NotRequired[dict[str, Any]]
+    content: Required[str]
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class FileWithBytes(PebblingProtocolBaseModel):
     """File representation with binary content."""
     
-    bytes: str
-    mimeType: str | None = None
-    name: str | None = None
+    bytes: Required[str]
+    mimeType: NotRequired[str]
+    name: NotRequired[str]
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class FileWithUri(FileWithBytes):
     """File representation with URI reference."""
     
-    uri: str
+    uri: Required[str]
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class FilePart(TextPart):
     """Represents a file part in a message."""
     
-    kind: Literal['file'] = 'file'
-    file: FileWithBytes | FileWithUri
+    kind: Required[Literal['file']]
+    file: Required[FileWithBytes | FileWithUri]
 
 
+@pydantic.with_config({'alias_generator': to_camel})
 class DataPart(TextPart):
     """Represents a structured data part in a message."""
     
-    kind: Literal['data'] = 'data'
-    data: dict[str, Any]
+    kind: Required[Literal['data']]
+    data: Required[dict[str, Any]]
 
 
-class Part(RootModel[TextPart | FilePart | DataPart]):
-    """Union type for all possible message parts."""
-    
-    root: TextPart | FilePart | DataPart
+Part = Annotated[RootModel[TextPart | FilePart | DataPart], Field(discriminator='kind')]
+
+#-----------------------------------------------------------------------------
+# Content & Message Parts End
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+# Artifacts
+#-----------------------------------------------------------------------------
 
 @pydantic.with_config({'alias_generator': to_camel})
 class Artifact(PebblingProtocolBaseModel):
@@ -173,6 +181,11 @@ class Message(PebblingProtocolBaseModel):
     role: Required[Role]
     extra_data: NotRequired[dict[str, Any]]
 
+
+#-----------------------------------------------------------------------------
+# Task
+#-----------------------------------------------------------------------------
+
 @pydantic.with_config({'alias_generator': to_camel})
 class TaskStatus(PebblingProtocolBaseModel):
     """Status information for a task."""
@@ -227,8 +240,70 @@ class Task(PebblingProtocolBaseModel):
     artifacts: NotRequired[list[Artifact]]
     history: NotRequired[list[Message]]
     metadata: NotRequired[dict[str, Any]]
-    
 
+@pydantic.with_config({'alias_generator': to_camel})
+class TaskStatusUpdateEvent(PebblingProtocolBaseModel):
+    """Event for task status updates."""
+    
+    contextId: Required[UUID]
+    final: Required[bool]
+    kind: Required[Literal['status-update']]
+    metadata: NotRequired[dict[str, Any]]
+    status: Required[TaskStatus]
+    taskId: Required[UUID]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class TaskArtifactUpdateEvent(PebblingProtocolBaseModel):
+    """Event for task artifact updates."""
+    
+    append: NotRequired[bool]
+    artifact: Required[Artifact]
+    contextId: Required[UUID]
+    kind: Required[Literal['artifact-update']]
+    lastChunk: NotRequired[bool]
+    metadata: NotRequired[dict[str, Any]]
+    taskId: Required[UUID]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class TaskSendParams(TypedDict):
+    """Internal parameters for task execution within the framework."""
+
+    id: Required[UUID]
+    context_id: Required[UUID]
+    message: NotRequired[Message]
+    history_length: NotRequired[int]
+    metadata: NotRequired[dict[str, Any]]
+
+
+@pydantic.with_config({'alias_generator': to_camel})
+class TaskIdParams(PebblingProtocolBaseModel):
+    """Parameters for task identification."""
+    
+    id: Required[UUID]
+    metadata: NotRequired[dict[str, Any]]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class TaskQueryParams(TaskIdParams):
+    """Query parameters for a task."""
+
+    history_length: NotRequired[int]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class MessageSendConfiguration(PebblingProtocolBaseModel):
+    """Configuration for message sending."""
+    
+    acceptedOutputModes: Required[list[str]]
+    blocking: NotRequired[bool]
+    historyLength: NotRequired[int]
+    pushNotificationConfig: NotRequired[PushNotificationConfig]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class MessageSendParams(PebblingProtocolBaseModel):
+    """Parameters for sending messages."""
+    
+    configuration: MessageSendConfiguration | None = None
+    message: Required[Message]
+    metadata: NotRequired[dict[str, Any]]
 
 #-----------------------------------------------------------------------------
 # Agent-to-Agent Negotiation Models
@@ -411,63 +486,14 @@ class JSONRPCErrorResponse(PebblingProtocolBaseModel):
     jsonrpc: Literal['2.0'] = '2.0'
 
 
-class TaskStatusUpdateEvent(PebblingProtocolBaseModel):
-    """Event for task status updates."""
-    
-    contextId: UUID
-    final: bool
-    kind: Literal['status-update'] = 'status-update'
-    metadata: dict[str, Any] | None = None
-    status: TaskStatus
-    taskId: UUID
-
-
-class TaskArtifactUpdateEvent(PebblingProtocolBaseModel):
-    """Event for task artifact updates."""
-    
-    append: bool | None = None
-    artifact: Artifact
-    contextId: UUID
-    kind: Literal['artifact-update'] = 'artifact-update'
-    lastChunk: bool | None = None
-    metadata: dict[str, Any] | None = None
-    taskId: UUID
 
 
 
-@pydantic.with_config({'alias_generator': to_camel})
-class TaskSendParams(TypedDict):
-    """Internal parameters for task execution within the framework."""
-
-    id: Required[UUID]
-    context_id: Required[UUID]
-    message: NotRequired[Message]
-    history_length: NotRequired[int]
-    metadata: NotRequired[dict[str, Any]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
-class TaskIdParams(PebblingProtocolBaseModel):
-    """Parameters for task identification."""
-    
-    id: Required[UUID]
-    metadata: NotRequired[dict[str, Any]]
 
 
-class MessageSendConfiguration(PebblingProtocolBaseModel):
-    """Configuration for message sending."""
-    
-    acceptedOutputModes: list[str]
-    blocking: bool | None = None
-    historyLength: int | None = None
 
-
-class MessageSendParams(PebblingProtocolBaseModel):
-    """Parameters for sending messages."""
-    
-    configuration: MessageSendConfiguration | None = None
-    message: Message
-    metadata: dict[str, Any] | None = None
 
 
 # Response types
@@ -511,47 +537,58 @@ class TrustVerificationResponse(PebblingProtocolBaseModel):
     result: Task
 
 
-# Request types
-@pydantic.with_config({'alias_generator': to_camel})
-class SendMessageRequest(PebblingProtocolBaseModel):
-    """Request to send a message."""
-    
-    id: UUID
-    jsonrpc: Literal['2.0'] = '2.0'
-    method: Literal['message/send'] = 'message/send'
-    params: MessageSendParams
+###############################################################################################
+#######################################   Requests and responses   ############################
+###############################################################################################
 
-@pydantic.with_config({'alias_generator': to_camel})
-class SendStreamingMessageRequest(SendMessageRequest):
-    """Request to send a streaming message."""
-    
-    method: Literal['message/stream'] = 'message/stream'
+SendMessageRequest = JSONRPCRequest[Literal['message/send'], MessageSendParams]
+"""A JSON RPC request to send a message."""
 
-@pydantic.with_config({'alias_generator': to_camel})
-class GetTaskRequest(PebblingProtocolBaseModel):
-    """Request to get a task."""
-    
-    id: UUID
-    jsonrpc: Literal['2.0'] = '2.0'
-    method: Literal['tasks/get'] = 'tasks/get'
-    params: TaskIdParams
+SendMessageResponse = JSONRPCResponse[Union[Task, Message], JSONRPCError[Any, Any]]
+"""A JSON RPC response to send a message."""
 
+StreamMessageRequest = JSONRPCRequest[Literal['message/stream'], MessageSendParams]
+"""A JSON RPC request to stream a message."""
 
-class CancelTaskRequest(GetTaskRequest):
-    """Request to cancel a task."""
-    
-    method: Literal['tasks/cancel'] = 'tasks/cancel'
+GetTaskRequest = JSONRPCRequest[Literal['tasks/get'], TaskQueryParams]
+"""A JSON RPC request to get a task."""
 
+GetTaskResponse = JSONRPCResponse[Task, TaskNotFoundError]
+"""A JSON RPC response to get a task."""
 
-class TaskResubscriptionRequest(GetTaskRequest):
-    """Request to resubscribe to task events."""
-    
-    method: Literal['tasks/resubscribe'] = 'tasks/resubscribe'
+CancelTaskRequest = JSONRPCRequest[Literal['tasks/cancel'], TaskIdParams]
+"""A JSON RPC request to cancel a task."""
 
-class TrustVerificationRequest(GetTaskRequest):
-    """Request to verify trust."""
-    
-    method: Literal['trust/verify'] = 'trust/verify'
+CancelTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
+"""A JSON RPC response to cancel a task."""
+
+SetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/set'], TaskPushNotificationConfig]
+"""A JSON RPC request to set a task push notification."""
+
+SetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
+"""A JSON RPC response to set a task push notification."""
+
+GetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/get'], TaskIdParams]
+"""A JSON RPC request to get a task push notification."""
+
+GetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
+"""A JSON RPC response to get a task push notification."""
+
+ResubscribeTaskRequest = JSONRPCRequest[Literal['tasks/resubscribe'], TaskIdParams]
+"""A JSON RPC request to resubscribe to a task."""
+
+ListTaskPushNotificationConfigRequest = JSONRPCRequest[
+    Literal['tasks/pushNotificationConfig/list'], ListTaskPushNotificationConfigParams
+]
+"""A JSON RPC request to list task push notification configs."""
+
+DeleteTaskPushNotificationConfigRequest = JSONRPCRequest[
+    Literal['tasks/pushNotificationConfig/delete'], DeleteTaskPushNotificationConfigParams
+]
+"""A JSON RPC request to delete a task push notification config."""
+
+DeleteTaskPushNotificationConfigResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
+"""A JSON RPC response to delete a task push notification config."""
 
 
 # Union types for requests and responses
@@ -592,8 +629,22 @@ class SendStreamingMessageResponse(
     
     root: JSONRPCErrorResponse | SendStreamingMessageSuccessResponse
 
+PebblingRequest = Annotated[
+    Union[
+        SendMessageRequest,
+        StreamMessageRequest,
+        GetTaskRequest,
+        CancelTaskRequest,
+        SetTaskPushNotificationRequest,
+        GetTaskPushNotificationRequest,
+        ResubscribeTaskRequest,
+        ListTaskPushNotificationConfigRequest,
+        DeleteTaskPushNotificationConfigRequest,
+    Discriminator('method'),
+]
 
-class PebblingRequest(
+
+PebblingRequest = 
     RootModel[
         SendMessageRequest
         | SendStreamingMessageRequest

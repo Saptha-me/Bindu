@@ -21,7 +21,7 @@ from uuid import UUID
 
 from pydantic import Field, RootModel
 from pydantic.alias_generators import to_camel
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import Required, NotRequired, TypedDict
 
 from pebbling.protocol._base import PebblingProtocolBaseModel
 
@@ -126,21 +126,15 @@ class Artifact(PebblingProtocolBaseModel):
     - Streamable: Parts can be appended during streaming responses
     - Traceable: Each artifact has a unique ID for reference
 
-    Examples:
-    - Code generation task → Artifact with Python file + documentation
-    - Web scraping task → Artifact with JSON data + extracted images  
-    - Report generation → Artifact with PDF file + summary text
-    - API analysis → Artifact with schema file + usage examples
-
     A single task may produce multiple artifacts when the output naturally
     separates into distinct deliverables (e.g., frontend + backend code).
     """
     
-    artifact_id: UUID = Field(..., description="Unique identifier for the artifact")
+    artifact_id: Required[UUID] = Field(..., description="Unique identifier for the artifact")
     name: NotRequired[str]
     description: NotRequired[str]
     metadata: NotRequired[dict[str, Any]]
-    parts: list[Part]
+    parts: NotRequired[list[Part]]
     append: NotRequired[bool]
     last_chunk: NotRequired[bool]
     extra_data: NotRequired[dict[str, Any]]
@@ -166,25 +160,19 @@ class Message(PebblingProtocolBaseModel):
     - File parts for context documents or references  
     - Data parts for structured metadata or parameters
 
-    Examples:
-    - User request: "Analyze this code" + Python file + requirements doc
-    - Agent status: "Processing step 2 of 5" + progress metadata
-    - Error message: "API timeout" + error details + retry instructions
-    - Coordination: "Task delegated to agent X" + task parameters
-
     Flow Pattern:
     Client → Message (request) → Agent → Message (status) → Artifact (result)
     """
 
-    contextId: NotRequired[UUID]
-    task_id: NotRequired[UUID]
+    contextId: Required[UUID]
+    task_id: Required[UUID]
     reference_task_ids: NotRequired[list[UUID]]
-    message_id: NotRequired[UUID]
-    kind: Literal['message'] = 'message'
+    message_id: Required[UUID]
+    kind: Required[Literal['message']]
     
     metadata: NotRequired[dict[str, Any]]
-    parts: list[Part]
-    role: Role
+    parts: Required[list[Part]]
+    role: Required[Role]
     extra_data: NotRequired[dict[str, Any]]
 
 
@@ -198,16 +186,49 @@ class TaskStatus(PebblingProtocolBaseModel):
     )
 
 
+@pydantic.with_config({'alias_generator': to_camel})
 class Task(PebblingProtocolBaseModel):
-    """Top-level task representation."""
+    """Stateful execution unit that coordinates client-agent interaction to achieve a goal.
+
+    Tasks serve as the primary coordination mechanism in the Pebbling protocol,
+    managing the complete lifecycle from request to completion. They maintain
+    conversation history, track execution state, and collect generated artifacts.
+
+    Core Responsibilities:
+    - Message Exchange: Facilitate communication between clients and agents
+    - State Management: Track task progress and execution status
+    - Artifact Collection: Gather and organize agent-generated outputs
+    - History Tracking: Maintain complete conversation and decision trail
+
+    Task Lifecycle:
+    1. Creation: Client initiates task with initial message/requirements
+    2. Processing: Agent processes messages and updates status
+    3. Communication: Bidirectional message exchange as needed
+    4. Artifact Generation: Agent produces deliverable outputs
+    5. Completion: Final status update and artifact delivery
+
+    Key Properties:
+    - Client-Initiated: Always created by clients, never by agents
+    - Agent-Controlled: Status and progress determined by executing agent
+    - Stateful: Maintains complete execution context and history
+    - Traceable: Unique ID enables task tracking and reference
+
+    Task Relationships:
+    - Contains: Multiple messages (conversation history)
+    - Produces: Multiple artifacts (execution results)
+    - References: Other tasks via reference_task_ids for coordination
+    - Belongs to: Specific context for session management
+    """
     
-    artifacts: list[Artifact] | None = None
-    contextId: UUID
-    history: list[Message] | None = None
-    id: str
-    kind: Literal['task'] = 'task'
-    metadata: dict[str, Any] | None = None
-    status: TaskStatus
+    id: Required[UUID]
+    contextId: Required[UUID]
+    kind: Required[Literal['task']]
+    status: Required[TaskStatus]
+
+    artifacts: NotRequired[list[Artifact]]
+    history: NotRequired[list[Message]]
+    metadata: NotRequired[dict[str, Any]]
+    
 
 
 #-----------------------------------------------------------------------------
@@ -419,9 +440,9 @@ class TaskArtifactUpdateEvent(PebblingProtocolBaseModel):
 class TaskSendParams(TypedDict):
     """Internal parameters for task execution within the framework."""
 
-    id: UUID
-    context_id: UUID
-    message: Message
+    id: Required[UUID]
+    context_id: Required[UUID]
+    message: NotRequired[Message]
     history_length: NotRequired[int]
     metadata: NotRequired[dict[str, Any]]
 
@@ -430,8 +451,8 @@ class TaskSendParams(TypedDict):
 class TaskIdParams(PebblingProtocolBaseModel):
     """Parameters for task identification."""
     
-    id: UUID
-    metadata: dict[str, Any] | None = None
+    id: Required[UUID]
+    metadata: NotRequired[dict[str, Any]]
 
 
 class MessageSendConfiguration(PebblingProtocolBaseModel):

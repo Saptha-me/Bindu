@@ -29,12 +29,7 @@ from pebbling.protocol._base import PebblingProtocolBaseModel
 # Base Types and Enums
 #-----------------------------------------------------------------------------
 
-class Role(str, Enum):
-    """Message sender's role."""
-    
-    agent = 'agent'
-    user = 'user'
-
+Role: TypeAlias = Literal['agent', 'user']
 
 TaskState: TypeAlias = Literal[
     'submitted',
@@ -56,20 +51,18 @@ TaskState: TypeAlias = Literal[
 ]
 
 
-class ErrorCode(str, Enum):
-    """Error code enum for API responses."""
-    
-    server_error = "server_error"
-    invalid_input = "invalid_input"
-    not_found = "not_found"
+ErrorCode: TypeAlias = Literal[
+    "server_error",
+    "invalid_input", 
+    "not_found"
+]
 
 
-class RunMode(str, Enum):
-    """Run mode options for agent execution."""
-    
-    sync = "sync"           # Synchronous execution, wait for complete response
-    async_mode = "async"    # Asynchronous execution, don't wait for response
-    stream = "stream"       # Streaming execution, receive partial results
+RunMode: TypeAlias = Literal[
+    "sync",        # Synchronous execution, wait for complete response
+    "async",       # Asynchronous execution, don't wait for response  
+    "stream"       # Streaming execution, receive partial results
+]
 
 
 #-----------------------------------------------------------------------------
@@ -180,14 +173,15 @@ class Message(PebblingProtocolBaseModel):
     role: Required[Role]
     extra_data: NotRequired[dict[str, Any]]
 
-
+@pydantic.with_config({'alias_generator': to_camel})
 class TaskStatus(PebblingProtocolBaseModel):
     """Status information for a task."""
     
-    message: Message | None = None
-    state: TaskState
-    timestamp: str | None = Field(
-        default=None, examples=['2023-10-27T10:00:00Z']
+    message: NotRequired[Message]
+    state: Required[TaskState]
+    timestamp: Required[str] = Field(
+        examples=['2023-10-27T10:00:00Z'],
+        description="ISO datetime value of when the status was updated."
     )
 
 

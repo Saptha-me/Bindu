@@ -474,6 +474,45 @@ class PaymentAction(PebblingProtocolBaseModel):
 
 
 #-----------------------------------------------------------------------------
+# Credit System for Hibiscus Centralized Management
+#-----------------------------------------------------------------------------
+
+@pydantic.with_config({'alias_generator': to_camel})
+class AgentExecutionCost(PebblingProtocolBaseModel):
+    """Defines the credit cost for executing an agent."""
+    
+    agent_id: Required[str] = Field(..., description="Agent identifier")
+    agent_name: Required[str] = Field(..., description="Human-readable agent name")
+    credits_per_request: Required[int] = Field(..., description="Credits required per execution request")
+    creator_did: Required[str] = Field(..., description="DID of the agent creator who receives credits")
+    minimum_trust_level: Required[TrustLevel] = Field(default=TrustLevel.GUEST, description="Minimum trust level required to execute")
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ExecutionRequest(PebblingProtocolBaseModel):
+    """Represents a request to execute an agent with credit verification."""
+    
+    request_id: Required[UUID]
+    executor_did: Required[str] = Field(..., description="DID of user requesting execution")
+    agent_id: Required[str] = Field(..., description="Agent to execute")
+    input_data: Required[str] = Field(..., description="Input for agent execution")
+    estimated_credits: Required[int] = Field(..., description="Estimated credits needed")
+    trust_level: Required[TrustLevel] = Field(..., description="Trust level of executor")
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ExecutionResponse(PebblingProtocolBaseModel):
+    """Represents the response from an agent execution with credit deduction."""
+    
+    request_id: Required[UUID]
+    execution_id: Required[UUID]
+    success: Required[bool]
+    credits_charged: Required[int] = Field(..., description="Actual credits charged")
+    transaction_id: Optional[UUID] = Field(None, description="Credit transaction ID")
+    output_data: Optional[str] = Field(None, description="Agent execution output")
+    error_message: Optional[str] = Field(None, description="Error message if execution failed")
+    execution_time: Required[datetime]
+
+
+#-----------------------------------------------------------------------------
 # JSON-RPC Definition and Error Types
 #-----------------------------------------------------------------------------
 
@@ -596,113 +635,49 @@ send_message_request_ta: TypeAdapter[SendMessageRequest] = TypeAdapter(SendMessa
 send_message_response_ta: TypeAdapter[SendMessageResponse] = TypeAdapter(SendMessageResponse)
 stream_message_request_ta: TypeAdapter[StreamMessageRequest] = TypeAdapter(StreamMessageRequest)
 
-#-----------------------------------------------------------------------------
-# Lets handle Security
-#-----------------------------------------------------------------------------
-
-class AgentSecurity(PebblingProtocolBaseModel):
-    """Security configuration for agents in the Pebbling framework."""
-    
-    # DID-based security settings
-    challenge_expiration_seconds: int = Field(
-        300, 
-        description="Seconds until a challenge expires for DID-based verification"
-    )
-    require_challenge_response: bool = Field(
-        True, 
-        description="Whether to require challenge-response verification for agent communication"
-    )
-    signature_algorithm: str = Field(
-        "Ed25519", 
-        description="Algorithm used for digital signatures"
-    )
-    pki_dir: Optional[str] = Field(
-        None, 
-        description="Path where security keys are stored"
-    )
-    
-    # Server security settings
-    endpoint_type: str = Field(
-        "json-rpc", 
-        description="Type of endpoint (json-rpc, mlts, or http)"
-    )
-    verify_requests: bool = Field(
-        True, 
-        description="Whether to verify incoming requests"
-    )
-    
-    # Certificate settings
-    cert_dir: Optional[str] = Field(
-        None, 
-        description="Path to certificate file"
-    )
-    certificate_authority: Optional[str] = Field(
-        None, 
-        description="Type of certificate authority (self-signed, letsencrypt, sheldon)"
-    )
-    
-    # Policies
-    allow_anonymous: bool = Field(
-        False, 
-        description="Whether to allow anonymous access"
-    )
 
 #-----------------------------------------------------------------------------
 # Lets handle Trust
 #-----------------------------------------------------------------------------
 
-
-
+@pydantic.with_config({'alias_generator': to_camel})
 class KeycloakRole(PebblingProtocolBaseModel):
     """Keycloak role model."""
-    role_id: UUID = Field(..., description="Role ID from Keycloak IAM.")
-    role_name: str = Field(..., description="Human-readable role name.")
-    permissions: List[str] = Field(default_factory=list, description="Specific permissions tied to this role.")
-    trust_level: TrustLevel = Field(TrustLevel.GUEST, description="Default trust level for this role")
-    realm_name: str = Field(..., description="The Keycloak realm this role belongs to.")
-    
-    # For integrations with other identity providers
-    external_mappings: Optional[Dict[str, str]] = Field(
-        None, 
-        description="Mappings to equivalent roles in other identity systems"
-    )
-    
-    # For detailed permission control
-    operation_permissions: Optional[Dict[str, TrustLevel]] = Field(
-        None,
-        description="Operation-specific trust requirements, e.g., {'update_customer': 'high'}"
-    )
+    role_id: Required[UUID]
+    role_name: Required[str]
+    permissions: Required[List[str]]
+    trust_level: Required[TrustLevel]
+    realm_name: Required[str]
+    external_mappings: Optional[Dict[str, str]] = None
+    operation_permissions: Optional[Dict[str, TrustLevel]] = None
 
+
+@pydantic.with_config({'alias_generator': to_camel})
 class AgentTrust(PebblingProtocolBaseModel):
     """Trust configuration for an agent."""
-    identity_provider: IdentityProvider = Field(..., description="Identity provider used for authentication")
-    inherited_roles: List[KeycloakRole] = Field(
-        default_factory=list, 
-        description="Roles inherited from the agent's creator"
-    )
-    certificate: Optional[str] = Field(None, description="Agent's security certificate for verification")
-    certificate_fingerprint: Optional[str] = Field(None, description="Fingerprint of the agent's certificate")
-    creator_id: Union[UUID, int, str] = Field(..., description="ID of the user who created this agent")
-    creation_timestamp: int = Field(..., description="UNIX timestamp of agent creation")
-    trust_verification_required: bool = Field(True, description="Whether trust verification is required")
-    allowed_operations: Dict[str, TrustLevel] = Field(
-        default_factory=dict,
-        description="Operations this agent is allowed to perform with required trust levels"
-    )
+    identity_provider: Required[IdentityProvider]
+    inherited_roles: Required[List[KeycloakRole]]
+    certificate: Optional[str]
+    certificate_fingerprint: Optional[str]
+    creator_id: Union[UUID, int, str]
+    creation_timestamp: int
+    trust_verification_required: bool
+    allowed_operations: Dict[str, TrustLevel]
 
 #-----------------------------------------------------------------------------
 # Agent 
 #-----------------------------------------------------------------------------
 
+@pydantic.with_config({'alias_generator': to_camel})
 class AgentIdentity(PebblingProtocolBaseModel):
     """Agent identity configuration with DID and other identifiers."""
     
-    did: Optional[str] = Field(None, description="Agent DID string.")
-    did_document: Optional[Dict[str, Any]] = Field(None, description="Agent DID document for decentralized identity.")
-    agentdns_url: Optional[str] = Field(None, description="Agent DNS-based identity URL (agentdns.ai).")
-    endpoint: Optional[str] = Field(None, description="Secure mTLS agent endpoint.")
-    public_key: Optional[str] = Field(None, description="Agent's public key for mTLS.")
-    csr: Optional[str] = Field(None, description="Agent's Certificate Signing Request.")
+    did: Optional[str] = None
+    did_document: Optional[Dict[str, Any]] = None
+    agentdns_url: Optional[str] = None
+    endpoint: Optional[str] = None
+    public_key: Optional[str] = None
+    csr: Optional[str] = None
     
 
 @pydantic.with_config({'alias_generator': to_camel})
@@ -740,64 +715,34 @@ class AgentCapabilities(PebblingProtocolBaseModel):
 class AgentManifest(PebblingProtocolBaseModel):
     """Complete agent manifest with identity and capabilities."""
     
-    id: Required[UUID] = Field(
-        ..., 
-        description="The unique identifier of the agent", 
-        examples=["123e4567-e89b-12d3-a456-426614174000"]
-    )
-    name: str = Field(
-        ..., 
-        description="The name of the agent", 
-        examples=["Japanese Restaurant Reviewer Agent"]
-    )
-    description: str | None = Field(None, description="Description of the agent")
-    user_id: Optional[Union[UUID, int, str]] = Field(None, description="user")
-
-    # Trust
-    trust_config: Optional[AgentTrust] = Field(
-        None, 
-        description="Trust configuration and inherited permissions"
-    )
-
-    capabilities: Optional[AgentCapabilities] = Field(
-        None, 
-        description="Optional capabilities supported by the agent"
-    )
-    skill: Optional[AgentSkill] = Field(
-        None, 
-        description="Optional skill supported by the agent"
-    )
-
-    instance: Optional[Any] = Field(
-        None, 
-        description="The agent/team/workflow/mcp instance"
-    )
-    
-    # Configuration
-    num_history_sessions: Optional[int] = None
-    storage: Optional[Dict[str, Any]] = None
-    context: Optional[Dict[str, Any]] = None
-    extra_data: Optional[Dict[str, Any]] = None
-    
-    # Debug settings
-    debug_mode: bool = False
-    debug_level: Literal[1, 2] = 1 # 1 = Basic, 2 = Detailed
-    
-    # Monitoring
-    monitoring: bool = False
-    telemetry: bool = True
-
-    # Security
-    security: Optional[AgentSecurity] = Field(
-        None, 
-        description="Security configuration for the agent"
-    )
+    id: Required[UUID]
+    name: Required[str]
+    description: NotRequired[str]
+    user_id: Required[UUID]
+    version: Required[str]
 
     # Identity
-    identity: Optional[AgentIdentity] = Field(
-        None, 
-        description="Identity configuration for the agent"
-    )
+    identity: NotRequired[AgentIdentity]
+
+    # Trust
+    trust_config: NotRequired[AgentTrust]
+
+    capabilities: Required[AgentCapabilities]
+    skill: Required[AgentSkill]
+
+    kind: Required[str]
     
-    # Versioning
-    version: str = Field(..., examples=['1.0.0'])
+    # Configuration
+    num_history_sessions: NotRequired[int]
+    storage: NotRequired[Dict[str, Any]]
+    context: NotRequired[Dict[str, Any]]
+    extra_data: NotRequired[Dict[str, Any]]
+    
+    # Debug settings
+    debug_mode: NotRequired[bool]
+    debug_level: NotRequired[Literal[1, 2]]
+    
+    # Monitoring
+    monitoring: NotRequired[bool]
+    telemetry: NotRequired[bool]
+    

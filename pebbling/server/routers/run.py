@@ -1,12 +1,7 @@
 from starlette.requests import Request
 from starlette.responses import Response
 from pydantic import TypeAdapter
-from pebbling.protocol.types import PebbleRequest, PebbleResponse
-
-
-# Type adapters for JSON-RPC validation
-pebble_request_ta = TypeAdapter(PebbleRequest)
-pebble_response_ta = TypeAdapter(PebbleResponse)
+from pebbling.protocol.types import pebble_request_ta, pebble_response_ta
 
 
 async def agent_run_endpoint(request: Request) -> Response:

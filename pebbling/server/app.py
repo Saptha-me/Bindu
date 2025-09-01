@@ -3,9 +3,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from pebbling.protocol.types import AgentManifest
-from pebbling.server.task_manager import TaskManager
-from pebbling.server.scheduler.memory import InMemoryScheduler
+from pebbling.server.scheduler.memory_scheduler import InMemoryScheduler
 from pebbling.server.storage import Storage
 from pebbling.server.broker import Broker
 
@@ -24,7 +22,7 @@ async def default_lifespan(app: FastAPI):
 
 
 
-def create_starlette_app(
+def create_app(
     memory_scheduler: InMemoryScheduler,
     storage: Storage,
     broker: Broker,

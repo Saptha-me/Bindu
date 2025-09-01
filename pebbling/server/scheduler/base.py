@@ -1,3 +1,55 @@
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+# SCHEDULER OVERVIEW:
+# 
+# The Scheduler is the task queue manager in the Pebbling framework.
+# It receives tasks from the TaskManager and coordinates their execution
+# by workers, handling task lifecycle operations like run, cancel, pause, resume.
+#
+# BURGER STORE ANALOGY:
+# 
+# Think of a busy burger restaurant:
+# 
+# 1. CUSTOMER ORDERS (TaskManager):
+#    - Customer places order: "I want a cheeseburger"
+#    - TaskManager creates the order and sends it to Scheduler
+# 
+# 2. ORDER QUEUE (Scheduler):
+#    - Scheduler acts like the kitchen order board
+#    - Queues orders: [Order #1: Cheeseburger, Order #2: Fries, ...]
+#    - Decides which orders go to which kitchen stations (workers)
+#    - Handles special requests: pause order, cancel order, resume order
+# 
+# 3. KITCHEN WORKERS (Workers):
+#    - Receive orders from the Scheduler
+#    - Cook the food (execute the task)
+#    - Report back when done
+# 
+# 4. ORDER TRACKING (Storage):
+#    - Keeps track of order status: submitted, cooking, ready, delivered
+#    - Stores order history and customer preferences
+#
+# SCHEDULER RESPONSIBILITIES:
+# - Queue management: Decide which tasks run when
+# - Load balancing: Distribute tasks across available workers  
+# - Task lifecycle: Handle run, cancel, pause, resume operations
+# - Worker coordination: Send tasks to appropriate workers
+# - Failure handling: Retry failed tasks, handle worker crashes
+#
+# IMPLEMENTATION:
+# - Abstract base class defines the scheduler interface
+# - Concrete implementations (InMemoryScheduler, RedisScheduler, etc.)
+# - Integrates with TaskManager for task submission
+# - Communicates with Workers for task execution
+#
+#  Thank you users! We ❤️ you! - 🐧
+
 from __future__ import annotations as _annotations
 
 from abc import ABC, abstractmethod

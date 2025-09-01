@@ -28,7 +28,7 @@ Architecture:
           v                            v
   +------------------+         +----------------+
   |                  |         |                |
-  |      Broker      | .       |    Storage     |
+  |      Scheduler   | .       |    Storage     |
   |     (queues) .   |         | (persistence)  |
   |                  |         |                |
   +------------------+         +----------------+

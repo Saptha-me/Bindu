@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from pebbling.protocol.types import AgentManifest
 from pebbling.server.task_manager import TaskManager
-from pebbling.server.scheduler import Scheduler
+from pebbling.server.scheduler.memory import InMemoryScheduler
 from pebbling.server.storage import Storage
 from pebbling.server.broker import Broker
 
@@ -25,12 +25,13 @@ async def default_lifespan(app: FastAPI):
 
 
 def create_starlette_app(
+    memory_scheduler: InMemoryScheduler,
     storage: Storage,
-        broker: Broker,
-        # Agent card
-        name: str | None = None,
-        url: str = 'http://localhost:8000',
-        version: str = '1.0.0',
+    broker: Broker,
+    # Agent card
+    name: str | None = None,
+    url: str = 'http://localhost:8000',
+    version: str = '1.0.0',
         description: str | None = None,
         provider: AgentProvider | None = None,
         skills: list[Skill] | None = None,

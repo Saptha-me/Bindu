@@ -21,7 +21,7 @@ from uuid import UUID
 
 from pydantic import Field, RootModel
 from pydantic.alias_generators import to_camel
-from typing_extensions import Required, NotRequired, TypedDict
+from typing_extensions import Required, NotRequired, TypedDict, TypeAlias
 
 from pebbling.protocol._base import PebblingProtocolBaseModel
 
@@ -36,19 +36,24 @@ class Role(str, Enum):
     user = 'user'
 
 
-class TaskState(str, Enum):
-    """Represents the possible states of a Task."""
-    
-    submitted = 'submitted'
-    working = 'working'
-    input_required = 'input-required'
-    completed = 'completed'
-    canceled = 'canceled'
-    failed = 'failed'
-    rejected = 'rejected'
-    auth_required = 'auth-required'
-    unknown = 'unknown'
-    trust_verification_required = 'trust-verification-required'
+TaskState: TypeAlias = Literal[
+    'submitted',
+    'working', 
+    'input-required',
+    'completed',
+    'canceled',
+    'failed',
+    'rejected',
+    'auth-required',
+    'unknown',
+    'trust-verification-required',
+    'pending',
+    'suspended',
+    'resumed',
+    'negotiation-bid-submitted',
+    'negotiation-bid-lost',
+    'negotiation-bid-won',
+]
 
 
 class ErrorCode(str, Enum):

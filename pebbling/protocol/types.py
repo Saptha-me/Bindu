@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, RootModel
+from typing_extensions import NotRequired, TypeAlias, TypedDict
 
 from pebbling.protocol._base import PebblingProtocolBaseModel
 
@@ -359,6 +360,19 @@ class TaskArtifactUpdateEvent(PebblingProtocolBaseModel):
     taskId: UUID
 
 
+
+@pydantic.with_config({'alias_generator': to_camel})
+class TaskSendParams(TypedDict):
+    """Internal parameters for task execution within the framework."""
+
+    id: UUID
+    context_id: UUID
+    message: Message
+    history_length: NotRequired[int]
+    metadata: NotRequired[dict[str, Any]]
+
+
+@pydantic.with_config({'alias_generator': to_camel})
 class TaskIdParams(PebblingProtocolBaseModel):
     """Parameters for task identification."""
     

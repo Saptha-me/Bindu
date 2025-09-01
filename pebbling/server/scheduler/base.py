@@ -1,16 +1,22 @@
+from __future__ import annotations as _annotations
 
+from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
+from dataclasses import dataclass
+from typing import Annotated, Any, Generic, Literal, TypeVar
+
+from opentelemetry.trace import Span, get_tracer
+from pydantic import Discriminator
+from typing_extensions import Self, TypedDict
+
+from pebbling.protocol.types import TaskIdParams, TaskSendParams
+
+tracer = get_tracer(__name__)
 
 
 @dataclass
 class Scheduler(ABC):
-    """The scheduler class is in charge of scheduling the tasks.
-
-    The HTTP server uses the scheduler to schedule tasks.
-
-    The simple implementation is the `InMemoryScheduler`, which is the scheduler that
-    runs the tasks in the same process as the HTTP server. That said, this class can be
-    extended to support remote workers.
-    """
+    """The scheduler class is in charge of scheduling the tasks."""
 
     @abstractmethod
     async def run_task(self, params: TaskSendParams) -> None:
@@ -26,7 +32,7 @@ class Scheduler(ABC):
     async def pause_task(self, params: TaskIdParams) -> None:
         """Pause a task."""
         raise NotImplementedError('send_pause_task is not implemented yet.')
-    
+
     @abstractmethod
     async def resume_task(self, params: TaskIdParams) -> None:
         """Resume a task."""
@@ -40,9 +46,9 @@ class Scheduler(ABC):
 
     @abstractmethod
     def receive_task_operations(self) -> AsyncIterator[TaskOperation]:
-        """Receive task operations from the scheduler.
+        """Receive task operations from the broker.
 
-        On a multi-worker setup, the scheduler will need to round-robin the task operations
+        On a multi-worker setup, the broker will need to round-robin the task operations
         between the workers.
         """
 

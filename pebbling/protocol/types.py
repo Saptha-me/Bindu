@@ -79,6 +79,26 @@ NegotiationSessionStatus: TypeAlias = Literal[
     "rejected"
 ]
 
+TrustLevel: TypeAlias = Literal[
+    "admin",           # Admin operations, minimal risk
+    "analyst",     # Standard operations
+    "auditor",         # Sensitive operations
+    "editor",         # Edit operations, moderate risk
+    "guest",           # Limited access, read-only operations
+    "manager",       # Management operations, elevated permissions
+    "operator",     # System operations, moderate risk
+    "super_admin", # Highest level access, all operations permitted
+    "support",       # Support operations, troubleshooting access
+    "viewer"         # View-only access, minimal permissions
+]
+
+IdentityProvider: TypeAlias = Literal[
+    "keycloak",
+    "azure_ad",
+    "okta",
+    "auth0",
+    "custom"
+]
 
 #-----------------------------------------------------------------------------
 # Content & Message Parts
@@ -192,6 +212,77 @@ class Message(PebblingProtocolBaseModel):
     role: Required[Role]
     extra_data: NotRequired[dict[str, Any]]
 
+
+#-----------------------------------------------------------------------------
+# Security Schemes
+#-----------------------------------------------------------------------------
+
+@pydantic.with_config({'alias_generator': to_camel})
+class HttpSecurityScheme(TypedDict):
+    """HTTP security scheme."""
+
+    type: Required[Literal['http']]
+    scheme: Required[str]
+    bearer_format: NotRequired[str]
+    description: NotRequired[str]
+
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ApiKeySecurityScheme(TypedDict):
+    """API Key security scheme."""
+
+    type: Required[Literal['apiKey']]
+    name: Required[str]
+    in_: Required[Literal['query', 'header', 'cookie']]
+    description: NotRequired[str]
+
+
+@pydantic.with_config({'alias_generator': to_camel})
+class OAuth2SecurityScheme(TypedDict):
+    """OAuth2 security scheme."""
+
+    type: Required[Literal['oauth2']]
+    flows: Required[dict[str, Any]]
+    description: NotRequired[str]
+
+
+@pydantic.with_config({'alias_generator': to_camel})
+class OpenIdConnectSecurityScheme(TypedDict):
+    """OpenID Connect security scheme."""
+
+    type: Required[Literal['openIdConnect']]
+    open_id_connect_url: Required[str]
+    description: NotRequired[str]
+
+SecurityScheme = Annotated[
+    Union[HttpSecurityScheme, ApiKeySecurityScheme, OAuth2SecurityScheme, OpenIdConnectSecurityScheme], 
+    Discriminator('type')
+]
+
+
+#-----------------------------------------------------------------------------
+# Push Notification Configuration
+#-----------------------------------------------------------------------------
+
+@pydantic.with_config({'alias_generator': to_camel})
+class PushNotificationConfig(TypedDict):
+    """Configuration for push notifications.
+
+    When the server needs to notify the client of an update outside of a connected session.
+    """
+
+    id: Required[UUID]
+    url: Required[str]
+    token: NotRequired[str]
+    authentication: NotRequired[SecurityScheme]
+
+
+@pydantic.with_config({'alias_generator': to_camel})
+class TaskPushNotificationConfig(TypedDict):
+    """Configuration for task push notifications."""
+
+    id: Required[UUID]
+    push_notification_config: Required[PushNotificationConfig]
 
 #-----------------------------------------------------------------------------
 # Task
@@ -317,6 +408,23 @@ class MessageSendParams(PebblingProtocolBaseModel):
     message: Required[Message]
     metadata: NotRequired[dict[str, Any]]
 
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ListTaskPushNotificationConfigParams(TypedDict):
+    """Parameters for getting list of pushNotificationConfigurations associated with a Task."""
+
+    id: Required[UUID]
+    metadata: NotRequired[dict[str, Any]]
+
+
+@pydantic.with_config({'alias_generator': to_camel})
+class DeleteTaskPushNotificationConfigParams(TypedDict):
+    """Parameters for removing pushNotificationConfiguration associated with a Task."""
+
+    id: Required[UUID]
+    push_notification_config_id: Required[UUID]
+    metadata: NotRequired[dict[str, Any]]
+
 #-----------------------------------------------------------------------------
 # Agent-to-Agent Negotiation Models
 #-----------------------------------------------------------------------------
@@ -325,46 +433,44 @@ class MessageSendParams(PebblingProtocolBaseModel):
 class NegotiationProposal(PebblingProtocolBaseModel):
     """Structured negotiation proposal exchanged between agents."""
     
-    proposal_id: UUID = Field(..., description="Unique ID of this specific proposal")
-    from_agent: UUID = Field(..., description="Agent ID initiating the proposal")
-    to_agent: UUID = Field(..., description="Agent ID receiving the proposal")
-    terms: Dict[str, Any] = Field(..., description="Negotiation terms (structured)")
-    timestamp: int = Field(..., description="UNIX timestamp when the proposal was made")
-    status: NegotiationStatus = Field(
-        NegotiationStatus.proposed, 
-        description="Status of this specific proposal"
-    )
+    proposal_id: Required[UUID]
+    from_agent: Required[UUID]
+    to_agent: Required[UUID]
+    terms: Required[Dict[str, Any]]
+    timestamp: Required[str]
+    status: Required[NegotiationStatus]
 
 @pydantic.with_config({'alias_generator': to_camel})
 class NegotiationSession(PebblingProtocolBaseModel):
     """Session details for agent-to-agent negotiations."""
     
-    session_id: UUID = Field(..., description="Unique identifier for the negotiation session")
-    status: NegotiationSessionStatus = Field(
-        NegotiationSessionStatus.initiated,
-        description="Current status of the negotiation"
-    )
-    participants: List[UUID] = Field(..., description="List of participating agent IDs")
-    proposals: List[NegotiationProposal] = Field(
-        default_factory=list,
-        description="Array of negotiation proposals exchanged"
-    )
+    session_id: Required[UUID]
+    status: Required[NegotiationSessionStatus]
+    participants: Required[List[UUID]]
+    proposals: Required[List[NegotiationProposal]]
 
 
 #-----------------------------------------------------------------------------
 # Payment Models
 #-----------------------------------------------------------------------------
 
+@pydantic.with_config({'alias_generator': to_camel})
+class Payment(PebblingProtocolBaseModel):
+    """Represents a payment."""
+    
+    id: Required[UUID]
+    amount: Required[float]
+    currency: Required[str]
+    billing_period: Required[Literal["daily", "weekly", "monthly", "yearly", "one-time"]]
+
+@pydantic.with_config({'alias_generator': to_camel})
 class PaymentAction(PebblingProtocolBaseModel):
     """Represents the possible payment actions."""
     
-    action_type: Literal['submit', 'cancel', 'unknown'] = 'submit'
-    amount: float = Field(..., description="The amount of the payment", examples=[10.0])
-    currency: str = Field(..., description="ISO currency code clearly identified (e.g., USD)")
-    billing_period: Literal["daily", "weekly", "monthly", "yearly", "one-time"] = Field(
-        "one-time", 
-        description="Billing frequency clearly defined if subscription-based"
-    )
+    action_type: Required[Literal['submit', 'cancel', 'unknown']]
+    amount: Required[float]
+    currency: Required[str]
+    billing_period: Required[Literal["daily", "weekly", "monthly", "yearly", "one-time"]]
 
 
 #-----------------------------------------------------------------------------
@@ -545,28 +651,7 @@ class AgentSecurity(PebblingProtocolBaseModel):
 # Lets handle Trust
 #-----------------------------------------------------------------------------
 
-class TrustLevel(str, Enum):
-    """Trust levels for operations and permissions."""
-    
-    ADMIN = "admin"           # Admin operations, minimal risk
-    ANALYST = "analyst"     # Standard operations
-    AUDITOR = "auditor"         # Sensitive operations
-    EDITOR = "editor"         # Edit operations, moderate risk
-    GUEST = "guest"           # Limited access, read-only operations
-    MANAGER = "manager"       # Management operations, elevated permissions
-    OPERATOR = "operator"     # System operations, moderate risk
-    SUPER_ADMIN = "super_admin" # Highest level access, all operations permitted
-    SUPPORT = "support"       # Support operations, troubleshooting access
-    VIEWER = "viewer"         # View-only access, minimal permissions
 
-class IdentityProvider(str, Enum):
-    """Supported identity providers."""
-    
-    KEYCLOAK = "keycloak"
-    AZURE_AD = "azure_ad"
-    OKTA = "okta"
-    AUTH0 = "auth0"
-    CUSTOM = "custom"
 
 class KeycloakRole(PebblingProtocolBaseModel):
     """Keycloak role model."""
@@ -716,7 +801,3 @@ class AgentManifest(PebblingProtocolBaseModel):
     
     # Versioning
     version: str = Field(..., examples=['1.0.0'])
-
-
-
-

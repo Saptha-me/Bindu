@@ -45,7 +45,7 @@ class Worker(ABC, Generic[ContextT]):
         try:
             with use_span(task_operation['_current_span']):
                 with tracer.start_as_current_span(
-                    f'{task_operation["operation"]} task', attributes={'logfire.tags': ['fasta2a']}
+                    f'{task_operation["operation"]} task', attributes={'logfire.tags': ['pebble']}
                 ):
                     if task_operation['operation'] == 'run':
                         await self.run_task(task_operation['params'])

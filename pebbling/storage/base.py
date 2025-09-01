@@ -66,7 +66,7 @@ class Storage(ABC, Generic[ContextT]):
     """A storage to retrieve and save tasks, as well as retrieve and save context.
 
     The storage serves two purposes:
-    1. Task storage: Stores tasks in A2A protocol format with their status, artifacts, and message history
+    1. Task storage: Stores tasks in Pebble protocol format with their status, artifacts, and message history
     2. Context storage: Stores conversation context in a format optimized for the specific agent implementation
     """
 

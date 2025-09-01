@@ -11,7 +11,7 @@
 """
 Pebbling Server Module.
 
-Unified server supporting both JSON-RPC (a2a-style) and HTTP REST (acp-style)
+Unified server supporting JSON-RPC 
 protocols with shared task management and session contexts.
 """
 

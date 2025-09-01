@@ -90,7 +90,7 @@ class InMemoryStorage(Storage[ContextT]):
         # Generate a unique task ID
         task_id = str(uuid.uuid4())
 
-        # Add IDs to the message for A2A protocol
+        # Add IDs to the message for Pebble protocol
         message['task_id'] = task_id
         message['context_id'] = context_id
 

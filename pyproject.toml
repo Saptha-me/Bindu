@@ -60,6 +60,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "datamodel-code-generator>=0.31.2",
     "aiofiles>=24.1.0",
+    "typer",
 ]
 
 [project.optional-dependencies]
@@ -80,6 +81,9 @@ members = ["pebbling-template/my_project", "pebbling-template/project1"]
 
 [tool.uv.sources]
 pebbling = { workspace = true }
+
+[project.scripts]
+pebble = "pebbling.cli.app:app"
 
 [dependency-groups]
 dev = [

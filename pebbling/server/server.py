@@ -9,14 +9,13 @@ import uvicorn.config
 from fastapi import FastAPI
 from pydantic import AnyHttpUrl
 
-from pebbling.common.models.agent_manifest import AgentManifest
-from pebbling.server.applications import create_app
+from pebbling.server.applications import PebbleApplication
 from pebbling.storage.memory_storage import InMemoryStorage
 from pebbling.storage.postgres_storage import PostgreSQLStorage
 from pebbling.storage.qdrant_storage import QdrantStorage
 from pebbling.server.scheduler.memory_scheduler import InMemoryScheduler
 from pebbling.server.scheduler.redis_scheduler import RedisScheduler
-from pebbling.protocol.types import AgentSkill
+from pebbling.protocol.types import AgentManifest
 
 
 class PebbleServer:
@@ -24,10 +23,12 @@ class PebbleServer:
     
     def __init__(self) -> None:
         """Initialize the Pebble server."""
-        self.agents: list[AgentManifest] = []
+        self.penguins: list[AgentManifest] = []
         self.server: Optional[uvicorn.Server] = None
         self._storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None
         self._scheduler: Optional[InMemoryScheduler | RedisScheduler] = None
+        self._task_manager: Optional[TaskManager] = None
+        
 
     
     async def serve(

@@ -15,11 +15,11 @@ validating DID documents used for agent identity verification in the
 Pebbling framework.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import orjson
 
-from pebbling.protocol.types import AgentCapabilities, AgentSkill
+from pebbling.common.protocol.types import AgentCapabilities, AgentSkill
 
 
 def create_did_document(

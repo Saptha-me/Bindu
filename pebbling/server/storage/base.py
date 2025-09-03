@@ -57,7 +57,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Generic
 from typing_extensions import TypeVar
 
-from pebbling.protocol.types import Artifact, Message, Task, TaskState
+from pebbling.common.protocol.types import Artifact, Message, Task, TaskState
 
 ContextT = TypeVar('ContextT', default=Any)
 

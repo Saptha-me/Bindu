@@ -61,6 +61,9 @@ dependencies = [
     "datamodel-code-generator>=0.31.2",
     "aiofiles>=24.1.0",
     "typer",
+    "redis>=6.4.0",
+    "sqlalchemy>=2.0.43",
+    "qdrant-client>=1.15.1",
 ]
 
 [project.optional-dependencies]

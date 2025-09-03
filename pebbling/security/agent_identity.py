@@ -23,10 +23,7 @@ from pebbling.security.common.keys import generate_csr, generate_key_pair
 from pebbling.security.did.manager import DIDManager
 from pebbling.common.protocol.types import AgentIdentity
 from pebbling.utils.constants import (
-    CHALLENGE_EXPIRATION_SECONDS, 
     DEFAULT_KEY_ALGORITHM,
-    ENDPOINT_TYPE_JSON_RPC,
-    CERTIFICATE_AUTHORITY,
     PRIVATE_KEY_FILENAME,
     PUBLIC_KEY_FILENAME
 )
@@ -93,26 +90,19 @@ def create_agent_identity(
         else:
             logger.debug("Using existing cryptographic keys")
         
-        # Initialize identity
-        identity = AgentIdentity()
+        # Initialize identity with default values
+        identity: AgentIdentity = {}
         
         # Set up DID identity if required
         if did_required:
-            try:
-                identity = _setup_did_identity(sanitized_id, pki_dir, recreate_keys)
-            except Exception as e:
-                logger.error(f"Failed to setup DID identity: {e}")
-                raise RuntimeError(f"DID setup failed: {e}") from e
+            did_manager = _setup_did_identity(sanitized_id, pki_dir, recreate_keys)
+            identity['did'] = did_manager.get_did()
+            identity['did_document'] = did_manager.get_did_document()
         
         # Generate Certificate Signing Request if requested
         if create_csr:
-            try:
-                logger.info("Generating Certificate Signing Request")
-                csr_content = generate_csr(pki_dir=str(pki_dir), agent_id=sanitized_id)
-                identity.csr = csr_content
-            except Exception as e:
-                logger.error(f"Failed to generate CSR: {e}")
-                raise RuntimeError(f"CSR generation failed: {e}") from e
+            logger.info("Generating Certificate Signing Request")
+            identity['csr'] = generate_csr(pki_dir=str(pki_dir), agent_id=sanitized_id)
         
         logger.info(f"Agent identity setup complete for agent: {sanitized_id}")
         return identity
@@ -151,29 +141,19 @@ def _keys_exist(pki_path: Path) -> bool:
     return exists
 
 
-def _setup_did_identity(agent_id: str, pki_path: Path, recreate: bool) -> AgentIdentity:
+def _setup_did_identity(agent_id: str, pki_path: Path, recreate: bool) -> DIDManager:
     """Set up DID identity with proper error handling."""
     logger.info("Setting up DID identity")
     
-    identity = AgentIdentity()
     did_config_path = pki_path / "did.json"
     
     try:
-        did_manager = DIDManager(
+        return DIDManager(
             agent_id=agent_id,
             config_path=str(did_config_path),
             pki_dir=str(pki_path),
             recreate=recreate
         )
-        
-        identity.did = did_manager.get_did()
-        identity.did_document = did_manager.get_did_document()
-        
-        if not identity.did:
-            raise ValueError("DID generation returned empty result")
-            
-        logger.debug(f"DID identity created: {identity.did}")
-        return identity
         
     except Exception as e:
         logger.error(f"DID identity setup failed: {e}")

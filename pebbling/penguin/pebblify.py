@@ -92,7 +92,7 @@ def pebblify(
     name: Optional[str] = None,
     id: Optional[str] = None,
     version: str = "1.0.0",
-    recreate_keys: bool = False,
+    recreate_keys: bool = True,
     skill: Optional[AgentSkill] = None,
     capabilities: Optional[AgentCapabilities] = None, 
     storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None,
@@ -119,13 +119,14 @@ def pebblify(
 
         agent_identity: AgentIdentity = create_agent_identity(
             id=agent_id,
-            did_required=True,  #We encourage the use of DID for agent-to-agent communication
+            did_required=True,  # We encourage the use of DID for agent-to-agent communication
             recreate_keys=recreate_keys,
+            create_csr=True,
             pki_dir=Path(os.path.join(caller_dir, PKI_DIR)),
             cert_dir=Path(os.path.join(caller_dir, CERTIFICATE_DIR)),
         )
        
-        logger.info(f"✅ Security setup complete - DID: {agent_identity.did if agent_identity else 'None'}")
+        logger.info(f"✅ Security setup complete - DID: {agent_identity['did'] if agent_identity else 'None'}")
         logger.info("📋 Creating agent manifest...")
 
         _manifest = create_manifest(
@@ -140,7 +141,7 @@ def pebblify(
             identity=agent_identity
         )
 
-        logger.info(f"🚀 Agent '{_manifest.name}' successfully pebblified!")
+        logger.info(f"🚀 Agent '{_manifest['name']}' successfully pebblified!")
         logger.debug(f"📊 Manifest details: {_manifest}")
         logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 

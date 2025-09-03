@@ -14,8 +14,6 @@ from pebbling.common.models.models import (
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 
-# Load environment variables from .env file
-load_dotenv()
 
 
 def load_config(config_path: str = "agent_config.json"):
@@ -35,7 +33,6 @@ config = load_config()
     author=config["author"],
     skill=AgentSkill(**config["skill"]),
     capabilities=AgentCapabilities(**config["capabilities"]),
-    security_config=SecurityConfig(**config["security"]),
     deployment_config=DeploymentConfig(**config["deployment"]),
 )
 async def news_reporter_agent(

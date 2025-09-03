@@ -10,11 +10,11 @@ import anyio
 from opentelemetry.trace import get_tracer, use_span
 from typing_extensions import assert_never
 
-from .storage import ContextT, Storage
+from pebbling.storage.base import Storage
 
 if TYPE_CHECKING:
-    from .broker import Broker, TaskOperation
-    from .schema import Artifact, Message, TaskIdParams, TaskSendParams
+    from pebbling.server.scheduler.base import Scheduler, TaskOperation
+    from pebbling.protocol.types import TaskIdParams, TaskSendParams, Artifact, Message
 
 tracer = get_tracer(__name__)
 
@@ -23,8 +23,8 @@ tracer = get_tracer(__name__)
 class Worker(ABC, Generic[ContextT]):
     """A worker is responsible for executing tasks."""
 
-    broker: Broker
-    storage: Storage[ContextT]
+    scheduler: Scheduler
+    storage: Storage
 
     @asynccontextmanager
     async def run(self) -> AsyncIterator[None]:
@@ -38,7 +38,7 @@ class Worker(ABC, Generic[ContextT]):
             tg.cancel_scope.cancel()
 
     async def _loop(self) -> None:
-        async for task_operation in self.broker.receive_task_operations():
+        async for task_operation in self.scheduler.receive_task_operations():
             await self._handle_task_operation(task_operation)
 
     async def _handle_task_operation(self, task_operation: TaskOperation) -> None:

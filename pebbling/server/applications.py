@@ -2,12 +2,13 @@ from contextlib import asynccontextmanager
 from typing import Any, Union, Sequence, Optional, AsyncIterator
 from uuid import UUID
 
-from .server.scheduler.memory_scheduler import InMemoryScheduler
-from .server.scheduler.redis_scheduler import RedisScheduler
-from .server.storage.memory_storage import InMemoryStorage
-from .server.storage.postgres_storage import PostgreSQLStorage
-from .server.storage.qdrant_storage import QdrantStorage
-from .server.protocol.types import AgentManifest, AgentSkill
+from pebbling.common.protocol.types import AgentManifest, AgentSkill
+
+from .scheduler.memory_scheduler import InMemoryScheduler
+from .scheduler.redis_scheduler import RedisScheduler
+from .storage.memory_storage import InMemoryStorage
+from .storage.postgres_storage import PostgreSQLStorage
+from .storage.qdrant_storage import QdrantStorage
 from .task_manager import TaskManager
 from .routers.run import agent_run_endpoint
 

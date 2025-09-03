@@ -9,7 +9,7 @@
 
 """OpenTelemetry integration for Pebbling telemetry and monitoring."""
 
-from fastapi import FastAPI
+
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter

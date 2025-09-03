@@ -4,9 +4,9 @@ from typing import AsyncGenerator
 from dotenv import load_dotenv
 from pydantic.types import SecretStr
 
-from pebbling.protocol.types import AgentCapabilities, AgentSkill
+from pebbling.common.protocol.types import AgentCapabilities, AgentSkill
 from pebbling.penguin.pebblify import pebblify
-from pebbling.common.models.models import (
+from pebbling.common.models import (
     SecurityConfig, 
     DeploymentConfig
 )
@@ -41,7 +41,9 @@ async def news_reporter_agent(
     """User writes protocol-compliant code directly."""
     
     # Use any framework internally
-    agent = Agent(model=OpenAIChat(id="gpt-4o"))
+    agent = Agent(
+        instructions="Get current news from amsterdam",
+        model=OpenAIChat(id="gpt-4o"))
     result = await agent.arun(input)
     
     # Yield protocol-compliant response

@@ -19,10 +19,9 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from pebbling.protocol.types import AgentSecurity, AgentIdentity
 from pebbling.security.common.keys import generate_csr, generate_key_pair
 from pebbling.security.did.manager import DIDManager
-from pebbling.common.models.models import SecuritySetupResult
+from pebbling.common.protocol.types import AgentIdentity
 from pebbling.utils.constants import (
     CHALLENGE_EXPIRATION_SECONDS, 
     DEFAULT_KEY_ALGORITHM,
@@ -37,32 +36,26 @@ from pebbling.utils.logging import get_logger
 logger = get_logger("pebbling.security.setup_security")
 
 
-def create_security_config(
+def create_agent_identity(
     id: str,
     did_required: bool = False,
     recreate_keys: bool = False,
-    require_challenge_response: bool = False,
-    verify_requests: bool = False,
-    allow_anonymous: bool = False,
     create_csr: bool = False,
     pki_dir: Optional[Path] = None,
     cert_dir: Optional[Path] = None,
-) -> SecuritySetupResult:
-    """Optimized security setup for both agent servers and MCP servers.
+) -> AgentIdentity:
+    """Create agent identity for both agent servers and MCP servers.
     
     Args:
         id: Agent ID (required, must be valid string)
         did_required: Enable DID-based identity (for agent-to-agent communication)
         recreate_keys: Force regeneration of existing keys
-        require_challenge_response: Require challenge-response verification for agent communication
-        verify_requests: Whether to verify incoming requests
-        allow_anonymous: Whether to allow anonymous access
         create_csr: Whether to generate Certificate Signing Request
         pki_dir: Directory for cryptographic keys
         cert_dir: Directory for certificates
         
     Returns:
-        Tuple of AgentSecurity and AgentIdentity with all necessary security information
+        AgentIdentity with all necessary security information
         
     Raises:
         ValueError: If id is empty, None, or contains invalid characters
@@ -100,21 +93,6 @@ def create_security_config(
         else:
             logger.debug("Using existing cryptographic keys")
         
-        # Create security configuration
-        security_config = AgentSecurity(
-            challenge_expiration_seconds=CHALLENGE_EXPIRATION_SECONDS,
-            require_challenge_response=require_challenge_response,
-            signature_algorithm=DEFAULT_KEY_ALGORITHM,
-            pki_dir=str(pki_dir),
-            endpoint_type=ENDPOINT_TYPE_JSON_RPC,
-            verify_requests=verify_requests,
-            cert_dir=str(cert_dir),
-            certificate_authority=CERTIFICATE_AUTHORITY,
-            allow_anonymous=allow_anonymous,
-            did_required=did_required,
-            recreate_keys=recreate_keys
-        )
-        
         # Initialize identity
         identity = AgentIdentity()
         
@@ -136,12 +114,12 @@ def create_security_config(
                 logger.error(f"Failed to generate CSR: {e}")
                 raise RuntimeError(f"CSR generation failed: {e}") from e
         
-        logger.info(f"Security setup complete for agent: {sanitized_id}")
-        return SecuritySetupResult(security_config, identity)
+        logger.info(f"Agent identity setup complete for agent: {sanitized_id}")
+        return identity
         
     except Exception as e:
-        logger.error(f"Security setup failed for agent {sanitized_id}: {e}")
-        raise RuntimeError(f"Security setup failed for agent {sanitized_id}: {e}") from e
+        logger.error(f"Agent identity setup failed for agent {sanitized_id}: {e}")
+        raise RuntimeError(f"Agent identity setup failed for agent {sanitized_id}: {e}") from e
 
 
 def _ensure_directories_exist(pki_path: Path, cert_path: Path) -> None:

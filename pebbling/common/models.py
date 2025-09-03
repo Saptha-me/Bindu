@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Optional, NamedTuple, List
-from pebbling.protocol.types import AgentSecurity, AgentIdentity
 
 
 class KeyPaths(NamedTuple):
@@ -11,16 +10,8 @@ class KeyPaths(NamedTuple):
 class SecurityConfig:
     recreate_keys: bool = True
     did_required: bool = True
-    require_challenge_response: bool = False
     create_csr: bool = True
-    verify_requests: bool = False
     allow_anonymous: bool = False
-
-@dataclass
-class SecuritySetupResult:
-    """Complete security setup result with all components."""
-    security_config: AgentSecurity
-    identity: AgentIdentity
 
 @dataclass
 class AgentRegistrationConfig:
@@ -43,8 +34,3 @@ class DeploymentConfig:
     proxy_urls: Optional[List[str]] = None
     cors_origins: Optional[List[str]] = None
     openapi_schema: Optional[str] = None
-
-    
-
-
-

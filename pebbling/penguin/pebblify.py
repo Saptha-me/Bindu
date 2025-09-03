@@ -34,17 +34,15 @@ import uvicorn
 from pebbling.common.protocol.types import (
     AgentCapabilities, 
     AgentManifest, 
-    AgentSkill, 
+    AgentSkill,
+    AgentIdentity,
 )
-from pebbling.common.models.models import ( 
-    DeploymentConfig,
-    SecuritySetupResult
-)
+from pebbling.common.models import DeploymentConfig
 from pebbling.utils.constants import (
     PKI_DIR,
     CERTIFICATE_DIR
 )
-from pebbling.security.setup_security import create_security_config
+from pebbling.security.agent_identity import create_agent_identity
 from pebbling.penguin.manifest import validate_agent_function, create_manifest
 
 # Import logging from pebbling utils
@@ -55,10 +53,6 @@ from pebbling.server.scheduler import InMemoryScheduler, RedisScheduler
 from pebbling.server.storage import InMemoryStorage, PostgreSQLStorage, QdrantStorage
 from pebbling.server.workers import ManifestWorker
 from pebbling.server.applications import PebbleApplication
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from fastapi import FastAPI
 
 # Configure logging for the module
 logger = get_logger("pebbling.penguin.pebblify")
@@ -68,7 +62,7 @@ async def worker_lifespan(
     app: PebbleApplication,
     manifest_worker: ManifestWorker
 ) -> AsyncIterator[None]:
-    """Manages the ManifestWorker lifecycle during FastAPI startup/shutdown.
+    """Manages the ManifestWorker lifecycle during Starlette application startup/shutdown.
 
     Key Components:
     - manifest_worker: Manages agent execution, handling message processing through broker and storage
@@ -77,7 +71,7 @@ async def worker_lifespan(
     - Shutdown: Cleanly closes worker, ensuring proper resource cleanup
     
     This prevents resource leaks and ensures your agent is ready to process requests
-    as soon as the server starts, running as a persistent service within FastAPI.
+    as soon as the server starts, running as a persistent service within PebbleApplication.
     """
     # Startup: Initialize the worker and start processing
     await manifest_worker.start()
@@ -93,6 +87,7 @@ def pebblify(
     name: Optional[str] = None,
     id: Optional[str] = None,
     version: str = "1.0.0",
+    recreate_keys: bool = False,
     skill: Optional[AgentSkill] = None,
     capabilities: Optional[AgentCapabilities] = None, 
     storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None,
@@ -117,22 +112,15 @@ def pebblify(
             
         caller_dir = Path(os.path.abspath(caller_file)).parent
 
-        security_setup_result: SecuritySetupResult = create_security_config(
+        agent_identity: AgentIdentity = create_agent_identity(
             id=agent_id,
-            did_required=security_config.did_required,
-            recreate_keys=security_config.recreate_keys,
-            require_challenge_response=security_config.require_challenge_response,
-            create_csr=security_config.create_csr,
-            verify_requests=security_config.verify_requests,
-            allow_anonymous=security_config.allow_anonymous,
+            did_required=True,  #We encourage the use of DID for agent-to-agent communication
+            recreate_keys=recreate_keys,
             pki_dir=Path(os.path.join(caller_dir, PKI_DIR)),
             cert_dir=Path(os.path.join(caller_dir, CERTIFICATE_DIR)),
         )
        
-        # Extract security and identity from setup result
-        identity = security_setup_result.identity
-
-        logger.info(f"✅ Security setup complete - DID: {identity.did if identity else 'None'}")
+        logger.info(f"✅ Security setup complete - DID: {agent_identity.did if agent_identity else 'None'}")
         logger.info("📋 Creating agent manifest...")
 
         _manifest = create_manifest(
@@ -144,7 +132,7 @@ def pebblify(
             capabilities=capabilities,
             version=version,
             extra_metadata=None,
-            identity=identity
+            identity=agent_identity
         )
 
         logger.info(f"🚀 Agent '{_manifest.name}' successfully pebblified!")

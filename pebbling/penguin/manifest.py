@@ -167,99 +167,85 @@ def create_manifest(
         are not allowed in agent names in the Pebbling protocol.
     """
     
-    # Since function is already validated, we can directly check parameter names
+    # Analyze function signature
     sig = inspect.signature(agent_function)
     param_names = list(sig.parameters.keys())
     has_context_param = 'context' in param_names
     has_execution_state = 'execution_state' in param_names
     
-    # Use function name if name not provided - store with different variable names
-    _name = name or agent_function.__name__.replace('_', '-') # underscores are not allowed in agent names so replace them with hyphens
-    _description = description or inspect.getdoc(agent_function) or f"Agent: {_name}"
-    _id = id
-    _version = version
-    _identity = identity
-    _skills = skills
-    _capabilities = capabilities
+    # Prepare manifest data
+    manifest_name = name or agent_function.__name__.replace('_', '-')
+    manifest_description = description or inspect.getdoc(agent_function) or f"Agent: {manifest_name}"
+    manifest_capabilities = capabilities or AgentCapabilities(
+        streaming=True,
+        push_notifications=False,
+        state_transition_history=False
+    )
     
-    # Create default capabilities if not provided
-    if _capabilities is None:
-        _capabilities = AgentCapabilities(
-            streaming=True,
-            push_notifications=False,
-            state_transition_history=False
+    # Prepare identity with required fields
+    prepared_identity = None
+    if identity:
+        prepared_identity = AgentIdentity(
+            did=identity.get('did'),
+            did_document=identity.get('did_document', {}),
+            agentdns_url=identity.get('agentdns_url'),
+            endpoint=identity.get('endpoint'),
+            public_key=identity.get('public_key', ''),
+            csr=identity.get('csr')
         )
-
-    class DecoratorBase(AgentManifest):
-        def __init__(self):
-            # Initialize Pydantic model with the captured values
-            super().__init__(
-                id=_id,
-                name=_name,
-                description=_description,
-                capabilities=_capabilities,
-                skill=_skills[0] if _skills else None,
-                version=_version,
-                identity=_identity
-            )
-        
-        @property
-        def id(self) -> str:
-            return self.id
-        
-        @property
-        def name(self) -> str:
-            return self.name
-        
-        @property
-        def description(self) -> str:
-            return self.description
-        
-        @property
-        def capabilities(self) -> AgentCapabilities:
-            return self.capabilities
-        
-        @property
-        def skill(self) -> Optional[AgentSkill]:
-            return self.skill
-        
-        @property
-        def version(self) -> str:
-            return self.version
-        
-        @property  
-        def identity(self) -> Optional[AgentIdentity]:
-            return self.identity
     
-    # Create agent based on function type
-    agent: AgentManifest
+    # Prepare skill with UUID
+    prepared_skill = None
+    if skills and skills[0]:
+        skill_data = skills[0]
+        import uuid
+        prepared_skill = AgentSkill(
+            id=uuid.uuid4(),  # Generate UUID for skill
+            name=skill_data.get('name', ''),
+            description=skill_data.get('description', ''),
+            input_modes=skill_data.get('input_modes', []),
+            output_modes=skill_data.get('output_modes', []),
+            tags=skill_data.get('tags', [])
+        )
     
-    if inspect.isasyncgenfunction(agent_function):
-        class AsyncGenDecoratorAgent(DecoratorBase):
-            async def run(self, input_msg: str, context=None, **kwargs):
-                """Run async generator agent function."""
-                try:
-                    if has_execution_state:
-                        # Handle execution state for pause/resume
-                        execution_state = kwargs.get('execution_state')
-                        gen = agent_function(input_msg, execution_state)
-                    elif has_context_param:
-                        gen = agent_function(input_msg, context)
-                    else:
-                        gen = agent_function(input_msg)
-                    
-                    async for result in gen:
+    # Create base manifest
+    manifest = AgentManifest(
+        id=uuid.UUID(id) if isinstance(id, str) else id,
+        name=manifest_name,
+        description=manifest_description,
+        user_id=uuid.UUID(id) if isinstance(id, str) else id,
+        capabilities=manifest_capabilities,
+        skill=prepared_skill,
+        version=version,
+        identity=prepared_identity,
+        trust_config={},  # Empty dict instead of None
+        kind="agent",
+        num_history_sessions=10,
+        storage={},
+        context={},
+        extra_data={},
+        debug_mode=False,
+        debug_level=1,
+        monitoring=False,
+        telemetry=False
+    )
+    
+    # Add execution method based on function type
+    def create_run_method():
+        if inspect.isasyncgenfunction(agent_function):
+            async def run(input_msg: str, context=None, **kwargs):
+                if has_execution_state:
+                    execution_state = kwargs.get('execution_state')
+                    async for result in agent_function(input_msg, execution_state):
                         yield result
-                        
-                except StopAsyncIteration:
-                    pass
-        
-        agent = AsyncGenDecoratorAgent()
-        
-    elif inspect.iscoroutinefunction(agent_function):
-        class CoroDecoratorAgent(DecoratorBase):
-            async def run(self, input_msg: str, context=None, **kwargs):
-                """Run coroutine agent function."""
+                elif has_context_param:
+                    async for result in agent_function(input_msg, context):
+                        yield result
+                else:
+                    async for result in agent_function(input_msg):
+                        yield result
+        elif inspect.iscoroutinefunction(agent_function):
+            async def run(input_msg: str, context=None, **kwargs):
                 if has_execution_state:
                     execution_state = kwargs.get('execution_state')
                     return await agent_function(input_msg, execution_state)
@@ -267,13 +253,8 @@ def create_manifest(
                     return await agent_function(input_msg, context)
                 else:
                     return await agent_function(input_msg)
-        
-        agent = CoroDecoratorAgent()
-        
-    elif inspect.isgeneratorfunction(agent_function):
-        class GenDecoratorAgent(DecoratorBase):
-            def run(self, input_msg: str, context=None, **kwargs):
-                """Run generator agent function."""
+        elif inspect.isgeneratorfunction(agent_function):
+            def run(input_msg: str, context=None, **kwargs):
                 if has_execution_state:
                     execution_state = kwargs.get('execution_state')
                     yield from agent_function(input_msg, execution_state)
@@ -281,13 +262,8 @@ def create_manifest(
                     yield from agent_function(input_msg, context)
                 else:
                     yield from agent_function(input_msg)
-        
-        agent = GenDecoratorAgent()
-        
-    else:
-        class FuncDecoratorAgent(DecoratorBase):
-            def run(self, input_msg: str, context=None, **kwargs):
-                """Run regular function agent."""
+        else:
+            def run(input_msg: str, context=None, **kwargs):
                 if has_execution_state:
                     execution_state = kwargs.get('execution_state')
                     return agent_function(input_msg, execution_state)
@@ -295,12 +271,14 @@ def create_manifest(
                     return agent_function(input_msg, context)
                 else:
                     return agent_function(input_msg)
-        
-        agent = FuncDecoratorAgent()
+        return run
+    
+    # Attach run method to manifest
+    manifest.run = create_run_method()
     
     # Add extra metadata if provided
     if extra_metadata:
         for key, value in extra_metadata.items():
-            setattr(agent, key, value)
+            setattr(manifest, key, value)
     
-    return agent
+    return manifest

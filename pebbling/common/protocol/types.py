@@ -17,11 +17,11 @@ agents and the Pebbling framework.
 from __future__ import annotations as _annotations
 
 from enum import Enum
-from typing import Annotated, Any, Generic, Literal, TypeVar, Union, Optional, Dict
+from typing import Annotated, Any, Generic, Literal, TypeVar, Union, Optional, Dict, List
 from uuid import UUID
 
 import pydantic
-from pydantic import Discriminator, Field, RootModel, TypeAdapter
+from pydantic import BaseModel, Discriminator, Field, RootModel, TypeAdapter
 from pydantic.alias_generators import to_camel
 from typing_extensions import Required, NotRequired, TypedDict, TypeAlias
 
@@ -726,38 +726,41 @@ class AgentCapabilities(TypedDict):
     state_transition_history: NotRequired[bool]
     streaming: NotRequired[bool]
 
-@pydantic.with_config({'alias_generator': to_camel})
-class AgentManifest(TypedDict):
+
+class AgentManifest(BaseModel):
     """Complete agent manifest with identity and capabilities."""
     
-    id: Required[UUID]
-    name: Required[str]
-    description: NotRequired[str]
-    user_id: Required[UUID]
-    version: Required[str]
+    id: UUID
+    name: str
+    description: str
+    user_id: UUID
+    version: str
 
     # Identity
-    identity: NotRequired[AgentIdentity]
+    identity: AgentIdentity
 
     # Trust
-    trust_config: NotRequired[AgentTrust]
+    trust_config: AgentTrust
 
-    capabilities: Required[AgentCapabilities]
-    skill: Required[AgentSkill]
+    capabilities: AgentCapabilities
+    skill: AgentSkill
 
-    kind: Required[str]
+    kind: str
     
     # Configuration
-    num_history_sessions: NotRequired[int]
-    storage: NotRequired[Dict[str, Any]]
-    context: NotRequired[Dict[str, Any]]
-    extra_data: NotRequired[Dict[str, Any]]
+    num_history_sessions: int
+    storage: Dict[str, Any]
+    context: Dict[str, Any]
+    extra_data: Dict[str, Any]
     
     # Debug settings
-    debug_mode: NotRequired[bool]
-    debug_level: NotRequired[Literal[1, 2]]
+    debug_mode: bool
+    debug_level: Literal[1, 2]
     
     # Monitoring
-    monitoring: NotRequired[bool]
-    telemetry: NotRequired[bool]
-    
+    monitoring: bool
+    telemetry: bool
+
+
+# Rebuild model to resolve forward references
+AgentManifest.model_rebuild()

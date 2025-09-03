@@ -31,6 +31,7 @@ config = load_config()
 
 @pebblify(
     author=config["author"],
+    recreate_keys=config["recreate_keys"],
     skill=AgentSkill(**config["skill"]),
     capabilities=AgentCapabilities(**config["capabilities"]),
     deployment_config=DeploymentConfig(**config["deployment"]),

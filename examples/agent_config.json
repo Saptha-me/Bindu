@@ -1,5 +1,6 @@
 {
   "author": "dev@pebbling.ai",
+  "recreate_keys": true,
   "skill": {
     "description": "You are a news reporter with a flair for storytelling.",
     "id": "news-reporting",

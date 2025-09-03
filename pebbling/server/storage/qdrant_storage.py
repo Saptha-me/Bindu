@@ -64,8 +64,8 @@ from qdrant_client.models import (
     FieldCondition, MatchValue, UpdateResult, ScoredPoint
 )
 
-from pebbling.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
-from pebbling.storage.base import Storage
+from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from .base import Storage
 
 ContextT = TypeVar('ContextT', default=Any)
 

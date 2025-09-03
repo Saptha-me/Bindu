@@ -8,8 +8,7 @@ from uuid import UUID
 
 from opentelemetry.trace import get_tracer
 
-from pebbling.server.workers.base import Worker
-from pebbling.protocol.types import (
+from pebbling.common.protocol.types import (
     Artifact, 
     Message, 
     TaskIdParams, 
@@ -20,13 +19,13 @@ from pebbling.protocol.types import (
 )
 from pebbling.penguin.manifest import AgentManifest
 from pebbling.server.scheduler.base import Scheduler
-from pebbling.storage.base import Storage
+from pebbling.server.storage.base import Storage
 
 tracer = get_tracer(__name__)
 
 
 @dataclass
-class ManifestWorker(Worker[Any]):
+class Worker:
     """A worker that uses an AgentManifest to execute tasks.
     
     This worker bridges the gap between the pebble task execution system

@@ -63,8 +63,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column
 
-from pebbling.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
-from pebbling.storage.base import Storage
+from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from .base import Storage
 
 ContextT = TypeVar('ContextT', default=Any)
 

@@ -39,7 +39,7 @@ from pebbling.utils.constants import (
     PrivateKeyTypes, 
     PublicKeyTypes
 )
-from pebbling.common.models.models import KeyPaths
+from pebbling.common.models import KeyPaths
 
 from pebbling.utils.logging import get_logger
 

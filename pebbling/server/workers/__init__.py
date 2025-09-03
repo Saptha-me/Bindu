@@ -15,10 +15,8 @@ Worker classes for task execution in the Pebbling framework.
 Workers are responsible for executing tasks received from schedulers.
 """
 
-from .base import Worker
-from .manifest_worker import ManifestWorker
+from .worker import Worker
 
 __all__ = [
-    "Worker",
     "ManifestWorker",
 ]

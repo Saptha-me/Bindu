@@ -71,7 +71,7 @@ from .base import (
     _ResumeTask,
     _RunTask,
 )
-from pebbling.protocol.types import TaskIdParams, TaskSendParams
+from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
 
 
 class RedisScheduler(Scheduler):

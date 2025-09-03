@@ -49,10 +49,15 @@ from pebbling.penguin.manifest import validate_agent_function, create_manifest
 from pebbling.utils.logging import get_logger
 
 # Import server components for deployment
-from pebbling.server.scheduler import InMemoryScheduler, RedisScheduler
-from pebbling.server.storage import InMemoryStorage, PostgreSQLStorage, QdrantStorage
-from pebbling.server.workers import ManifestWorker
-from pebbling.server.applications import PebbleApplication
+from pebbling.server import (
+    InMemoryScheduler, 
+    RedisScheduler,
+    InMemoryStorage, 
+    QdrantStorage,
+    PostgreSQLStorage,
+    Worker,
+    PebbleApplication
+)
 
 # Configure logging for the module
 logger = get_logger("pebbling.penguin.pebblify")
@@ -60,12 +65,12 @@ logger = get_logger("pebbling.penguin.pebblify")
 @asynccontextmanager
 async def worker_lifespan(
     app: PebbleApplication,
-    manifest_worker: ManifestWorker
+    worker: Worker
 ) -> AsyncIterator[None]:
     """Manages the ManifestWorker lifecycle during Starlette application startup/shutdown.
 
     Key Components:
-    - manifest_worker: Manages agent execution, handling message processing through broker and storage
+    - worker: Manages agent execution, handling message processing through broker and storage
     - Startup: Initializes worker, sets up connections to broker and storage
     - Runtime: Worker processes incoming requests through Pebbling protocol
     - Shutdown: Cleanly closes worker, ensuring proper resource cleanup
@@ -74,13 +79,13 @@ async def worker_lifespan(
     as soon as the server starts, running as a persistent service within PebbleApplication.
     """
     # Startup: Initialize the worker and start processing
-    await manifest_worker.start()
+    await worker.start()
     try:
         # Worker is now ready to process incoming requests
         yield
     finally:
         # Shutdown: Clean up worker resources
-        await manifest_worker.stop()
+        await worker.stop()
 
 def pebblify(
     author: Optional[str] = None,
@@ -142,9 +147,9 @@ def pebblify(
         # Create server components
         storage_instance = storage or InMemoryStorage()
         scheduler_instance = scheduler or InMemoryScheduler()
-        manifest_worker = ManifestWorker(manifest=_manifest, scheduler=scheduler_instance, storage=storage_instance)
+        worker = Worker(manifest=_manifest, scheduler=scheduler_instance, storage=storage_instance)
 
-        lifespan = partial(worker_lifespan, manifest_worker=manifest_worker, manifest=_manifest)
+        lifespan = partial(worker_lifespan, worker=worker, manifest=_manifest)
 
         pebble_app = PebbleApplication(
             storage=storage_instance,

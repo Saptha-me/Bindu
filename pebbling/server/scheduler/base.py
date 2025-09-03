@@ -60,7 +60,7 @@ from opentelemetry.trace import Span, get_tracer
 from pydantic import Discriminator
 from typing_extensions import Self, TypedDict
 
-from pebbling.protocol.types import TaskIdParams, TaskSendParams
+from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
 
 tracer = get_tracer(__name__)
 

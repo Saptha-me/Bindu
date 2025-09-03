@@ -8,6 +8,7 @@
 #  Thank you users! We ❤️ you! - 🐧
 
 from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 
 class PebblingProtocolBaseModel(BaseModel):
@@ -17,4 +18,8 @@ class PebblingProtocolBaseModel(BaseModel):
     serves as the foundation for future extensions or shared utilities.
     """
 
-    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        validate_by_name=True, 
+        validate_by_alias=True
+    )

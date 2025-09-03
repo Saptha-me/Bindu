@@ -153,8 +153,6 @@ def pebblify(
             agents=[_manifest],
             skills=[skill] if skill else None,
             version=version,
-            description=description,
-            debug=debug,
             lifespan=lifespan
         )    
 

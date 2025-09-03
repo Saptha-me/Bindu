@@ -1,4 +1,3 @@
-# 
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -8,17 +7,10 @@
 #
 #  Thank you users! We ❤️ you! - 🐧
 
+"""The Pebbling Protocol.
+
+Core protocol types are defined in types.py and should be imported directly from there.
+
+Example:
+    from pebbling.common.protocol.types import SendMessageRequest, Task
 """
-Pebbling Server Workers.
-
-Worker classes for task execution in the Pebbling framework.
-Workers are responsible for executing tasks received from schedulers.
-"""
-
-from .base import Worker
-from .manifest_worker import ManifestWorker
-
-__all__ = [
-    "Worker",
-    "ManifestWorker",
-]

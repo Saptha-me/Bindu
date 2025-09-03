@@ -94,10 +94,10 @@ from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from typing import Any
 
-from pebbling.server.scheduler.base import Scheduler
-from pebbling.storage.base import Storage
+from .scheduler import Scheduler
+from .storage import Storage
 
-from pebbling.protocol.types import (
+from pebbling.common.protocol.types import (
     CancelTaskRequest,
     CancelTaskResponse,
     GetTaskPushNotificationRequest,
@@ -114,7 +114,6 @@ from pebbling.protocol.types import (
     TaskNotFoundError,
     TaskSendParams,
 )
-
 
 
 @dataclass

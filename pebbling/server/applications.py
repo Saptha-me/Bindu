@@ -2,14 +2,14 @@ from contextlib import asynccontextmanager
 from typing import Any, Union, Sequence, Optional, AsyncIterator
 from uuid import UUID
 
-from pebbling.server.scheduler.memory_scheduler import InMemoryScheduler
-from pebbling.server.scheduler.redis_scheduler import RedisScheduler
-from pebbling.storage.memory_storage import InMemoryStorage
-from pebbling.storage.postgres_storage import PostgreSQLStorage
-from pebbling.storage.qdrant_storage import QdrantStorage
-from pebbling.protocol.types import AgentManifest, AgentSkill
-from pebbling.server.task_manager import TaskManager
-from pebbling.server.routers.run import agent_run_endpoint
+from .server.scheduler.memory_scheduler import InMemoryScheduler
+from .server.scheduler.redis_scheduler import RedisScheduler
+from .server.storage.memory_storage import InMemoryStorage
+from .server.storage.postgres_storage import PostgreSQLStorage
+from .server.storage.qdrant_storage import QdrantStorage
+from .server.protocol.types import AgentManifest, AgentSkill
+from .task_manager import TaskManager
+from .routers.run import agent_run_endpoint
 
 from starlette.middleware import Middleware
 from starlette.routing import Route
@@ -34,8 +34,7 @@ class PebbleApplication(Starlette):
         debug: bool = False,
         routes: Optional[Sequence[Route]] = None,
         middleware: Optional[Sequence[Middleware]] = None,
-        exception_handlers: Optional[dict[Any, ExceptionHandler]] = None,
-        lifespan: Lifespan[PebbleApplication] | None = None,
+        exception_handlers: Optional[dict[Any, ExceptionHandler]] = None
     ):
         """Initialize Pebble application.
         
@@ -52,8 +51,7 @@ class PebbleApplication(Starlette):
             middleware: Optional middleware
             exception_handlers: Optional exception handlers
         """
-        if lifespan is None:
-            lifespan = _default_lifespan
+        lifespan = _default_lifespan
 
         super().__init__(
             debug=debug,

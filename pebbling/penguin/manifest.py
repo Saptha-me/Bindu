@@ -18,11 +18,10 @@ and validating protocol compliance for agents and workflows.
 import inspect
 from typing import Any, Callable, Dict, List, Optional
 
-from pebbling.protocol.types import (
+from pebbling.common.protocol.types import (
     AgentCapabilities, 
     AgentManifest, 
     AgentSkill, 
-    AgentSecurity, 
     AgentIdentity
 )
 
@@ -56,7 +55,6 @@ def create_manifest(
     capabilities: Optional[AgentCapabilities],
     version: str,
     extra_metadata: Optional[Dict[str, Any]],
-    security: Optional[AgentSecurity] = None,
     identity: Optional[AgentIdentity] = None,
 ) -> AgentManifest:
     """
@@ -80,7 +78,6 @@ def create_manifest(
         capabilities: AgentCapabilities defining technical features (streaming, notifications, etc.).
         version: Agent version string (e.g., "1.0.0").
         extra_metadata: Additional metadata to attach to the agent manifest.
-        security: Optional AgentSecurity configuration for DID-based authentication.
         identity: Optional AgentIdentity for decentralized identity management.
     
     Returns:
@@ -181,7 +178,6 @@ def create_manifest(
     _description = description or inspect.getdoc(agent_function) or f"Agent: {_name}"
     _id = id
     _version = version
-    _security = security
     _identity = identity
     _skills = skills
     _capabilities = capabilities
@@ -204,7 +200,6 @@ def create_manifest(
                 capabilities=_capabilities,
                 skill=_skills[0] if _skills else None,
                 version=_version,
-                security=_security,
                 identity=_identity
             )
         
@@ -231,10 +226,6 @@ def create_manifest(
         @property
         def version(self) -> str:
             return self.version
-        
-        @property
-        def security(self) -> Optional[AgentSecurity]:
-            return self.security
         
         @property  
         def identity(self) -> Optional[AgentIdentity]:

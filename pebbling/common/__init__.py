@@ -8,17 +8,12 @@
 #
 #  Thank you users! We ❤️ you! - 🐧
 
+"""Pebbling Common Module.
+
+This module contains shared components used across the Pebbling framework.
+Core types should be imported directly from their source modules.
+
+Examples:
+    from pebbling.common.protocol.types import SendMessageRequest, Task
+    from pebbling.common.models import KeyPaths
 """
-Pebbling Server Workers.
-
-Worker classes for task execution in the Pebbling framework.
-Workers are responsible for executing tasks received from schedulers.
-"""
-
-from .base import Worker
-from .manifest_worker import ManifestWorker
-
-__all__ = [
-    "Worker",
-    "ManifestWorker",
-]

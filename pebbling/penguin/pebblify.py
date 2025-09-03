@@ -20,22 +20,23 @@ This module provides the core decorator that handles:
 6. Runner registration for execution
 """
 
-import functools
 import inspect
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Callable, Optional
 from pathlib import Path
 import os
+from functools import partial
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
-from pebbling.protocol.types import (
+import uvicorn
+
+from pebbling.common.protocol.types import (
     AgentCapabilities, 
     AgentManifest, 
     AgentSkill, 
 )
 from pebbling.common.models.models import ( 
-    SecurityConfig, 
-    AgentRegistrationConfig, 
-    CAConfig, 
     DeploymentConfig,
     SecuritySetupResult
 )
@@ -50,13 +51,10 @@ from pebbling.penguin.manifest import validate_agent_function, create_manifest
 from pebbling.utils.logging import get_logger
 
 # Import server components for deployment
-from pebbling.server.task_manager import TaskManager
-from pebbling.server.workers.base import Worker
-from pebbling.server.scheduler import InMemoryScheduler
-from pebbling.server.storage import InMemoryStorage
-from pebbling.server.schema import TaskSendParams, TaskIdParams, Message, Artifact
-from pebbling.protocol.types import AgentSecurity, AgentIdentity
-import asyncio
+from pebbling.server.scheduler import InMemoryScheduler, RedisScheduler
+from pebbling.server.storage import InMemoryStorage, PostgreSQLStorage, QdrantStorage
+from pebbling.server.workers import ManifestWorker
+from pebbling.server.applications import PebbleApplication
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -65,6 +63,30 @@ if TYPE_CHECKING:
 # Configure logging for the module
 logger = get_logger("pebbling.penguin.pebblify")
 
+@asynccontextmanager
+async def worker_lifespan(
+    app: PebbleApplication,
+    manifest_worker: ManifestWorker
+) -> AsyncIterator[None]:
+    """Manages the ManifestWorker lifecycle during FastAPI startup/shutdown.
+
+    Key Components:
+    - manifest_worker: Manages agent execution, handling message processing through broker and storage
+    - Startup: Initializes worker, sets up connections to broker and storage
+    - Runtime: Worker processes incoming requests through Pebbling protocol
+    - Shutdown: Cleanly closes worker, ensuring proper resource cleanup
+    
+    This prevents resource leaks and ensures your agent is ready to process requests
+    as soon as the server starts, running as a persistent service within FastAPI.
+    """
+    # Startup: Initialize the worker and start processing
+    await manifest_worker.start()
+    try:
+        # Worker is now ready to process incoming requests
+        yield
+    finally:
+        # Shutdown: Clean up worker resources
+        await manifest_worker.stop()
 
 def pebblify(
     author: Optional[str] = None,
@@ -72,8 +94,7 @@ def pebblify(
     id: Optional[str] = None,
     version: str = "1.0.0",
     skill: Optional[AgentSkill] = None,
-    capabilities: Optional[AgentCapabilities] = None,
-    security_config: SecurityConfig = None,  
+    capabilities: Optional[AgentCapabilities] = None, 
     storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None,
     scheduler: Optional[InMemoryScheduler | RedisScheduler] = None,
     deployment_config: Optional[DeploymentConfig] = None,
@@ -109,7 +130,6 @@ def pebblify(
         )
        
         # Extract security and identity from setup result
-        security = security_setup_result.security_config
         identity = security_setup_result.identity
 
         logger.info(f"✅ Security setup complete - DID: {identity.did if identity else 'None'}")
@@ -124,7 +144,6 @@ def pebblify(
             capabilities=capabilities,
             version=version,
             extra_metadata=None,
-            security=security,
             identity=identity
         )
 
@@ -133,10 +152,26 @@ def pebblify(
         logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 
         # Create server components
-        storage = storage()
-        scheduler = scheduler()
-        
-        
+        storage_instance = storage or InMemoryStorage()
+        scheduler_instance = scheduler or InMemoryScheduler()
+        manifest_worker = ManifestWorker(manifest=_manifest, scheduler=scheduler_instance, storage=storage_instance)
+
+        lifespan = partial(worker_lifespan, manifest_worker=manifest_worker, manifest=_manifest)
+
+        pebble_app = PebbleApplication(
+            storage=storage_instance,
+            scheduler=scheduler_instance,
+            penguin_id=agent_id,
+            agents=[_manifest],
+            skills=[skill] if skill else None,
+            version=version,
+            description=description,
+            debug=debug,
+            lifespan=lifespan
+        )    
+
+        # Deploy the server
+        uvicorn.run(pebble_app, host=deployment_config.host, port=deployment_config.port)
             
         return _manifest
     return decorator

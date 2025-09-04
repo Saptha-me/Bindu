@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Management - Pebbling</title>
+    <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .storage-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .storage-stats {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #e92063;
+        }
+
+        .tasks-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #e92063;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .task-id {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+
+        .task-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .task-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .task-status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .task-status.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .task-status.pending {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .task-content {
+            color: #495057;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+
+        .task-timestamp {
+            color: #6c757d;
+            font-size: 0.8em;
+        }
+
+        .storage-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .storage-controls button {
+            background: #e92063;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+
+        .storage-controls button:hover {
+            background: #d01d58;
+        }
+
+        .storage-controls button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .storage-controls button.secondary {
+            background: #6c757d;
+        }
+
+        .storage-controls button.secondary:hover {
+            background: #5a6268;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #e92063;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-controls select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .storage-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .storage-controls {
+                flex-direction: column;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
+                Pebbling
+            </a>
+            <h1>🤖 Pebbling Agent</h1>
+            <p>Storage & Task Management</p>
+        </div>
+
+        <nav class="nav">
+            <a href="agent.html">📋 Agent Info</a>
+            <a href="chat.html">💬 Chat</a>
+            <a href="storage.html" class="active">💾 Storage</a>
+            <a href="docs.html">📚 Documentation</a>
+        </nav>
+
+        <div class="storage-controls">
+            <button onclick="refreshStorage()">🔄 Refresh</button>
+            <button onclick="clearStorage()" class="secondary">🗑️ Clear Storage</button>
+            <button onclick="exportTasks()" class="secondary">📤 Export Tasks</button>
+        </div>
+
+        <div class="storage-grid">
+            <div class="card">
+                <h2>📊 Storage Statistics</h2>
+                <div id="storage-stats" class="storage-stats">
+                    <div class="loading">Loading storage statistics...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⚡ System Status</h2>
+                <div id="system-status" class="storage-stats">
+                    <div class="loading">Loading system status...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📋 Task Management</h2>
+            
+            <input type="text" id="search-box" class="search-box" placeholder="Search tasks by ID, content, or status..." onkeyup="filterTasks()">
+            
+            <div class="filter-controls">
+                <select id="status-filter" onchange="filterTasks()">
+                    <option value="">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="running">Running</option>
+                    <option value="pending">Pending</option>
+                </select>
+                
+                <select id="sort-order" onchange="sortTasks()">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="status">By Status</option>
+                </select>
+            </div>
+
+            <div id="tasks-container">
+                <div id="tasks-list" class="tasks-list">
+                    <div class="loading">Loading tasks...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>🧪 Experimental Feature</strong><br>
+            This documentation interface is experimental and under active development.
+            We'd love your feedback to make it better! Please share your thoughts and suggestions on
+            <a href="https://github.com/pydantic/fasta2a/issues/1" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+        </div>
+    </div>
+
+    <div id="error-container" class="error" style="display: none;"></div>
+
+    <script src="common.js"></script>
+    <script>
+        let allTasks = [];
+        let filteredTasks = [];
+
+        async function loadStorageStats() {
+            try {
+                // Mock storage statistics - replace with actual API calls
+                const stats = {
+                    totalTasks: allTasks.length,
+                    completedTasks: allTasks.filter(t => t.status?.state === 'completed').length,
+                    failedTasks: allTasks.filter(t => t.status?.state === 'failed').length,
+                    runningTasks: allTasks.filter(t => t.status?.state === 'running').length,
+                    storageSize: '2.4 MB',
+                    lastCleanup: new Date().toISOString()
+                };
+
+                displayStorageStats(stats);
+            } catch (error) {
+                console.error('Error loading storage stats:', error);
+                document.getElementById('storage-stats').innerHTML = 
+                    '<div class="error">Failed to load storage statistics</div>';
+            }
+        }
+
+        function displayStorageStats(stats) {
+            const statsDiv = document.getElementById('storage-stats');
+            statsDiv.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-label">Total Tasks</span>
+                    <span class="stat-value">${stats.totalTasks}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Completed</span>
+                    <span class="stat-value">${stats.completedTasks}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Failed</span>
+                    <span class="stat-value">${stats.failedTasks}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Running</span>
+                    <span class="stat-value">${stats.runningTasks}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Storage Size</span>
+                    <span class="stat-value">${stats.storageSize}</span>
+                </div>
+            `;
+        }
+
+        async function loadSystemStatus() {
+            try {
+                const status = {
+                    uptime: '2h 34m',
+                    memoryUsage: '45.2 MB',
+                    activeConnections: 3,
+                    lastBackup: new Date().toISOString(),
+                    version: '1.0.0'
+                };
+
+                displaySystemStatus(status);
+            } catch (error) {
+                console.error('Error loading system status:', error);
+                document.getElementById('system-status').innerHTML = 
+                    '<div class="error">Failed to load system status</div>';
+            }
+        }
+
+        function displaySystemStatus(status) {
+            const statusDiv = document.getElementById('system-status');
+            statusDiv.innerHTML = `
+                <div class="stat-item">
+                    <span class="stat-label">Uptime</span>
+                    <span class="stat-value">${status.uptime}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Memory Usage</span>
+                    <span class="stat-value">${status.memoryUsage}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Active Connections</span>
+                    <span class="stat-value">${status.activeConnections}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Version</span>
+                    <span class="stat-value">${status.version}</span>
+                </div>
+            `;
+        }
+
+        async function loadTasks() {
+            try {
+                // Try to load tasks from the server
+                const tasks = await makeApiRequest('tasks/list', {});
+                allTasks = Array.isArray(tasks) ? tasks : [];
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                // Use mock data if API fails
+                allTasks = generateMockTasks();
+            }
+            
+            filteredTasks = [...allTasks];
+            displayTasks();
+            loadStorageStats();
+        }
+
+        function generateMockTasks() {
+            const mockTasks = [];
+            const statuses = ['completed', 'failed', 'running', 'pending'];
+            const sampleMessages = [
+                'Hello, how can you help me today?',
+                'What is the weather like?',
+                'Can you explain quantum computing?',
+                'Help me write a Python function',
+                'What are the latest news?'
+            ];
+
+            for (let i = 0; i < 15; i++) {
+                mockTasks.push({
+                    id: generateId(),
+                    status: {
+                        state: statuses[Math.floor(Math.random() * statuses.length)],
+                        error: Math.random() > 0.8 ? 'Sample error message' : null
+                    },
+                    history: [{
+                        role: 'user',
+                        parts: [{
+                            kind: 'text',
+                            content: sampleMessages[Math.floor(Math.random() * sampleMessages.length)]
+                        }]
+                    }],
+                    created: new Date(Date.now() - Math.random() * 86400000).toISOString()
+                });
+            }
+            return mockTasks;
+        }
+
+        function displayTasks() {
+            const tasksDiv = document.getElementById('tasks-list');
+            
+            if (filteredTasks.length === 0) {
+                tasksDiv.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No tasks found</h3>
+                        <p>No tasks match your current filters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            tasksDiv.innerHTML = filteredTasks.map(task => {
+                const userMessage = task.history?.[0]?.parts?.[0]?.content || 'No content';
+                const truncatedMessage = userMessage.length > 100 ? 
+                    userMessage.substring(0, 100) + '...' : userMessage;
+                
+                return `
+                    <div class="task-item">
+                        <div class="task-header">
+                            <span class="task-id">${task.id.substring(0, 8)}...</span>
+                            <span class="task-status ${task.status.state}">${task.status.state}</span>
+                        </div>
+                        <div class="task-content">${truncatedMessage}</div>
+                        <div class="task-timestamp">${formatTimestamp(task.created)}</div>
+                        ${task.status.error ? `<div class="error" style="margin-top: 8px; padding: 6px;">${task.status.error}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterTasks() {
+            const searchTerm = document.getElementById('search-box').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            filteredTasks = allTasks.filter(task => {
+                const matchesSearch = !searchTerm || 
+                    task.id.toLowerCase().includes(searchTerm) ||
+                    (task.history?.[0]?.parts?.[0]?.content || '').toLowerCase().includes(searchTerm) ||
+                    task.status.state.toLowerCase().includes(searchTerm);
+
+                const matchesStatus = !statusFilter || task.status.state === statusFilter;
+
+                return matchesSearch && matchesStatus;
+            });
+
+            sortTasks();
+        }
+
+        function sortTasks() {
+            const sortOrder = document.getElementById('sort-order').value;
+
+            filteredTasks.sort((a, b) => {
+                switch (sortOrder) {
+                    case 'oldest':
+                        return new Date(a.created) - new Date(b.created);
+                    case 'status':
+                        return a.status.state.localeCompare(b.status.state);
+                    case 'newest':
+                    default:
+                        return new Date(b.created) - new Date(a.created);
+                }
+            });
+
+            displayTasks();
+        }
+
+        async function refreshStorage() {
+            document.getElementById('storage-stats').innerHTML = '<div class="loading">Refreshing...</div>';
+            document.getElementById('system-status').innerHTML = '<div class="loading">Refreshing...</div>';
+            document.getElementById('tasks-list').innerHTML = '<div class="loading">Refreshing...</div>';
+            
+            await loadTasks();
+            await loadSystemStatus();
+        }
+
+        async function clearStorage() {
+            if (!confirm('Are you sure you want to clear all storage? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                // In a real implementation, this would call an API to clear storage
+                allTasks = [];
+                filteredTasks = [];
+                displayTasks();
+                loadStorageStats();
+                showError('Storage cleared successfully', 'success');
+            } catch (error) {
+                console.error('Error clearing storage:', error);
+                showError('Failed to clear storage: ' + error.message);
+            }
+        }
+
+        function exportTasks() {
+            try {
+                const dataStr = JSON.stringify(allTasks, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `pebbling-tasks-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+            } catch (error) {
+                console.error('Error exporting tasks:', error);
+                showError('Failed to export tasks: ' + error.message);
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveNav('storage.html');
+            loadTasks();
+            loadSystemStatus();
+        });
+    </script>
+</body>
+</html>

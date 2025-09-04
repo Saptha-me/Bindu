@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface - Pebbling</title>
+    <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .chat-container {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #e92063;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.agent {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .message.status {
+            background: transparent;
+            color: #6c757d;
+            font-size: 0.85em;
+            font-style: italic;
+            text-align: center;
+            padding: 8px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin: 10px auto;
+            max-width: 60%;
+        }
+
+        .message.user[data-task-id], .message.agent[data-task-id] {
+            cursor: default;
+            position: relative;
+        }
+
+        .message.user[data-task-id]:hover::after, .message.agent[data-task-id]:hover::after {
+            content: "Task ID: " attr(data-task-id);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .message.user[data-task-id]:hover::before, .message.agent[data-task-id]:hover::before {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
+            margin: 0.5em 0;
+            font-weight: bold;
+        }
+
+        .message h1 { font-size: 1.5em; }
+        .message h2 { font-size: 1.3em; }
+        .message h3 { font-size: 1.2em; }
+        .message h4 { font-size: 1.1em; }
+        .message h5 { font-size: 1em; }
+        .message h6 { font-size: 0.9em; }
+
+        .message p {
+            margin: 0.5em 0;
+            line-height: 1.4;
+        }
+
+        .message ul, .message ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+        }
+
+        .message li {
+            margin: 0.2em 0;
+        }
+
+        .message code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message.agent code {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user code {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .message pre {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+
+        .message.agent pre {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user pre {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .message pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+        }
+
+        .message blockquote {
+            border-left: 4px solid #e92063;
+            padding-left: 1em;
+            margin: 0.5em 0;
+            font-style: italic;
+        }
+
+        .message.user blockquote {
+            border-left-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .message a {
+            color: #e92063;
+            text-decoration: underline;
+        }
+
+        .message.user a {
+            color: #ffb3d1;
+        }
+
+        .message table {
+            border-collapse: collapse;
+            margin: 0.5em 0;
+            width: 100%;
+        }
+
+        .message th, .message td {
+            border: 1px solid #ddd;
+            padding: 0.5em;
+            text-align: left;
+        }
+
+        .message th {
+            background: rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .chat-input button {
+            padding: 12px 24px;
+            background: #e92063;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        .chat-input button:hover {
+            background: #d01d58;
+        }
+
+        .chat-input button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #e92063;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .chat-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-controls button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .chat-controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .context-info {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 400px;
+            }
+
+            .chat-controls {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
+                Pebbling
+            </a>
+            <h1>🤖 Pebbling Agent</h1>
+            <p>Interactive Chat Interface</p>
+        </div>
+
+        <nav class="nav">
+            <a href="agent.html">📋 Agent Info</a>
+            <a href="chat.html" class="active">💬 Chat</a>
+            <a href="storage.html">💾 Storage</a>
+            <a href="docs.html">📚 Documentation</a>
+        </nav>
+
+        <div class="chat-controls">
+            <div class="context-info">
+                <span id="context-status">No active context</span>
+            </div>
+            <div>
+                <button onclick="clearChat()">Clear Chat</button>
+                <button onclick="newContext()">New Context</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💬 Chat Interface</h2>
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message status">
+                        Welcome! Start a conversation with the agent by typing a message below.
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input
+                        type="text"
+                        id="message-input"
+                        placeholder="Type your message here..."
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button onclick="sendMessage()" id="send-button">Send</button>
+                </div>
+            </div>
+            <div id="chat-error" class="error" style="display: none;"></div>
+        </div>
+
+        <div class="footer">
+            <p><strong>🧪 Experimental Feature</strong><br>
+            This documentation interface is experimental and under active development.
+            We'd love your feedback to make it better! Please share your thoughts and suggestions on
+            <a href="https://github.com/pydantic/fasta2a/issues/1" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let currentTaskId = null;
+        let contextId = null;
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            input.value = '';
+            const sendButton = document.getElementById('send-button');
+            sendButton.disabled = true;
+
+            try {
+                // Generate IDs
+                const messageId = generateId();
+                const taskId = generateId();
+                if (!contextId) {
+                    contextId = generateId();
+                    updateContextStatus();
+                }
+
+                // Send message using common API function
+                const result = await makeApiRequest('message/send', {
+                    message: {
+                        role: 'user',
+                        parts: [
+                            {
+                                kind: 'text',
+                                content: message
+                            }
+                        ],
+                        kind: 'message',
+                        messageId: messageId,
+                        contextId: contextId,
+                        taskId: taskId
+                    },
+                    configuration: {
+                        acceptedOutputModes: ['application/json']
+                    }
+                });
+
+                // Store task ID and context ID for polling
+                currentTaskId = result.id;
+
+                // Store context ID for future messages
+                if (result.contextId && !contextId) {
+                    contextId = result.contextId;
+                    updateContextStatus();
+                }
+
+                // Add user message to chat with task ID
+                addMessage(message, 'user', currentTaskId);
+
+                // Start polling for task completion
+                pollTaskStatus();
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addMessage('Error: ' + error.message, 'status');
+                showError('Failed to send message: ' + error.message, 'chat-error');
+            } finally {
+                sendButton.disabled = false;
+            }
+        }
+
+        async function pollTaskStatus() {
+            if (!currentTaskId) return;
+
+            try {
+                const task = await makeApiRequest('tasks/get', {
+                    id: currentTaskId
+                });
+
+                if (task.status.state === 'completed') {
+                    // Extract the agent's response from the latest message in history
+                    if (task.history && task.history.length > 0) {
+                        const lastMessage = task.history[task.history.length - 1];
+                        if (lastMessage.role === 'agent' && lastMessage.parts && lastMessage.parts.length > 0) {
+                            const textPart = lastMessage.parts.find(part => part.kind === 'text');
+                            if (textPart) {
+                                addMessage(textPart.text, 'agent', task.id);
+                            }
+                        }
+                    }
+                    currentTaskId = null;
+                } else if (task.status.state === 'failed') {
+                    addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
+                    currentTaskId = null;
+                } else if (task.status.state === 'canceled') {
+                    addMessage('Task was canceled', 'status');
+                    currentTaskId = null;
+                } else {
+                    // Still processing, poll again
+                    setTimeout(pollTaskStatus, 1000);
+                }
+
+            } catch (error) {
+                console.error('Error polling task status:', error);
+                addMessage('Error getting task status: ' + error.message, 'status');
+                currentTaskId = null;
+            }
+        }
+
+        function addMessage(content, sender, taskId = null) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            // Add task ID as data attribute for user and agent messages
+            if ((sender === 'user' || sender === 'agent') && taskId) {
+                messageDiv.setAttribute('data-task-id', taskId);
+            }
+
+            // Render markdown for agent messages, plain text for user and status messages
+            if (sender === 'agent') {
+                messageDiv.innerHTML = marked.parse(content);
+            } else {
+                messageDiv.textContent = content;
+            }
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function clearChat() {
+            const messagesDiv = document.getElementById('chat-messages');
+            messagesDiv.innerHTML = `
+                <div class="message status">
+                    Chat cleared. Start a new conversation by typing a message below.
+                </div>
+            `;
+        }
+
+        function newContext() {
+            contextId = generateId();
+            updateContextStatus();
+            addMessage('New context started', 'status');
+        }
+
+        function updateContextStatus() {
+            const statusElement = document.getElementById('context-status');
+            if (contextId) {
+                statusElement.textContent = `Context: ${contextId.substring(0, 8)}...`;
+            } else {
+                statusElement.textContent = 'No active context';
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveNav('chat.html');
+        });
+    </script>
+</body>
+</html>

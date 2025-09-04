@@ -20,10 +20,11 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pebbling.common.protocol.types import (
     AgentCapabilities, 
-    AgentManifest, 
     AgentSkill, 
-    AgentIdentity
+    AgentIdentity,
+    AgentTrust
 )
+from pebbling.common.models import AgentManifest
 
 
 def validate_agent_function(agent_function: Callable):
@@ -210,19 +211,18 @@ def create_manifest(
     
     # Create base manifest
     manifest = AgentManifest(
-        id=uuid.UUID(id) if isinstance(id, str) else id,
+        id=id,
         name=manifest_name,
         description=manifest_description,
-        user_id=uuid.UUID(id) if isinstance(id, str) else id,
+        url="http://localhost:3773",  # Default URL
+        version=version,
+        protocol_version="1.0.0",  # Default protocol version
+        identity=prepared_identity,
+        trust_config={},  # Empty dict for AgentTrust
         capabilities=manifest_capabilities,
         skill=prepared_skill,
-        version=version,
-        identity=prepared_identity,
-        trust_config={},  # Empty dict instead of None
         kind="agent",
         num_history_sessions=10,
-        storage={},
-        context={},
         extra_data={},
         debug_mode=False,
         debug_level=1,

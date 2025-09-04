@@ -16,8 +16,8 @@ and validating protocol compliance for agents and workflows.
 """
 
 import inspect
-from typing import Any, Callable, Dict, List, Optional
-
+from typing import Any, Callable, Dict, List, Optional, Literal
+from uuid import UUID
 from pebbling.common.protocol.types import (
     AgentCapabilities, 
     AgentSkill, 
@@ -25,7 +25,6 @@ from pebbling.common.protocol.types import (
     AgentTrust
 )
 from pebbling.common.models import AgentManifest
-from pebbling.security import agent_identity
 
 
 def validate_agent_function(agent_function: Callable):
@@ -50,15 +49,24 @@ def validate_agent_function(agent_function: Callable):
 
 def create_manifest(
     agent_function: Callable,
+    id: UUID,
     name: Optional[str],
     identity: AgentIdentity,
     description: Optional[str],
     skills: Optional[List[AgentSkill]],
     capabilities: Optional[AgentCapabilities],
+    agent_trust: Optional[AgentTrust],
     version: str,
     url: str,
-    protocol_version: str,
-    extra_metadata: Optional[Dict[str, Any]],
+    protocol_version: str = '1.0.0',
+    kind: Literal['agent', 'team', 'workflow'] = 'agent',
+    debug_mode: bool = False,
+    debug_level: Literal[1, 2] = 1,
+    monitoring: bool = False,
+    telemetry: bool = True,
+    num_history_sessions: int = 10,
+    documentation_url: Optional[str] = None,
+    extra_metadata: Optional[Dict[str, Any]] = {},
 ) -> AgentManifest:
     """
     Create a protocol-compliant AgentManifest from any Python function.
@@ -74,15 +82,24 @@ def create_manifest(
     Args:
         agent_function: The user's agent function to wrap. Must have 'input' as first parameter.
                        Can optionally have 'context' or 'execution_state' parameters.
+        id: Agent ID (UUID).
         name: Human-readable agent name. If None, uses function name with underscores → hyphens.
         identity: AgentIdentity for decentralized identity management.
         description: Agent description. If None, uses function docstring or generates default.
         skills: List of AgentSkill objects defining agent capabilities.
         capabilities: AgentCapabilities defining technical features (streaming, notifications, etc.).
+        agent_trust: AgentTrust configuration for security and trust management.
         version: Agent version string (e.g., "1.0.0").
-        url: Agent URL.
-        protocol_version: Agent protocol version.
-        extra_metadata: Additional metadata to attach to the agent manifest.
+        url: Agent URL where the agent is hosted.
+        protocol_version: Pebbling protocol version (default: "1.0.0").
+        kind: Agent type - 'agent', 'team', or 'workflow' (default: 'agent').
+        debug_mode: Enable debug mode for detailed logging (default: False).
+        debug_level: Debug verbosity level - 1 or 2 (default: 1).
+        monitoring: Enable monitoring and metrics collection (default: False).
+        telemetry: Enable telemetry data collection (default: True).
+        num_history_sessions: Number of conversation history sessions to maintain (default: 10).
+        documentation_url: URL to agent documentation (optional).
+        extra_metadata: Additional metadata dictionary to attach to the agent manifest (default: {}).
         
     Returns:
         AgentManifest: A protocol-compliant agent manifest with proper execution methods.
@@ -183,25 +200,26 @@ def create_manifest(
     
     # Create base manifest
     manifest = AgentManifest(
-        id=identity.get('did'),
+        id=id,
         name=manifest_name,
         description=manifest_description,
-        url=url,  # Default URL
+        url=url,
         version=version,
-        protocol_version=protocol_version,  # Default protocol version
+        protocol_version=protocol_version,
         identity=identity,
-        trust_config={},  # Empty dict for AgentTrust
+        agent_trust=agent_trust,
         capabilities=capabilities,
-        skill=skills,
-        kind="agent",
-        num_history_sessions=10,
-        extra_data={},
-        debug_mode=False,
-        debug_level=1,
-        monitoring=False,
-        telemetry=False
+        skills=skills,
+        kind=kind,
+        num_history_sessions=num_history_sessions,
+        extra_data=extra_metadata,
+        debug_mode=debug_mode,
+        debug_level=debug_level,
+        monitoring=monitoring,
+        telemetry=telemetry,
+        documentation_url=documentation_url
     )
-    
+
     # Add execution method based on function type
     def create_run_method():
         # Extract parameter resolution logic (DRY principle)

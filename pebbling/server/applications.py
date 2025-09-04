@@ -25,12 +25,13 @@ class PebbleApplication(Starlette):
         storage: Union[InMemoryStorage, PostgreSQLStorage, QdrantStorage],
         scheduler: Union[InMemoryScheduler, RedisScheduler],
         penguin_id: UUID,
-        agents: list[AgentManifest],
+        manifest: AgentManifest,
         url: str = "http://localhost",
         port: int = 3773,
         version: str = "1.0.0",
         description: Optional[str] = None,
         debug: bool = False,
+        lifespan: Optional[Lifespan] = None,
         routes: Optional[Sequence[Route]] = None,
         middleware: Optional[Sequence[Middleware]] = None,
         exception_handlers: Optional[dict[Any, ExceptionHandler]] = None
@@ -38,7 +39,7 @@ class PebbleApplication(Starlette):
         """Initialize Pebble application.
         
         Args:
-            agents: List of agent manifests to serve
+            manifest: Agent manifest to serve
             storage: Storage backend (defaults to InMemoryStorage)
             scheduler: Task scheduler (defaults to InMemoryScheduler)
             penguin_id: Unique server identifier
@@ -46,12 +47,11 @@ class PebbleApplication(Starlette):
             version: Server version
             description: Server description
             debug: Enable debug mode
+            lifespan: Optional custom lifespan
             routes: Optional custom routes
             middleware: Optional middleware
             exception_handlers: Optional exception handlers
         """
-        lifespan = _default_lifespan
-
         super().__init__(
             debug=debug,
             routes=routes,
@@ -64,8 +64,7 @@ class PebbleApplication(Starlette):
         self.url = url
         self.version = version
         self.description = description
-        self.skills = skills or []
-        self.agents = agents
+        self.manifest = manifest
         self.default_input_modes = ['application/json']
         self.default_output_modes = ['application/json']
 
@@ -84,15 +83,6 @@ class PebbleApplication(Starlette):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await super().__call__(scope, receive, send)
-
-    
-@asynccontextmanager
-async def _default_lifespan(app: PebbleApplication) -> AsyncIterator[None]:
-    # Initialize TaskManager during application startup
-    app.task_manager = TaskManager(scheduler=app._scheduler, storage=app._storage)
-    
-    async with app.task_manager:
-        yield
     
 
 

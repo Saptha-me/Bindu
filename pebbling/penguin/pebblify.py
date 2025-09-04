@@ -22,7 +22,7 @@ This module provides the core decorator that handles:
 
 import inspect
 import uuid
-from typing import Callable, Optional
+from typing import Optional, Callable, List, Dict, Any, Literal
 from pathlib import Path
 import os
 from functools import partial
@@ -35,6 +35,7 @@ from pebbling.common.protocol.types import (
     AgentCapabilities, 
     AgentSkill,
     AgentIdentity,
+    AgentTrust,
 )
 from pebbling.common.models import DeploymentConfig
 from pebbling.utils.constants import (
@@ -71,30 +72,37 @@ async def worker_lifespan(
 
     Key Components:
     - worker: Manages agent execution, handling message processing through broker and storage
-    - Startup: Initializes worker, sets up connections to broker and storage
+    - Startup: Worker is ready to process requests (no initialization needed)
     - Runtime: Worker processes incoming requests through Pebbling protocol
-    - Shutdown: Cleanly closes worker, ensuring proper resource cleanup
+    - Shutdown: Worker cleanup (no explicit cleanup needed for current implementation)
     
-    This prevents resource leaks and ensures your agent is ready to process requests
-    as soon as the server starts, running as a persistent service within PebbleApplication.
+    This ensures your agent is ready to process requests as soon as the server starts.
     """
-    # Startup: Initialize the worker and start processing
-    await worker.start()
+    # Worker is ready to process incoming requests (no startup needed)
     try:
-        # Worker is now ready to process incoming requests
         yield
     finally:
-        # Shutdown: Clean up worker resources
-        await worker.stop()
+        # No explicit cleanup needed for current Worker implementation
+        pass
 
 def pebblify(
     author: Optional[str] = None,
     name: Optional[str] = None,
     id: Optional[str] = None,
+    description: Optional[str] = None,
     version: str = "1.0.0",
     recreate_keys: bool = True,
-    skill: Optional[AgentSkill] = None,
+    skills: List[Optional[AgentSkill]] = None,
     capabilities: Optional[AgentCapabilities] = None, 
+    agent_trust: Optional[AgentTrust] = None,
+    kind: Literal['agent', 'team', 'workflow'] = 'agent',
+    debug_mode: bool = False,
+    debug_level: Literal[1, 2] = 1,
+    monitoring: bool = False,
+    telemetry: bool = True,
+    num_history_sessions: int = 10,
+    documentation_url: Optional[str] = None,
+    extra_metadata: Optional[Dict[str, Any]] = {},
     storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None,
     scheduler: Optional[InMemoryScheduler | RedisScheduler] = None,
     deployment_config: Optional[DeploymentConfig] = None,
@@ -131,19 +139,28 @@ def pebblify(
 
         _manifest = create_manifest(
             agent_function=agent_function,
+            id=agent_id,
             name=name,
-            description=None,
-            skills=[skill] if skill else None,
-            capabilities=capabilities,
-            version=version,
-            extra_metadata=None,
             identity=agent_identity,
-            url=deployment_config.host,
-            protocol_version=deployment_config.protocol_version
+            description=description,
+            skills=skills,
+            capabilities=capabilities,
+            agent_trust=agent_trust,
+            version=version,
+            url=deployment_config.url,
+            protocol_version=deployment_config.protocol_version,
+            kind=kind,
+            debug_mode=debug_mode,
+            debug_level=debug_level,
+            monitoring=monitoring,
+            telemetry=telemetry,
+            num_history_sessions=num_history_sessions,
+            documentation_url=documentation_url,
+            extra_metadata=extra_metadata,
         )
 
-        logger.info(f"🚀 Agent '{_manifest['name']}' successfully pebblified!")
-        logger.debug(f"📊 Manifest details: {_manifest}")
+        logger.info(f"🚀 Agent '{_manifest.identity['did']}' successfully pebblified!")
+        logger.debug(f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}")
         logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 
         # Create server components
@@ -151,20 +168,21 @@ def pebblify(
         scheduler_instance = scheduler or InMemoryScheduler()
         worker = Worker(manifest=_manifest, scheduler=scheduler_instance, storage=storage_instance)
 
-        lifespan = partial(worker_lifespan, worker=worker, manifest=_manifest)
+        lifespan = partial(worker_lifespan, worker=worker)
 
         pebble_app = PebbleApplication(
             storage=storage_instance,
             scheduler=scheduler_instance,
             penguin_id=agent_id,
-            agents=[_manifest],
-            skills=[skill] if skill else None,
+            manifest=[_manifest],
             version=version,
             lifespan=lifespan
         )    
 
         # Deploy the server
-        uvicorn.run(pebble_app, host=deployment_config.host, port=deployment_config.port)
+        from urllib.parse import urlparse
+        parsed_url = urlparse(deployment_config.url)
+        uvicorn.run(pebble_app, host=parsed_url.hostname or "localhost", port=parsed_url.port or 3773)
             
         return _manifest
     return decorator

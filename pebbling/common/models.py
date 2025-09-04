@@ -41,10 +41,8 @@ class CAConfig:
 class DeploymentConfig:
     """Organized deployment configuration."""
     url: str
-    protocol_version: str
     expose: bool
-    port: int
-    endpoint_type: str
+    protocol_version: str = "1.0.0"
     proxy_urls: Optional[List[str]] = None
     cors_origins: Optional[List[str]] = None
     openapi_schema: Optional[str] = None
@@ -62,9 +60,9 @@ class AgentManifest:
         version: str,
         protocol_version: str,
         identity: AgentIdentity,
-        trust_config: AgentTrust,
+        agent_trust: AgentTrust,
         capabilities: AgentCapabilities,
-        skill: AgentSkill,
+        skills: List[AgentSkill],
         kind: Literal['agent', 'team', 'workflow'],
         num_history_sessions: int,
         extra_data: Dict[str, Any],
@@ -86,11 +84,11 @@ class AgentManifest:
         
         # Security and identity
         self.identity = identity
-        self.trust_config = trust_config
+        self.agent_trust = agent_trust
         
         # Capabilities and skills
         self.capabilities = capabilities
-        self.skill = skill
+        self.skills = skills
         
         # Type and configuration
         self.kind = kind
@@ -117,9 +115,9 @@ class AgentManifest:
             protocol_version=self.protocol_version,
             documentation_url=self.documentation_url,
             identity=self.identity,
-            trust_config=self.trust_config,
+            agent_trust=self.agent_trust,
             capabilities=self.capabilities,
-            skill=self.skill,
+            skills=self.skills,
             kind=self.kind,
             num_history_sessions=self.num_history_sessions,
             extra_data=self.extra_data,

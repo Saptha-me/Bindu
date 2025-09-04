@@ -701,9 +701,7 @@ class AgentSkill(TypedDict):
     id: Required[UUID]
     description: NotRequired[str]
     examples: NotRequired[list[str]]
-    input_modes: NotRequired[list[str]]
     name: Required[str]
-    output_modes: NotRequired[list[str]]
     tags: NotRequired[list[str]]
 
 
@@ -740,10 +738,10 @@ class AgentCard(TypedDict):
     documentation_url: NotRequired[str]
 
     identity: Required[AgentIdentity]
-    trust_config: Required[AgentTrust]
+    agent_trust: Required[AgentTrust]
 
     capabilities: Required[AgentCapabilities]
-    skill: Required[AgentSkill]
+    skills: Required[List[AgentSkill]]
 
     kind: Required[Literal['agent', 'team', 'workflow']]
 

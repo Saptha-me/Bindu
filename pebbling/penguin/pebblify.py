@@ -33,7 +33,6 @@ import uvicorn
 
 from pebbling.common.protocol.types import (
     AgentCapabilities, 
-    AgentManifest, 
     AgentSkill,
     AgentIdentity,
 )
@@ -44,6 +43,7 @@ from pebbling.utils.constants import (
 )
 from pebbling.security.agent_identity import create_agent_identity
 from pebbling.penguin.manifest import validate_agent_function, create_manifest
+from pebbling.common.models import AgentManifest
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
@@ -132,13 +132,14 @@ def pebblify(
         _manifest = create_manifest(
             agent_function=agent_function,
             name=name,
-            id=agent_id,
             description=None,
             skills=[skill] if skill else None,
             capabilities=capabilities,
             version=version,
             extra_metadata=None,
-            identity=agent_identity
+            identity=agent_identity,
+            url=deployment_config.host,
+            protocol_version=deployment_config.protocol_version
         )
 
         logger.info(f"🚀 Agent '{_manifest['name']}' successfully pebblified!")

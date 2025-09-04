@@ -40,6 +40,8 @@ class CAConfig:
 @dataclass
 class DeploymentConfig:
     """Organized deployment configuration."""
+    url: str
+    protocol_version: str
     expose: bool
     port: int
     endpoint_type: str

@@ -1,8 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import Any, Union, Sequence, Optional, AsyncIterator
 from uuid import UUID
-
-from pebbling.common.protocol.types import AgentManifest, AgentSkill
+from pebbling.common.models import AgentManifest
 
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .scheduler.redis_scheduler import RedisScheduler
@@ -27,7 +26,6 @@ class PebbleApplication(Starlette):
         scheduler: Union[InMemoryScheduler, RedisScheduler],
         penguin_id: UUID,
         agents: list[AgentManifest],
-        skills: Optional[list[AgentSkill]] = None,
         url: str = "http://localhost",
         port: int = 3773,
         version: str = "1.0.0",

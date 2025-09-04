@@ -727,40 +727,31 @@ class AgentCapabilities(TypedDict):
     streaming: NotRequired[bool]
 
 
-class AgentManifest(BaseModel):
-    """Complete agent manifest with identity and capabilities."""
+@pydantic.with_config({'alias_generator': to_camel})
+class AgentCard(TypedDict):
+    """The card that describes an agent - following Pebbling pattern."""
+
+    id: Required[UUID]
+    name: Required[str]
+    description: Required[str]
+    url: Required[str]
+    version: Required[str]
+    protocol_version: Required[str]
+    documentation_url: NotRequired[str]
+
+    identity: Required[AgentIdentity]
+    trust_config: Required[AgentTrust]
+
+    capabilities: Required[AgentCapabilities]
+    skill: Required[AgentSkill]
+
+    kind: Required[Literal['agent', 'team', 'workflow']]
+
+    num_history_sessions: Required[int]
+    extra_data: Required[Dict[str, Any]]
     
-    id: UUID
-    name: str
-    description: str
-    user_id: UUID
-    version: str
-
-    # Identity
-    identity: AgentIdentity
-
-    # Trust
-    trust_config: AgentTrust
-
-    capabilities: AgentCapabilities
-    skill: AgentSkill
-
-    kind: str
+    debug_mode: Required[bool]
+    debug_level: Required[Literal[1, 2]]
     
-    # Configuration
-    num_history_sessions: int
-    storage: Dict[str, Any]
-    context: Dict[str, Any]
-    extra_data: Dict[str, Any]
-    
-    # Debug settings
-    debug_mode: bool
-    debug_level: Literal[1, 2]
-    
-    # Monitoring
-    monitoring: bool
-    telemetry: bool
-
-
-# Rebuild model to resolve forward references
-AgentManifest.model_rebuild()
+    monitoring: Required[bool]
+    telemetry: Required[bool]

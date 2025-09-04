@@ -27,14 +27,24 @@ config = load_config()
 
 @pebblify(
     author=config["author"],
-    recreate_keys=config["recreate_keys"],
-    skill=AgentSkill(**config["skill"]),
+    name=config.get("name"),
+    description=config.get("description"),
+    version=config.get("version", "1.0.0"),
+    recreate_keys=config.get("recreate_keys", True),
+    skills=[AgentSkill(**skill) for skill in config.get("skills", [])],
     capabilities=AgentCapabilities(**config["capabilities"]),
+    agent_trust=config.get("agent_trust"),
+    kind=config.get("kind", "agent"),
+    debug_mode=config.get("debug_mode", False),
+    debug_level=config.get("debug_level", 1),
+    monitoring=config.get("monitoring", False),
+    telemetry=config.get("telemetry", True),
+    num_history_sessions=config.get("num_history_sessions", 10),
+    documentation_url=config.get("documentation_url"),
+    extra_metadata=config.get("extra_metadata", {}),
     deployment_config=DeploymentConfig(**config["deployment"]),
 )
-async def news_reporter_agent(
-    input: str
-) -> AsyncGenerator[str, None]:
+async def news_reporter_agent(input: str) -> AsyncGenerator[str, None]:
     """User writes protocol-compliant code directly."""
     
     # Use any framework internally

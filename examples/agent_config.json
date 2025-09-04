@@ -1,28 +1,32 @@
 {
-  "author": "dev@pebbling.ai",
+  "author": "Your Name",
+  "name": "News Reporter Agent",
+  "description": "Agent that reports current news from Amsterdam",
+  "version": "1.0.0",
   "recreate_keys": true,
-  "skill": {
-    "description": "You are a news reporter with a flair for storytelling.",
-    "id": "news-reporting",
-    "input_modes": ["text"],
-    "name": "News Reporting",
-    "output_modes": ["text"],
-    "tags": ["news", "reporting", "storytelling"]
-  },
+  "skills": [
+    {
+      "name": "News Reporting",
+      "description": "Fetch and report current news",
+      "tags": ["news", "reporting"]
+    }
+  ],
   "capabilities": {
-    "streaming": true
+    "streaming": true,
+    "push_notifications": false,
+    "state_transition_history": false
   },
-  "security": {
-    "recreate_keys": true,
-    "did_required": true,
-    "require_challenge_response": false
-  },
+  "kind": "agent",
+  "debug_mode": false,
+  "debug_level": 1,
+  "monitoring": false,
+  "telemetry": true,
+  "num_history_sessions": 10,
+  "documentation_url": "https://docs.example.com/news-agent",
+  "extra_metadata": {},
   "deployment": {
     "url": "http://localhost:3773",
     "expose": true,
-    "port": 3773,
-    "proxy_urls": ["http://localhost:8000"],
-    "cors_origins": ["http://localhost:8000"],
-    "openapi_schema": "http://localhost:3773/openapi.json"
+    "protocol_version": "1.0.0"
   }
 }

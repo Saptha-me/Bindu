@@ -25,6 +25,7 @@ from pebbling.common.protocol.types import (
     AgentTrust
 )
 from pebbling.common.models import AgentManifest
+from pebbling.security import agent_identity
 
 
 def validate_agent_function(agent_function: Callable):
@@ -50,13 +51,14 @@ def validate_agent_function(agent_function: Callable):
 def create_manifest(
     agent_function: Callable,
     name: Optional[str],
-    id: str,
+    identity: AgentIdentity,
     description: Optional[str],
     skills: Optional[List[AgentSkill]],
     capabilities: Optional[AgentCapabilities],
     version: str,
+    url: str,
+    protocol_version: str,
     extra_metadata: Optional[Dict[str, Any]],
-    identity: Optional[AgentIdentity] = None,
 ) -> AgentManifest:
     """
     Create a protocol-compliant AgentManifest from any Python function.
@@ -73,14 +75,15 @@ def create_manifest(
         agent_function: The user's agent function to wrap. Must have 'input' as first parameter.
                        Can optionally have 'context' or 'execution_state' parameters.
         name: Human-readable agent name. If None, uses function name with underscores → hyphens.
-        id: Unique identifier for the agent in the registry.
+        identity: AgentIdentity for decentralized identity management.
         description: Agent description. If None, uses function docstring or generates default.
         skills: List of AgentSkill objects defining agent capabilities.
         capabilities: AgentCapabilities defining technical features (streaming, notifications, etc.).
         version: Agent version string (e.g., "1.0.0").
+        url: Agent URL.
+        protocol_version: Agent protocol version.
         extra_metadata: Additional metadata to attach to the agent manifest.
-        identity: Optional AgentIdentity for decentralized identity management.
-    
+        
     Returns:
         AgentManifest: A protocol-compliant agent manifest with proper execution methods.
     
@@ -177,50 +180,19 @@ def create_manifest(
     # Prepare manifest data
     manifest_name = name or agent_function.__name__.replace('_', '-')
     manifest_description = description or inspect.getdoc(agent_function) or f"Agent: {manifest_name}"
-    manifest_capabilities = capabilities or AgentCapabilities(
-        streaming=True,
-        push_notifications=False,
-        state_transition_history=False
-    )
-    
-    # Prepare identity with required fields
-    prepared_identity = None
-    if identity:
-        prepared_identity = AgentIdentity(
-            did=identity.get('did'),
-            did_document=identity.get('did_document', {}),
-            agentdns_url=identity.get('agentdns_url'),
-            endpoint=identity.get('endpoint'),
-            public_key=identity.get('public_key', ''),
-            csr=identity.get('csr')
-        )
-    
-    # Prepare skill with UUID
-    prepared_skill = None
-    if skills and skills[0]:
-        skill_data = skills[0]
-        import uuid
-        prepared_skill = AgentSkill(
-            id=uuid.uuid4(),  # Generate UUID for skill
-            name=skill_data.get('name', ''),
-            description=skill_data.get('description', ''),
-            input_modes=skill_data.get('input_modes', []),
-            output_modes=skill_data.get('output_modes', []),
-            tags=skill_data.get('tags', [])
-        )
     
     # Create base manifest
     manifest = AgentManifest(
-        id=id,
+        id=identity.get('did'),
         name=manifest_name,
         description=manifest_description,
-        url="http://localhost:3773",  # Default URL
+        url=url,  # Default URL
         version=version,
-        protocol_version="1.0.0",  # Default protocol version
-        identity=prepared_identity,
+        protocol_version=protocol_version,  # Default protocol version
+        identity=identity,
         trust_config={},  # Empty dict for AgentTrust
-        capabilities=manifest_capabilities,
-        skill=prepared_skill,
+        capabilities=capabilities,
+        skill=skills,
         kind="agent",
         num_history_sessions=10,
         extra_data={},

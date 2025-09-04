@@ -23,7 +23,7 @@ console = Console()
 
 def _short_panel(title: str, body: str, style: str = "bold blue") -> None:
     """Display a formatted panel with a title and body text.
-    
+
     Args:
         title: The title to display at the top of the panel.
         body: The main content to display inside the panel.
@@ -34,15 +34,15 @@ def _short_panel(title: str, body: str, style: str = "bold blue") -> None:
 
 def ensure_gitignore_rules(project_root: Path, filepaths: Iterable[str]) -> None:
     """Ensure specified file paths are added to the project's .gitignore file.
-    
+
     This function checks if a Pebble section exists in the .gitignore file
     and adds the specified filepaths if the section doesn't already exist.
     The function prevents duplicate sections from being created.
-    
+
     Args:
         project_root: The root directory of the project containing .gitignore.
         filepaths: An iterable of file paths to add to .gitignore.
-    
+
     Note:
         If the Pebble section already exists in .gitignore, no changes are made.
     """
@@ -52,7 +52,6 @@ def ensure_gitignore_rules(project_root: Path, filepaths: Iterable[str]) -> None
     file_text = ""
     if gitignore_path.exists():
         file_text = gitignore_path.read_text(encoding="utf-8")
-
 
     if section_header in file_text:
         # TODO - update the user about file not being written to .gitignore
@@ -71,29 +70,23 @@ def ensure_gitignore_rules(project_root: Path, filepaths: Iterable[str]) -> None
 @dataclass
 class PebbleUserCredentials:
     """Data class for storing Pebble user authentication credentials.
-    
+
     Attributes:
         email: User's email address for Pebble authentication.
         api_key: API key for authenticating with Pebble services.
     """
+
     email: str
     api_key: str
 
 
 @app.command()
 def init(
-    colony: str = typer.Option(
-        ".pebble", "--config-dir", help="Pebble config directory"
-    ),
-    nest: str = typer.Option(
-        "pebble_agent.py", "--agent-entry", help="File for your agent"
-    ),
-    interactive: bool = typer.Option(
-        True, "--yes", help="Use defaults; no prompts"
-    ),
+    colony: str = typer.Option(".pebble", "--config-dir", help="Pebble config directory"),
+    nest: str = typer.Option("pebble_agent.py", "--agent-entry", help="File for your agent"),
+    interactive: bool = typer.Option(True, "--yes", help="Use defaults; no prompts"),
 ):
-    """Initialize Pebble in this project.
-    """
+    """Initialize Pebble in this project."""
     credentials: PebbleUserCredentials | None = None
 
     match interactive:
@@ -101,7 +94,7 @@ def init(
             pass
         case True:
             console.print("\n[bold cyan]🐧 Welcome to Pebble! Let's set up your agent[/bold cyan]\n")
-            
+
             colony = typer.prompt("📁 Config directory", default=colony)
             nest = typer.prompt("🤖 Agent file", default=nest)
 
@@ -110,24 +103,21 @@ def init(
                 email = typer.prompt("📧 Email")
                 api_key = typer.prompt("🔑 API Key", hide_input=True)
 
-                credentials = PebbleUserCredentials(
-                    email=email,
-                    api_key=api_key
-                )
-    
+                credentials = PebbleUserCredentials(email=email, api_key=api_key)
+
     colony_directory = Path.cwd() / colony
     if colony_directory.exists():
         console.print(f"[bold red]❌ Directory {colony_directory} already exists[/bold red]")
         raise typer.Abort()
-    
+
     colony_directory.mkdir()
     nest_file = Path.cwd() / nest
     if nest_file.exists():
         console.print(f"[bold red]❌ File for agent {nest_file} already exists[/bold red]")
         raise typer.Abort()
-    
+
     nest_file.write_text(HELLO_WORLD_AGENT_TEMPLATE)
-    
+
     credentials_json_file = colony_directory / "credentials.json"
     if credentials is not None:
         credentials_json_file.touch()
@@ -135,19 +125,26 @@ def init(
         credentials_json_file.write_text(json.dumps(asdict(credentials)))
         ensure_gitignore_rules(Path.cwd(), [])
 
-
     config_file = colony_directory / "config.json"
     config_file.touch()
-    
-    project_root = Path.cwd()
-    config_file.write_text(json.dumps({
-        "config": str(config_file.relative_to(project_root)),
-        "auth": str(credentials_json_file.relative_to(project_root)) if credentials is not None else None,
-        "agent_entrypoint": str(nest_file.relative_to(project_root))
-    }))
 
-    _short_panel("[bold green]✅ Pebble initialized successfully![/bold green]", "[bold]🚀 Ready! Next step: [cyan]`pebble launch`[/cyan][/bold]", style="bold green")
+    project_root = Path.cwd()
+    config_file.write_text(
+        json.dumps(
+            {
+                "config": str(config_file.relative_to(project_root)),
+                "auth": str(credentials_json_file.relative_to(project_root)) if credentials else None,
+                "agent_entrypoint": str(nest_file.relative_to(project_root)),
+            }
+        )
+    )
+
+    _short_panel(
+        "[bold green]✅ Pebble initialized successfully![/bold green]",
+        "[bold]🚀 Ready! Next step: [cyan]`pebble launch`[/cyan][/bold]",
+        style="bold green",
+    )
 
 
 if __name__ == "__main__":
-    typer.run(init)
+    app()

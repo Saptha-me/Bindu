@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pebbling Agent</title>
+    <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e92063 0%, #ff6b9d 50%, #c44569 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            position: relative;
+        }
+
+        .github-link {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .github-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            color: white;
+            text-decoration: none;
+        }
+
+        .github-link::before {
+            content: "";
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='white' d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            vertical-align: middle;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #e92063;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .agent-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .agent-info h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .agent-info p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #6c757d;
+        }
+
+        .skills {
+            margin-top: 20px;
+        }
+        
+        .agent-card-link {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            font-size: 0.8em;
+        }
+        
+        .agent-card-link a {
+            color: #6c757d;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .agent-card-link a:hover {
+            color: #e92063;
+            text-decoration: underline;
+        }
+
+        .skill-item {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #e92063;
+        }
+
+        .skill-name {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .skill-description {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .chat-container {
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            background: #e92063;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.agent {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .message.status {
+            background: transparent;
+            color: #6c757d;
+            font-size: 0.85em;
+            font-style: italic;
+            text-align: center;
+            padding: 8px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin: 10px auto;
+            max-width: 60%;
+        }
+
+        .message.user[data-task-id], .message.agent[data-task-id] {
+            cursor: default;
+            position: relative;
+        }
+
+        .message.user[data-task-id]:hover::after, .message.agent[data-task-id]:hover::after {
+            content: "Task ID: " attr(data-task-id);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .message.user[data-task-id]:hover::before, .message.agent[data-task-id]:hover::before {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .footer p {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .footer strong {
+            color: white;
+        }
+
+        .footer a {
+            color: #ffb3d1;
+            text-decoration: underline;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        .message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
+            margin: 0.5em 0;
+            font-weight: bold;
+        }
+
+        .message h1 { font-size: 1.5em; }
+        .message h2 { font-size: 1.3em; }
+        .message h3 { font-size: 1.2em; }
+        .message h4 { font-size: 1.1em; }
+        .message h5 { font-size: 1em; }
+        .message h6 { font-size: 0.9em; }
+
+        .message p {
+            margin: 0.5em 0;
+            line-height: 1.4;
+        }
+
+        .message ul, .message ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+        }
+
+        .message li {
+            margin: 0.2em 0;
+        }
+
+        .message code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message.agent code {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user code {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .message pre {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+
+        .message.agent pre {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user pre {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .message pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+        }
+
+        .message blockquote {
+            border-left: 4px solid #e92063;
+            padding-left: 1em;
+            margin: 0.5em 0;
+            font-style: italic;
+        }
+
+        .message.user blockquote {
+            border-left-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .message a {
+            color: #e92063;
+            text-decoration: underline;
+        }
+
+        .message.user a {
+            color: #ffb3d1;
+        }
+
+        .message table {
+            border-collapse: collapse;
+            margin: 0.5em 0;
+            width: 100%;
+        }
+
+        .message th, .message td {
+            border: 1px solid #ddd;
+            padding: 0.5em;
+            text-align: left;
+        }
+
+        .message th {
+            background: rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .chat-input button {
+            padding: 12px 24px;
+            background: #e92063;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        .chat-input button:hover {
+            background: #d01d58;
+        }
+
+        .chat-input button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #e92063;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .footer {
+                margin-top: 20px;
+                padding: 15px;
+                font-size: 0.8em;
+            }
+
+            .github-link {
+                position: static;
+                display: inline-block;
+                margin-bottom: 10px;
+                font-size: 0.8em;
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
+                Pebbling
+            </a>
+            <h1>🤖 Pebbling Agent</h1>
+            <p>Pebbling Protocol Documentation & Chat Interface</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>📋 Agent Information</h2>
+                <div id="agent-info" class="agent-info">
+                    <div class="loading">Loading agent information...</div>
+                </div>
+                <div class="agent-card-link">
+                    <a href="/.well-known/agent.json" target="_blank" rel="noopener noreferrer">
+                        /.well-known/agent.json
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>💬 Chat Interface</h2>
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages">
+                    </div>
+                    <div class="chat-input">
+                        <input
+                            type="text"
+                            id="message-input"
+                            placeholder="Type your message here..."
+                            onkeypress="handleKeyPress(event)"
+                        >
+                        <button onclick="sendMessage()" id="send-button">Send</button>
+                    </div>
+                </div>
+                <div id="chat-error" class="error" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>🧪 Experimental Feature</strong><br>
+            This documentation interface is experimental and under active development.
+            We'd love your feedback to make it better! Please share your thoughts and suggestions on
+            <a href="https://github.com/pydantic/fasta2a/issues/1" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+        </div>
+    </div>
+
+    <script>
+        let agentCard = null;
+        let currentTaskId = null;
+        let contextId = null;
+
+        // Load agent card information
+        async function loadAgentCard() {
+            try {
+                const response = await fetch('/.well-known/agent.json');
+                if (!response.ok) throw new Error('Failed to load agent card');
+
+                agentCard = await response.json();
+                displayAgentCard();
+            } catch (error) {
+                console.error('Error loading agent card:', error);
+                document.getElementById('agent-info').innerHTML =
+                    '<div class="error">Failed to load agent information</div>';
+            }
+        }
+
+        function displayAgentCard() {
+            if (!agentCard) return;
+
+            const infoDiv = document.getElementById('agent-info');
+            infoDiv.innerHTML = `
+                <h3>${agentCard.name}</h3>
+                <p>${agentCard.description}</p>
+
+                <div class="info-grid">
+                    <div class="info-label">Version:</div>
+                    <div class="info-value">${agentCard.version}</div>
+
+                    <div class="info-label">Protocol:</div>
+                    <div class="info-value">Pebble v${agentCard.protocolVersion}</div>
+
+                    <div class="info-label">URL:</div>
+                    <div class="info-value">${agentCard.url}</div>
+
+                    <div class="info-label">Streaming:</div>
+                    <div class="info-value">${agentCard.capabilities?.streaming ? 'Yes' : 'No'}</div>
+
+                    <div class="info-label">Push Notifications:</div>
+                    <div class="info-value">${agentCard.capabilities?.pushNotifications ? 'Yes' : 'No'}</div>
+
+                    <div class="info-label">State History:</div>
+                    <div class="info-value">${agentCard.capabilities?.stateTransitionHistory ? 'Yes' : 'No'}</div>
+                </div>
+
+                ${agentCard.skills && agentCard.skills.length > 0 ? `
+                    <div class="skills">
+                        <h4>Skills:</h4>
+                        ${agentCard.skills.map(skill => `
+                            <div class="skill-item">
+                                <div class="skill-name">${skill.name}</div>
+                                <div class="skill-description">${skill.description || 'No description available'}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            input.value = '';
+            const sendButton = document.getElementById('send-button');
+            sendButton.disabled = true;
+
+            try {
+                // Generate IDs
+                const messageId = generateId();
+                const taskId = generateId();
+                if (!contextId) {
+                    contextId = generateId();
+                }
+
+                // Send message to Pebble endpoint
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'message/send',
+                        params: {
+                            message: {
+                                role: 'user',
+                                parts: [
+                                    {
+                                        kind: 'text',
+                                        content: message
+                                    }
+                                ],
+                                kind: 'message',
+                                messageId: messageId,
+                                contextId: contextId,
+                                taskId: taskId
+                            },
+                            configuration: {
+                                acceptedOutputModes: ['application/json']
+                            }
+                        },
+                        id: generateId()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to send message');
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                // Store task ID and context ID for polling
+                currentTaskId = result.result.id;
+
+                // Store context ID for future messages
+                if (result.result.contextId && !contextId) {
+                    contextId = result.result.contextId;
+                }
+
+                // Add user message to chat with task ID
+                addMessage(message, 'user', currentTaskId);
+
+                // Start polling for task completion
+                pollTaskStatus();
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addMessage('Error: ' + error.message, 'status');
+                showError('Failed to send message: ' + error.message);
+            } finally {
+                sendButton.disabled = false;
+            }
+        }
+
+        async function pollTaskStatus() {
+            if (!currentTaskId) return;
+
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'tasks/get',
+                        params: {
+                            id: currentTaskId
+                        },
+                        id: generateId()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to get task status');
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                const task = result.result;
+
+                if (task.status.state === 'completed') {
+                    // Extract the agent's response from the latest message in history
+                    if (task.history && task.history.length > 0) {
+                        const lastMessage = task.history[task.history.length - 1];
+                        if (lastMessage.role === 'agent' && lastMessage.parts && lastMessage.parts.length > 0) {
+                            const textPart = lastMessage.parts.find(part => part.kind === 'text');
+                            if (textPart) {
+                                addMessage(textPart.text, 'agent', task.id);
+                            }
+                        }
+                    }
+                    currentTaskId = null;
+                } else if (task.status.state === 'failed') {
+                    addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
+                    currentTaskId = null;
+                } else if (task.status.state === 'canceled') {
+                    addMessage('Task was canceled', 'status');
+                    currentTaskId = null;
+                } else {
+                    // Still processing, poll again
+                    setTimeout(pollTaskStatus, 1000);
+                }
+
+            } catch (error) {
+                console.error('Error polling task status:', error);
+                addMessage('Error getting task status: ' + error.message, 'status');
+                currentTaskId = null;
+            }
+        }
+
+        function addMessage(content, sender, taskId = null) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            // Add task ID as data attribute for user and agent messages
+            if ((sender === 'user' || sender === 'agent') && taskId) {
+                messageDiv.setAttribute('data-task-id', taskId);
+            }
+
+            // Render markdown for agent messages, plain text for user and status messages
+            if (sender === 'agent') {
+                messageDiv.innerHTML = marked.parse(content);
+            } else {
+                messageDiv.textContent = content;
+            }
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('chat-error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function generateId() {
+            // Generate a proper UUID v4
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAgentCard();
+        });
+    </script>
+</body>
+</html>

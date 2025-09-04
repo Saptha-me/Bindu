@@ -96,6 +96,7 @@ from typing import Any
 
 from .scheduler import Scheduler
 from .storage import Storage
+from .workers import ManifestWorker
 
 from pebbling.common.protocol.types import (
     CancelTaskRequest,
@@ -122,13 +123,27 @@ class TaskManager:
 
     scheduler: Scheduler
     storage: Storage[Any]
+    manifest: Any = None  # AgentManifest for creating workers
 
     _aexit_stack: AsyncExitStack | None = field(default=None, init=False)
+    _workers: list[ManifestWorker] = field(default_factory=list, init=False)
 
     async def __aenter__(self):
         self._aexit_stack = AsyncExitStack()
         await self._aexit_stack.__aenter__()
         await self._aexit_stack.enter_async_context(self.scheduler)
+
+        # Create and start workers if manifest is provided
+        if self.manifest:
+            # Create a worker to process tasks
+            worker = ManifestWorker(
+                scheduler=self.scheduler,
+                storage=self.storage,
+                manifest=self.manifest
+            )
+            self._workers.append(worker)
+            # Start the worker
+            await self._aexit_stack.enter_async_context(worker.run())
 
         return self
 

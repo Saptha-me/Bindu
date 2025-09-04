@@ -2,11 +2,14 @@ from __future__ import annotations as _annotations
 
 import uuid
 import inspect
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, Generator, AsyncIterator
 from uuid import UUID
+from contextlib import asynccontextmanager
 
-from opentelemetry.trace import get_tracer
+import anyio
+from opentelemetry.trace import get_tracer, use_span
 
 from pebbling.common.protocol.types import (
     Artifact, 
@@ -25,16 +28,80 @@ tracer = get_tracer(__name__)
 
 
 @dataclass
-class Worker:
+class Worker(ABC):
     """A worker that uses an AgentManifest to execute tasks.
     
     This worker bridges the gap between the pebble task execution system
-    and the manifest executor logic. It follows the same pattern as 
-    pydantic-ai's AgentWorker but adapted for pebble protocol.
+    and the manifest executor logic. It follows the Pebble pattern for
+    proper lifecycle management.
     """
     
     scheduler: Scheduler
     storage: Storage
+
+    @asynccontextmanager
+    async def run(self) -> AsyncIterator[None]:
+        """Run the worker.
+
+        It connects to the scheduler, and it makes itself available to receive commands.
+        """
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(self._loop)
+            yield
+            tg.cancel_scope.cancel()
+
+    async def _loop(self) -> None:
+        """Main worker loop to process tasks from scheduler."""
+        async for task_operation in self.scheduler.receive_task_operations():
+            await self._handle_task_operation(task_operation)
+
+    async def _handle_task_operation(self, task_operation) -> None:
+        """Handle a task operation from the scheduler."""
+        try:
+            with use_span(task_operation['_current_span']):
+                with tracer.start_as_current_span(
+                    f'{task_operation["operation"]} task', attributes={'logfire.tags': ['pebble']}
+                ):
+                    if task_operation['operation'] == 'run':
+                        await self.run_task(task_operation['params'])
+                    elif task_operation['operation'] == 'cancel':
+                        await self.cancel_task(task_operation['params'])
+                    elif task_operation['operation'] == 'pause':
+                        # Handle pause if implemented
+                        pass
+                    elif task_operation['operation'] == 'resume':
+                        # Handle resume if implemented
+                        pass
+        except Exception:
+            # Update task status to failed on any exception
+            task_id = task_operation['params']['id']
+            await self.storage.update_task(task_id, state='failed')
+
+    @abstractmethod
+    async def run_task(self, params: TaskSendParams) -> None:
+        """Execute a task."""
+        ...
+
+    @abstractmethod
+    async def cancel_task(self, params: TaskIdParams) -> None:
+        """Cancel a running task."""
+        ...
+
+    @abstractmethod
+    def build_message_history(self, history: list[Message]) -> list[Any]:
+        """Convert pebble protocol messages to format suitable for manifest execution."""
+        ...
+
+    @abstractmethod
+    def build_artifacts(self, result: Any) -> list[Artifact]:
+        """Convert manifest execution result to pebble protocol artifacts."""
+        ...
+
+
+@dataclass
+class ManifestWorker(Worker):
+    """A concrete worker implementation that uses an AgentManifest to execute tasks."""
+    
     manifest: AgentManifest
     
     async def run_task(self, params: TaskSendParams) -> None:

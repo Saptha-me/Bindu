@@ -232,45 +232,44 @@ def create_manifest(
     
     # Add execution method based on function type
     def create_run_method():
+        # Extract parameter resolution logic (DRY principle)
+        def resolve_params(input_msg: str, **kwargs):
+            """Resolve function parameters based on signature analysis.
+            
+            Note: Context is managed at session level via context_id in the architecture.
+            Each session IS a context, so no separate context parameter needed.
+            """
+            if has_execution_state:
+                return (input_msg, kwargs.get('execution_state'))
+            elif has_context_param:
+                # Context comes from session-level context_id, not parameter
+                session_context = kwargs.get('session_context', {})
+                return (input_msg, session_context)
+            else:
+                return (input_msg,)
+        
+        # Function type handlers with unified parameter resolution
         if inspect.isasyncgenfunction(agent_function):
-            async def run(input_msg: str, context=None, **kwargs):
-                if has_execution_state:
-                    execution_state = kwargs.get('execution_state')
-                    async for result in agent_function(input_msg, execution_state):
-                        yield result
-                elif has_context_param:
-                    async for result in agent_function(input_msg, context):
-                        yield result
-                else:
-                    async for result in agent_function(input_msg):
-                        yield result
+            async def run(input_msg: str, **kwargs):
+                params = resolve_params(input_msg, **kwargs)
+                async for result in agent_function(*params):
+                    yield result
+                    
         elif inspect.iscoroutinefunction(agent_function):
-            async def run(input_msg: str, context=None, **kwargs):
-                if has_execution_state:
-                    execution_state = kwargs.get('execution_state')
-                    return await agent_function(input_msg, execution_state)
-                elif has_context_param:
-                    return await agent_function(input_msg, context)
-                else:
-                    return await agent_function(input_msg)
+            async def run(input_msg: str, **kwargs):
+                params = resolve_params(input_msg, **kwargs)
+                return await agent_function(*params)
+                
         elif inspect.isgeneratorfunction(agent_function):
-            def run(input_msg: str, context=None, **kwargs):
-                if has_execution_state:
-                    execution_state = kwargs.get('execution_state')
-                    yield from agent_function(input_msg, execution_state)
-                elif has_context_param:
-                    yield from agent_function(input_msg, context)
-                else:
-                    yield from agent_function(input_msg)
+            def run(input_msg: str, **kwargs):
+                params = resolve_params(input_msg, **kwargs)
+                yield from agent_function(*params)
+                
         else:
-            def run(input_msg: str, context=None, **kwargs):
-                if has_execution_state:
-                    execution_state = kwargs.get('execution_state')
-                    return agent_function(input_msg, execution_state)
-                elif has_context_param:
-                    return agent_function(input_msg, context)
-                else:
-                    return agent_function(input_msg)
+            def run(input_msg: str, **kwargs):
+                params = resolve_params(input_msg, **kwargs)
+                return agent_function(*params)
+        
         return run
     
     # Attach run method to manifest

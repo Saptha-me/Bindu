@@ -5,11 +5,14 @@ Pebble agents in a project. It handles project setup, configuration, and
 authentication management.
 """
 
+import importlib.util
 import json
 from pathlib import Path
 from typing import Iterable
 from dataclasses import dataclass, asdict
 
+import subprocess
+import sys
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -54,7 +57,7 @@ def ensure_gitignore_rules(project_root: Path, filepaths: Iterable[str]) -> None
         file_text = gitignore_path.read_text(encoding="utf-8")
 
     if section_header in file_text:
-        # TODO - update the user about file not being written to .gitignore
+        console.print("[yellow]ℹ️  Pebble rules already exist in .gitignore - skipping update[/yellow]")
         return
 
     block_lines = [section_header] + [filepath for filepath in filepaths]
@@ -87,8 +90,20 @@ def init(
     interactive: bool = typer.Option(True, "--yes", help="Use defaults; no prompts"),
 ):
     """Initialize Pebble in this project."""
-    credentials: PebbleUserCredentials | None = None
 
+    # Check if pebble is installed
+    if importlib.util.find_spec("pebble") is None:
+        console.print("[bold yellow]⚠️ Pebble package not found. Installing...[/bold yellow]")
+        use_uv = (Path.cwd() / "uv.lock").exists() or (Path.cwd() / "pyproject.toml").exists()
+        command = ["uv", "add", "pebble"] if use_uv else [sys.executable, "-m", "pip", "install", "pebble"]
+        tool_name = "uv" if use_uv else "pip"
+        try:
+            subprocess.run(command, check=True)
+            console.print("[bold green]✅ Pebble installed successfully![/bold green]")
+        except subprocess.CalledProcessError:
+            console.print(f"[bold red]❌ Failed to install with {tool_name}. Please install manually.[/bold red]")
+
+    credentials: PebbleUserCredentials | None = None
     match interactive:
         case False:
             pass
@@ -123,7 +138,7 @@ def init(
         credentials_json_file.touch()
 
         credentials_json_file.write_text(json.dumps(asdict(credentials)))
-        ensure_gitignore_rules(Path.cwd(), [])
+        ensure_gitignore_rules(Path.cwd(), [str(credentials_json_file.relative_to(Path.cwd()))])
 
     config_file = colony_directory / "config.json"
     config_file.touch()

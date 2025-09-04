@@ -1,15 +1,16 @@
 from dataclasses import dataclass
-from typing import Optional, NamedTuple, List, Any, Dict, Callable
+from typing import Optional, NamedTuple, List, Any, Dict, Callable, Literal
 from uuid import UUID
 import inspect
 import abc
+from typing import AsyncGenerator, Generator, Coroutine
 
-from pebbling.common.protocol.types import (
+from .protocol.types import (
     AgentCard, 
     AgentCapabilities, 
     AgentSkill, 
     AgentIdentity,
-    agent_card_ta
+    AgentTrust
 )
 
 
@@ -47,33 +48,84 @@ class DeploymentConfig:
     openapi_schema: Optional[str] = None
 
 
-class AgentManifest(abc.ABC):
-    """Agent manifest class."""
+class AgentManifest:
+    """Runtime agent manifest with all AgentCard properties and execution capability."""
     
-    @property
-    def name(self) -> AgentName:
-        return self.__class__.__name__
-
-    @property
-    def description(self) -> str:
-        return ""
-
-    @property
-    def input_content_types(self) -> list[str]:
-        return []
-
-    @property
-    def output_content_types(self) -> list[str]:
-        return []
-
-    @property
-    def metadata(self) -> Metadata:
-        return Metadata()
-
-    @abc.abstractmethod
-    def run(
-        self, input: list[Message], context: Context
-    ) -> (
-        AsyncGenerator[RunYield, RunYieldResume] | Generator[RunYield, RunYieldResume] | Coroutine[RunYield] | RunYield
+    def __init__(
+        self,
+        id: UUID,
+        name: str,
+        description: str,
+        url: str,
+        version: str,
+        protocol_version: str,
+        identity: AgentIdentity,
+        trust_config: AgentTrust,
+        capabilities: AgentCapabilities,
+        skill: AgentSkill,
+        kind: Literal['agent', 'team', 'workflow'],
+        num_history_sessions: int,
+        extra_data: Dict[str, Any],
+        debug_mode: bool,
+        debug_level: Literal[1, 2],
+        monitoring: bool,
+        telemetry: bool,
+        documentation_url: Optional[str] = None
     ):
-        pass
+        """Initialize AgentManifest with all AgentCard properties."""
+        # Core identification
+        self.id = id
+        self.name = name
+        self.description = description
+        self.url = url
+        self.version = version
+        self.protocol_version = protocol_version
+        self.documentation_url = documentation_url
+        
+        # Security and identity
+        self.identity = identity
+        self.trust_config = trust_config
+        
+        # Capabilities and skills
+        self.capabilities = capabilities
+        self.skill = skill
+        
+        # Type and configuration
+        self.kind = kind
+        self.num_history_sessions = num_history_sessions
+        self.extra_data = extra_data
+        
+        # Debug and monitoring
+        self.debug_mode = debug_mode
+        self.debug_level = debug_level
+        self.monitoring = monitoring
+        self.telemetry = telemetry
+        
+        # Runtime execution method (set by create_manifest)
+        self.run = None
+    
+    def to_agent_card(self) -> AgentCard:
+        """Convert AgentManifest to AgentCard protocol format."""
+        return AgentCard(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            url=self.url,
+            version=self.version,
+            protocol_version=self.protocol_version,
+            documentation_url=self.documentation_url,
+            identity=self.identity,
+            trust_config=self.trust_config,
+            capabilities=self.capabilities,
+            skill=self.skill,
+            kind=self.kind,
+            num_history_sessions=self.num_history_sessions,
+            extra_data=self.extra_data,
+            debug_mode=self.debug_mode,
+            debug_level=self.debug_level,
+            monitoring=self.monitoring,
+            telemetry=self.telemetry
+        )
+    
+    def __repr__(self) -> str:
+        return f"AgentManifest(name='{self.name}', id='{self.id}', version='{self.version}')"

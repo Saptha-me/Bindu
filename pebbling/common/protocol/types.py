@@ -753,3 +753,5 @@ class AgentCard(TypedDict):
     
     monitoring: Required[bool]
     telemetry: Required[bool]
+
+agent_card_ta = pydantic.TypeAdapter(AgentCard)

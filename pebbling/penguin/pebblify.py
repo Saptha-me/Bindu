@@ -56,7 +56,7 @@ from pebbling.server import (
     InMemoryStorage, 
     QdrantStorage,
     PostgreSQLStorage,
-    Worker,
+    ManifestWorker,
     PebbleApplication
 )
 
@@ -64,26 +64,13 @@ from pebbling.server import (
 logger = get_logger("pebbling.penguin.pebblify")
 
 @asynccontextmanager
-async def worker_lifespan(
-    app: PebbleApplication,
-    worker: Worker
-) -> AsyncIterator[None]:
-    """Manages the ManifestWorker lifecycle during Starlette application startup/shutdown.
-
-    Key Components:
-    - worker: Manages agent execution, handling message processing through broker and storage
-    - Startup: Worker is ready to process requests (no initialization needed)
-    - Runtime: Worker processes incoming requests through Pebbling protocol
-    - Shutdown: Worker cleanup (no explicit cleanup needed for current implementation)
+async def default_lifespan(app: PebbleApplication) -> AsyncIterator[None]:
+    """Default lifespan manager for PebbleApplication following Pebble pattern.
     
-    This ensures your agent is ready to process requests as soon as the server starts.
+    Manages TaskManager lifecycle during application startup/shutdown.
     """
-    # Worker is ready to process incoming requests (no startup needed)
-    try:
+    async with app.task_manager:
         yield
-    finally:
-        # No explicit cleanup needed for current Worker implementation
-        pass
 
 def pebblify(
     author: Optional[str] = None,
@@ -166,17 +153,14 @@ def pebblify(
         # Create server components
         storage_instance = storage or InMemoryStorage()
         scheduler_instance = scheduler or InMemoryScheduler()
-        worker = Worker(manifest=_manifest, scheduler=scheduler_instance, storage=storage_instance)
-
-        lifespan = partial(worker_lifespan, worker=worker)
 
         pebble_app = PebbleApplication(
             storage=storage_instance,
             scheduler=scheduler_instance,
             penguin_id=agent_id,
-            manifest=[_manifest],
+            manifest=_manifest,
             version=version,
-            lifespan=lifespan
+            lifespan=default_lifespan
         )    
 
         # Deploy the server

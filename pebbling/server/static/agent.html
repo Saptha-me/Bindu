@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Information - Pebbling</title>
+    <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .agent-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .agent-info h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .agent-info p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #6c757d;
+        }
+
+        .skills {
+            margin-top: 20px;
+        }
+        
+        .agent-card-link {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            font-size: 0.8em;
+        }
+        
+        .agent-card-link a {
+            color: #6c757d;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .agent-card-link a:hover {
+            color: #e92063;
+            text-decoration: underline;
+        }
+
+        .skill-item {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #e92063;
+        }
+
+        .skill-name {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+        .skill-description {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #e92063;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .agent-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .capabilities-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .capabilities-card h4 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .capability-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .capability-item:last-child {
+            border-bottom: none;
+        }
+
+        .capability-name {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .capability-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .capability-status.enabled {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .capability-status.disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .agent-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
+                Pebbling
+            </a>
+            <h1>🤖 Pebbling Agent</h1>
+            <p>Agent Information & Capabilities</p>
+        </div>
+
+        <nav class="nav">
+            <a href="agent.html" class="active">📋 Agent Info</a>
+            <a href="chat.html">💬 Chat</a>
+            <a href="storage.html">💾 Storage</a>
+            <a href="docs.html">📚 Documentation</a>
+        </nav>
+
+        <div class="card">
+            <h2>📋 Agent Information</h2>
+            <div id="agent-info" class="agent-info">
+                <div class="loading">Loading agent information...</div>
+            </div>
+            <div class="agent-card-link">
+                <a href="/.well-known/agent.json" target="_blank" rel="noopener noreferrer">
+                    /.well-known/agent.json
+                </a>
+            </div>
+        </div>
+
+        <div class="agent-details" id="agent-details" style="display: none;">
+            <div class="card">
+                <h2>🛠️ Capabilities</h2>
+                <div id="capabilities-info" class="capabilities-card">
+                    <!-- Capabilities will be loaded here -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🎯 Skills</h2>
+                <div id="skills-info">
+                    <!-- Skills will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>🧪 Experimental Feature</strong><br>
+            This documentation interface is experimental and under active development.
+            We'd love your feedback to make it better! Please share your thoughts and suggestions on
+            <a href="https://github.com/pydantic/fasta2a/issues/1" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+        </div>
+    </div>
+
+    <div id="error-container" class="error" style="display: none;"></div>
+
+    <script src="common.js"></script>
+    <script>
+        let agentCard = null;
+
+        async function loadAndDisplayAgent() {
+            try {
+                agentCard = await loadAgentCard();
+                displayAgentCard();
+                displayCapabilities();
+                displaySkills();
+                document.getElementById('agent-details').style.display = 'grid';
+            } catch (error) {
+                console.error('Error loading agent card:', error);
+                document.getElementById('agent-info').innerHTML =
+                    '<div class="error">Failed to load agent information</div>';
+                showError('Failed to load agent information: ' + error.message);
+            }
+        }
+
+        function displayAgentCard() {
+            if (!agentCard) return;
+
+            const infoDiv = document.getElementById('agent-info');
+            infoDiv.innerHTML = `
+                <h3>${agentCard.name}</h3>
+                <p>${agentCard.description}</p>
+
+                <div class="info-grid">
+                    <div class="info-label">Version:</div>
+                    <div class="info-value">${agentCard.version}</div>
+
+                    <div class="info-label">Protocol:</div>
+                    <div class="info-value">Pebble v${agentCard.protocolVersion}</div>
+
+                    <div class="info-label">URL:</div>
+                    <div class="info-value">${agentCard.url}</div>
+
+                    <div class="info-label">DID:</div>
+                    <div class="info-value">${agentCard.did || 'Not available'}</div>
+
+                    <div class="info-label">Created:</div>
+                    <div class="info-value">${agentCard.created ? formatTimestamp(agentCard.created) : 'Not available'}</div>
+                </div>
+            `;
+        }
+
+        function displayCapabilities() {
+            if (!agentCard || !agentCard.capabilities) return;
+
+            const capabilitiesDiv = document.getElementById('capabilities-info');
+            const capabilities = agentCard.capabilities;
+
+            capabilitiesDiv.innerHTML = `
+                <h4>Available Capabilities</h4>
+                <div class="capability-item">
+                    <span class="capability-name">Streaming</span>
+                    <span class="capability-status ${capabilities.streaming ? 'enabled' : 'disabled'}">
+                        ${capabilities.streaming ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+                <div class="capability-item">
+                    <span class="capability-name">Push Notifications</span>
+                    <span class="capability-status ${capabilities.pushNotifications ? 'enabled' : 'disabled'}">
+                        ${capabilities.pushNotifications ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+                <div class="capability-item">
+                    <span class="capability-name">State History</span>
+                    <span class="capability-status ${capabilities.stateTransitionHistory ? 'enabled' : 'disabled'}">
+                        ${capabilities.stateTransitionHistory ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+                <div class="capability-item">
+                    <span class="capability-name">Context Management</span>
+                    <span class="capability-status ${capabilities.contextManagement ? 'enabled' : 'disabled'}">
+                        ${capabilities.contextManagement ? 'Enabled' : 'Disabled'}
+                    </span>
+                </div>
+            `;
+        }
+
+        function displaySkills() {
+            if (!agentCard || !agentCard.skills || agentCard.skills.length === 0) {
+                document.getElementById('skills-info').innerHTML = 
+                    '<p class="info-value">No skills defined for this agent.</p>';
+                return;
+            }
+
+            const skillsDiv = document.getElementById('skills-info');
+            skillsDiv.innerHTML = agentCard.skills.map(skill => `
+                <div class="skill-item">
+                    <div class="skill-name">${skill.name}</div>
+                    <div class="skill-description">${skill.description || 'No description available'}</div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveNav('agent.html');
+            loadAndDisplayAgent();
+        });
+    </script>
+</body>
+</html>

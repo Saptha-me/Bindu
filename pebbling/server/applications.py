@@ -84,6 +84,12 @@ class PebbleApplication(Starlette):
         self.router.add_route('/.well-known/agent.json', self._agent_card_endpoint, methods=['HEAD', 'GET', 'OPTIONS'])
         self.router.add_route('/', self._agent_run_endpoint, methods=['POST'])
         self.router.add_route('/docs', self._docs_endpoint, methods=['GET'])
+        self.router.add_route('/agent.html', self._agent_page_endpoint, methods=['GET'])
+        self.router.add_route('/chat.html', self._chat_page_endpoint, methods=['GET'])
+        self.router.add_route('/storage.html', self._storage_page_endpoint, methods=['GET'])
+        self.router.add_route('/docs.html', self._docs_endpoint, methods=['GET'])
+        self.router.add_route('/common.css', self._common_css_endpoint, methods=['GET'])
+        self.router.add_route('/common.js', self._common_js_endpoint, methods=['GET'])
 
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -109,6 +115,31 @@ class PebbleApplication(Starlette):
         """Serve the documentation interface."""
         docs_path = Path(__file__).parent / 'static' / 'docs.html'
         return FileResponse(docs_path, media_type='text/html')
+
+    async def _agent_page_endpoint(self, request: Request) -> Response:
+        """Serve the agent information page."""
+        agent_path = Path(__file__).parent / 'static' / 'agent.html'
+        return FileResponse(agent_path, media_type='text/html')
+
+    async def _chat_page_endpoint(self, request: Request) -> Response:
+        """Serve the chat interface page."""
+        chat_path = Path(__file__).parent / 'static' / 'chat.html'
+        return FileResponse(chat_path, media_type='text/html')
+
+    async def _storage_page_endpoint(self, request: Request) -> Response:
+        """Serve the storage management page."""
+        storage_path = Path(__file__).parent / 'static' / 'storage.html'
+        return FileResponse(storage_path, media_type='text/html')
+
+    async def _common_css_endpoint(self, request: Request) -> Response:
+        """Serve the common CSS file."""
+        css_path = Path(__file__).parent / 'static' / 'common.css'
+        return FileResponse(css_path, media_type='text/css')
+
+    async def _common_js_endpoint(self, request: Request) -> Response:
+        """Serve the common JavaScript file."""
+        js_path = Path(__file__).parent / 'static' / 'common.js'
+        return FileResponse(js_path, media_type='application/javascript')
 
     async def _agent_run_endpoint(self, request: Request) -> Response:
         """This is the main endpoint for the Pebble server.

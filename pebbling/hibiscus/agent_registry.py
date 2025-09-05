@@ -19,8 +19,8 @@ import asyncio
 from typing import Any, Dict
 from pydantic.types import SecretStr
 
+from pebbling.common.models import AgentManifest
 from pebbling.hibiscus.registry import HibiscusClient
-from pebbling.protocol.types import AgentManifest
 from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.hibiscus.agent_registry")

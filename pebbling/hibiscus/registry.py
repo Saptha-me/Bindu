@@ -15,7 +15,7 @@ from typing import Any, Dict, Optional
 
 from pydantic.types import SecretStr
 
-from pebbling.protocol.types import AgentManifest
+from pebbling.common.models import AgentManifest
 from pebbling.utils.http_helper import make_api_request
 from pebbling.utils.logging import get_logger
 

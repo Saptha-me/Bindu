@@ -159,9 +159,9 @@ class TaskManager:
 
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
         """Send a message using the Pebble protocol."""
-        request_id = request['id']
+        request_id = str(request['id'])  # Convert UUID to string
         message = request['params']['message']
-        context_id = message.get('context_id', str(uuid.uuid4()))
+        context_id = str(message.get('context_id', uuid.uuid4()))
 
         task = await self.storage.submit_task(context_id, message)
 

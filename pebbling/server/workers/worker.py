@@ -196,17 +196,13 @@ class ManifestWorker(Worker):
         
         # Convert result to appropriate part type
         if isinstance(result, str):
-            parts = [TextPart(kind='text', text=result)]
+            parts = [{'kind': 'text', 'text': result}]
         elif isinstance(result, (list, tuple)) and all(isinstance(item, str) for item in result):
             # Handle streaming results that were collected
-            parts = [TextPart(kind='text', text='\n'.join(result))]
+            parts = [{'kind': 'text', 'text': '\n'.join(result)}]
         else:
             # Handle structured data
-            parts = [DataPart(
-                kind='data',
-                data={'result': result},
-                metadata={'type': type(result).__name__}
-            )]
+            parts = [{'kind': 'data', 'data': {'result': result}, 'metadata': {'type': type(result).__name__}}]
         
         return [Artifact(
             artifact_id=artifact_id,
@@ -272,13 +268,13 @@ class ManifestWorker(Worker):
         message_id = str(uuid.uuid4())
         
         if isinstance(result, str):
-            parts = [TextPart(kind='text', text=result)]
+            parts = [{'kind': 'text', 'text': result}]
         elif isinstance(result, (list, tuple)) and all(isinstance(item, str) for item in result):
             # Handle streaming results
-            parts = [TextPart(kind='text', text=item) for item in result]
+            parts = [{'kind': 'text', 'text': item} for item in result]
         else:
             # Handle other result types as text representation
-            parts = [TextPart(kind='text', text=str(result))]
+            parts = [{'kind': 'text', 'text': str(result)}]
         
         return [Message(
             role='agent',

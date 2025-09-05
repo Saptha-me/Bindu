@@ -29,6 +29,10 @@ from typing_extensions import Required, NotRequired, TypedDict, TypeAlias
 # Base Types and Enums
 #-----------------------------------------------------------------------------
 
+# TypeVars for generic types
+ResultT = TypeVar('ResultT')
+ErrorT = TypeVar('ErrorT')
+
 Role: TypeAlias = Literal['agent', 'user']
 
 TaskState: TypeAlias = Literal[
@@ -109,7 +113,7 @@ class TextPart(TypedDict):
     
     kind: Required[Literal['text']]
     metadata: NotRequired[dict[str, Any]]
-    content: Required[str]
+    text: Required[str]
 
 @pydantic.with_config({'alias_generator': to_camel})
 class FileWithBytes(TypedDict):
@@ -141,7 +145,7 @@ class DataPart(TextPart):
     data: Required[dict[str, Any]]
 
 
-Part = Annotated[RootModel[TextPart | FilePart | DataPart], Field(discriminator='kind')]
+Part = Annotated[Union[TextPart, FilePart, DataPart], Field(discriminator='kind')]
 
 
 #-----------------------------------------------------------------------------
@@ -200,7 +204,7 @@ class Message(TypedDict):
     Client → Message (request) → Agent → Message (status) → Artifact (result)
     """
 
-    contextId: Required[UUID]
+    context_id: Required[UUID]
     task_id: Required[UUID]
     reference_task_ids: NotRequired[list[UUID]]
     message_id: Required[UUID]
@@ -335,7 +339,7 @@ class Task(TypedDict):
     """
     
     id: Required[UUID]
-    contextId: Required[UUID]
+    context_id: Required[UUID]
     kind: Required[Literal['task']]
     status: Required[TaskStatus]
 
@@ -348,7 +352,7 @@ class Task(TypedDict):
 class TaskStatusUpdateEvent(TypedDict):
     """Event for task status updates."""
     
-    contextId: Required[UUID]
+    context_id: Required[UUID]
     final: Required[bool]
     kind: Required[Literal['status-update']]
     metadata: NotRequired[dict[str, Any]]
@@ -362,7 +366,7 @@ class TaskArtifactUpdateEvent(TypedDict):
     
     append: NotRequired[bool]
     artifact: Required[Artifact]
-    contextId: Required[UUID]
+    context_id: Required[UUID]
     kind: Required[Literal['artifact-update']]
     lastChunk: NotRequired[bool]
     metadata: NotRequired[dict[str, Any]]
@@ -557,10 +561,7 @@ class JSONRPCError(
 
 class JSONRPCResponse(
     JSONRPCMessage,
-    Generic[
-        TypeVar('ResultT'),
-        TypeVar('ErrorT', bound=JSONRPCError[Any, Any])
-    ]
+    Generic[ResultT, ErrorT]
 ):
     """A JSON RPC response."""
 
@@ -648,7 +649,7 @@ pebble_response_ta: TypeAdapter[PebblingResponse] = TypeAdapter(PebblingResponse
 send_message_request_ta: TypeAdapter[SendMessageRequest] = TypeAdapter(SendMessageRequest)
 send_message_response_ta: TypeAdapter[SendMessageResponse] = TypeAdapter(SendMessageResponse)
 stream_message_request_ta: TypeAdapter[StreamMessageRequest] = TypeAdapter(StreamMessageRequest)
-
+stream_message_response_ta: TypeAdapter[StreamMessageResponse] = TypeAdapter(StreamMessageResponse)
 
 #-----------------------------------------------------------------------------
 # Lets handle Trust
@@ -755,3 +756,11 @@ class AgentCard(TypedDict):
     telemetry: Required[bool]
 
 agent_card_ta = pydantic.TypeAdapter(AgentCard)
+
+# Rebuild TypeAdapters to resolve forward references
+pebble_request_ta.rebuild()
+pebble_response_ta.rebuild()
+send_message_request_ta.rebuild()
+send_message_response_ta.rebuild()
+stream_message_request_ta.rebuild()
+stream_message_response_ta.rebuild()

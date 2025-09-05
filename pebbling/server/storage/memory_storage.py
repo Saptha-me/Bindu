@@ -90,9 +90,18 @@ class InMemoryStorage(Storage[ContextT]):
         # Generate a unique task ID
         task_id = str(uuid.uuid4())
 
-        # Add IDs to the message for Pebble protocol
+        # Add IDs to the message for Pebble protocol (ensure strings, not UUIDs)
         message['task_id'] = task_id
         message['context_id'] = context_id
+        
+        # Ensure all UUID fields in message are strings
+        if 'message_id' in message and hasattr(message['message_id'], 'hex'):
+            message['message_id'] = str(message['message_id'])
+        
+        # Convert any remaining UUID objects to strings in the message
+        for key, value in message.items():
+            if hasattr(value, 'hex'):  # Check if it's a UUID object
+                message[key] = str(value)
 
         task_status = TaskStatus(state='submitted', timestamp=datetime.now().isoformat())
         task = Task(id=task_id, context_id=context_id, kind='task', status=task_status, history=[message])

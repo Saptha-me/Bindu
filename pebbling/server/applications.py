@@ -166,7 +166,11 @@ class PebbleApplication(Starlette):
         else:
             raise NotImplementedError(f'Method {pebble_request["method"]} not implemented.')
         return Response(
-            content=pebble_response_ta.dump_json(jsonrpc_response, by_alias=True), media_type='application/json'
+            content=jsonrpc_response.model_dump_json(
+                by_alias=True,
+                exclude_unset=True
+            ), 
+            media_type='application/json'
         )
     
 

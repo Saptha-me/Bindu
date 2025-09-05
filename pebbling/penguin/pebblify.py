@@ -63,14 +63,6 @@ from pebbling.server import (
 # Configure logging for the module
 logger = get_logger("pebbling.penguin.pebblify")
 
-@asynccontextmanager
-async def default_lifespan(app: PebbleApplication) -> AsyncIterator[None]:
-    """Default lifespan manager for PebbleApplication following Pebble pattern.
-    
-    Manages TaskManager lifecycle during application startup/shutdown.
-    """
-    async with app.task_manager:
-        yield
 
 def pebblify(
     author: Optional[str] = None,
@@ -153,6 +145,23 @@ def pebblify(
         # Create server components
         storage_instance = storage or InMemoryStorage()
         scheduler_instance = scheduler or InMemoryScheduler()
+        
+        # Create the manifest worker
+        manifest_worker = ManifestWorker(
+            manifest=_manifest,
+            scheduler=scheduler_instance,
+            storage=storage_instance
+        )
+
+        @asynccontextmanager
+        async def worker_lifespan(app: PebbleApplication) -> AsyncIterator[None]:
+            """Custom lifespan that runs the worker during application startup.
+
+            This ensures the worker is started and ready to process tasks as soon as the application starts.
+            """
+            async with app.task_manager:
+                async with manifest_worker.run():
+                    yield
 
         pebble_app = PebbleApplication(
             storage=storage_instance,
@@ -160,7 +169,7 @@ def pebblify(
             penguin_id=agent_id,
             manifest=_manifest,
             version=version,
-            lifespan=default_lifespan
+            lifespan=worker_lifespan
         )    
 
         # Deploy the server

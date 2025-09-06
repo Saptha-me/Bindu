@@ -25,6 +25,8 @@ def load_config(config_path: str = "agent_config.json"):
 
 config = load_config()
 
+
+
 @pebblify(
     author=config["author"],
     name=config.get("name"),
@@ -50,8 +52,9 @@ async def news_reporter_agent(messages: List[str]) -> AsyncGenerator[str, None]:
     # Use any framework internally
     agent = Agent(
         instructions="Get current news from amsterdam",
-        model=OpenAIChat(id="gpt-4o"))
+        model=OpenAIChat(id="gpt-4o")
+    )
     result = await agent.arun(messages=messages)
     
     # Yield protocol-compliant response
-    yield result.to_dict()['messages']
+    yield result.to_dict()['content']

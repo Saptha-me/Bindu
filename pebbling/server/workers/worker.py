@@ -18,6 +18,7 @@ from pebbling.common.protocol.types import (
     TaskSendParams,
     Part,
     TextPart,
+    FilePart,
     DataPart
 )
 from pebbling.penguin.manifest import AgentManifest
@@ -131,28 +132,49 @@ class ManifestWorker(Worker):
 
             await self.storage.update_context(task['context_id'], result)
 
+            # Process results and convert to messages
+            # messages: The conversation transcript ("Here's how I solved it...")
             response_messages: list[Message] = []
-
             
-
-            response_messages.extend(result.all_messages())
+            for message in result:
+                _parts: list[Part] = []
+                
+                if isinstance(message, str):
+                    _parts.append(TextPart(kind='text', text=message))
+                elif isinstance(message, list):
+                    # Handle list of strings or parts
+                    for part in message:
+                        if isinstance(part, str):
+                            _parts.append(TextPart(kind='text', text=part))
+                        elif isinstance(part, dict):
+                            _parts.append(self._dict_to_part(part))
+                        else:
+                            _parts.append(TextPart(kind='text', text=str(part)))
+                elif isinstance(message, dict):
+                    _parts.append(self._dict_to_part(message))
+                else:
+                    # Convert other types to text representation
+                    _parts.append(TextPart(kind='text', text=str(message)))
+                
+                if _parts:
+                    response_messages.append(Message(
+                        role='agent',
+                        parts=_parts,
+                        kind='message',
+                        message_id=str(uuid.uuid4())
+                    ))
             
-            # Convert result to artifacts
+            # artifacts: The actual solution/deliverable ("Here's the code/analysis/result")
             artifacts = self.build_artifacts(result)
-            
-            # Convert result to messages for history
-            messages = self._result_to_messages(result)
-            
-            await self.storage.update_task(
-                task['id'], 
-                state='completed', 
-                new_artifacts=artifacts,
-                new_messages=messages
-            )
-            
+
         except Exception:
             await self.storage.update_task(task['id'], state='failed')
-            raise
+            raise   
+    
+        else:
+            await self.storage.update_task(
+                task['id'], state='completed', new_artifacts=artifacts, new_messages=response_messages
+            )
     
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Cancel a running task.
@@ -211,6 +233,27 @@ class ManifestWorker(Worker):
             name='result',
             parts=parts
         )]
+    
+    def _dict_to_part(self, data: dict) -> Part:
+        """Convert a dictionary to the appropriate Part type based on its structure.
+        
+        Args:
+            data: Dictionary that may represent a Part
+            
+        Returns:
+            Appropriate Part type (TextPart, FilePart, or DataPart)
+        """
+        kind = data.get('kind')
+        
+        if kind == 'text' and 'text' in data:
+            return TextPart(**data)
+        elif kind == 'file' and 'file' in data:
+            return FilePart(**data)
+        elif kind == 'data' and 'data' in data:
+            return DataPart(**data)
+        else:
+            # Convert unknown dict to DataPart
+            return DataPart(kind='data', data=data)
     
     def _extract_message_content(self, message: Message) -> str:
         """Extract text content from a pebble protocol message.

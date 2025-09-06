@@ -1,6 +1,6 @@
 import json
 import os
-from typing import AsyncGenerator
+from typing import AsyncGenerator, List
 
 
 from pebbling.common.protocol.types import AgentCapabilities, AgentSkill
@@ -44,14 +44,14 @@ config = load_config()
     extra_metadata=config.get("extra_metadata", {}),
     deployment_config=DeploymentConfig(**config["deployment"]),
 )
-async def news_reporter_agent(input: str) -> AsyncGenerator[str, None]:
+async def news_reporter_agent(messages: List[str]) -> AsyncGenerator[str, None]:
     """User writes protocol-compliant code directly."""
     
     # Use any framework internally
     agent = Agent(
         instructions="Get current news from amsterdam",
         model=OpenAIChat(id="gpt-4o"))
-    result = await agent.arun(input)
+    result = await agent.arun(messages=messages)
     
     # Yield protocol-compliant response
-    yield result
+    yield result.to_dict()['messages']

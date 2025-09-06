@@ -34,17 +34,17 @@ def validate_agent_function(agent_function: Callable):
     
     if len(params) < 1:
         raise ValueError(
-            "Agent function must have at least 'input' parameter of type PebblingMessage"
+            "Agent function must have at least 'messages' parameter of type list[PebblingMessage]"
         )
     
     if len(params) > 1:
         raise ValueError(
-            "Agent function must have only 'input' and optional 'context' parameters"
+            "Agent function must have only 'messages' and optional 'context' parameters"
         )
     
     # Check parameter names
-    if params[0].name != "input":
-        raise ValueError("First parameter must be named 'input'")
+    if params[0].name != "messages":
+        raise ValueError("First parameter must be named 'messages'")
 
 
 def create_manifest(

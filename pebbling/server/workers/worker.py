@@ -121,19 +121,21 @@ class ManifestWorker(Worker):
             )
         
         await self.storage.update_task(task['id'], state='working')
+
+        message_history = await self.storage.load_context(task['context_id']) or []
+        message_history.extend(self.build_message_history(task.get('history', [])))
         
         try:
-            # Extract message content from task
-            message_content = self._extract_message_content(params['message'])
-            
-            # Load context for history if needed
-            context = None
-            if 'history_length' in params:
-                history = await self.storage.load_context(params['context_id']) or []
-                context = self.build_message_history(history[-params['history_length']:] if params['history_length'] else history)
-            
             # Execute manifest based on its type
-            result = await self._execute_manifest(message_content, context)
+            result = await self._execute_manifest(message_history)
+
+            await self.storage.update_context(task['context_id'], result)
+
+            response_messages: list[Message] = []
+
+            
+
+            response_messages.extend(result.all_messages())
             
             # Convert result to artifacts
             artifacts = self.build_artifacts(result)
@@ -229,7 +231,7 @@ class ManifestWorker(Worker):
         
         return ' '.join(text_parts) if text_parts else ""
     
-    async def _execute_manifest(self, message_content: str, context: Any = None) -> Any:
+    async def _execute_manifest(self, message_history: list[str]) -> Any:
         """Execute the manifest with the given input.
         
         Args:
@@ -243,18 +245,18 @@ class ManifestWorker(Worker):
         if inspect.isasyncgenfunction(self.manifest.run):
             # Async generator - collect all yielded values
             results = []
-            async for chunk in self.manifest.run(message_content, context=context):
+            async for chunk in self.manifest.run(message_history):
                 results.append(chunk)
             return results
         elif inspect.iscoroutinefunction(self.manifest.run):
             # Coroutine - await single result
-            return await self.manifest.run(message_content, context=context)
+            return await self.manifest.run(message_history)
         elif inspect.isgeneratorfunction(self.manifest.run):
             # Generator - collect all yielded values
-            return list(self.manifest.run(message_content, context=context))
+            return list(self.manifest.run(message_history))
         else:
             # Regular function - call directly
-            return self.manifest.run(message_content, context=context)
+            return self.manifest.run(message_history)
     
     def _result_to_messages(self, result: Any) -> list[Message]:
         """Convert manifest result to pebble protocol messages.

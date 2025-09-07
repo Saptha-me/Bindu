@@ -141,7 +141,7 @@ class ManifestWorker(Worker):
         
         try:
             # Execute manifest based on its type
-            results = await self._execute_manifest(message_history)
+            results = self.manifest.run(message_history)
 
             # Save the complete conversation history (both user and agent messages)
             # Convert agent response to message format and append to history
@@ -308,34 +308,7 @@ class ManifestWorker(Worker):
         ]
         
         return ' '.join(text_parts) if text_parts else ""
-    
-    async def _execute_manifest(self, message_history: list[str]) -> Any:
-        """Execute the manifest with the given input.
-        
-        Args:
-            message_content: Input message content
-            context: Optional execution context
-            
-        Returns:
-            Manifest execution result
-        """
-        # Determine manifest execution type and call appropriately
-        if inspect.isasyncgenfunction(self.manifest.run):
-            # Async generator - collect all yielded values
-            results = []
-            async for chunk in self.manifest.run(message_history):
-                results.append(chunk)
-            return results
-        elif inspect.iscoroutinefunction(self.manifest.run):
-            # Coroutine - await single result
-            return await self.manifest.run(message_history)
-        elif inspect.isgeneratorfunction(self.manifest.run):
-            # Generator - collect all yielded values
-            return list(self.manifest.run(message_history))
-        else:
-            # Regular function - call directly
-            return self.manifest.run(message_history)
-    
+
     def _result_to_messages(self, result: Any, task_id: str, context_id: str) -> list[Message]:
         """Convert manifest result to pebble protocol messages.
         

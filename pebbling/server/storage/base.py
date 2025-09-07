@@ -56,6 +56,7 @@ from __future__ import annotations as _annotations
 from abc import ABC, abstractmethod
 from typing import Any, Generic
 from typing_extensions import TypeVar
+from uuid import UUID
 
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskState
 
@@ -71,20 +72,20 @@ class Storage(ABC, Generic[ContextT]):
     """
 
     @abstractmethod
-    async def load_task(self, task_id: str, history_length: int | None = None) -> Task | None:
+    async def load_task(self, task_id: UUID, history_length: int | None = None) -> Task | None:
         """Load a task from storage.
 
         If the task is not found, return None.
         """
 
     @abstractmethod
-    async def submit_task(self, context_id: str, message: Message) -> Task:
+    async def submit_task(self, context_id: UUID, message: Message) -> Task:
         """Submit a task to storage."""
 
     @abstractmethod
     async def update_task(
         self,
-        task_id: str,
+        task_id: UUID,
         state: TaskState,
         new_artifacts: list[Artifact] | None = None,
         new_messages: list[Message] | None = None,
@@ -92,11 +93,11 @@ class Storage(ABC, Generic[ContextT]):
         """Update the state of a task. Appends artifacts and messages, if specified."""
 
     @abstractmethod
-    async def load_context(self, context_id: str) -> ContextT | None:
+    async def load_context(self, context_id: UUID) -> ContextT | None:
         """Retrieve the stored context given the `context_id`."""
 
     @abstractmethod
-    async def update_context(self, context_id: str, context: ContextT) -> None:
+    async def update_context(self, context_id: UUID, context: ContextT) -> None:
         """Updates the context for a `context_id`.
 
         Implementing agent can decide what to store in context.

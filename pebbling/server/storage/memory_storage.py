@@ -49,7 +49,7 @@
 
 from __future__ import annotations as _annotations
 
-import uuid
+from uuid import UUID
 from datetime import datetime
 from typing import Any
 from typing_extensions import TypeVar
@@ -85,31 +85,35 @@ class InMemoryStorage(Storage[ContextT]):
             task['history'] = task['history'][-history_length:]
         return task
 
-    async def submit_task(self, context_id: str, message: Message) -> Task:
+    async def submit_task(self, context_id: UUID, message: Message) -> Task:
         """Submit a task to storage."""
         # Use existing task ID from message or generate new one
-        task_id = str(message.get('task_id'))
+        task_id = message.get('task_id')
+        if isinstance(task_id, str):
+            task_id = UUID(task_id)
+        
+        # Ensure all UUID fields are proper UUID objects
         message['task_id'] = task_id
         message['context_id'] = context_id
         
-        # Ensure all UUID fields in message are strings
-        if 'message_id' in message and hasattr(message['message_id'], 'hex'):
-            message['message_id'] = str(message['message_id'])
-        
-        # Convert any remaining UUID objects to strings in the message
-        for key, value in message.items():
-            if hasattr(value, 'hex'):  # Check if it's a UUID object
-                message[key] = str(value)
+        if 'message_id' in message and isinstance(message['message_id'], str):
+            message['message_id'] = UUID(message['message_id'])
 
         task_status = TaskStatus(state='submitted', timestamp=datetime.now().isoformat())
-        task = Task(task_id=task_id, context_id=context_id, kind='task', status=task_status, history=[message])
+        task = Task(
+            task_id=task_id, 
+            context_id=context_id, 
+            kind='task', 
+            status=task_status, 
+            history=[message]
+        )
         self.tasks[task_id] = task
 
         return task
 
     async def update_task(
         self,
-        task_id: str,
+        task_id: UUID,
         state: TaskState,
         new_artifacts: list[Artifact] | None = None,
         new_messages: list[Message] | None = None,
@@ -134,10 +138,10 @@ class InMemoryStorage(Storage[ContextT]):
 
         return task
 
-    async def update_context(self, context_id: str, context: ContextT) -> None:
+    async def update_context(self, context_id: UUID, context: ContextT) -> None:
         """Updates the context given the `context_id`."""
         self.contexts[context_id] = context
 
-    async def load_context(self, context_id: str) -> ContextT | None:
+    async def load_context(self, context_id: UUID) -> ContextT | None:
         """Retrieve the stored context given the `context_id`."""
         return self.contexts.get(context_id)

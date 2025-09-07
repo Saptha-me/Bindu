@@ -75,7 +75,7 @@ class Worker(ABC):
                         pass
         except Exception:
             # Update task status to failed on any exception
-            task_id = task_operation['params']['id']
+            task_id = task_operation['params']['task_id']
             await self.storage.update_task(task_id, state='failed')
 
     @abstractmethod
@@ -123,14 +123,35 @@ class ManifestWorker(Worker):
         
         await self.storage.update_task(task['task_id'], state='working')
 
-        message_history = await self.storage.load_context(task['context_id']) or []
-        message_history.extend(self.build_message_history(task.get('history', [])))
+        # Load existing context as list of messages
+        existing_context = await self.storage.load_context(task['context_id']) or []
+        
+        # Build message history from task history (current user message)
+        current_message_history = self.build_message_history(task.get('history', []))
+        
+        # Combine existing conversation history with current message
+        if isinstance(existing_context, list) and existing_context:
+            # existing_context contains the full conversation history from previous calls
+            # Convert it to the format expected by the agent
+            previous_history = self.build_message_history(existing_context)
+            message_history = previous_history + current_message_history
+        else:
+            # First message in context
+            message_history = current_message_history
         
         try:
             # Execute manifest based on its type
             results = await self._execute_manifest(message_history)
 
-            await self.storage.update_context(task['context_id'], results)
+            # Save the complete conversation history (both user and agent messages)
+            # Convert agent response to message format and append to history
+            agent_messages = self._result_to_messages(results, task['task_id'], task['context_id'])
+            
+            # Build complete conversation history including the new agent response
+            complete_history = task.get('history', []) + agent_messages
+            
+            # Save complete conversation history to context for future calls
+            await self.storage.update_context(task['context_id'], complete_history)
 
             # Process results and convert to messages
             # messages: The conversation transcript ("Here's how I solved it...")
@@ -188,17 +209,16 @@ class ManifestWorker(Worker):
         # Update task state to canceled
         await self.storage.update_task(params['task_id'], state='canceled')
     
-    def build_message_history(self, history: list[Message]) -> list[Any]:
+    def build_message_history(self, history: list[Message]) -> list[dict[str, str]]:
         """Convert pebble protocol messages to format suitable for manifest execution.
         
         Args:
             history: List of pebble protocol messages
             
         Returns:
-            List of messages in format expected by manifest
+            List of messages in standard chat format with role and content fields
         """
-        # For now, extract text content from messages
-        # This can be enhanced to handle multi-part messages
+        # Convert messages to standard chat format with role and content
         message_history = []
         for message in history:
             if 'parts' in message and message['parts']:
@@ -207,7 +227,19 @@ class ManifestWorker(Worker):
                     if part.get('kind') == 'text'
                 ]
                 if text_parts:
-                    message_history.append(' '.join(text_parts))
+                    # Get role and convert agent to assistant for standard format
+                    role = message.get('role', 'user')
+                    if role == 'agent':
+                        role = 'assistant'
+                    
+                    content = ' '.join(text_parts)
+                    
+                    # Standard chat format with role and content
+                    message_history.append({
+                        "role": role,
+                        "content": content
+                    })
+
         return message_history
     
     def build_artifacts(self, results: Any) -> list[Artifact]:
@@ -304,11 +336,13 @@ class ManifestWorker(Worker):
             # Regular function - call directly
             return self.manifest.run(message_history)
     
-    def _result_to_messages(self, result: Any) -> list[Message]:
+    def _result_to_messages(self, result: Any, task_id: str, context_id: str) -> list[Message]:
         """Convert manifest result to pebble protocol messages.
         
         Args:
             result: Manifest execution result
+            task_id: Task ID for the message
+            context_id: Context ID for the message
             
         Returns:
             List of pebble protocol messages
@@ -328,5 +362,7 @@ class ManifestWorker(Worker):
             role='agent',
             parts=parts,
             kind='message',
-            message_id=message_id
+            message_id=message_id,
+            task_id=task_id,
+            context_id=context_id
         )]

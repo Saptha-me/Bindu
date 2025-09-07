@@ -80,7 +80,7 @@ class InMemoryStorage(Storage[ContextT]):
         if task_id not in self.tasks:
             return None
 
-        task = self.tasks[task_id]
+        task = self.tasks[task_id] 
         if history_length and 'history' in task:
             task['history'] = task['history'][-history_length:]
         return task

@@ -46,7 +46,7 @@ config = load_config()
     extra_metadata=config.get("extra_metadata", {}),
     deployment_config=DeploymentConfig(**config["deployment"]),
 )
-def news_reporter_agent(messages: List[str]) -> AsyncGenerator[str, None]:
+def news_reporter_agent(messages: List[str]) -> str:
     """User writes protocol-compliant code directly."""
     
     # Use any framework internally

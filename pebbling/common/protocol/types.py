@@ -338,7 +338,7 @@ class Task(TypedDict):
     - Belongs to: Specific context for session management
     """
     
-    id: Required[UUID]
+    task_id: Required[UUID]
     context_id: Required[UUID]
     kind: Required[Literal['task']]
     status: Required[TaskStatus]
@@ -377,7 +377,7 @@ class TaskArtifactUpdateEvent(TypedDict):
 class TaskSendParams(TypedDict):
     """Internal parameters for task execution within the framework."""
 
-    id: Required[UUID]
+    task_id: Required[UUID]
     context_id: Required[UUID]
     message: NotRequired[Message]
     history_length: NotRequired[int]
@@ -388,7 +388,7 @@ class TaskSendParams(TypedDict):
 class TaskIdParams(TypedDict):
     """Parameters for task identification."""
     
-    id: Required[UUID]
+    task_id: Required[UUID]
     metadata: NotRequired[dict[str, Any]]
 
 @pydantic.with_config({'alias_generator': to_camel})

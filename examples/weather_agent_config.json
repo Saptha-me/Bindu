@@ -1,0 +1,45 @@
+{
+  "author": "Pebbling Team",
+  "name": "Weather Agent",
+  "description": "An AI agent that provides weather information and forecasts",
+  "version": "1.0.0",
+  "recreate_keys": true,
+  "skills": [
+    {
+      "name": "weather-forecasting",
+      "description": "Ability to provide weather information and forecasts",
+      "version": "1.0.0"
+    },
+    {
+      "name": "data-analysis",
+      "description": "Ability to analyze meteorological data",
+      "version": "1.0.0"
+    }
+  ],
+  "capabilities": {
+    "reasoning": true,
+    "code_execution": false,
+    "web_search": true,
+    "file_operations": false,
+    "multimodal": false
+  },
+  "agent_trust": "high",
+  "kind": "agent",
+  "debug_mode": false,
+  "debug_level": 1,
+  "monitoring": true,
+  "telemetry": true,
+  "num_history_sessions": 15,
+  "documentation_url": "https://docs.pebbling.ai/agents/weather",
+  "extra_metadata": {
+    "domain": "meteorology",
+    "specialization": "weather_forecasting"
+  },
+  "deployment": {
+    "url": "http://localhost:9002",
+    "expose": true,
+    "protocol_version": "1.0.0",
+    "proxy_urls": ["https://weather.pebbling.ai"],
+    "cors_origins": ["*"]
+  }
+}

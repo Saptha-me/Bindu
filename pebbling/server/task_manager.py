@@ -179,7 +179,7 @@ class TaskManager:
 
         No further actions are needed here.
         """
-        task_id = request['params']['id']
+        task_id = str(request['params']['id'])
         history_length = request['params'].get('history_length')
         task = await self.storage.load_task(task_id, history_length)
         if task is None:

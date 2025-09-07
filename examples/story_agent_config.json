@@ -36,7 +36,7 @@
     "specialization": "storytelling"
   },
   "deployment": {
-    "url": "http://localhost:8003",
+    "url": "http://localhost:8023",
     "expose": true,
     "protocol_version": "1.0.0",
     "proxy_urls": ["https://story.pebbling.ai"],

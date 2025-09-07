@@ -31,7 +31,7 @@
     "specialization": "basic_qa"
   },
   "deployment": {
-    "url": "http://localhost:8015",
+    "url": "http://localhost:8016",
     "expose": true,
     "protocol_version": "1.0.0",
     "proxy_urls": ["https://simple.pebbling.ai"],

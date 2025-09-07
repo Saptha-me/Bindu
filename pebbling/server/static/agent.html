@@ -60,15 +60,15 @@
         </div>
 
         <!-- Agent Details Grid -->
-        <div id="agent-details" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div id="agent-details" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Capabilities Card -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                        <span class="text-2xl mr-3">🛠️</span>
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <span class="text-xl mr-2">🛠️</span>
                         Capabilities
                     </h3>
-                    <div id="capabilities-info" class="space-y-4">
+                    <div id="capabilities-info" class="space-y-3">
                         <!-- Capabilities will be loaded here -->
                     </div>
                 </div>
@@ -76,13 +76,39 @@
 
             <!-- Skills Card -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-                        <span class="text-2xl mr-3">🎯</span>
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <span class="text-xl mr-2">🎯</span>
                         Skills
                     </h3>
-                    <div id="skills-info" class="space-y-3">
+                    <div id="skills-info" class="space-y-2">
                         <!-- Skills will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Identity & Trust Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <span class="text-xl mr-2">🔐</span>
+                        Identity & Trust
+                    </h3>
+                    <div id="identity-info" class="space-y-2">
+                        <!-- Identity info will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extensions Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <span class="text-xl mr-2">🔌</span>
+                        Extensions
+                    </h3>
+                    <div id="extensions-info" class="space-y-2">
+                        <!-- Extensions will be loaded here -->
                     </div>
                 </div>
             </div>
@@ -118,6 +144,8 @@
                 displayAgentCard();
                 displayCapabilities();
                 displaySkills();
+                displayIdentityInfo();
+                displayExtensions();
                 document.getElementById('agent-details').classList.remove('hidden');
             } catch (error) {
                 console.error('Error loading agent card:', error);
@@ -138,26 +166,62 @@
                         <p class="text-gray-600 dark:text-gray-400 leading-relaxed">${agentCard.description}</p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Version</div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Version</div>
                             <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.version}</div>
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Protocol</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white">Pebble v${agentCard.protocolVersion}</div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Protocol</div>
+                            <div class="font-mono text-sm text-gray-900 dark:text-white">v${agentCard.protocolVersion}</div>
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 md:col-span-2">
-                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">URL</div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Kind</div>
+                            <div class="font-mono text-sm text-gray-900 dark:text-white capitalize">${agentCard.kind || 'agent'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sessions</div>
+                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.numHistorySessions || 0}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Debug</div>
+                            <div class="font-mono text-sm ${agentCard.debugMode ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}">${agentCard.debugMode ? 'Level ' + agentCard.debugLevel : 'Disabled'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Monitoring</div>
+                            <div class="font-mono text-sm ${agentCard.monitoring ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}">${agentCard.monitoring ? 'Enabled' : 'Disabled'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Telemetry</div>
+                            <div class="font-mono text-sm ${agentCard.telemetry ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}">${agentCard.telemetry ? 'Enabled' : 'Disabled'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Trust Required</div>
+                            <div class="font-mono text-sm ${agentCard.agentTrust?.trustVerificationRequired ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-white'}">${agentCard.agentTrust?.trustVerificationRequired ? 'Yes' : 'No'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 md:col-span-2 lg:col-span-4">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">URL</div>
                             <div class="font-mono text-sm text-gray-900 dark:text-white break-all">${agentCard.url}</div>
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 md:col-span-2">
-                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">DID</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white break-all">${agentCard.did || 'Not available'}</div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 md:col-span-3 lg:col-span-4">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">DID</div>
+                            <div class="font-mono text-xs text-gray-900 dark:text-white break-all">${agentCard.identity?.did || 'Not available'}</div>
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 md:col-span-2">
-                            <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Created</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.created ? formatTimestamp(agentCard.created) : 'Not available'}</div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Created</div>
+                            <div class="font-mono text-xs text-gray-900 dark:text-white">${agentCard.extraData?.created ? formatTimestamp(agentCard.extraData.created * 1000) : 'Not available'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Identity Provider</div>
+                            <div class="font-mono text-sm text-gray-900 dark:text-white capitalize">${agentCard.agentTrust?.identityProvider || 'Unknown'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Creator</div>
+                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.agentTrust?.creatorId || 'Unknown'}</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Roles</div>
+                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.agentTrust?.inheritedRoles?.length || 0}</div>
                         </div>
                     </div>
                 </div>
@@ -165,37 +229,43 @@
         }
 
         function displayCapabilities() {
-            if (!agentCard || !agentCard.capabilities) return;
+            if (!agentCard || !agentCard.capabilities) {
+                document.getElementById('capabilities-info').innerHTML = 
+                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No capabilities defined</div>';
+                return;
+            }
 
             const capabilitiesDiv = document.getElementById('capabilities-info');
             const capabilities = agentCard.capabilities;
 
             capabilitiesDiv.innerHTML = `
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <span class="font-medium text-gray-900 dark:text-white">Streaming</span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${capabilities.streaming ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}">
-                            ${capabilities.streaming ? 'Enabled' : 'Disabled'}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
+                        <span class="text-gray-900 dark:text-white">Streaming</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${capabilities.streaming ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'}">
+                            ${capabilities.streaming ? 'Yes' : 'No'}
                         </span>
                     </div>
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <span class="font-medium text-gray-900 dark:text-white">Push Notifications</span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${capabilities.pushNotifications ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}">
-                            ${capabilities.pushNotifications ? 'Enabled' : 'Disabled'}
+                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
+                        <span class="text-gray-900 dark:text-white">Push Notifications</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${capabilities.pushNotifications ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'}">
+                            ${capabilities.pushNotifications ? 'Yes' : 'No'}
                         </span>
                     </div>
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <span class="font-medium text-gray-900 dark:text-white">State History</span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${capabilities.stateTransitionHistory ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}">
-                            ${capabilities.stateTransitionHistory ? 'Enabled' : 'Disabled'}
+                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
+                        <span class="text-gray-900 dark:text-white">State History</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${capabilities.stateTransitionHistory ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'}">
+                            ${capabilities.stateTransitionHistory ? 'Yes' : 'No'}
                         </span>
                     </div>
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                        <span class="font-medium text-gray-900 dark:text-white">Context Management</span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${capabilities.contextManagement ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'}">
-                            ${capabilities.contextManagement ? 'Enabled' : 'Disabled'}
+                    ${capabilities.extensions && capabilities.extensions.length > 0 ? `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
+                        <span class="text-gray-900 dark:text-white">Extensions</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                            ${capabilities.extensions.length}
                         </span>
                     </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -203,17 +273,150 @@
         function displaySkills() {
             if (!agentCard || !agentCard.skills || agentCard.skills.length === 0) {
                 document.getElementById('skills-info').innerHTML = 
-                    '<div class="text-center py-8 text-gray-500 dark:text-gray-400">No skills defined for this agent.</div>';
+                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No skills defined</div>';
                 return;
             }
 
             const skillsDiv = document.getElementById('skills-info');
             skillsDiv.innerHTML = agentCard.skills.map(skill => `
-                <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border-l-4 border-blue-500">
-                    <div class="font-semibold text-gray-900 dark:text-white mb-2">${skill.name}</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400">${skill.description || 'No description available'}</div>
+                <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded border-l-2 border-blue-500">
+                    <div class="font-medium text-gray-900 dark:text-white text-sm mb-1">${skill.name}</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">${skill.description || 'No description available'}</div>
+                    ${skill.tags && skill.tags.length > 0 ? `
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        ${skill.tags.map(tag => `<span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 rounded text-xs">${tag}</span>`).join('')}
+                    </div>
+                    ` : ''}
                 </div>
             `).join('');
+        }
+
+        function displayIdentityInfo() {
+            if (!agentCard || !agentCard.identity) {
+                document.getElementById('identity-info').innerHTML = 
+                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No identity info available</div>';
+                return;
+            }
+
+            const identityDiv = document.getElementById('identity-info');
+            const identity = agentCard.identity;
+            const trust = agentCard.agentTrust;
+
+            // Extract public key from DID document
+            let publicKey = 'Not available';
+            if (identity.didDocument && identity.didDocument.verificationMethod && identity.didDocument.verificationMethod.length > 0) {
+                const verificationMethod = identity.didDocument.verificationMethod[0];
+                publicKey = verificationMethod.publicKeyPem || verificationMethod.publicKeyJwk || 'Present but format unknown';
+            } else if (identity.publicKey) {
+                publicKey = identity.publicKey;
+            }
+
+            // Handle trust level
+            let trustLevel = 'Basic Trust';
+            let certificateStatus = 'Not available';
+            
+            if (typeof trust === 'string') {
+                trustLevel = trust.charAt(0).toUpperCase() + trust.slice(1) + ' Trust';
+            } else if (trust && typeof trust === 'object') {
+                trustLevel = trust.trustVerificationRequired ? 'Verification Required' : 'Basic Trust';
+                certificateStatus = trust.certificate ? 'Present' : 'Not available';
+            }
+
+            identityDiv.innerHTML = `
+                <div class="space-y-2">
+                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+                        <div class="flex items-center justify-between cursor-pointer" onclick="togglePublicKey()">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Public Key</div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-600 dark:text-gray-300">${publicKey !== 'Not available' ? 'Available' : 'Not available'}</span>
+                                <svg id="public-key-arrow" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div id="public-key-content" class="hidden mt-2 p-2 bg-gray-100 dark:bg-gray-600 rounded border">
+                            <div class="font-mono text-xs text-gray-900 dark:text-white break-all whitespace-pre-wrap">${publicKey}</div>
+                        </div>
+                    </div>
+                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+                        <div class="flex items-center justify-between cursor-pointer" onclick="toggleCSR()">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">CSR Path</div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-600 dark:text-gray-300">${identity.csr ? 'Available' : 'Not available'}</span>
+                                <svg id="csr-arrow" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div id="csr-content" class="hidden mt-2 p-2 bg-gray-100 dark:bg-gray-600 rounded border">
+                            <div class="font-mono text-xs text-gray-900 dark:text-white break-all">${identity.csr || 'Not available'}</div>
+                        </div>
+                    </div>
+                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Trust Level</div>
+                        <div class="font-mono text-xs text-gray-900 dark:text-white">${trustLevel}</div>
+                    </div>
+                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">DID Document</div>
+                        <div class="font-mono text-xs text-gray-900 dark:text-white">${identity.didDocument ? 'Present (' + (identity.didDocument.verificationMethod?.length || 0) + ' methods)' : 'Not available'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayExtensions() {
+            const extensionsDiv = document.getElementById('extensions-info');
+            
+            if (!agentCard || !agentCard.capabilities || !agentCard.capabilities.extensions || agentCard.capabilities.extensions.length === 0) {
+                extensionsDiv.innerHTML = 
+                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No extensions available</div>';
+                return;
+            }
+
+            const extensions = agentCard.capabilities.extensions;
+            extensionsDiv.innerHTML = extensions.map(ext => `
+                <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded border-l-2 ${ext.required ? 'border-orange-500' : 'border-green-500'}">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="font-medium text-gray-900 dark:text-white text-sm">${ext.uri}</div>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${ext.required ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'}">
+                            ${ext.required ? 'Required' : 'Optional'}
+                        </span>
+                    </div>
+                    ${ext.description ? `<div class="text-xs text-gray-600 dark:text-gray-400 mb-1">${ext.description}</div>` : ''}
+                    ${ext.params && Object.keys(ext.params).length > 0 ? `
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                        Parameters: ${Object.keys(ext.params).join(', ')}
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Toggle functions for collapsible sections
+        function togglePublicKey() {
+            const content = document.getElementById('public-key-content');
+            const arrow = document.getElementById('public-key-arrow');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function toggleCSR() {
+            const content = document.getElementById('csr-content');
+            const arrow = document.getElementById('csr-arrow');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
         }
 
         // Initialize page

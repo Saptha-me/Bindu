@@ -126,7 +126,12 @@ class PebbleApplication(Starlette):
 
     async def _agent_card_endpoint(self, request: Request) -> Response:
         if self._agent_card_json_schema is None:
+            from uuid import uuid4
+            from time import time
+            
+            # Create a complete AgentCard with all required fields
             agent_card = AgentCard(
+                id=self.manifest.id,
                 name=self.manifest.name,
                 description=self.manifest.description or 'An AI agent exposed as an Pebble agent.',
                 url=self.url,
@@ -134,6 +139,18 @@ class PebbleApplication(Starlette):
                 protocol_version='0.2.5',
                 skills=self.manifest.skills,
                 capabilities=self.manifest.capabilities,
+                kind=self.manifest.kind,
+                num_history_sessions=self.manifest.num_history_sessions,
+                extra_data=self.manifest.extra_data or {
+                    'created': int(time()),
+                    'server_info': 'Pebbling Agent Server'
+                },
+                debug_mode=self.manifest.debug_mode,
+                debug_level=self.manifest.debug_level,
+                monitoring=self.manifest.monitoring,
+                telemetry=self.manifest.telemetry,
+                identity=self.manifest.identity,
+                agent_trust=self.manifest.agent_trust
             )
             self._agent_card_json_schema = agent_card_ta.dump_json(agent_card, by_alias=True)
         return Response(content=self._agent_card_json_schema, media_type='application/json')

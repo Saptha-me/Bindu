@@ -10,23 +10,24 @@
         .storage-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            gap: 2rem;
+            margin-bottom: 2rem;
         }
 
         .storage-stats {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .stat-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #e9ecef;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .stat-item:last-child {
@@ -35,12 +36,13 @@
 
         .stat-label {
             font-weight: 500;
-            color: #495057;
+            color: var(--text-primary);
         }
 
         .stat-value {
-            font-weight: bold;
-            color: #e92063;
+            font-weight: 600;
+            color: var(--accent-primary);
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
         }
 
         .tasks-list {
@@ -49,145 +51,135 @@
         }
 
         .task-item {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 4px solid #e92063;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-left: 4px solid var(--accent-primary);
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-sm);
         }
 
         .task-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 0.75rem;
         }
 
         .task-id {
-            font-family: 'Courier New', monospace;
-            font-size: 0.8em;
-            color: #6c757d;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
         }
 
         .task-status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
         .task-status.completed {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
         }
 
         .task-status.failed {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
         }
 
         .task-status.running {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
         }
 
         .task-status.pending {
-            background: #d1ecf1;
-            color: #0c5460;
+            background: var(--accent-light);
+            color: var(--accent-primary);
         }
 
         .task-content {
-            color: #495057;
-            font-size: 0.9em;
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
         }
 
         .task-timestamp {
-            color: #6c757d;
-            font-size: 0.8em;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
         }
 
         .storage-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
         }
 
-        .storage-controls button {
-            background: #e92063;
+        .storage-controls .btn-primary {
+            background: var(--accent-primary);
             color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.3s ease;
         }
 
-        .storage-controls button:hover {
-            background: #d01d58;
+        .storage-controls .btn-primary:hover {
+            background: var(--accent-hover);
         }
 
-        .storage-controls button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .storage-controls .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
         }
 
-        .storage-controls button.secondary {
-            background: #6c757d;
-        }
-
-        .storage-controls button.secondary:hover {
-            background: #5a6268;
+        .storage-controls .btn-secondary:hover {
+            background: var(--bg-primary);
+            border-color: var(--border-hover);
         }
 
         .loading {
             text-align: center;
-            padding: 20px;
-            color: #e92063;
-        }
-
-        .error {
-            color: #dc3545;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
+            padding: 1.5rem;
+            color: var(--accent-primary);
         }
 
         .empty-state {
             text-align: center;
-            padding: 40px;
-            color: #6c757d;
+            padding: 3rem;
+            color: var(--text-muted);
         }
 
         .empty-state h3 {
-            margin-bottom: 10px;
-            color: #495057;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
         }
 
         .search-box {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
+            margin-bottom: 1.5rem;
         }
 
         .filter-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
             flex-wrap: wrap;
         }
 
         .filter-controls select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9em;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
         }
 
         @media (max-width: 768px) {
@@ -208,11 +200,18 @@
 <body>
     <div class="container">
         <div class="header">
-            <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
-                Pebbling
-            </a>
-            <h1>🤖 Pebbling Agent</h1>
-            <p>Storage & Task Management</p>
+            <div class="header-content">
+                <h1>🤖 Pebbling Agent</h1>
+                <p>Storage Management & Task History</p>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <!-- Theme icon will be inserted by JavaScript -->
+                </button>
+                <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
+                    Pebbling
+                </a>
+            </div>
         </div>
 
         <nav class="nav">
@@ -223,9 +222,9 @@
         </nav>
 
         <div class="storage-controls">
-            <button onclick="refreshStorage()">🔄 Refresh</button>
-            <button onclick="clearStorage()" class="secondary">🗑️ Clear Storage</button>
-            <button onclick="exportTasks()" class="secondary">📤 Export Tasks</button>
+            <button onclick="refreshTasks()" id="refresh-button" class="btn btn-primary">Refresh Tasks</button>
+            <button onclick="clearAllTasks()" id="clear-button" class="btn btn-secondary">Clear All Tasks</button>
+            <button onclick="exportTasks()" id="export-button" class="btn btn-secondary">Export Tasks</button>
         </div>
 
         <div class="storage-grid">
@@ -247,7 +246,7 @@
         <div class="card">
             <h2>📋 Task Management</h2>
             
-            <input type="text" id="search-box" class="search-box" placeholder="Search tasks by ID, content, or status..." onkeyup="filterTasks()">
+            <input type="text" id="search-input" class="search-box form-input" placeholder="Search tasks..." oninput="filterTasks()">
             
             <div class="filter-controls">
                 <select id="status-filter" onchange="filterTasks()">

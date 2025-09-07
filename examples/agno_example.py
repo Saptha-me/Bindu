@@ -99,82 +99,82 @@ simple_config = load_config("simple_agent_config.json")
 #     return result
 
 
-# 3. GENERATOR EXAMPLE - inspect.isgeneratorfunction()
-@pebblify(
-    author=story_config["author"],
-    name=story_config.get("name"),
-    description=story_config.get("description"),
-    version=story_config.get("version", "1.0.0"),
-    recreate_keys=story_config.get("recreate_keys", True),
-    skills=[AgentSkill(**skill) for skill in story_config.get("skills", [])],
-    capabilities=AgentCapabilities(**story_config["capabilities"]),
-    agent_trust=story_config.get("agent_trust"),
-    kind=story_config.get("kind", "agent"),
-    debug_mode=story_config.get("debug_mode", False),
-    debug_level=story_config.get("debug_level", 1),
-    monitoring=story_config.get("monitoring", False),
-    telemetry=story_config.get("telemetry", True),
-    num_history_sessions=story_config.get("num_history_sessions", 10),
-    documentation_url=story_config.get("documentation_url"),
-    extra_metadata=story_config.get("extra_metadata", {}),
-    deployment_config=DeploymentConfig(**story_config["deployment"]),
-)
-def story_agent(messages: List[str]) -> Generator[str, None, None]:
-    """Generator function example - yields multiple results synchronously."""
-    
-    # Use any framework internally
-    agent = Agent(
-        instructions="Create an engaging story based on the user's request, tell it in parts",
-        model=OpenAIChat(id="gpt-4o")
-    )
-    
-    # Simulate streaming response by yielding parts
-    yield "Starting the story..."
-    
-    result = agent.run(messages=messages)
-    content = result.to_dict()['content']
-
-    yield content
-    
-    # Split content into parts and yield each
-    sleep(2)
-    
-    yield "Story complete!"
-
-
-# # 4. REGULAR FUNCTION EXAMPLE - else case
+# # 3. GENERATOR EXAMPLE - inspect.isgeneratorfunction()
 # @pebblify(
-#     author=simple_config["author"],
-#     name=simple_config.get("name"),
-#     description=simple_config.get("description"),
-#     version=simple_config.get("version", "1.0.0"),
-#     recreate_keys=simple_config.get("recreate_keys", True),
-#     skills=[AgentSkill(**skill) for skill in simple_config.get("skills", [])],
-#     capabilities=AgentCapabilities(**simple_config["capabilities"]),
-#     agent_trust=simple_config.get("agent_trust"),
-#     kind=simple_config.get("kind", "agent"),
-#     debug_mode=simple_config.get("debug_mode", False),
-#     debug_level=simple_config.get("debug_level", 1),
-#     monitoring=simple_config.get("monitoring", False),
-#     telemetry=simple_config.get("telemetry", True),
-#     num_history_sessions=simple_config.get("num_history_sessions", 10),
-#     documentation_url=simple_config.get("documentation_url"),
-#     extra_metadata=simple_config.get("extra_metadata", {}),
-#     deployment_config=DeploymentConfig(**simple_config["deployment"]),
+#     author=story_config["author"],
+#     name=story_config.get("name"),
+#     description=story_config.get("description"),
+#     version=story_config.get("version", "1.0.0"),
+#     recreate_keys=story_config.get("recreate_keys", True),
+#     skills=[AgentSkill(**skill) for skill in story_config.get("skills", [])],
+#     capabilities=AgentCapabilities(**story_config["capabilities"]),
+#     agent_trust=story_config.get("agent_trust"),
+#     kind=story_config.get("kind", "agent"),
+#     debug_mode=story_config.get("debug_mode", False),
+#     debug_level=story_config.get("debug_level", 1),
+#     monitoring=story_config.get("monitoring", False),
+#     telemetry=story_config.get("telemetry", True),
+#     num_history_sessions=story_config.get("num_history_sessions", 10),
+#     documentation_url=story_config.get("documentation_url"),
+#     extra_metadata=story_config.get("extra_metadata", {}),
+#     deployment_config=DeploymentConfig(**story_config["deployment"]),
 # )
-# def simple_agent(messages: List[str]) -> str:
-#     """Regular function example - returns single result."""
+# def story_agent(messages: List[str]) -> Generator[str, None, None]:
+#     """Generator function example - yields multiple results synchronously."""
     
 #     # Use any framework internally
 #     agent = Agent(
-#         instructions="Provide a simple response to the user's message",
+#         instructions="Create an engaging story based on the user's request, tell it in parts",
 #         model=OpenAIChat(id="gpt-4o")
 #     )
     
-#     result = agent.run(messages=messages)
+#     # Simulate streaming response by yielding parts
+#     yield "Starting the story..."
     
-#     # Return single result
-#     return result.to_dict()['content']
+#     result = agent.run(messages=messages)
+#     content = result.to_dict()['content']
+
+#     yield content
+    
+#     # Split content into parts and yield each
+#     sleep(2)
+    
+#     yield "Story complete!"
+
+
+# 4. REGULAR FUNCTION EXAMPLE - else case
+@pebblify(
+    author=simple_config["author"],
+    name=simple_config.get("name"),
+    description=simple_config.get("description"),
+    version=simple_config.get("version", "1.0.0"),
+    recreate_keys=simple_config.get("recreate_keys", True),
+    skills=[AgentSkill(**skill) for skill in simple_config.get("skills", [])],
+    capabilities=AgentCapabilities(**simple_config["capabilities"]),
+    agent_trust=simple_config.get("agent_trust"),
+    kind=simple_config.get("kind", "agent"),
+    debug_mode=simple_config.get("debug_mode", False),
+    debug_level=simple_config.get("debug_level", 1),
+    monitoring=simple_config.get("monitoring", False),
+    telemetry=simple_config.get("telemetry", True),
+    num_history_sessions=simple_config.get("num_history_sessions", 10),
+    documentation_url=simple_config.get("documentation_url"),
+    extra_metadata=simple_config.get("extra_metadata", {}),
+    deployment_config=DeploymentConfig(**simple_config["deployment"]),
+)
+def simple_agent(messages: List[str]) -> str:
+    """Regular function example - returns single result."""
+    
+    # Use any framework internally
+    agent = Agent(
+        instructions="Provide a simple response to the user's message",
+        model=OpenAIChat(id="gpt-4o")
+    )
+    
+    result = agent.run(messages=messages)
+    
+    # Return single result
+    return result.to_dict()['content']
 
 
 if __name__ == "__main__":

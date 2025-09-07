@@ -13,11 +13,15 @@ Pebbling Server Workers.
 
 Worker classes for task execution in the Pebbling framework.
 Workers are responsible for executing tasks received from schedulers.
+
+This module provides:
+- Base Worker class for implementing custom workers
+- ManifestWorker for executing AgentManifest-based tasks
+- Utility classes for message conversion and artifact building
 """
 
-from .worker import Worker, ManifestWorker
+from .manifest_worker import ManifestWorker
 
 __all__ = [
-    "Worker",
     "ManifestWorker",
 ]

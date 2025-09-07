@@ -228,6 +228,28 @@
             color: #e92063;
         }
 
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e92063;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message.processing {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
         .error {
             color: #dc3545;
             background: #f8d7da;
@@ -339,8 +361,20 @@
 
     <script src="common.js"></script>
     <script>
-        let currentTaskId = null;
-        let contextId = null;
+        // Generate UUID v4
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Alias for compatibility
+        function generateId() {
+            return generateUUID();
+        }
+
+        let contextId = generateUUID(); // Generate proper UUID for context
 
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
@@ -367,37 +401,62 @@
                     updateContextStatus();
                 }
 
-                // Send message using common API function
-                const result = await makeApiRequest('message/send', {
-                    message: {
-                        role: 'user',
-                        parts: [
-                            {
-                                kind: 'text',
-                                text: message
-                            }
-                        ],
-                        kind: 'message',
-                        messageId: messageId,
-                        contextId: contextId,
-                        taskId: taskId
+                // Create JSON-RPC request payload
+                const payload = {
+                    "jsonrpc": "2.0",
+                    "method": "message/send",
+                    "params": {
+                        "message": {
+                            "role": "user",
+                            "parts": [{
+                                "kind": "text",
+                                "text": message
+                            }],
+                            "kind": "message",
+                            "messageId": messageId,
+                            "contextId": contextId,
+                            "taskId": taskId
+                        },
+                        "configuration": {
+                            "acceptedOutputModes": ["application/json"]
+                        }
                     },
-                    configuration: {
-                        acceptedOutputModes: ['application/json']
-                    }
+                    "id": generateId()
+                };
+
+                // Send message using fetch directly for JSON-RPC
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
 
-                // Store task ID and context ID for polling
-                currentTaskId = result.id;
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
 
-                // Store context ID for future messages
-                if (result.contextId && !contextId) {
-                    contextId = result.contextId;
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                // Store task ID from the result
+                currentTaskId = result.result.task_id;
+                
+                // Store context ID from the result
+                if (result.result.context_id) {
+                    contextId = result.result.context_id;
                     updateContextStatus();
                 }
 
                 // Add user message to chat with task ID
                 addMessage(message, 'user', currentTaskId);
+
+                // Add processing indicator
+                addProcessingMessage();
 
                 // Start polling for task completion
                 pollTaskStatus();
@@ -415,9 +474,38 @@
             if (!currentTaskId) return;
 
             try {
-                const task = await makeApiRequest('tasks/get', {
-                    id: currentTaskId
+                // Create JSON-RPC request for task status
+                const payload = {
+                    "jsonrpc": "2.0",
+                    "method": "tasks/get",
+                    "params": {
+                        "taskId": currentTaskId
+                    },
+                    "id": generateId()
+                };
+
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                const task = result.result;
+
+                // Remove processing message
+                removeProcessingMessage();
 
                 if (task.status.state === 'completed') {
                     // Extract the agent's response from the latest message in history
@@ -426,7 +514,7 @@
                         if (lastMessage.role === 'agent' && lastMessage.parts && lastMessage.parts.length > 0) {
                             const textPart = lastMessage.parts.find(part => part.kind === 'text');
                             if (textPart) {
-                                addMessage(textPart.text, 'agent', task.id);
+                                addMessage(textPart.text, 'agent', task.task_id);
                             }
                         }
                     }
@@ -438,12 +526,14 @@
                     addMessage('Task was canceled', 'status');
                     currentTaskId = null;
                 } else {
-                    // Still processing, poll again
+                    // Still processing, add processing message back and poll again
+                    addProcessingMessage();
                     setTimeout(pollTaskStatus, 1000);
                 }
 
             } catch (error) {
                 console.error('Error polling task status:', error);
+                removeProcessingMessage();
                 addMessage('Error getting task status: ' + error.message, 'status');
                 currentTaskId = null;
             }
@@ -483,6 +573,27 @@
             contextId = generateId();
             updateContextStatus();
             addMessage('New context started', 'status');
+        }
+
+        function addProcessingMessage() {
+            // Remove any existing processing message first
+            removeProcessingMessage();
+            
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message processing';
+            messageDiv.id = 'processing-message';
+            messageDiv.innerHTML = '<span class="spinner"></span>Agent is thinking...';
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeProcessingMessage() {
+            const processingMessage = document.getElementById('processing-message');
+            if (processingMessage) {
+                processingMessage.remove();
+            }
         }
 
         function updateContextStatus() {

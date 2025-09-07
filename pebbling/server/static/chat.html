@@ -6,6 +6,20 @@
     <title>Chat Interface - Pebbling</title>
     <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        'mono': ['SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="common.css">
     <style>
         .chat-container {
@@ -16,42 +30,44 @@
 
         .chat-messages {
             flex: 1;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
             overflow-y: auto;
-            margin-bottom: 20px;
-            border: 1px solid #e9ecef;
+            margin-bottom: 1rem;
         }
 
         .message {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            border-radius: 10px;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
             max-width: 80%;
+            word-wrap: break-word;
         }
 
         .message.user {
-            background: #e92063;
+            background: var(--accent-primary);
             color: white;
             margin-left: auto;
         }
 
         .message.agent {
-            background: #e9ecef;
-            color: #495057;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
         }
 
         .message.status {
-            background: transparent;
-            color: #6c757d;
-            font-size: 0.85em;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-size: 0.875rem;
             font-style: italic;
             text-align: center;
-            padding: 8px 10px;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            margin: 10px auto;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            margin: 0.75rem auto;
             max-width: 60%;
         }
 
@@ -114,15 +130,11 @@
         }
 
         .message code {
-            background: rgba(0, 0, 0, 0.1);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-        }
-
-        .message.agent code {
-            background: rgba(0, 0, 0, 0.1);
+            background: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+            font-size: 0.875rem;
         }
 
         .message.user code {
@@ -130,19 +142,17 @@
         }
 
         .message pre {
-            background: rgba(0, 0, 0, 0.1);
-            padding: 1em;
-            border-radius: 8px;
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 0.5rem;
             overflow-x: auto;
-            margin: 0.5em 0;
-        }
-
-        .message.agent pre {
-            background: rgba(0, 0, 0, 0.1);
+            margin: 0.5rem 0;
+            border: 1px solid var(--border-color);
         }
 
         .message.user pre {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .message pre code {
@@ -152,23 +162,31 @@
         }
 
         .message blockquote {
-            border-left: 4px solid #e92063;
-            padding-left: 1em;
-            margin: 0.5em 0;
+            border-left: 4px solid var(--accent-primary);
+            padding-left: 1rem;
+            margin: 0.5rem 0;
             font-style: italic;
+            background: var(--bg-tertiary);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
         }
 
         .message.user blockquote {
             border-left-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .message a {
-            color: #e92063;
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+
+        .message a:hover {
             text-decoration: underline;
         }
 
         .message.user a {
-            color: #ffb3d1;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .message table {
@@ -190,104 +208,65 @@
 
         .chat-input {
             display: flex;
-            gap: 10px;
+            gap: 0.75rem;
         }
 
         .chat-input input {
             flex: 1;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
         }
 
         .chat-input button {
-            padding: 12px 24px;
-            background: #e92063;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s ease;
-        }
-
-        .chat-input button:hover {
-            background: #d01d58;
-        }
-
-        .chat-input button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+            padding: 0.75rem 1.5rem;
         }
 
         .loading {
             display: none;
             text-align: center;
-            padding: 20px;
-            color: #e92063;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #e92063;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            padding: 1.5rem;
+            color: var(--accent-primary);
         }
 
         .message.processing {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .error {
-            color: #dc3545;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .chat-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
         }
 
         .chat-controls button {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
             cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         .chat-controls button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--bg-secondary);
+            border-color: var(--border-hover);
         }
 
         .context-info {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9em;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
         }
 
         @media (max-width: 768px) {
@@ -306,11 +285,18 @@
 <body>
     <div class="container">
         <div class="header">
-            <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
-                Pebbling
-            </a>
-            <h1>🤖 Pebbling Agent</h1>
-            <p>Interactive Chat Interface</p>
+            <div class="header-content">
+                <h1>🤖 Pebbling Agent</h1>
+                <p>Interactive Chat Interface</p>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <!-- Theme icon will be inserted by JavaScript -->
+                </button>
+                <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
+                    Pebbling
+                </a>
+            </div>
         </div>
 
         <nav class="nav">
@@ -342,10 +328,11 @@
                     <input
                         type="text"
                         id="message-input"
+                        class="form-input"
                         placeholder="Type your message here..."
                         onkeypress="handleKeyPress(event)"
                     >
-                    <button onclick="sendMessage()" id="send-button">Send</button>
+                    <button onclick="sendMessage()" id="send-button" class="btn btn-primary">Send</button>
                 </div>
             </div>
             <div id="chat-error" class="error" style="display: none;"></div>

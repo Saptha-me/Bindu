@@ -161,7 +161,9 @@ class TaskManager:
         """Send a message using the Pebble protocol."""
         request_id = str(request['id'])  # Convert UUID to string
         message = request['params']['message']
-        context_id = str(message.get('context_id', uuid.uuid4()))
+        context_id = message.get('context_id', uuid.uuid4())
+        if isinstance(context_id, str):
+            context_id = uuid.UUID(context_id)
 
         task = await self.storage.submit_task(context_id, message)
 
@@ -179,7 +181,7 @@ class TaskManager:
 
         No further actions are needed here.
         """
-        task_id = str(request['params']['task_id'])
+        task_id = request['params']['task_id']
         history_length = request['params'].get('history_length')
         task = await self.storage.load_task(task_id, history_length)
         if task is None:

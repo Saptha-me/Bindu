@@ -135,6 +135,9 @@ class ManifestWorker(Worker):
             # Process results and convert to messages
             # messages: The conversation transcript ("Here's how I solved it...")
             response_messages: list[Message] = []
+
+            if isinstance(results, str):
+                results = [results]
             
             for message in results:
                 _parts: list[Part] = []

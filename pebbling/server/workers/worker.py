@@ -128,15 +128,15 @@ class ManifestWorker(Worker):
         
         try:
             # Execute manifest based on its type
-            result = await self._execute_manifest(message_history)
+            results = await self._execute_manifest(message_history)
 
-            await self.storage.update_context(task['context_id'], result)
+            await self.storage.update_context(task['context_id'], results)
 
             # Process results and convert to messages
             # messages: The conversation transcript ("Here's how I solved it...")
             response_messages: list[Message] = []
             
-            for message in result:
+            for message in results:
                 _parts: list[Part] = []
                 
                 if isinstance(message, str):
@@ -165,7 +165,7 @@ class ManifestWorker(Worker):
                     ))
             
             # artifacts: The actual solution/deliverable ("Here's the code/analysis/result")
-            artifacts = self.build_artifacts(result)
+            artifacts = self.build_artifacts(results)
 
         except Exception:
             await self.storage.update_task(task['id'], state='failed')
@@ -207,26 +207,26 @@ class ManifestWorker(Worker):
                     message_history.append(' '.join(text_parts))
         return message_history
     
-    def build_artifacts(self, result: Any) -> list[Artifact]:
+    def build_artifacts(self, results: Any) -> list[Artifact]:
         """Convert manifest execution result to pebble protocol artifacts.
         
         Args:
-            result: Result from manifest execution
+            results: Result from manifest execution
             
         Returns:
             List of pebble protocol artifacts
         """
-        artifact_id = uuid.uuid4()
+        artifact_id = str(uuid.uuid4())
         
         # Convert result to appropriate part type
-        if isinstance(result, str):
-            parts = [{'kind': 'text', 'text': result}]
-        elif isinstance(result, (list, tuple)) and all(isinstance(item, str) for item in result):
+        if isinstance(results, str):
+            parts = [{'kind': 'text', 'text': results}]
+        elif isinstance(results, (list, tuple)) and all(isinstance(item, str) for item in results):
             # Handle streaming results that were collected
-            parts = [{'kind': 'text', 'text': '\n'.join(result)}]
+            parts = [{'kind': 'text', 'text': '\n'.join(results)}]
         else:
             # Handle structured data
-            parts = [{'kind': 'data', 'data': {'result': result}, 'metadata': {'type': type(result).__name__}}]
+            parts = [{'kind': 'data', 'data': {'result': results}, 'metadata': {'type': type(results).__name__}}]
         
         return [Artifact(
             artifact_id=artifact_id,

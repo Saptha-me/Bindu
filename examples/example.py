@@ -46,7 +46,7 @@ config = load_config()
     extra_metadata=config.get("extra_metadata", {}),
     deployment_config=DeploymentConfig(**config["deployment"]),
 )
-async def news_reporter_agent(messages: List[str]) -> AsyncGenerator[str, None]:
+def news_reporter_agent(messages: List[str]) -> AsyncGenerator[str, None]:
     """User writes protocol-compliant code directly."""
     
     # Use any framework internally
@@ -54,7 +54,7 @@ async def news_reporter_agent(messages: List[str]) -> AsyncGenerator[str, None]:
         instructions="Get current news from amsterdam",
         model=OpenAIChat(id="gpt-4o")
     )
-    result = await agent.arun(messages=messages)
+    result = agent.run(messages=messages)
     
     # Yield protocol-compliant response
-    yield result.to_dict()['content']
+    return result.to_dict()['content']

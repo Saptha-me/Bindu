@@ -179,4 +179,11 @@ pebble-project/*
 pebble-project_private_key.json
 pebble_project_certificates/*
 pebble_project_private_key.json
-examples/*
+
+# Examples directory - exclude all generated files
+examples/pki/
+examples/certs/
+examples/logs/
+examples/*.log
+examples/.env
+

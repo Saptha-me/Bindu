@@ -87,10 +87,8 @@ class InMemoryStorage(Storage[ContextT]):
 
     async def submit_task(self, context_id: str, message: Message) -> Task:
         """Submit a task to storage."""
-        # Generate a unique task ID
-        task_id = str(uuid.uuid4())
-
-        # Add IDs to the message for Pebble protocol (ensure strings, not UUIDs)
+        # Use existing task ID from message or generate new one
+        task_id = str(message.get('task_id'))
         message['task_id'] = task_id
         message['context_id'] = context_id
         

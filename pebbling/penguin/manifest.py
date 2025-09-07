@@ -238,17 +238,35 @@ def create_manifest(
             else:
                 return (input_msg,)
         
-        # Function type handlers with unified parameter resolution
+        # Function type handlers following ACP pattern
         if inspect.isasyncgenfunction(agent_function):
             async def run(input_msg: str, **kwargs):
                 params = resolve_params(input_msg, **kwargs)
-                async for result in agent_function(*params):
-                    yield result
+                try:
+                    gen = agent_function(*params)
+                    value = None
+                    while True:
+                        value = yield await gen.asend(value)
+                except StopAsyncIteration:
+                    pass
                     
         elif inspect.iscoroutinefunction(agent_function):
             async def run(input_msg: str, **kwargs):
                 params = resolve_params(input_msg, **kwargs)
-                return await agent_function(*params)
+                result = await agent_function(*params)
+                
+                # Handle different result types from coroutine
+                if hasattr(result, '__aiter__'):
+                    # Result is async iterable (streaming)
+                    async for chunk in result:
+                        yield chunk
+                elif hasattr(result, '__iter__') and not isinstance(result, (str, bytes)):
+                    # Result is iterable but not string/bytes
+                    for chunk in result:
+                        yield chunk
+                else:
+                    # Single result - yield it (can't mix return and yield)
+                    yield result
                 
         elif inspect.isgeneratorfunction(agent_function):
             def run(input_msg: str, **kwargs):

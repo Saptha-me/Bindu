@@ -111,17 +111,17 @@ class ManifestWorker(Worker):
         Args:
             params: Task execution parameters containing task ID, context ID, and message
         """
-        task = await self.storage.load_task(params['id'])
+        task = await self.storage.load_task(params['task_id'])
         if task is None:
-            raise ValueError(f'Task {params["id"]} not found')
+            raise ValueError(f'Task {params["task_id"]} not found')
         
         # Ensure this task hasn't been run before
         if task['status']['state'] != 'submitted':
             raise ValueError(
-                f'Task {params["id"]} has already been processed (state: {task["status"]["state"]})'
+                f'Task {params["task_id"]} has already been processed (state: {task["status"]["state"]})'
             )
         
-        await self.storage.update_task(task['id'], state='working')
+        await self.storage.update_task(task['task_id'], state='working')
 
         message_history = await self.storage.load_context(task['context_id']) or []
         message_history.extend(self.build_message_history(task.get('history', [])))
@@ -168,12 +168,12 @@ class ManifestWorker(Worker):
             artifacts = self.build_artifacts(results)
 
         except Exception:
-            await self.storage.update_task(task['id'], state='failed')
+            await self.storage.update_task(task['task_id'], state='failed')
             raise   
     
         else:
             await self.storage.update_task(
-                task['id'], state='completed', new_artifacts=artifacts, new_messages=response_messages
+                task['task_id'], state='completed', new_artifacts=artifacts, new_messages=response_messages
             )
     
     async def cancel_task(self, params: TaskIdParams) -> None:
@@ -183,7 +183,7 @@ class ManifestWorker(Worker):
             params: Task identification parameters
         """
         # Update task state to canceled
-        await self.storage.update_task(params['id'], state='canceled')
+        await self.storage.update_task(params['task_id'], state='canceled')
     
     def build_message_history(self, history: list[Message]) -> list[Any]:
         """Convert pebble protocol messages to format suitable for manifest execution.

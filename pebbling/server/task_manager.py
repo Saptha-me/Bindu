@@ -165,7 +165,7 @@ class TaskManager:
 
         task = await self.storage.submit_task(context_id, message)
 
-        scheduler_params: TaskSendParams = {'id': task['id'], 'context_id': context_id, 'message': message}
+        scheduler_params: TaskSendParams = {'task_id': task['task_id'], 'context_id': context_id, 'message': message}
         config = request['params'].get('configuration', {})
         history_length = config.get('history_length')
         if history_length is not None:
@@ -179,7 +179,7 @@ class TaskManager:
 
         No further actions are needed here.
         """
-        task_id = str(request['params']['id'])
+        task_id = str(request['params']['task_id'])
         history_length = request['params'].get('history_length')
         task = await self.storage.load_task(task_id, history_length)
         if task is None:
@@ -192,7 +192,7 @@ class TaskManager:
 
     async def cancel_task(self, request: CancelTaskRequest) -> CancelTaskResponse:
         await self.scheduler.cancel_task(request['params'])
-        task = await self.storage.load_task(request['params']['id'])
+        task = await self.storage.load_task(request['params']['task_id'])
         if task is None:
             return CancelTaskResponse(
                 jsonrpc='2.0',

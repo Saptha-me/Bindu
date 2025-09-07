@@ -357,7 +357,7 @@ class TaskStatusUpdateEvent(TypedDict):
     kind: Required[Literal['status-update']]
     metadata: NotRequired[dict[str, Any]]
     status: Required[TaskStatus]
-    taskId: Required[UUID]
+    task_id: Required[UUID]
 
 
 @pydantic.with_config({'alias_generator': to_camel})
@@ -368,9 +368,9 @@ class TaskArtifactUpdateEvent(TypedDict):
     artifact: Required[Artifact]
     context_id: Required[UUID]
     kind: Required[Literal['artifact-update']]
-    lastChunk: NotRequired[bool]
+    last_chunk: NotRequired[bool]
     metadata: NotRequired[dict[str, Any]]
-    taskId: Required[UUID]
+    task_id: Required[UUID]
 
 
 @pydantic.with_config({'alias_generator': to_camel})
@@ -403,8 +403,8 @@ class MessageSendConfiguration(TypedDict):
     
     accepted_output_modes: Required[list[str]]
     blocking: NotRequired[bool]
-    historyLength: NotRequired[int]
-    pushNotificationConfig: NotRequired[PushNotificationConfig]
+    history_length: NotRequired[int]
+    push_notification_config: NotRequired[PushNotificationConfig]
 
 
 @pydantic.with_config({'alias_generator': to_camel})

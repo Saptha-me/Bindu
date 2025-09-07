@@ -147,29 +147,12 @@ def pebblify(
         scheduler_instance = scheduler or InMemoryScheduler()
         
         # Create the manifest worker
-        manifest_worker = ManifestWorker(
-            manifest=_manifest,
-            scheduler=scheduler_instance,
-            storage=storage_instance
-        )
-
-        @asynccontextmanager
-        async def worker_lifespan(app: PebbleApplication) -> AsyncIterator[None]:
-            """Custom lifespan that runs the worker during application startup.
-
-            This ensures the worker is started and ready to process tasks as soon as the application starts.
-            """
-            async with app.task_manager:
-                async with manifest_worker.run():
-                    yield
-
         pebble_app = PebbleApplication(
             storage=storage_instance,
             scheduler=scheduler_instance,
             penguin_id=agent_id,
             manifest=_manifest,
-            version=version,
-            lifespan=worker_lifespan
+            version=version
         )    
 
         # Deploy the server

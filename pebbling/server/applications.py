@@ -60,6 +60,10 @@ class PebbleApplication(Starlette):
             middleware: Optional middleware
             exception_handlers: Optional exception handlers
         """
+        # Create default lifespan if none provided
+        if lifespan is None:
+            lifespan = self._create_default_lifespan(storage, scheduler, manifest)
+        
         super().__init__(
             debug=debug,
             routes=routes,
@@ -76,8 +80,10 @@ class PebbleApplication(Starlette):
         self.default_input_modes = ['application/json']
         self.default_output_modes = ['application/json']
 
-        # Initialize TaskManager following Pebble pattern
-        self.task_manager = TaskManager(scheduler=scheduler, storage=storage, manifest=manifest)
+        # TaskManager will be initialized in lifespan
+        self.task_manager: Optional[TaskManager] = None
+        self._storage = storage
+        self._scheduler = scheduler
 
         # Setup
         self._agent_card_json_schema: bytes | None = None
@@ -91,9 +97,28 @@ class PebbleApplication(Starlette):
         self.router.add_route('/common.css', self._common_css_endpoint, methods=['GET'])
         self.router.add_route('/common.js', self._common_js_endpoint, methods=['GET'])
 
+    def _create_default_lifespan(
+        self, 
+        storage: Union[InMemoryStorage, PostgreSQLStorage, QdrantStorage],
+        scheduler: Union[InMemoryScheduler, RedisScheduler],
+        manifest: AgentManifest
+    ) -> Lifespan:
+        """Create default lifespan that manages TaskManager lifecycle."""
+        
+        @asynccontextmanager
+        async def lifespan(app: Starlette) -> AsyncIterator[None]:
+            # Initialize TaskManager and enter its context
+            task_manager = TaskManager(scheduler=scheduler, storage=storage, manifest=manifest)
+            async with task_manager:
+                # Store reference for use in endpoints
+                app.task_manager = task_manager
+                yield
+        
+        return lifespan
+
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope['type'] == 'http' and not self.task_manager.is_running:
+        if scope['type'] == 'http' and (self.task_manager is None or not self.task_manager.is_running):
             raise RuntimeError('TaskManager was not properly initialized.')
         await super().__call__(scope, receive, send)
 

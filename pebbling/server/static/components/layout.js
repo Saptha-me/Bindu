@@ -23,10 +23,29 @@ class LayoutManager {
     async loadHeader() {
         const headerHTML = await this.loadComponent('header');
         const headerContainer = document.getElementById('header-container');
-        if (headerContainer) {
+        if (headerContainer && headerHTML) {
             headerContainer.innerHTML = headerHTML;
             this.initializeNavigation();
+            this.updateAgentName();
+            console.log('Header loaded successfully');
+        } else {
+            console.error('Header container not found or header HTML empty');
         }
+    }
+
+    updateAgentName() {
+        // Try to get agent name from the agent card
+        fetch('/.well-known/agent.json')
+            .then(response => response.json())
+            .then(agentCard => {
+                const agentNameElement = document.getElementById('agent-name');
+                if (agentNameElement && agentCard.name) {
+                    agentNameElement.textContent = agentCard.name;
+                }
+            })
+            .catch(error => {
+                console.log('Could not load agent name, using default');
+            });
     }
 
     async loadFooter() {
@@ -76,9 +95,12 @@ class LayoutManager {
 
 // Initialize layout when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Layout.js: DOM loaded, initializing layout manager');
     const layoutManager = new LayoutManager();
     await layoutManager.initialize();
+    console.log('Layout.js: Layout manager initialized');
 });
 
 // Export for use in other scripts
 window.LayoutManager = LayoutManager;
+console.log('Layout.js: Script loaded successfully');

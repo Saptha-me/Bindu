@@ -20,7 +20,6 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="common.css">
     <style>
         .chat-container {
             height: 500px;
@@ -375,13 +374,15 @@
     <div id="footer-container"></div>
 
     <!-- Error Toast -->
-    <div id="error-toast" class="fixed top-4 right-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg shadow-lg hidden z-50">
+    <div id="error-toast" class="fixed top-4 right-4 max-w-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 shadow-lg hidden transform transition-all duration-300">
         <div class="flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
             <div class="ml-3">
-                <p class="text-sm" id="error-message"></p>
+                <p class="text-sm text-red-800 dark:text-red-200" id="error-message"></p>
             </div>
             <button onclick="hideError()" class="ml-auto pl-3">
                 <svg class="h-4 w-4 text-red-400 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -717,8 +718,7 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            // Layout manager will handle header/footer loading and navigation
-            updateContextStatus();
+            setActiveNav('chat.html');
         });
     </script>
 </body>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -282,71 +282,118 @@
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="header-content">
-                <h1>🤖 Pebbling Agent</h1>
-                <p>Interactive Chat Interface</p>
-            </div>
-            <div class="header-actions">
-                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-                    <!-- Theme icon will be inserted by JavaScript -->
-                </button>
-                <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
-                    Pebbling
-                </a>
-            </div>
-        </div>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors duration-300">
+    <!-- Header Container -->
+    <div id="header-container"></div>
 
-        <nav class="nav">
-            <a href="agent.html">📋 Agent Info</a>
-            <a href="chat.html" class="active">💬 Chat</a>
-            <a href="storage.html">💾 Storage</a>
-            <a href="docs.html">📚 Documentation</a>
-        </nav>
-
-        <div class="chat-controls">
-            <div class="context-info">
-                <span id="context-status">No active context</span>
-            </div>
-            <div>
-                <button onclick="clearChat()">Clear Chat</button>
-                <button onclick="newContext()">New Context</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>💬 Chat Interface</h2>
-            <div class="chat-container">
-                <div id="chat-messages" class="chat-messages">
-                    <div class="message status">
-                        Welcome! Start a conversation with the agent by typing a message below.
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <!-- Chat Controls -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8 p-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-full">
+                        <div class="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium text-blue-700 dark:text-blue-400" id="context-status">No active context</span>
                     </div>
                 </div>
-                <div class="chat-input">
+                <div class="flex space-x-3">
+                    <button onclick="clearChat()" 
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all duration-200 hover:shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Clear Chat
+                    </button>
+                    <button onclick="newContext()" 
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all duration-200 hover:shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        New Context
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[650px] overflow-hidden">
+            <!-- Chat Header -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/10 dark:to-purple-900/10">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                            <svg class="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            Chat Interface
+                        </h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Powered by Pebbling AI Agent</p>
+                    </div>
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-medium text-green-700 dark:text-green-400">Agent Ready</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <div class="flex justify-center">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 max-w-md text-center">
+                        <p class="text-blue-800 dark:text-blue-200 text-sm">
+                            👋 Welcome! Start a conversation with the agent by typing a message below.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex space-x-4">
                     <input
                         type="text"
                         id="message-input"
-                        class="form-input"
+                        class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                         placeholder="Type your message here..."
                         onkeypress="handleKeyPress(event)"
                     >
-                    <button onclick="sendMessage()" id="send-button" class="btn btn-primary">Send</button>
+                    <button onclick="sendMessage()" 
+                            id="send-button" 
+                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                        <span>Send</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
-            <div id="chat-error" class="error" style="display: none;"></div>
         </div>
+    </main>
 
-        <div class="footer">
-            <p><strong>🧪 Experimental Feature</strong><br>
-            This documentation interface is experimental and under active development.
-            We'd love your feedback to make it better! Please share your thoughts and suggestions on
-            <a href="https://github.com/pydantic/fasta2a/issues/1" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+    <!-- Footer Container -->
+    <div id="footer-container"></div>
+
+    <!-- Error Toast -->
+    <div id="error-toast" class="fixed top-4 right-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg shadow-lg hidden z-50">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div class="ml-3">
+                <p class="text-sm" id="error-message"></p>
+            </div>
+            <button onclick="hideError()" class="ml-auto pl-3">
+                <svg class="h-4 w-4 text-red-400 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="common.js"></script>
+    <script src="components/layout.js"></script>
     <script>
         // Generate UUID v4
         function generateUUID() {
@@ -529,32 +576,108 @@
         function addMessage(content, sender, taskId = null) {
             const messagesDiv = document.getElementById('chat-messages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
-
-            // Add task ID as data attribute for user and agent messages
-            if ((sender === 'user' || sender === 'agent') && taskId) {
-                messageDiv.setAttribute('data-task-id', taskId);
-            }
-
-            // Render markdown for agent messages, plain text for user and status messages
-            if (sender === 'agent') {
-                messageDiv.innerHTML = marked.parse(content);
-            } else {
-                messageDiv.textContent = content;
+            
+            if (sender === 'user') {
+                messageDiv.className = 'flex justify-end';
+                messageDiv.innerHTML = `
+                    <div class="max-w-xs lg:max-w-md px-4 py-3 bg-blue-600 text-white rounded-lg shadow-sm ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}" title="Task ID: ${taskId}"` : ''}>
+                        <p class="text-sm">${content}</p>
+                    </div>
+                `;
+            } else if (sender === 'agent') {
+                messageDiv.className = 'flex justify-start';
+                const parsedContent = marked.parse(content);
+                messageDiv.innerHTML = `
+                    <div class="max-w-xs lg:max-w-md px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}" title="Task ID: ${taskId}"` : ''}>
+                        <div class="text-sm prose prose-sm dark:prose-invert max-w-none">${parsedContent}</div>
+                    </div>
+                `;
+            } else if (sender === 'status') {
+                messageDiv.className = 'flex justify-center';
+                messageDiv.innerHTML = `
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-2 max-w-md text-center">
+                        <p class="text-yellow-800 dark:text-yellow-200 text-sm italic">${content}</p>
+                    </div>
+                `;
             }
 
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
+        function addProcessingMessage() {
+            removeProcessingMessage();
+            
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex justify-start';
+            messageDiv.id = 'processing-message';
+            messageDiv.innerHTML = `
+                <div class="max-w-xs lg:max-w-md px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm">
+                    <div class="flex items-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span class="text-sm">Agent is thinking...</span>
+                    </div>
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeProcessingMessage() {
+            const processingMessage = document.getElementById('processing-message');
+            if (processingMessage) {
+                processingMessage.remove();
+            }
+        }
+
+        function showError(message) {
+            const errorToast = document.getElementById('error-toast');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorToast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        }
+
+        function hideError() {
+            const errorToast = document.getElementById('error-toast');
+            errorToast.classList.add('hidden');
+        }
+
         function clearChat() {
             const messagesDiv = document.getElementById('chat-messages');
             messagesDiv.innerHTML = `
-                <div class="message status">
-                    Chat cleared. Start a new conversation by typing a message below.
+                <div class="flex justify-center">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 max-w-md text-center">
+                        <p class="text-blue-800 dark:text-blue-200 text-sm">
+                            🧹 Chat cleared. Start a new conversation by typing a message below.
+                        </p>
+                    </div>
                 </div>
             `;
         }
+
+        function newContext() {
+            contextId = generateId();
+            updateContextStatus();
+            addMessage('New context started', 'status');
+        }
+
+        function updateContextStatus() {
+            const statusElement = document.getElementById('context-status');
+            if (contextId) {
+                statusElement.textContent = `Context: ${contextId.substring(0, 8)}...`;
+            } else {
+                statusElement.textContent = 'No active context';
+            }
+        }
+    </script>
+</body>
+</html>
 
         function newContext() {
             contextId = generateId();
@@ -594,7 +717,8 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            setActiveNav('chat.html');
+            // Layout manager will handle header/footer loading and navigation
+            updateContextStatus();
         });
     </script>
 </body>

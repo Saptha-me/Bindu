@@ -598,6 +598,15 @@ GetTaskResponse = JSONRPCResponse[Task, TaskNotFoundError]
 CancelTaskRequest = JSONRPCRequest[Literal['tasks/cancel'], TaskIdParams]
 CancelTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
 
+ListTasksRequest = JSONRPCRequest[Literal['tasks/list'], ListTasksParams]
+ListTasksResponse = JSONRPCResponse[TasksList, JSONRPCError[Any, Any]]
+
+ListContextsRequest = JSONRPCRequest[Literal['contexts/list'], ListContextsParams]
+ListContextsResponse = JSONRPCResponse[ContextsList, JSONRPCError[Any, Any]]
+
+ClearTasksRequest = JSONRPCRequest[Literal['tasks/clear'], ClearTasksParams]
+ClearTasksResponse = JSONRPCResponse[ClearTasksResult, JSONRPCError[Any, Any]]
+
 SetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/set'], TaskPushNotificationConfig]
 SetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
 
@@ -627,6 +636,9 @@ PebblingRequest = Annotated[
         StreamMessageRequest,
         GetTaskRequest,
         CancelTaskRequest,
+        ListTasksRequest,
+        ListContextsRequest,
+        ClearTasksRequest,
         SetTaskPushNotificationRequest,
         GetTaskPushNotificationRequest,
         ResubscribeTaskRequest,
@@ -638,10 +650,17 @@ PebblingRequest = Annotated[
 
 PebblingResponse: TypeAlias = Union[
     SendMessageResponse,
+    StreamMessageResponse,
     GetTaskResponse,
     CancelTaskResponse,
+    ListTasksResponse,
+    ListContextsResponse,
+    ClearTasksResponse,
     SetTaskPushNotificationResponse,
     GetTaskPushNotificationResponse,
+    ResubscribeTaskResponse,
+    ListTaskPushNotificationConfigResponse,
+    DeleteTaskPushNotificationConfigResponse,
 ]
 
 pebble_request_ta: TypeAdapter[PebblingRequest] = TypeAdapter(PebblingRequest)

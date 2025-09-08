@@ -145,3 +145,22 @@ class InMemoryStorage(Storage[ContextT]):
     async def load_context(self, context_id: UUID) -> ContextT | None:
         """Retrieve the stored context given the `context_id`."""
         return self.contexts.get(context_id)
+
+    async def list_tasks(self) -> list[Task]:
+        """List all tasks in storage."""
+        return list(self.tasks.values())
+
+    async def list_contexts(self) -> list[dict]:
+        """List all contexts in storage."""
+        contexts_list = []
+        for context_id, context in self.contexts.items():
+            contexts_list.append({
+                'context_id': str(context_id),
+                'data': context
+            })
+        return contexts_list
+
+    async def clear_all(self) -> None:
+        """Clear all tasks and contexts from storage."""
+        self.tasks.clear()
+        self.contexts.clear()

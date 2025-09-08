@@ -579,18 +579,59 @@
             const messageDiv = document.createElement('div');
             
             if (sender === 'user') {
-                messageDiv.className = 'flex justify-end';
+                messageDiv.className = 'flex justify-end group';
                 messageDiv.innerHTML = `
-                    <div class="max-w-xs lg:max-w-md px-4 py-3 bg-blue-600 text-white rounded-lg shadow-sm ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}" title="Task ID: ${taskId}"` : ''}>
-                        <p class="text-sm">${content}</p>
+                    <div class="relative max-w-xs lg:max-w-md">
+                        <div class="px-4 py-3 bg-blue-600 text-white rounded-lg shadow-sm ${taskId ? 'hover:bg-blue-700 transition-colors cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
+                            <p class="text-sm">${content}</p>
+                        </div>
+                        ${taskId ? `
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            Task ID: ${taskId.substring(0, 8)}...
+                        </div>
+                        ` : ''}
                     </div>
                 `;
             } else if (sender === 'agent') {
-                messageDiv.className = 'flex justify-start';
+                messageDiv.className = 'flex justify-start group';
                 const parsedContent = marked.parse(content);
                 messageDiv.innerHTML = `
-                    <div class="max-w-xs lg:max-w-md px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}" title="Task ID: ${taskId}"` : ''}>
-                        <div class="text-sm prose prose-sm dark:prose-invert max-w-none">${parsedContent}</div>
+                    <div class="relative max-w-xs lg:max-w-md">
+                        <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm ${taskId ? 'hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
+                            <div class="text-sm prose prose-sm dark:prose-invert max-w-none">${parsedContent}</div>
+                        </div>
+                        ${taskId ? `
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            Task ID: ${taskId.substring(0, 8)}...
+                        </div>
+                        <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-center space-x-2">
+                            <button onclick="pauseTask('${taskId}')" class="p-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full shadow-lg transition-colors" title="Pause Task">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="cancelTask('${taskId}')" class="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors" title="Cancel Task">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="resumeTask('${taskId}')" class="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-colors" title="Resume Task">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="thumbsUp('${taskId}')" class="p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg transition-colors" title="Thumbs Up">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                                </svg>
+                            </button>
+                            <button onclick="thumbsDown('${taskId}')" class="p-1.5 bg-gray-500 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors" title="Thumbs Down">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.106-1.79l-.05-.025A4 4 0 0011.057 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
+                                </svg>
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
             } else if (sender === 'status') {
@@ -675,6 +716,96 @@
             } else {
                 statusElement.textContent = 'No active context';
             }
+        }
+
+        // Task action functions
+        function pauseTask(taskId) {
+            console.log('Pausing task:', taskId);
+            // TODO: Implement pause task API call
+            showError('Pause functionality not yet implemented');
+        }
+
+        async function cancelTask(taskId) {
+            console.log('Canceling task:', taskId);
+            
+            if (!confirm('Are you sure you want to cancel this task?')) {
+                return;
+            }
+
+            try {
+                // Create JSON-RPC request for task cancellation
+                const payload = {
+                    "jsonrpc": "2.0",
+                    "method": "tasks/cancel",
+                    "params": {
+                        "task_id": taskId
+                    },
+                    "id": generateId()
+                };
+
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                // Show success message
+                addMessage(`Task ${taskId.substring(0, 8)}... has been canceled`, 'status');
+                
+                // Clear current task if it's the one we canceled
+                if (currentTaskId === taskId) {
+                    currentTaskId = null;
+                    removeProcessingMessage();
+                }
+
+            } catch (error) {
+                console.error('Error canceling task:', error);
+                showError('Failed to cancel task: ' + error.message);
+            }
+        }
+
+        function resumeTask(taskId) {
+            console.log('Resuming task:', taskId);
+            // TODO: Implement resume task API call
+            showError('Resume functionality not yet implemented');
+        }
+
+        function thumbsUp(taskId) {
+            console.log('Thumbs up for task:', taskId);
+            // TODO: Implement feedback API call
+            // Visual feedback
+            const button = event.target.closest('button');
+            button.classList.add('bg-green-500');
+            button.classList.remove('bg-blue-500');
+            setTimeout(() => {
+                button.classList.add('bg-blue-500');
+                button.classList.remove('bg-green-500');
+            }, 1000);
+        }
+
+        function thumbsDown(taskId) {
+            console.log('Thumbs down for task:', taskId);
+            // TODO: Implement feedback API call
+            // Visual feedback
+            const button = event.target.closest('button');
+            button.classList.add('bg-red-500');
+            button.classList.remove('bg-gray-500');
+            setTimeout(() => {
+                button.classList.add('bg-gray-500');
+                button.classList.remove('bg-red-500');
+            }, 1000);
         }
     </script>
 </body>

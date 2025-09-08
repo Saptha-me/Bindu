@@ -248,6 +248,12 @@ class PebbleApplication(Starlette):
             jsonrpc_response = await self.task_manager.get_task(pebble_request)
         elif pebble_request['method'] == 'tasks/cancel':
             jsonrpc_response = await self.task_manager.cancel_task(pebble_request)
+        elif pebble_request['method'] == 'tasks/list':
+            jsonrpc_response = await self.task_manager.list_tasks(pebble_request)
+        elif pebble_request['method'] == 'contexts/list':
+            jsonrpc_response = await self.task_manager.list_contexts(pebble_request)
+        elif pebble_request['method'] == 'tasks/clear':
+            jsonrpc_response = await self.task_manager.clear_tasks(pebble_request)
         else:
             raise NotImplementedError(f'Method {pebble_request["method"]} not implemented.')
         return Response(

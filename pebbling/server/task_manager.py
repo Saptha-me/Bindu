@@ -101,10 +101,16 @@ from .workers import ManifestWorker
 from pebbling.common.protocol.types import (
     CancelTaskRequest,
     CancelTaskResponse,
+    ClearTasksRequest,
+    ClearTasksResponse,
     GetTaskPushNotificationRequest,
     GetTaskPushNotificationResponse,
     GetTaskRequest,
     GetTaskResponse,
+    ListContextsRequest,
+    ListContextsResponse,
+    ListTasksRequest,
+    ListTasksResponse,
     ResubscribeTaskRequest,
     SendMessageRequest,
     SendMessageResponse,
@@ -216,6 +222,66 @@ class TaskManager:
         self, request: GetTaskPushNotificationRequest
     ) -> GetTaskPushNotificationResponse:
         raise NotImplementedError('GetTaskPushNotification is not implemented yet.')
+
+    async def list_tasks(self, request: ListTasksRequest) -> ListTasksResponse:
+        """List all tasks in storage."""
+        try:
+            # Get all tasks from storage
+            tasks = await self.storage.list_tasks()
+            return {
+                'jsonrpc': '2.0',
+                'id': request['id'],
+                'result': {'tasks': tasks}
+            }
+        except Exception as e:
+            return {
+                'jsonrpc': '2.0',
+                'id': request['id'],
+                'error': {
+                    'code': -32000,
+                    'message': f'Failed to list tasks: {str(e)}'
+                }
+            }
+
+    async def list_contexts(self, request: ListContextsRequest) -> ListContextsResponse:
+        """List all contexts in storage."""
+        try:
+            # Get all contexts from storage
+            contexts = await self.storage.list_contexts()
+            return {
+                'jsonrpc': '2.0',
+                'id': request['id'],
+                'result': {'contexts': contexts}
+            }
+        except Exception as e:
+            return {
+                'jsonrpc': '2.0',
+                'id': request['id'],
+                'error': {
+                    'code': -32000,
+                    'message': f'Failed to list contexts: {str(e)}'
+                }
+            }
+
+    async def clear_tasks(self, request: ClearTasksRequest) -> ClearTasksResponse:
+        """Clear all tasks and contexts from storage."""
+        try:
+            # Clear all tasks and contexts
+            await self.storage.clear_all()
+            return {
+                'jsonrpc': '2.0',
+                'id': request['id'],
+                'result': {'message': 'All tasks and contexts cleared successfully'}
+            }
+        except Exception as e:
+            return {
+                'jsonrpc': '2.0',
+                'id': request['id'],
+                'error': {
+                    'code': -32000,
+                    'message': f'Failed to clear storage: {str(e)}'
+                }
+            }
 
     async def resubscribe_task(self, request: ResubscribeTaskRequest) -> None:
         raise NotImplementedError('Resubscribe is not implemented yet.')

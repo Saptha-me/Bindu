@@ -102,3 +102,15 @@ class Storage(ABC, Generic[ContextT]):
 
         Implementing agent can decide what to store in context.
         """
+
+    @abstractmethod
+    async def list_tasks(self) -> list[Task]:
+        """List all tasks in storage."""
+
+    @abstractmethod
+    async def list_contexts(self) -> list[dict]:
+        """List all contexts in storage."""
+
+    @abstractmethod
+    async def clear_all(self) -> None:
+        """Clear all tasks and contexts from storage."""

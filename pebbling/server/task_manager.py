@@ -92,17 +92,16 @@ from __future__ import annotations as _annotations
 import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
-
-from .scheduler import Scheduler
-from .storage import Storage
-from .workers import ManifestWorker
 
 from pebbling.common.protocol.types import (
     CancelTaskRequest,
     CancelTaskResponse,
-    ClearTasksRequest,
-    ClearTasksResponse,
+    ClearContextsRequest,
+    ClearContextsResponse,
+    Context,
+    ContextNotFoundError,
     GetTaskPushNotificationRequest,
     GetTaskPushNotificationResponse,
     GetTaskRequest,
@@ -118,9 +117,14 @@ from pebbling.common.protocol.types import (
     SetTaskPushNotificationResponse,
     StreamMessageRequest,
     StreamMessageResponse,
+    Task,
     TaskNotFoundError,
     TaskSendParams,
 )
+
+from .scheduler import Scheduler
+from .storage import Storage
+from .workers import ManifestWorker
 
 
 @dataclass
@@ -171,7 +175,7 @@ class TaskManager:
         if isinstance(context_id, str):
             context_id = uuid.UUID(context_id)
 
-        task = await self.storage.submit_task(context_id, message)
+        task: Task = await self.storage.submit_task(context_id, message)
 
         scheduler_params: TaskSendParams = {'task_id': task['task_id'], 'context_id': context_id, 'message': message}
         config = request['params'].get('configuration', {})
@@ -225,63 +229,36 @@ class TaskManager:
 
     async def list_tasks(self, request: ListTasksRequest) -> ListTasksResponse:
         """List all tasks in storage."""
-        try:
-            # Get all tasks from storage
-            tasks = await self.storage.list_tasks()
-            return {
-                'jsonrpc': '2.0',
-                'id': request['id'],
-                'result': {'tasks': tasks}
-            }
-        except Exception as e:
-            return {
-                'jsonrpc': '2.0',
-                'id': request['id'],
-                'error': {
-                    'code': -32000,
-                    'message': f'Failed to list tasks: {str(e)}'
-                }
-            }
+        history_length = request['params'].get('history_length')
+        tasks = await self.storage.list_tasks(history_length)
+
+        if tasks is None:
+            return ListTasksResponse(
+                jsonrpc='2.0',
+                id=request['id'],
+                error=TaskNotFoundError(code=-32001, message='Task not found'),
+            )
+        
+        return ListTasksResponse(jsonrpc='2.0', id=request['id'], result=tasks)
 
     async def list_contexts(self, request: ListContextsRequest) -> ListContextsResponse:
         """List all contexts in storage."""
-        try:
-            # Get all contexts from storage
-            contexts = await self.storage.list_contexts()
-            return {
-                'jsonrpc': '2.0',
-                'id': request['id'],
-                'result': {'contexts': contexts}
-            }
-        except Exception as e:
-            return {
-                'jsonrpc': '2.0',
-                'id': request['id'],
-                'error': {
-                    'code': -32000,
-                    'message': f'Failed to list contexts: {str(e)}'
-                }
-            }
+        history_length = request['params'].get('history_length')
+        contexts = await self.storage.list_contexts(history_length)
+        if contexts is None:
+            return ListContextsResponse(
+                jsonrpc='2.0',
+                id=request['id'],
+                error=ContextNotFoundError(code=-32001, message='Context not found'),
+            )
+        return ListContextsResponse(jsonrpc='2.0', id=request['id'], result=contexts)
+       
 
-    async def clear_tasks(self, request: ClearTasksRequest) -> ClearTasksResponse:
-        """Clear all tasks and contexts from storage."""
-        try:
-            # Clear all tasks and contexts
-            await self.storage.clear_all()
-            return {
-                'jsonrpc': '2.0',
-                'id': request['id'],
-                'result': {'message': 'All tasks and contexts cleared successfully'}
-            }
-        except Exception as e:
-            return {
-                'jsonrpc': '2.0',
-                'id': request['id'],
-                'error': {
-                    'code': -32000,
-                    'message': f'Failed to clear storage: {str(e)}'
-                }
-            }
+    async def clear_context(self, request: ClearContextsRequest) -> ClearContextsResponse:
+        """Clear a context from storage."""
+        context_id = request['params'].get('context_id')
+        await self.storage.clear_context(context_id)
+        return ClearContextsResponse(jsonrpc='2.0', id=request['id'], result={'message': 'All tasks and contexts cleared successfully'})
 
     async def resubscribe_task(self, request: ResubscribeTaskRequest) -> None:
         raise NotImplementedError('Resubscribe is not implemented yet.')

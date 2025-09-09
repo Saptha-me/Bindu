@@ -229,8 +229,8 @@ class TaskManager:
 
     async def list_tasks(self, request: ListTasksRequest) -> ListTasksResponse:
         """List all tasks in storage."""
-        history_length = request['params'].get('history_length')
-        tasks = await self.storage.list_tasks(history_length)
+        length = request['params'].get('length')
+        tasks = await self.storage.list_tasks(length)
 
         if tasks is None:
             return ListTasksResponse(
@@ -243,8 +243,8 @@ class TaskManager:
 
     async def list_contexts(self, request: ListContextsRequest) -> ListContextsResponse:
         """List all contexts in storage."""
-        history_length = request['params'].get('history_length')
-        contexts = await self.storage.list_contexts(history_length)
+        length = request['params'].get('length')
+        contexts = await self.storage.list_contexts(length)
         if contexts is None:
             return ListContextsResponse(
                 jsonrpc='2.0',

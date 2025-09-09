@@ -37,7 +37,7 @@ class ManifestWorker(Worker):
             raise ValueError(f'Task {params["task_id"]} not found')
         
         # Validate task state
-        TaskStateManager.validate_task_state(task)
+        await TaskStateManager.validate_task_state(task)
         
         await self.storage.update_task(task['task_id'], state='working')
 

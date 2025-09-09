@@ -395,7 +395,14 @@ class TaskIdParams(TypedDict):
 class TaskQueryParams(TaskIdParams):
     """Query parameters for a task."""
 
-    history_length: NotRequired[int]
+    length: NotRequired[int]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ListTasksParams(TypedDict):
+    """Parameters for listing tasks."""
+    
+    length: NotRequired[int]
+    metadata: NotRequired[dict[str, Any]]
 
 @pydantic.with_config({'alias_generator': to_camel})
 class MessageSendConfiguration(TypedDict):
@@ -524,7 +531,7 @@ class ContextQueryParams(ContextIdParams):
 class ListContextsParams(TypedDict):
     """Parameters for listing contexts."""
     
-    history_length: NotRequired[int]
+    length: NotRequired[int]
     metadata: NotRequired[dict[str, Any]]
 
 #-----------------------------------------------------------------------------
@@ -695,7 +702,7 @@ GetTaskResponse = JSONRPCResponse[Task, TaskNotFoundError]
 CancelTaskRequest = JSONRPCRequest[Literal['tasks/cancel'], TaskIdParams]
 CancelTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
 
-ListTasksRequest = JSONRPCRequest[Literal['tasks/list'], TaskQueryParams]
+ListTasksRequest = JSONRPCRequest[Literal['tasks/list'], ListTasksParams]
 ListTasksResponse = JSONRPCResponse[List[Task], Union[TaskNotFoundError, TaskNotCancelableError]]
 
 ListContextsRequest = JSONRPCRequest[Literal['contexts/list'], ListContextsParams]

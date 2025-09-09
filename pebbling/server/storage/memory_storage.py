@@ -146,18 +146,18 @@ class InMemoryStorage(Storage[ContextT]):
         """Retrieve the stored context given the `context_id`."""
         return self.contexts.get(context_id)
 
-    async def list_tasks(self) -> list[Task]:
+    async def list_tasks(self, length: int | None = None) -> list[Task]:
         """List all tasks in storage."""
-        return list(self.tasks.values())
+        tasks = list(self.tasks.values())
+        if length:
+            tasks = tasks[-length:]
+        return tasks
 
-    async def list_contexts(self) -> list[dict]:
+    async def list_contexts(self, length: int | None = None) -> list[dict]:
         """List all contexts in storage."""
-        contexts_list = []
-        for context_id, context in self.contexts.items():
-            contexts_list.append({
-                'context_id': str(context_id),
-                'data': context
-            })
+        contexts_list = list(self.contexts.values())
+        if length:
+            contexts_list = contexts_list[-length:]
         return contexts_list
 
     async def clear_all(self) -> None:

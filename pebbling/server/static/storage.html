@@ -26,65 +26,70 @@
 
     <!-- Main Content -->
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <!-- Storage Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Tasks -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                            <span class="text-blue-600 dark:text-blue-400 text-lg">📊</span>
+        <!-- View Toggle -->
+        <div class="mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex space-x-4">
+                        <button id="contexts-view-btn" onclick="switchView('contexts')" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200">
+                            <span class="mr-2">🗂️</span>
+                            Contexts View
+                        </button>
+                        <button id="tasks-view-btn" onclick="switchView('tasks')" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200">
+                            <span class="mr-2">📋</span>
+                            Tasks View
+                        </button>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="refreshData()" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <span class="mr-1">🔄</span>
+                            Refresh
+                        </button>
+                        <button onclick="clearStorage()" class="inline-flex items-center px-3 py-2 border border-red-300 dark:border-red-600 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            <span class="mr-1">🗑️</span>
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Context/Task List -->
+            <div class="lg:col-span-2">
+                <!-- Contexts View -->
+                <div id="contexts-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Contexts & Tasks</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Each context contains multiple related tasks</p>
+                    </div>
+                    <div class="p-6">
+                        <div id="contexts-list" class="space-y-4">
+                            <!-- Contexts will be loaded here -->
                         </div>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Tasks</p>
-                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="total-tasks">-</p>
+                </div>
+
+                <!-- Tasks View -->
+                <div id="tasks-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">All Tasks</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Flat view of all tasks across contexts</p>
+                    </div>
+                    <div class="p-6">
+                        <div id="task-list" class="space-y-4">
+                            <!-- Tasks will be loaded here -->
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Active Tasks -->
+            <!-- Storage Stats Sidebar -->
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                            <span class="text-green-600 dark:text-green-400 text-lg">⚡</span>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active</p>
-                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="active-tasks">-</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Completed Tasks -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
-                            <span class="text-green-600 dark:text-green-400 text-lg">✅</span>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
-                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="completed-tasks">-</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Failed Tasks -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                            <span class="text-red-600 dark:text-red-400 text-lg">❌</span>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Failed</p>
-                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="failed-tasks">-</p>
-                    </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Storage Statistics</h3>
+                <div id="storage-stats">
+                    <!-- Stats will be populated by JavaScript -->
                 </div>
             </div>
         </div>
@@ -161,7 +166,9 @@
                 const payload = {
                     "jsonrpc": "2.0",
                     "method": "tasks/list",
-                    "params": {},
+                    "params": {
+                        "length": 100
+                    },
                     "id": generateUUID()
                 };
 
@@ -183,11 +190,14 @@
                     throw new Error(result.error.message || 'Unknown error');
                 }
                 
-                tasks = result.result.tasks || [];
+                tasks = result.result || [];
                 filteredTasks = [...tasks];
                 
                 updateStats();
-                displayTasks();
+                // Only display tasks if we're in tasks view
+                if (currentView === 'tasks') {
+                    displayTasks();
+                }
                 
             } catch (error) {
                 console.error('Error loading tasks:', error);
@@ -208,7 +218,9 @@
                 const payload = {
                     "jsonrpc": "2.0",
                     "method": "contexts/list",
-                    "params": {},
+                    "params": {
+                        "length": 100
+                    },
                     "id": generateUUID()
                 };
 
@@ -230,8 +242,12 @@
                     throw new Error(result.error.message || 'Unknown error');
                 }
                 
-                contexts = result.result.contexts || [];
+                contexts = result.result || [];
                 updateStats();
+                // Only display contexts if we're in contexts view
+                if (currentView === 'contexts') {
+                    displayContexts();
+                }
                 
             } catch (error) {
                 console.error('Error loading contexts:', error);
@@ -246,37 +262,63 @@
             const canceledTasks = tasks.filter(t => t.status?.state === 'canceled').length;
             const totalContexts = contexts.length;
             
-            document.getElementById('total-tasks').textContent = totalTasks;
-            document.getElementById('active-tasks').textContent = activeTasks;
-            document.getElementById('completed-tasks').textContent = completedTasks;
-            document.getElementById('failed-tasks').textContent = failedTasks;
+            const totalContextsEl = document.getElementById('total-contexts');
+            if (totalContextsEl) {
+                totalContextsEl.textContent = totalContexts;
+            }
+            
+            const totalTasksEl = document.getElementById('total-tasks');
+            if (totalTasksEl) {
+                totalTasksEl.textContent = totalTasks;
+            }
+            
+            const activeTasksEl = document.getElementById('active-tasks');
+            if (activeTasksEl) {
+                activeTasksEl.textContent = activeTasks;
+            }
+            
+            const completedTasksEl = document.getElementById('completed-tasks');
+            if (completedTasksEl) {
+                completedTasksEl.textContent = completedTasks;
+            }
+            
+            const failedTasksEl = document.getElementById('failed-tasks');
+            if (failedTasksEl) {
+                failedTasksEl.textContent = failedTasks;
+            }
             
             // Update additional stats
             const storageStats = document.getElementById('storage-stats');
-            storageStats.innerHTML = `
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Tasks</span>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white">${totalTasks}</span>
+            if (storageStats) {
+                storageStats.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Contexts</span>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white">${totalContexts}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Tasks</span>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white">${totalTasks}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Tasks</span>
+                            <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">${activeTasks}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</span>
+                            <span class="text-sm font-semibold text-green-600 dark:text-green-400">${completedTasks}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Failed</span>
+                            <span class="text-sm font-semibold text-red-600 dark:text-red-400">${failedTasks}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Canceled</span>
+                            <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">${canceledTasks}</span>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Contexts</span>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white">${totalContexts}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</span>
-                        <span class="text-sm font-semibold text-green-600 dark:text-green-400">${completedTasks}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Failed</span>
-                        <span class="text-sm font-semibold text-red-600 dark:text-red-400">${failedTasks}</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Canceled</span>
-                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">${canceledTasks}</span>
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }
 
         function displayTasks() {
@@ -417,16 +459,49 @@
             loadTasks();
         }
 
+        function refreshData() {
+            loadTasks();
+            loadContexts();
+        }
+
+        let currentView = 'contexts';
+
+        function switchView(view) {
+            currentView = view;
+            const contextsContainer = document.getElementById('contexts-container');
+            const tasksContainer = document.getElementById('tasks-container');
+            const contextsBtn = document.getElementById('contexts-view-btn');
+            const tasksBtn = document.getElementById('tasks-view-btn');
+
+            if (view === 'contexts') {
+                contextsContainer.classList.remove('hidden');
+                tasksContainer.classList.add('hidden');
+                contextsBtn.classList.add('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
+                contextsBtn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
+                tasksBtn.classList.remove('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
+                tasksBtn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
+                displayContexts();
+            } else {
+                contextsContainer.classList.add('hidden');
+                tasksContainer.classList.remove('hidden');
+                tasksBtn.classList.add('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
+                tasksBtn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
+                contextsBtn.classList.remove('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
+                contextsBtn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
+                displayTasks();
+            }
+        }
+
         async function clearStorage() {
             if (!confirm('Are you sure you want to clear all task history? This action cannot be undone.')) {
                 return;
             }
 
             try {
-                // Create JSON-RPC request for clearing tasks
+                // Create JSON-RPC request for clearing contexts (which clears associated tasks)
                 const payload = {
                     "jsonrpc": "2.0",
-                    "method": "tasks/clear",
+                    "method": "contexts/clear",
                     "params": {},
                     "id": generateUUID()
                 };
@@ -452,13 +527,17 @@
                 tasks = [];
                 contexts = [];
                 updateStats();
-                displayTasks();
+                if (currentView === 'contexts') {
+                    displayContexts();
+                } else {
+                    displayTasks();
+                }
                 
                 // Show success message
                 showSuccessMessage('All tasks and contexts cleared successfully');
             } catch (error) {
                 console.error('Error clearing storage:', error);
-                alert('Failed to clear storage: ' + error.message);
+                showErrorMessage('Failed to clear storage: ' + error.message);
             }
         }
 
@@ -491,277 +570,186 @@
             }, 5000);
         }
 
+        function displayContexts() {
+            const contextsList = document.getElementById('contexts-list');
+            
+            if (contexts.length === 0) {
+                contextsList.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-gray-400 dark:text-gray-500 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 text-lg font-medium">No contexts found</p>
+                        <p class="text-gray-500 dark:text-gray-500 mt-1">Start a conversation to create contexts with tasks</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contextsList.innerHTML = contexts.map(context => {
+                // Handle both old and new context format
+                const contextId = context.context_id || context.id || 'unknown';
+                // Get tasks for this context
+                const contextTasks = tasks.filter(task => task.context_id === contextId);
+                const activeTasks = contextTasks.filter(t => t.status?.state === 'running' || t.status?.state === 'pending').length;
+                const completedTasks = contextTasks.filter(t => t.status?.state === 'completed').length;
+                const failedTasks = contextTasks.filter(t => t.status?.state === 'failed').length;
+                
+                return `
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <!-- Context Header -->
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-lg">🗂️</span>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                            Context ${contextId?.toString().substring(0, 8)}...
+                                        </h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                                            ${contextTasks.length} task${contextTasks.length !== 1 ? 's' : ''}
+                                            ${activeTasks > 0 ? ` • ${activeTasks} active` : ''}
+                                            ${completedTasks > 0 ? ` • ${completedTasks} completed` : ''}
+                                            ${failedTasks > 0 ? ` • ${failedTasks} failed` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="toggleContext('${contextId}')" 
+                                            class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                                        <span id="toggle-${contextId}">Show Tasks</span>
+                                    </button>
+                                    <button onclick="clearContext('${contextId}')" 
+                                            class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium">
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Context Tasks (Initially Hidden) -->
+                        <div id="context-tasks-${contextId}" class="hidden">
+                            ${contextTasks.length > 0 ? contextTasks.map(task => {
+                                const statusColor = getStatusColor(task.status?.state);
+                                const statusIcon = getStatusIcon(task.status?.state);
+                                
+                                return `
+                                    <div class="p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center space-x-3 mb-2">
+                                                    <span class="text-lg">${statusIcon}</span>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
+                                                        ${task.status?.state || 'unknown'}
+                                                    </span>
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                                        ${task.task_id?.substring(0, 8)}...
+                                                    </span>
+                                                </div>
+                                                
+                                                ${task.history && task.history.length > 0 ? `
+                                                    <div class="text-sm text-gray-900 dark:text-white">
+                                                        <strong>Latest:</strong> 
+                                                        ${task.history[task.history.length - 1].parts?.[0]?.text?.substring(0, 100) || 'No content'}...
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                            
+                                            <div class="flex-shrink-0 ml-4">
+                                                <button onclick="viewTask('${task.task_id}')" 
+                                                        class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                                                    View
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        ${task.status?.error ? `
+                                            <div class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                                <p class="text-sm text-red-800 dark:text-red-200">
+                                                    <strong>Error:</strong> ${task.status.error}
+                                                </p>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }).join('') : `
+                                <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+                                    No tasks in this context
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleContext(contextId) {
+            const tasksDiv = document.getElementById(`context-tasks-${contextId}`);
+            const toggleSpan = document.getElementById(`toggle-${contextId}`);
+            
+            if (tasksDiv.classList.contains('hidden')) {
+                tasksDiv.classList.remove('hidden');
+                toggleSpan.textContent = 'Hide Tasks';
+            } else {
+                tasksDiv.classList.add('hidden');
+                toggleSpan.textContent = 'Show Tasks';
+            }
+        }
+
+        async function clearContext(contextId) {
+            if (!confirm('Are you sure you want to clear this context and all its tasks?')) {
+                return;
+            }
+
+            try {
+                const payload = {
+                    "jsonrpc": "2.0",
+                    "method": "contexts/clear",
+                    "params": {
+                        "context_id": contextId
+                    },
+                    "id": generateUUID()
+                };
+
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                showSuccessMessage('Context cleared successfully');
+                refreshData(); // Refresh both contexts and tasks
+                
+            } catch (error) {
+                console.error('Error clearing context:', error);
+                showErrorMessage('Failed to clear context: ' + error.message);
+            }
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
+            // Load data first
             loadTasks();
             loadContexts();
+            // Then set initial view after a brief delay to ensure data is loaded
+            setTimeout(() => {
+                switchView('contexts');
+            }, 100);
         });
     </script>
-</body>
-</html>
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        .stat-label {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .stat-value {
-            font-weight: 600;
-            color: var(--accent-primary);
-            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
-        }
-
-        .tasks-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .task-item {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            border-left: 4px solid var(--accent-primary);
-            transition: all 0.2s ease;
-        }
-
-        .task-item:hover {
-            border-color: var(--border-hover);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .task-id {
-            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .task-status {
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .task-status.completed {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
-
-        .task-status.failed {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--error);
-        }
-
-        .task-status.running {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-        }
-
-        .task-status.pending {
-            background: var(--accent-light);
-            color: var(--accent-primary);
-        }
-
-        .task-content {
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            margin-bottom: 0.5rem;
-            line-height: 1.5;
-        }
-
-        .task-timestamp {
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
-        }
-
-        .storage-controls {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .storage-controls .btn-primary {
-            background: var(--accent-primary);
-            color: white;
-        }
-
-        .storage-controls .btn-primary:hover {
-            background: var(--accent-hover);
-        }
-
-        .storage-controls .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .storage-controls .btn-secondary:hover {
-            background: var(--bg-primary);
-            border-color: var(--border-hover);
-        }
-
-        .loading {
-            text-align: center;
-            padding: 1.5rem;
-            color: var(--accent-primary);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-muted);
-        }
-
-        .empty-state h3 {
-            margin-bottom: 0.75rem;
-            color: var(--text-primary);
-        }
-
-        .search-box {
-            width: 100%;
-            margin-bottom: 1.5rem;
-        }
-
-        .filter-controls {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-controls select {
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-        }
-
-        @media (max-width: 768px) {
-            .storage-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .storage-controls {
-                flex-direction: column;
-            }
-
-            .filter-controls {
-                flex-direction: column;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="header-content">
-                <h1>🤖 Pebbling Agent</h1>
-                <p>Storage Management & Task History</p>
-            </div>
-            <div class="header-actions">
-                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-                    <!-- Theme icon will be inserted by JavaScript -->
-                </button>
-                <a href="https://github.com/pydantic/pebble" target="_blank" rel="noopener noreferrer" class="github-link">
-                    Pebbling
-                </a>
-            </div>
-        </div>
-
-        <nav class="nav">
-            <a href="agent.html">📋 Agent Info</a>
-            <a href="chat.html">💬 Chat</a>
-            <a href="storage.html" class="active">💾 Storage</a>
-            <a href="docs.html">📚 Documentation</a>
-        </nav>
-
-        <div class="storage-controls">
-            <button onclick="refreshTasks()" id="refresh-button" class="btn btn-primary">Refresh Tasks</button>
-            <button onclick="clearAllTasks()" id="clear-button" class="btn btn-secondary">Clear All Tasks</button>
-            <button onclick="exportTasks()" id="export-button" class="btn btn-secondary">Export Tasks</button>
-        </div>
-
-        <div class="storage-grid">
-            <div class="card">
-                <h2>📊 Storage Statistics</h2>
-                <div id="storage-stats" class="storage-stats">
-                    <div class="loading">Loading storage statistics...</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>⚡ System Status</h2>
-                <div id="system-status" class="storage-stats">
-                    <div class="loading">Loading system status...</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>📋 Task Management</h2>
-            
-            <input type="text" id="search-input" class="search-box form-input" placeholder="Search tasks..." oninput="filterTasks()">
-            
-            <div class="filter-controls">
-                <select id="status-filter" onchange="filterTasks()">
-                    <option value="">All Statuses</option>
-                    <option value="completed">Completed</option>
-                    <option value="failed">Failed</option>
-                    <option value="running">Running</option>
-                    <option value="pending">Pending</option>
-                    <option value="canceled">Canceled</option>
-                    <option value="working">Working</option>
-                </select>
-                
-                <select id="sort-order" onchange="sortTasks()">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="status">By Status</option>
-                </select>
-            </div>
-
-            <div id="tasks-container">
-                <div id="tasks-list" class="tasks-list">
-                    <div class="loading">Loading tasks...</div>
-                </div>
-            </div>
-        </div>
-
-      
-    </div>
-
-    <div id="error-container" class="error" style="display: none;"></div>
-
-    <script src="common.js"></script>
 </body>
 </html>

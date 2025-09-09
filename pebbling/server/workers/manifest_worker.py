@@ -88,6 +88,21 @@ class ManifestWorker(Worker):
             # First message in context
             return current_message_history
     
+    def _normalize_message_order(self, message: dict) -> dict:
+        """Normalize message field order for consistency."""
+        return {
+            'context_id': message.get('context_id'),
+            'task_id': message.get('task_id'),
+            'message_id': message.get('message_id'),
+            'kind': message.get('kind'),
+            'parts': message.get('parts'),
+            'role': message.get('role')
+        }
+    
+    def _normalize_messages(self, messages: list) -> list:
+        """Normalize a list of messages to have consistent field ordering."""
+        return [self._normalize_message_order(msg) for msg in messages]
+
     async def _process_and_save_results(self, task: dict, results: Any) -> None:
         """Process results and save to storage."""
         # Convert agent response to message format and append to history
@@ -98,8 +113,13 @@ class ManifestWorker(Worker):
         # Load existing context to preserve full conversation history
         existing_context = await self.storage.load_context(task['context_id']) or []
         
+        # Normalize all messages to have consistent field ordering
+        normalized_existing = self._normalize_messages(existing_context)
+        normalized_current = self._normalize_messages(task.get('history', []))
+        normalized_agent = self._normalize_messages(agent_messages)
+        
         # Build complete conversation history: existing + current task + new agent response
-        complete_history = existing_context + task.get('history', []) + agent_messages
+        complete_history = normalized_existing + normalized_current + normalized_agent
         
         # Save complete conversation history to context for future calls
         await self.storage.update_context(task['context_id'], complete_history)

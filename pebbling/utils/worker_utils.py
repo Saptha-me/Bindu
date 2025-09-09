@@ -56,11 +56,11 @@ class MessageConverter:
         Returns:
             List of pebble protocol messages
         """
-        message_id = str(uuid.uuid4())
+        message_id = uuid.uuid4()
         parts = PartConverter.result_to_parts(result)
         
         message_data = {
-            'role': 'agent',
+            'role': 'assistant',
             'parts': parts,
             'kind': 'message',
             'message_id': message_id

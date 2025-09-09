@@ -104,11 +104,11 @@ class Storage(ABC, Generic[ContextT]):
         """
 
     @abstractmethod
-    async def list_tasks(self) -> list[Task]:
+    async def list_tasks(self, length: int | None = None) -> list[Task]:
         """List all tasks in storage."""
 
     @abstractmethod
-    async def list_contexts(self) -> list[dict]:
+    async def list_contexts(self, length: int | None = None) -> list[dict]:
         """List all contexts in storage."""
 
     @abstractmethod

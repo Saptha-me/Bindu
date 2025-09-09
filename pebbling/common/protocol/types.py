@@ -432,6 +432,101 @@ class DeleteTaskPushNotificationConfigParams(TypedDict):
     push_notification_config_id: Required[UUID]
     metadata: NotRequired[dict[str, Any]]
 
+
+#-----------------------------------------------------------------------------
+# Context
+#-----------------------------------------------------------------------------
+
+@pydantic.with_config({'alias_generator': to_camel})
+class Context(TypedDict):
+    """Conversation session that groups related tasks and maintains interaction history.
+    
+    Contexts serve as conversation containers in the Pebbling protocol, managing
+    the complete interaction lifecycle between clients and agents. They maintain
+    conversation continuity, preserve context across multiple tasks, and provide
+    session-level organization.
+    
+    Core Responsibilities:
+    - Session Management: Group related tasks under a unified conversation
+    - History Preservation: Maintain complete message history across tasks
+    - Context Continuity: Preserve conversation state and references
+    - Metadata Tracking: Store session-level information and preferences
+    
+    Context Lifecycle:
+    1. Creation: Client initiates conversation or system creates implicit context
+    2. Task Association: Multiple tasks can belong to the same context
+    3. History Building: Messages and artifacts accumulate over time
+    4. State Management: Track conversation status and metadata
+    5. Completion: Context can be closed or archived when conversation ends
+    
+    Key Properties:
+    - Multi-Task: Contains multiple related tasks over time
+    - Stateful: Maintains conversation history and context
+    - Client-Controlled: Clients can explicitly manage context lifecycle
+    - Traceable: Unique ID enables context tracking and reference
+    
+    Context Relationships:
+    - Contains: Multiple tasks (one-to-many relationship)
+    - Maintains: Complete conversation history across all tasks
+    - Preserves: Session-level metadata and preferences
+    - References: Can link to other contexts for complex workflows
+    """
+    
+    context_id: Required[UUID]
+    kind: Required[Literal['context']]
+    
+    # Core context data
+    tasks: NotRequired[list[UUID]]  # List of task IDs belonging to this context
+    message_history: NotRequired[list[Message]]  # Complete conversation history
+    
+    # Context metadata
+    name: NotRequired[str]  # Human-readable context name
+    description: NotRequired[str]  # Context purpose or summary
+    created_at: Required[str] = Field(
+        examples=['2023-10-27T10:00:00Z'],
+        description="ISO datetime when context was created"
+    )
+    updated_at: Required[str] = Field(
+        examples=['2023-10-27T10:00:00Z'], 
+        description="ISO datetime when context was last updated"
+    )
+    
+    # Context state and organization
+    status: NotRequired[Literal['active', 'paused', 'completed', 'archived']]
+    tags: NotRequired[list[str]]  # Organizational tags
+    metadata: NotRequired[dict[str, Any]]  # Custom context metadata
+    
+    # Context relationships
+    parent_context_id: NotRequired[UUID]  # For nested or related contexts
+    reference_context_ids: NotRequired[list[UUID]]  # Related contexts
+    
+    extra_data: NotRequired[dict[str, Any]]
+
+
+#-----------------------------------------------------------------------------
+# Context Operations
+#-----------------------------------------------------------------------------
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ContextIdParams(TypedDict):
+    """Parameters for context identification."""
+    
+    context_id: Required[UUID]
+    metadata: NotRequired[dict[str, Any]]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ContextQueryParams(ContextIdParams):
+    """Query parameters for a context."""
+
+    history_length: NotRequired[int]
+
+@pydantic.with_config({'alias_generator': to_camel})
+class ListContextsParams(TypedDict):
+    """Parameters for listing contexts."""
+    
+    history_length: NotRequired[int]
+    metadata: NotRequired[dict[str, Any]]
+
 #-----------------------------------------------------------------------------
 # Agent-to-Agent Negotiation Models
 #-----------------------------------------------------------------------------
@@ -576,10 +671,12 @@ InvalidParamsError = JSONRPCError[Literal[-32602], Literal['Invalid or missing p
 InternalError = JSONRPCError[Literal[-32603], Literal['An internal server error occurred while processing the request. Please try again or contact support if the issue persists. See: /health']]
 TaskNotFoundError = JSONRPCError[Literal[-32001], Literal['The specified task ID was not found. The task may have been completed, canceled, or expired. Check task status: GET /tasks/{id}']]
 TaskNotCancelableError = JSONRPCError[Literal[-32002], Literal['This task cannot be canceled in its current state. Tasks can only be canceled while pending or running. See task lifecycle: /docs/tasks']]
-PushNotificationNotSupportedError = JSONRPCError[Literal[-32003], Literal['Push notifications are not supported by this server configuration. Please use polling to check task status. See: GET /tasks/{id}']]
-UnsupportedOperationError = JSONRPCError[Literal[-32004], Literal['The requested operation is not supported by this agent or server configuration. See supported operations: /docs/capabilities']]
-ContentTypeNotSupportedError = JSONRPCError[Literal[-32005], Literal['The content type in the request is not supported. Please use application/json or check supported content types. See: /docs/content-types']]
-InvalidAgentResponseError = JSONRPCError[Literal[-32006], Literal['The agent returned an invalid or malformed response. This may indicate an agent configuration issue. See troubleshooting: /docs/troubleshooting']]
+ContextNotFoundError = JSONRPCError[Literal[-32003], Literal['The specified context ID was not found. The context may have been deleted or expired. Check context status: GET /contexts/{id}']]
+ContextNotCancelableError = JSONRPCError[Literal[-32004], Literal['This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. See context lifecycle: /docs/contexts']]
+PushNotificationNotSupportedError = JSONRPCError[Literal[-32005], Literal['Push notifications are not supported by this server configuration. Please use polling to check task status. See: GET /tasks/{id}']]
+UnsupportedOperationError = JSONRPCError[Literal[-32006], Literal['The requested operation is not supported by this agent or server configuration. See supported operations: /docs/capabilities']]
+ContentTypeNotSupportedError = JSONRPCError[Literal[-32007], Literal['The content type in the request is not supported. Please use application/json or check supported content types. See: /docs/content-types']]
+InvalidAgentResponseError = JSONRPCError[Literal[-32008], Literal['The agent returned an invalid or malformed response. This may indicate an agent configuration issue. See troubleshooting: /docs/troubleshooting']]
 
 
 #-----------------------------------------------------------------------------
@@ -598,14 +695,14 @@ GetTaskResponse = JSONRPCResponse[Task, TaskNotFoundError]
 CancelTaskRequest = JSONRPCRequest[Literal['tasks/cancel'], TaskIdParams]
 CancelTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
 
-ListTasksRequest = JSONRPCRequest[Literal['tasks/list'], ListTasksParams]
-ListTasksResponse = JSONRPCResponse[TasksList, JSONRPCError[Any, Any]]
+ListTasksRequest = JSONRPCRequest[Literal['tasks/list'], TaskQueryParams]
+ListTasksResponse = JSONRPCResponse[List[Task], Union[TaskNotFoundError, TaskNotCancelableError]]
 
 ListContextsRequest = JSONRPCRequest[Literal['contexts/list'], ListContextsParams]
-ListContextsResponse = JSONRPCResponse[ContextsList, JSONRPCError[Any, Any]]
+ListContextsResponse = JSONRPCResponse[List[Context], Union[ContextNotFoundError, ContextNotCancelableError]]
 
-ClearTasksRequest = JSONRPCRequest[Literal['tasks/clear'], ClearTasksParams]
-ClearTasksResponse = JSONRPCResponse[ClearTasksResult, JSONRPCError[Any, Any]]
+ClearContextsRequest = JSONRPCRequest[Literal['contexts/clear'], ContextIdParams]
+ClearContextsResponse = JSONRPCResponse[Context, JSONRPCError[ContextNotFoundError, ContextNotCancelableError]]
 
 SetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/set'], TaskPushNotificationConfig]
 SetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
@@ -638,7 +735,7 @@ PebblingRequest = Annotated[
         CancelTaskRequest,
         ListTasksRequest,
         ListContextsRequest,
-        ClearTasksRequest,
+        ClearContextsRequest,
         SetTaskPushNotificationRequest,
         GetTaskPushNotificationRequest,
         ResubscribeTaskRequest,
@@ -655,7 +752,7 @@ PebblingResponse: TypeAlias = Union[
     CancelTaskResponse,
     ListTasksResponse,
     ListContextsResponse,
-    ClearTasksResponse,
+    ClearContextsResponse,
     SetTaskPushNotificationResponse,
     GetTaskPushNotificationResponse,
     ResubscribeTaskResponse,
@@ -764,6 +861,8 @@ class AgentCard(TypedDict):
     skills: Required[List[AgentSkill]]
 
     kind: Required[Literal['agent', 'team', 'workflow']]
+
+    execution_cost: NotRequired[AgentExecutionCost]
 
     num_history_sessions: Required[int]
     extra_data: Required[Dict[str, Any]]

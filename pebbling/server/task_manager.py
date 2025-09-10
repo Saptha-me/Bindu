@@ -125,6 +125,7 @@ from pebbling.common.protocol.types import (
 from .scheduler import Scheduler
 from .storage import Storage
 from .workers import ManifestWorker
+from ..utils.task_telemetry import trace_task_operation, track_active_task, trace_context_operation
 
 
 @dataclass
@@ -167,6 +168,8 @@ class TaskManager:
         await self._aexit_stack.__aexit__(exc_type, exc_value, traceback)
         self._aexit_stack = None
 
+    @trace_task_operation("send_message")
+    @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
         """Send a message using the Pebble protocol."""
         request_id = str(request['id'])  # Convert UUID to string
@@ -186,6 +189,7 @@ class TaskManager:
         await self.scheduler.run_task(scheduler_params)
         return SendMessageResponse(jsonrpc='2.0', id=request_id, result=task)
 
+    @trace_task_operation("get_task")
     async def get_task(self, request: GetTaskRequest) -> GetTaskResponse:
         """Get a task, and return it to the client.
 
@@ -202,6 +206,8 @@ class TaskManager:
             )
         return GetTaskResponse(jsonrpc='2.0', id=request['id'], result=task)
 
+    @trace_task_operation("cancel_task")
+    @track_active_task
     async def cancel_task(self, request: CancelTaskRequest) -> CancelTaskResponse:
         await self.scheduler.cancel_task(request['params'])
         task = await self.storage.load_task(request['params']['task_id'])
@@ -227,6 +233,7 @@ class TaskManager:
     ) -> GetTaskPushNotificationResponse:
         raise NotImplementedError('GetTaskPushNotification is not implemented yet.')
 
+    @trace_task_operation("list_tasks", include_params=False)
     async def list_tasks(self, request: ListTasksRequest) -> ListTasksResponse:
         """List all tasks in storage."""
         length = request['params'].get('length')
@@ -241,6 +248,7 @@ class TaskManager:
         
         return ListTasksResponse(jsonrpc='2.0', id=request['id'], result=tasks)
 
+    @trace_context_operation("list_contexts")
     async def list_contexts(self, request: ListContextsRequest) -> ListContextsResponse:
         """List all contexts in storage."""
         length = request['params'].get('length')
@@ -254,6 +262,7 @@ class TaskManager:
         return ListContextsResponse(jsonrpc='2.0', id=request['id'], result=contexts)
        
 
+    @trace_context_operation("clear_context")
     async def clear_context(self, request: ClearContextsRequest) -> ClearContextsResponse:
         """Clear a context from storage."""
         context_id = request['params'].get('context_id')

@@ -1,13 +1,6 @@
+"""Pebbling framework for building agent-based applications.
+
+The Pebbling framework provides a comprehensive toolset for developing,
+deploying, and managing intelligent agents with DID-based security features,
+containerized deployment options, and rich interaction capabilities.
 """
-🐧 pebbling Protocol Framework.
-
-A protocol framework for agent-to-agent communication.
-"""
-
-__version__ = "0.1.0"
-
-# Define public API
-__all__ = ["pebblingProtocol", "ProtocolMethod", "pebblify"]
-
-from pebbling.core.protocol import CoreProtocolMethod, pebblingProtocol
-from pebbling.server.pebbling_server import pebblify

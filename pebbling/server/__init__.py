@@ -1,7 +1,33 @@
-"""Pebbling server package for hosting agents with DID-based security."""
+# 
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
 
-# Re-export the main entry point
-from pebbling.server.pebbling_server import pebblify
+"""
+Pebbling Server Module.
 
-# Version information
-__version__ = "1.0.0"
+Unified server supporting JSON-RPC 
+protocols with shared task management and session contexts.
+"""
+
+from .applications import PebbleApplication
+from .storage import InMemoryStorage, PostgreSQLStorage, QdrantStorage
+from .scheduler import InMemoryScheduler, RedisScheduler
+from .workers import ManifestWorker
+from .task_manager import TaskManager
+
+__all__ = [
+    "PebbleApplication",
+    "InMemoryStorage",
+    "PostgreSQLStorage", 
+    "QdrantStorage",
+    "InMemoryScheduler",
+    "RedisScheduler",
+    "ManifestWorker",
+    "TaskManager",
+]

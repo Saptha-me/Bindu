@@ -1,4 +1,4 @@
-<h1 align="center">pebbling 🐧</h1>
+<h1 align="center">pebbling ![Pebbling Logo](assets/pebbling-logo.svg)</h1>
 <img src="./banner.jpg" alt="Pebbling Banner" width="800">
 <h1 align="center">Agent-to-Agent Communication </h1>
 

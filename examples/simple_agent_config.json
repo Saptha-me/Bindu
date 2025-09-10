@@ -1,0 +1,40 @@
+{
+  "author": "Pebbling Team",
+  "name": "Simple Agent",
+  "description": "A basic AI agent for simple question answering",
+  "version": "1.0.0",
+  "recreate_keys": true,
+  "skills": [
+    {
+      "name": "question-answering",
+      "description": "Ability to answer basic questions",
+      "version": "1.0.0"
+    }
+  ],
+  "capabilities": {
+    "reasoning": true,
+    "code_execution": false,
+    "web_search": false,
+    "file_operations": false,
+    "multimodal": false
+  },
+  "agent_trust": "low",
+  "kind": "agent",
+  "debug_mode": true,
+  "debug_level": 2,
+  "monitoring": false,
+  "telemetry": false,
+  "num_history_sessions": 5,
+  "documentation_url": "https://docs.pebbling.ai/agents/simple",
+  "extra_metadata": {
+    "domain": "general",
+    "specialization": "basic_qa"
+  },
+  "deployment": {
+    "url": "http://localhost:8030",
+    "expose": true,
+    "protocol_version": "1.0.0",
+    "proxy_urls": ["https://simple.pebbling.ai"],
+    "cors_origins": ["*"]
+  }
+}

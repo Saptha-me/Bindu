@@ -93,52 +93,7 @@
                 </div>
             </div>
         </div>
-
-        <!-- Storage Controls -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8 p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Storage Management</h3>
-                    <p class="text-gray-600 dark:text-gray-400 mt-1">Manage task history and storage</p>
-                </div>
-                <div class="flex space-x-3">
-                    <button onclick="refreshTasks()" 
-                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        <span>Refresh</span>
-                    </button>
-                    <button onclick="clearStorage()" 
-                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors duration-200 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                        <span>Clear All</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Task History -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-                    <span class="text-2xl mr-3">📝</span>
-                    Task History
-                </h3>
-                <p class="text-gray-600 dark:text-gray-400 mt-1">Recent task execution history</p>
-            </div>
-            
-            <div class="p-6">
-                <div id="task-list" class="space-y-4">
-                    <div class="flex items-center justify-center py-12">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span class="ml-3 text-gray-600 dark:text-gray-400">Loading task history...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+       
     </main>
 
     <!-- Footer Container -->
@@ -190,7 +145,34 @@
                     throw new Error(result.error.message || 'Unknown error');
                 }
                 
-                tasks = result.result || [];
+                // Parse the message arrays into task objects
+                const rawData = result.result || [];
+                tasks = [];
+                
+                rawData.forEach(messageArray => {
+                    if (Array.isArray(messageArray) && messageArray.length > 0) {
+                        // Group messages by task_id
+                        const taskGroups = {};
+                        messageArray.forEach(msg => {
+                            const taskId = msg.task_id;
+                            if (!taskGroups[taskId]) {
+                                taskGroups[taskId] = {
+                                    task_id: taskId,
+                                    context_id: msg.context_id,
+                                    history: [],
+                                    status: { state: 'completed' } // Default status
+                                };
+                            }
+                            taskGroups[taskId].history.push(msg);
+                        });
+                        
+                        // Add all tasks from this message array
+                        Object.values(taskGroups).forEach(task => {
+                            tasks.push(task);
+                        });
+                    }
+                });
+                
                 filteredTasks = [...tasks];
                 
                 updateStats();
@@ -242,7 +224,34 @@
                     throw new Error(result.error.message || 'Unknown error');
                 }
                 
-                contexts = result.result || [];
+                // Parse the message arrays to extract unique contexts
+                const rawData = result.result || [];
+                const contextMap = {};
+                
+                rawData.forEach(messageArray => {
+                    if (Array.isArray(messageArray) && messageArray.length > 0) {
+                        messageArray.forEach(msg => {
+                            const contextId = msg.context_id;
+                            if (!contextMap[contextId]) {
+                                contextMap[contextId] = {
+                                    context_id: contextId,
+                                    id: contextId,
+                                    task_count: 0,
+                                    task_ids: new Set()
+                                };
+                            }
+                            contextMap[contextId].task_ids.add(msg.task_id);
+                        });
+                    }
+                });
+                
+                // Convert to array and calculate task counts
+                contexts = Object.values(contextMap).map(context => ({
+                    ...context,
+                    task_count: context.task_ids.size,
+                    task_ids: undefined // Remove the Set object
+                }));
+                
                 updateStats();
                 // Only display contexts if we're in contexts view
                 if (currentView === 'contexts') {
@@ -255,11 +264,28 @@
         }
 
         function updateStats() {
-            const totalTasks = tasks.length;
-            const activeTasks = tasks.filter(t => t.status?.state === 'running' || t.status?.state === 'pending').length;
-            const completedTasks = tasks.filter(t => t.status?.state === 'completed').length;
-            const failedTasks = tasks.filter(t => t.status?.state === 'failed').length;
-            const canceledTasks = tasks.filter(t => t.status?.state === 'canceled').length;
+            // Extract all tasks from contexts
+            let allTasks = [];
+            contexts.forEach(contextMessages => {
+                if (contextMessages && contextMessages.length > 0) {
+                    const uniqueTaskIds = [...new Set(contextMessages.map(msg => msg.task_id))];
+                    uniqueTaskIds.forEach(taskId => {
+                        const taskMessages = contextMessages.filter(msg => msg.task_id === taskId);
+                        allTasks.push({
+                            task_id: taskId,
+                            context_id: contextMessages[0].context_id,
+                            messages: taskMessages,
+                            status: { state: 'completed' } // Assume completed since we have messages
+                        });
+                    });
+                }
+            });
+            
+            const totalTasks = allTasks.length;
+            const activeTasks = allTasks.filter(t => t.status?.state === 'running' || t.status?.state === 'pending').length;
+            const completedTasks = allTasks.filter(t => t.status?.state === 'completed').length;
+            const failedTasks = allTasks.filter(t => t.status?.state === 'failed').length;
+            const canceledTasks = allTasks.filter(t => t.status?.state === 'canceled').length;
             const totalContexts = contexts.length;
             
             const totalContextsEl = document.getElementById('total-contexts');
@@ -588,11 +614,25 @@
                 return;
             }
 
-            contextsList.innerHTML = contexts.map(context => {
-                // Handle both old and new context format
-                const contextId = context.context_id || context.id || 'unknown';
-                // Get tasks for this context
-                const contextTasks = tasks.filter(task => task.context_id === contextId);
+            contextsList.innerHTML = contexts.map(contextMessages => {
+                // Extract context info from first message
+                if (!contextMessages || contextMessages.length === 0) return '';
+                
+                const firstMessage = contextMessages[0];
+                const contextId = firstMessage.context_id;
+                
+                // Extract unique tasks from messages in this context
+                const uniqueTaskIds = [...new Set(contextMessages.map(msg => msg.task_id))];
+                const contextTasks = uniqueTaskIds.map(taskId => {
+                    const taskMessages = contextMessages.filter(msg => msg.task_id === taskId);
+                    return {
+                        task_id: taskId,
+                        context_id: contextId,
+                        messages: taskMessages,
+                        status: { state: 'completed' } // Assume completed since we have messages
+                    };
+                });
+                
                 const activeTasks = contextTasks.filter(t => t.status?.state === 'running' || t.status?.state === 'pending').length;
                 const completedTasks = contextTasks.filter(t => t.status?.state === 'completed').length;
                 const failedTasks = contextTasks.filter(t => t.status?.state === 'failed').length;
@@ -649,10 +689,10 @@
                                                     </span>
                                                 </div>
                                                 
-                                                ${task.history && task.history.length > 0 ? `
+                                                ${task.messages && task.messages.length > 0 ? `
                                                     <div class="text-sm text-gray-900 dark:text-white">
-                                                        <strong>Latest:</strong> 
-                                                        ${task.history[task.history.length - 1].parts?.[0]?.text?.substring(0, 100) || 'No content'}...
+                                                        <strong>Messages (${task.messages.length}):</strong> 
+                                                        ${task.messages[task.messages.length - 1].parts?.[0]?.text?.substring(0, 100) || 'No content'}...
                                                     </div>
                                                 ` : ''}
                                             </div>

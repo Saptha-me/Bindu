@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface - Pebbling</title>
+    <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        'mono': ['SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .chat-container {
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: var(--accent-primary);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.agent {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .message.status {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-style: italic;
+            text-align: center;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            margin: 0.75rem auto;
+            max-width: 60%;
+        }
+
+        .message.user[data-task-id], .message.agent[data-task-id] {
+            cursor: default;
+            position: relative;
+        }
+
+        .message.user[data-task-id]:hover::after, .message.agent[data-task-id]:hover::after {
+            content: "Task ID: " attr(data-task-id);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+
+        .message.user[data-task-id]:hover::before, .message.agent[data-task-id]:hover::before {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
+            margin: 0.5em 0;
+            font-weight: bold;
+        }
+
+        .message h1 { font-size: 1.5em; }
+        .message h2 { font-size: 1.3em; }
+        .message h3 { font-size: 1.2em; }
+        .message h4 { font-size: 1.1em; }
+        .message h5 { font-size: 1em; }
+        .message h6 { font-size: 0.9em; }
+
+        .message p {
+            margin: 0.5em 0;
+            line-height: 1.4;
+        }
+
+        .message ul, .message ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+        }
+
+        .message li {
+            margin: 0.2em 0;
+        }
+
+        .message code {
+            background: var(--bg-tertiary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+            font-size: 0.875rem;
+        }
+
+        .message.user code {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .message pre {
+            background: var(--bg-tertiary);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .message.user pre {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .message pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+        }
+
+        .message blockquote {
+            border-left: 4px solid var(--accent-primary);
+            padding-left: 1rem;
+            margin: 0.5rem 0;
+            font-style: italic;
+            background: var(--bg-tertiary);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .message.user blockquote {
+            border-left-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .message a {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+
+        .message a:hover {
+            text-decoration: underline;
+        }
+
+        .message.user a {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .message table {
+            border-collapse: collapse;
+            margin: 0.5em 0;
+            width: 100%;
+        }
+
+        .message th, .message td {
+            border: 1px solid #ddd;
+            padding: 0.5em;
+            text-align: left;
+        }
+
+        .message th {
+            background: rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+        }
+
+        .chat-input button {
+            padding: 0.75rem 1.5rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--accent-primary);
+        }
+
+        .message.processing {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chat-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+        }
+
+        .chat-controls button {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .chat-controls button:hover {
+            background: var(--bg-secondary);
+            border-color: var(--border-hover);
+        }
+
+        .context-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 400px;
+            }
+
+            .chat-controls {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors duration-300">
+    <!-- Header Container -->
+    <div id="header-container"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <!-- Chat Controls -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8 p-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-full">
+                        <div class="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium text-blue-700 dark:text-blue-400" id="context-status">No active context</span>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="clearChat()" 
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all duration-200 hover:shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Clear Chat
+                    </button>
+                    <button onclick="newContext()" 
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all duration-200 hover:shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        New Context
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[650px] overflow-hidden">
+            <!-- Chat Header -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/10 dark:to-purple-900/10">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                            <svg class="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            Chat Interface
+                        </h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Powered by Pebbling AI Agent</p>
+                    </div>
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-medium text-green-700 dark:text-green-400">Agent Ready</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <div class="flex justify-center">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 max-w-md text-center">
+                        <p class="text-blue-800 dark:text-blue-200 text-sm">
+                            👋 Welcome! Start a conversation with the agent by typing a message below.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex space-x-4">
+                    <input
+                        type="text"
+                        id="message-input"
+                        class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                        placeholder="Type your message here..."
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button onclick="sendMessage()" 
+                            id="send-button" 
+                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                        <span>Send</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Container -->
+    <div id="footer-container"></div>
+
+    <!-- Error Toast -->
+    <div id="error-toast" class="fixed top-4 right-4 max-w-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 shadow-lg hidden transform transition-all duration-300">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-red-800 dark:text-red-200" id="error-message"></p>
+            </div>
+            <button onclick="hideError()" class="ml-auto pl-3">
+                <svg class="h-4 w-4 text-red-400 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="common.js"></script>
+    <script src="components/layout.js"></script>
+    <script>
+        // Generate UUID v4
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Alias for compatibility
+        function generateId() {
+            return generateUUID();
+        }
+
+        let contextId = generateUUID(); // Generate proper UUID for context
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            input.value = '';
+            const sendButton = document.getElementById('send-button');
+            sendButton.disabled = true;
+
+            try {
+                // Generate IDs
+                const messageId = generateId();
+                const taskId = generateId();
+                if (!contextId) {
+                    contextId = generateId();
+                    updateContextStatus();
+                }
+
+                // Create JSON-RPC request payload
+                const payload = {
+                    "jsonrpc": "2.0",
+                    "method": "message/send",
+                    "params": {
+                        "message": {
+                            "role": "user",
+                            "parts": [{
+                                "kind": "text",
+                                "text": message
+                            }],
+                            "kind": "message",
+                            "messageId": messageId,
+                            "contextId": contextId,
+                            "taskId": taskId
+                        },
+                        "configuration": {
+                            "acceptedOutputModes": ["application/json"]
+                        }
+                    },
+                    "id": generateId()
+                };
+
+                // Send message using fetch directly for JSON-RPC
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                // Store task ID from the result
+                currentTaskId = result.result.task_id;
+                
+                // Store context ID from the result
+                if (result.result.context_id) {
+                    contextId = result.result.context_id;
+                    updateContextStatus();
+                }
+
+                // Add user message to chat with task ID
+                addMessage(message, 'user', currentTaskId);
+
+                // Add processing indicator
+                addProcessingMessage();
+
+                // Start polling for task completion
+                pollTaskStatus();
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                addMessage('Error: ' + error.message, 'status');
+                showError('Failed to send message: ' + error.message, 'chat-error');
+            } finally {
+                sendButton.disabled = false;
+            }
+        }
+
+        async function pollTaskStatus() {
+            if (!currentTaskId) return;
+
+            try {
+                // Create JSON-RPC request for task status
+                const payload = {
+                    "jsonrpc": "2.0",
+                    "method": "tasks/get",
+                    "params": {
+                        "taskId": currentTaskId
+                    },
+                    "id": generateId()
+                };
+
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                const task = result.result;
+
+                // Remove processing message
+                removeProcessingMessage();
+
+                if (task.status.state === 'completed') {
+                    // Extract the agent's response from the latest message in history
+                    if (task.history && task.history.length > 0) {
+                        const lastMessage = task.history[task.history.length - 1];
+                        if (lastMessage.role === 'agent' && lastMessage.parts && lastMessage.parts.length > 0) {
+                            const textPart = lastMessage.parts.find(part => part.kind === 'text');
+                            if (textPart) {
+                                addMessage(textPart.text, 'agent', task.task_id);
+                            }
+                        }
+                    }
+                    currentTaskId = null;
+                } else if (task.status.state === 'failed') {
+                    addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
+                    currentTaskId = null;
+                } else if (task.status.state === 'canceled') {
+                    addMessage('Task was canceled', 'status');
+                    currentTaskId = null;
+                } else {
+                    // Still processing, add processing message back and poll again
+                    addProcessingMessage();
+                    setTimeout(pollTaskStatus, 1000);
+                }
+
+            } catch (error) {
+                console.error('Error polling task status:', error);
+                removeProcessingMessage();
+                addMessage('Error getting task status: ' + error.message, 'status');
+                currentTaskId = null;
+            }
+        }
+
+        function addMessage(content, sender, taskId = null) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            
+            if (sender === 'user') {
+                messageDiv.className = 'flex justify-end group';
+                messageDiv.innerHTML = `
+                    <div class="relative max-w-xs lg:max-w-md">
+                        <div class="px-4 py-3 bg-blue-600 text-white rounded-lg shadow-sm ${taskId ? 'hover:bg-blue-700 transition-colors cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
+                            <p class="text-sm">${content}</p>
+                        </div>
+                        ${taskId ? `
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            Task ID: ${taskId.substring(0, 8)}...
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if (sender === 'agent') {
+                messageDiv.className = 'flex justify-start group';
+                const parsedContent = marked.parse(content);
+                messageDiv.innerHTML = `
+                    <div class="relative max-w-xs lg:max-w-md">
+                        <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm ${taskId ? 'hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
+                            <div class="text-sm prose prose-sm dark:prose-invert max-w-none">${parsedContent}</div>
+                        </div>
+                        ${taskId ? `
+                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            Task ID: ${taskId.substring(0, 8)}...
+                        </div>
+                        <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-center space-x-2">
+                            <button onclick="pauseTask('${taskId}')" class="p-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full shadow-lg transition-colors" title="Pause Task">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="cancelTask('${taskId}')" class="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors" title="Cancel Task">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="resumeTask('${taskId}')" class="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-colors" title="Resume Task">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="thumbsUp('${taskId}')" class="p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg transition-colors" title="Thumbs Up">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+                                </svg>
+                            </button>
+                            <button onclick="thumbsDown('${taskId}')" class="p-1.5 bg-gray-500 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors" title="Thumbs Down">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.106-1.79l-.05-.025A4 4 0 0011.057 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
+                                </svg>
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else if (sender === 'status') {
+                messageDiv.className = 'flex justify-center';
+                messageDiv.innerHTML = `
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-2 max-w-md text-center">
+                        <p class="text-yellow-800 dark:text-yellow-200 text-sm italic">${content}</p>
+                    </div>
+                `;
+            }
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addProcessingMessage() {
+            removeProcessingMessage();
+            
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex justify-start';
+            messageDiv.id = 'processing-message';
+            messageDiv.innerHTML = `
+                <div class="max-w-xs lg:max-w-md px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm">
+                    <div class="flex items-center space-x-2">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span class="text-sm">Agent is thinking...</span>
+                    </div>
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeProcessingMessage() {
+            const processingMessage = document.getElementById('processing-message');
+            if (processingMessage) {
+                processingMessage.remove();
+            }
+        }
+
+        function showError(message) {
+            const errorToast = document.getElementById('error-toast');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorToast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                hideError();
+            }, 5000);
+        }
+
+        function hideError() {
+            const errorToast = document.getElementById('error-toast');
+            errorToast.classList.add('hidden');
+        }
+
+        function clearChat() {
+            const messagesDiv = document.getElementById('chat-messages');
+            messagesDiv.innerHTML = `
+                <div class="flex justify-center">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 max-w-md text-center">
+                        <p class="text-blue-800 dark:text-blue-200 text-sm">
+                            🧹 Chat cleared. Start a new conversation by typing a message below.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function newContext() {
+            contextId = generateId();
+            updateContextStatus();
+            addMessage('New context started', 'status');
+        }
+
+        function updateContextStatus() {
+            const statusElement = document.getElementById('context-status');
+            if (contextId) {
+                statusElement.textContent = `Context: ${contextId.substring(0, 8)}...`;
+            } else {
+                statusElement.textContent = 'No active context';
+            }
+        }
+
+        // Task action functions
+        function pauseTask(taskId) {
+            console.log('Pausing task:', taskId);
+            // TODO: Implement pause task API call
+            showError('Pause functionality not yet implemented');
+        }
+
+        async function cancelTask(taskId) {
+            console.log('Canceling task:', taskId);
+            
+            if (!confirm('Are you sure you want to cancel this task?')) {
+                return;
+            }
+
+            try {
+                // Create JSON-RPC request for task cancellation
+                const payload = {
+                    "jsonrpc": "2.0",
+                    "method": "tasks/cancel",
+                    "params": {
+                        "task_id": taskId
+                    },
+                    "id": generateId()
+                };
+
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    throw new Error(result.error.message || 'Unknown error');
+                }
+
+                // Show success message
+                addMessage(`Task ${taskId.substring(0, 8)}... has been canceled`, 'status');
+                
+                // Clear current task if it's the one we canceled
+                if (currentTaskId === taskId) {
+                    currentTaskId = null;
+                    removeProcessingMessage();
+                }
+
+            } catch (error) {
+                console.error('Error canceling task:', error);
+                showError('Failed to cancel task: ' + error.message);
+            }
+        }
+
+        function resumeTask(taskId) {
+            console.log('Resuming task:', taskId);
+            // TODO: Implement resume task API call
+            showError('Resume functionality not yet implemented');
+        }
+
+        function thumbsUp(taskId) {
+            console.log('Thumbs up for task:', taskId);
+            // TODO: Implement feedback API call
+            // Visual feedback
+            const button = event.target.closest('button');
+            button.classList.add('bg-green-500');
+            button.classList.remove('bg-blue-500');
+            setTimeout(() => {
+                button.classList.add('bg-blue-500');
+                button.classList.remove('bg-green-500');
+            }, 1000);
+        }
+
+        function thumbsDown(taskId) {
+            console.log('Thumbs down for task:', taskId);
+            // TODO: Implement feedback API call
+            // Visual feedback
+            const button = event.target.closest('button');
+            button.classList.add('bg-red-500');
+            button.classList.remove('bg-gray-500');
+            setTimeout(() => {
+                button.classList.add('bg-gray-500');
+                button.classList.remove('bg-red-500');
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

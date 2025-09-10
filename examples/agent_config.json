@@ -1,0 +1,32 @@
+{
+  "author": "Your Name",
+  "name": "News Reporter Agent",
+  "description": "Agent that reports current news from Amsterdam",
+  "version": "1.0.0",
+  "recreate_keys": true,
+  "skills": [
+    {
+      "name": "News Reporting",
+      "description": "Fetch and report current news",
+      "tags": ["news", "reporting"]
+    }
+  ],
+  "capabilities": {
+    "streaming": true,
+    "push_notifications": false,
+    "state_transition_history": false
+  },
+  "kind": "agent",
+  "debug_mode": false,
+  "debug_level": 1,
+  "monitoring": false,
+  "telemetry": true,
+  "num_history_sessions": 10,
+  "documentation_url": "https://docs.example.com/news-agent",
+  "extra_metadata": {},
+  "deployment": {
+    "url": "http://localhost:3773",
+    "expose": true,
+    "protocol_version": "1.0.0"
+  }
+}

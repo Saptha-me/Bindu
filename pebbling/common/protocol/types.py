@@ -114,6 +114,7 @@ class TextPart(TypedDict):
     kind: Required[Literal['text']]
     metadata: NotRequired[dict[str, Any]]
     text: Required[str]
+    embeddings: NotRequired[list[float]]
 
 @pydantic.with_config({'alias_generator': to_camel})
 class FileWithBytes(TypedDict):
@@ -122,6 +123,7 @@ class FileWithBytes(TypedDict):
     bytes: Required[str]
     mimeType: NotRequired[str]
     name: NotRequired[str]
+    embeddings: NotRequired[list[float]]
 
 
 @pydantic.with_config({'alias_generator': to_camel})
@@ -143,6 +145,7 @@ class DataPart(TextPart):
     
     kind: Required[Literal['data']]
     data: Required[dict[str, Any]]
+    embeddings: NotRequired[list[float]]
 
 
 Part = Annotated[Union[TextPart, FilePart, DataPart], Field(discriminator='kind')]

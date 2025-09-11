@@ -116,27 +116,58 @@ class PartConverter:
     def result_to_parts(result: Any) -> list[Part]:
         """Convert result to list of Parts."""
         if isinstance(result, str):
-            return [TextPart(kind='text', text=result)]
+            return [
+                TextPart(
+                    kind='text',
+                    text=result,
+                    embeddings=None
+                )
+            ]
         elif isinstance(result, (list, tuple)):
             if all(isinstance(item, str) for item in result):
                 # Handle streaming results
-                return [TextPart(kind='text', text=item) for item in result]
+                return [
+                    TextPart(
+                        kind='text',
+                        text=item,
+                        embeddings=None
+                    )
+                    for item in result
+                ]
             else:
                 # Handle mixed list
                 parts = []
                 for item in result:
                     if isinstance(item, str):
-                        parts.append(TextPart(kind='text', text=item))
+                        parts.append(
+                            TextPart(
+                                kind='text',
+                                text=item,
+                                embeddings=None
+                            )
+                        )
                     elif isinstance(item, dict):
                         parts.append(PartConverter.dict_to_part(item))
                     else:
-                        parts.append(TextPart(kind='text', text=str(item)))
+                        parts.append(
+                            TextPart(
+                                kind='text',
+                                text=str(item),
+                                embeddings=None
+                            )
+                        )
                 return parts
         elif isinstance(result, dict):
             return [PartConverter.dict_to_part(result)]
         else:
             # Convert other types to text representation
-            return [TextPart(kind='text', text=str(result))]
+            return [
+                TextPart(
+                    kind='text',
+                    text=str(result),
+                    embeddings=None
+                )
+            ]
 
 
 class ArtifactBuilder:

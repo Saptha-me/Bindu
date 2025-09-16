@@ -175,30 +175,25 @@ def pebblify(
         logger.info(f"🚀 Agent '{_manifest.identity['did']}' successfully pebblified!")
         logger.debug(f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}")
 
-        async def run_agent():
-            """Async function to initialize storage and run the agent."""
-            logger.info(f"🚀 Starting deployment for agent: {agent_id}")
+        logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 
-            # Create server components using factory functions
-            storage_instance = _create_storage_instance(storage_config)
-            scheduler_instance = _create_scheduler_instance(scheduler_config)
+        # Create server components using factory functions
+        storage_instance = _create_storage_instance(storage_config)
+        scheduler_instance = _create_scheduler_instance(scheduler_config)
             
-            # Create the manifest worker
-            pebble_app = PebbleApplication(
-                storage=storage_instance,
-                scheduler=scheduler_instance,
-                penguin_id=agent_id,
-                manifest=_manifest,
-                version=version
-            )    
+        # Create the manifest worker
+        pebble_app = PebbleApplication(
+            storage=storage_instance,
+            scheduler=scheduler_instance,
+            penguin_id=agent_id,
+            manifest=_manifest,
+            version=version
+        )    
 
-            # Deploy the server
-            from urllib.parse import urlparse
-            parsed_url = urlparse(deployment_config.url)
-            uvicorn.run(pebble_app, host=parsed_url.hostname or "localhost", port=parsed_url.port or 3773)
+        # Deploy the server
+        from urllib.parse import urlparse
+        parsed_url = urlparse(deployment_config.url)
+        uvicorn.run(pebble_app, host=parsed_url.hostname or "localhost", port=parsed_url.port or 3773)
 
-        # Attach the run function to the manifest for later execution
-        _manifest.run_agent = run_agent
-            
         return _manifest
     return decorator

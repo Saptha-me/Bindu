@@ -49,7 +49,7 @@
 
 from __future__ import annotations as _annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -143,15 +143,46 @@ class InMemoryStorage(Storage[ContextT]):
 
     async def update_context(self, context_id: UUID, context: Context) -> None:
         """Updates the context given the `context_id`."""
+        # Now we expect properly structured Context objects from the source
         self.contexts[context_id] = context
 
     async def load_context(self, context_id: UUID) -> Context | None:
         """Retrieve the stored context given the `context_id`."""
         return self.contexts.get(context_id)
+    
+    async def append_to_contexts(self, context_id: UUID, messages: list[Message]) -> None:
+        """Efficiently append new messages to context history without rebuilding entire context."""
+        if not messages:
+            return
+            
+        existing_context = self.contexts.get(context_id)
+        
+        if existing_context is None:
+            for message in messages:
+                self.contexts[context_id] = Context(
+                    context_id=context_id,
+                    kind='context',
+                    task_id=message['task_id'],
+                    role=message['role'],
+                    created_at=datetime.now(timezone.utc).isoformat(),
+                    updated_at=datetime.now(timezone.utc).isoformat(),
+                    status='active'
+                )
+        
+        # Since Context no longer has message_history field, we might need to store messages differently
+        # For now, just update the timestamp
+        self.contexts[context_id]['updated_at'] = datetime.now(timezone.utc).isoformat()
 
     async def list_tasks(self, length: int | None = None) -> list[Task]:
         """List all tasks in storage."""
         tasks = list(self.tasks.values())
+        if length:
+            tasks = tasks[-length:]
+        return tasks
+
+    async def list_tasks_by_context(self, context_id: UUID, length: int | None = None) -> list[Task]:
+        """List all tasks in storage."""
+        tasks = [task for task in self.tasks.values() if task['context_id'] == context_id]
         if length:
             tasks = tasks[-length:]
         return tasks

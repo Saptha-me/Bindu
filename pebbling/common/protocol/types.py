@@ -495,11 +495,11 @@ class Context(TypedDict):
     
     # Core context data
     tasks: NotRequired[list[UUID]]  # List of task IDs belonging to this context
-    message_history: NotRequired[list[Message]]  # Complete conversation history
     
     # Context metadata
     name: NotRequired[str]  # Human-readable context name
     description: NotRequired[str]  # Context purpose or summary
+    role: Required[str]  # Role of the context
     created_at: Required[str] = Field(
         examples=['2023-10-27T10:00:00Z'],
         description="ISO datetime when context was created"

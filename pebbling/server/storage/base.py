@@ -54,13 +54,13 @@
 from __future__ import annotations as _annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any, Generic
 from uuid import UUID
 
 from typing_extensions import TypeVar
 
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskState
-
 ContextT = TypeVar('ContextT', default=Any)
 
 
@@ -98,6 +98,10 @@ class Storage(ABC, Generic[ContextT]):
         """Retrieve the stored context given the `context_id`."""
 
     @abstractmethod
+    async def append_to_contexts(self, context_id: UUID, messages: list[Message]) -> None:
+        """Efficiently append new messages to context history without rebuilding entire context."""
+
+    @abstractmethod
     async def update_context(self, context_id: UUID, context: ContextT) -> None:
         """Updates the context for a `context_id`.
 
@@ -111,6 +115,10 @@ class Storage(ABC, Generic[ContextT]):
     @abstractmethod
     async def list_contexts(self, length: int | None = None) -> list[dict]:
         """List all contexts in storage."""
+
+    @abstractmethod
+    async def list_tasks_by_context(self, context_id: UUID, length: int | None = None) -> list[Task]:
+        """List all tasks in storage."""
 
     @abstractmethod
     async def clear_all(self) -> None:

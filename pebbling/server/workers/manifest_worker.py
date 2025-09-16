@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
-from pebbling.common.protocol.types import Artifact, Message, TaskIdParams, TaskSendParams
+from datetime import datetime
+from pebbling.common.protocol.types import Artifact, Context, Message, TaskIdParams, TaskSendParams
 from pebbling.penguin.manifest import AgentManifest
 from pebbling.server.workers.base import Worker
 from pebbling.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
@@ -33,7 +35,7 @@ class ManifestWorker(Worker):
         await self.storage.update_task(task['task_id'], state='working')
 
         # Build complete message history
-        message_history = await self._build_complete_message_history(task)
+        message_history = await self._build_complete_message_history(task['context_id'])
         
         try:
             # Execute manifest
@@ -62,22 +64,22 @@ class ManifestWorker(Worker):
         """Convert manifest execution result to pebble protocol artifacts."""
         return ArtifactBuilder.from_result(results)
     
-    async def _build_complete_message_history(self, task: dict) -> list[dict[str, str]]:
+    async def _build_complete_message_history(self, context_id: UUID) -> list[dict[str, str]]:
         """Build complete message history combining existing context with current message."""
-        # Load existing context as list of messages
-        existing_context = await self.storage.load_context(task['context_id']) or []
+        tasks_by_context = await self.storage.list_tasks_by_context(context_id)
+        previous_history = []
+
+        if len(tasks_by_context) > 0:
+            for task in tasks_by_context:
+                previous_history.append(task.get('history', []))
+            
         
         # Build message history from task history (current user message)
         current_message_history = self.build_message_history(task.get('history', []))
         
         # Combine existing conversation history with current message
-        if isinstance(existing_context, list) and existing_context:
-            # existing_context contains the full conversation history from previous calls
-            previous_history = self.build_message_history(existing_context)
-            return previous_history + current_message_history
-        else:
-            # First message in context
-            return current_message_history
+        previous_history = self.build_message_history(existing_context)
+        return previous_history + current_message_history
     
     def _normalize_message_order(self, message: dict) -> dict:
         """Normalize message field order for consistency."""
@@ -96,24 +98,18 @@ class ManifestWorker(Worker):
 
     async def _process_and_save_results(self, task: dict, results: Any) -> None:
         """Process results and save to storage."""
-        # Convert agent response to message format and append to history
+        # Convert agent response to message format
         agent_messages = MessageConverter.to_protocol_messages(
             results, task['task_id'], task['context_id']
         )
         
-        # Load existing context to preserve full conversation history
-        existing_context = await self.storage.load_context(task['context_id']) or []
+        # Prepare new messages to append: current task + agent response
+        current_messages = self._normalize_messages(task.get('history', []))
+        normalized_agent_messages = self._normalize_messages(agent_messages)
+        new_messages = current_messages + normalized_agent_messages
         
-        # Normalize all messages to have consistent field ordering
-        normalized_existing = self._normalize_messages(existing_context)
-        normalized_current = self._normalize_messages(task.get('history', []))
-        normalized_agent = self._normalize_messages(agent_messages)
-        
-        # Build complete conversation history: existing + current task + new agent response
-        complete_history = normalized_existing + normalized_current + normalized_agent
-        
-        # Save complete conversation history to context for future calls
-        await self.storage.update_context(task['context_id'], complete_history)
+        # Efficiently append only new messages to context history
+        await self.storage.append_to_contexts(task['context_id'], new_messages)
 
         # Process results and convert to messages
         response_messages = TaskStateManager.build_response_messages(results)

@@ -63,11 +63,11 @@ def _create_storage_instance(storage_config: Optional[StorageConfig]) -> Any:
     
     if storage_config.type == "postgres":
         storage = PostgreSQLStorage(connection_string=storage_config.connection_string)
-        storage.initialize()
+        # Note: initialize() will be called when the server starts
         return storage
     elif storage_config.type == "qdrant":
         storage = QdrantStorage(connection_string=storage_config.connection_string)
-        storage.initialize()
+        # Note: initialize() will be called when the server starts
         return storage
     else:
         return InMemoryStorage()

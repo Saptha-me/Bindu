@@ -55,15 +55,16 @@ from __future__ import annotations as _annotations
 import uuid
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import DateTime, Index, String, delete, func, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus, Context
 
 from .base import Storage
 
@@ -77,8 +78,8 @@ class TaskModel(Base):
     """SQLAlchemy model for tasks table."""
     __tablename__ = 'tasks'
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    context_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    context_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     kind: Mapped[str] = mapped_column(String(50), nullable=False, default='task')
     state: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -99,10 +100,26 @@ class ContextModel(Base):
     """SQLAlchemy model for contexts table."""
     __tablename__ = 'contexts'
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     context_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+
+
+class TaskFeedbackModel(Base):
+    """SQLAlchemy model for task feedback table."""
+    __tablename__ = 'task_feedback'
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    feedback_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
+
+    # Index for performance
+    __table_args__ = (
+        Index('idx_task_feedback_task_id', 'task_id'),
+        Index('idx_task_feedback_created_at', 'created_at'),
+    )
 
 
 class PostgreSQLStorage(Storage[ContextT]):
@@ -125,51 +142,20 @@ class PostgreSQLStorage(Storage[ContextT]):
         """
         self.connection_string = connection_string
         self.pool_size = pool_size
-        self.engine = None
-        self.session_factory = None
-        self._initialized = False
-
-    async def initialize(self) -> None:
-        """Initialize the database engine and create tables if needed."""
-        if self._initialized:
-            return
-            
         self.engine = create_async_engine(
             self.connection_string,
             pool_size=self.pool_size,
             max_overflow=20,
             echo=False  # Set to True for SQL debugging
         )
+        self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
         
-        self.session_factory = async_sessionmaker(
-            self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False
-        )
-        
-        # Create tables
+    async def initialize(self):
+        """Create tables if they don't exist."""
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            
-        self._initialized = True
 
-    async def close(self) -> None:
-        """Close the database engine."""
-        if self.engine:
-            await self.engine.dispose()
-
-    async def _ensure_initialized(self) -> None:
-        """Ensure storage is initialized before use."""
-        if not self._initialized:
-            await self.initialize()
-
-    def _get_session(self) -> AsyncSession:
-        """Get a new database session."""
-        if not self.session_factory:
-            raise RuntimeError("Storage not initialized. Call initialize() first.")
-        return self.session_factory()
-
-    async def load_task(self, task_id: str, history_length: int | None = None) -> Task | None:
+    async def load_task(self, task_id: UUID, history_length: int | None = None) -> Task | None:
         """Load a task using ORM.
 
         Args:
@@ -179,8 +165,7 @@ class PostgreSQLStorage(Storage[ContextT]):
         Returns:
             The task or None if not found.
         """
-        await self._ensure_initialized()
-        async with self._get_session() as session:
+        async with self.session_factory() as session:
             stmt = select(TaskModel).where(TaskModel.id == task_id)
             result = await session.execute(stmt)
             task_model = result.scalar_one_or_none()
@@ -194,7 +179,7 @@ class PostgreSQLStorage(Storage[ContextT]):
 
             task_status = TaskStatus(state=task_model.state, timestamp=task_model.timestamp.isoformat())
             task = Task(
-                id=task_model.id,
+                task_id=task_model.id,
                 context_id=task_model.context_id,
                 kind=task_model.kind,
                 status=task_status,
@@ -204,34 +189,41 @@ class PostgreSQLStorage(Storage[ContextT]):
             
             return task
 
-    async def submit_task(self, context_id: str, message: Message) -> Task:
+    async def submit_task(self, context_id: UUID, message: Message) -> Task:
         """Submit a task using ORM."""
-        await self._ensure_initialized()
-        # Generate a unique task ID
-        task_id = str(uuid.uuid4())
+        # Use existing task ID from message or generate new one
+        task_id = message.get('task_id')
         
-        # Add IDs to the message for Pebble protocol
-        message['task_id'] = task_id
-        message['context_id'] = context_id
+        # Create a copy of message with string UUIDs for JSON serialization
+        message_for_storage = message.copy()
+        message_for_storage['task_id'] = str(task_id)
+        message_for_storage['context_id'] = str(context_id)
+        
+        if 'message_id' in message_for_storage and not isinstance(message_for_storage['message_id'], str):
+            message_for_storage['message_id'] = str(message_for_storage['message_id'])
 
         task_status = TaskStatus(state='submitted', timestamp=datetime.now().isoformat())
         
-        async with self._get_session() as session:
+        async with self.session_factory() as session:
             task_model = TaskModel(
                 id=task_id,
                 context_id=context_id,
                 kind='task',
                 state='submitted',
                 timestamp=datetime.now(),
-                history=[message],
+                history=[message_for_storage],
                 artifacts=[]
             )
             
             session.add(task_model)
             await session.commit()
 
+        # Ensure original message has proper UUIDs for protocol compliance
+        message['task_id'] = task_id
+        message['context_id'] = context_id
+        
         task = Task(
-            id=task_id,
+            task_id=task_id,
             context_id=context_id,
             kind='task',
             status=task_status,
@@ -242,44 +234,51 @@ class PostgreSQLStorage(Storage[ContextT]):
 
     async def update_task(
         self,
-        task_id: str,
+        task_id: UUID,
         state: TaskState,
         new_artifacts: list[Artifact] | None = None,
         new_messages: list[Message] | None = None,
     ) -> Task:
         """Update the state of a task using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
-            # Start a transaction
-            async with session.begin():
-                # Get current task
-                stmt = select(TaskModel).where(TaskModel.id == task_id)
-                result = await session.execute(stmt)
-                task_model = result.scalar_one_or_none()
-                
-                if not task_model:
-                    raise ValueError(f"Task {task_id} not found")
+        async with self.session_factory() as session:
+            # Get current task
+            stmt = select(TaskModel).where(TaskModel.id == task_id)
+            result = await session.execute(stmt)
+            task_model = result.scalar_one_or_none()
+            
+            if not task_model:
+                raise ValueError(f"Task {task_id} not found")
 
-                # Update task data
-                task_model.state = state
-                task_model.timestamp = datetime.now()
-                
-                if new_messages:
-                    # Add IDs to messages for consistency
-                    for message in new_messages:
-                        message['task_id'] = task_id
-                        message['context_id'] = task_model.context_id
-                    task_model.history.extend(new_messages)
-                
-                if new_artifacts:
-                    task_model.artifacts.extend(new_artifacts)
+            # Update task status
+            task_model.state = state
+            task_model.timestamp = datetime.now()
+            
+            if new_artifacts:
+                if not task_model.artifacts:
+                    task_model.artifacts = []
+                task_model.artifacts.extend(new_artifacts)
 
-                await session.commit()
+            if new_messages:
+                if not task_model.history:
+                    task_model.history = []
+                # Add IDs to messages for consistency
+                for message in new_messages:
+                    # Create storage copy with string UUIDs for JSON serialization
+                    message_for_storage = message.copy()
+                    message_for_storage['task_id'] = str(task_id)
+                    message_for_storage['context_id'] = str(task_model.context_id)
+                    task_model.history.append(message_for_storage)
+                    
+                    # Update original message with UUID objects for protocol compliance
+                    message['task_id'] = task_id
+                    message['context_id'] = task_model.context_id
+
+            await session.commit()
 
         # Return updated task
         task_status = TaskStatus(state=state, timestamp=datetime.now().isoformat())
         task = Task(
-            id=task_id,
+            task_id=task_id,
             context_id=task_model.context_id,
             kind=task_model.kind,
             status=task_status,
@@ -289,10 +288,9 @@ class PostgreSQLStorage(Storage[ContextT]):
         
         return task
 
-    async def load_context(self, context_id: str) -> ContextT | None:
-        """Retrieve the stored context using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
+    async def load_context(self, context_id: UUID) -> Context | None:
+        """Retrieve the stored context given the `context_id`."""
+        async with self.session_factory() as session:
             stmt = select(ContextModel).where(ContextModel.id == context_id)
             result = await session.execute(stmt)
             context_model = result.scalar_one_or_none()
@@ -300,12 +298,16 @@ class PostgreSQLStorage(Storage[ContextT]):
             if not context_model:
                 return None
                 
-            return context_model.context_data
+            return Context(
+                context_id=context_model.id,
+                context_data=context_model.context_data,
+                created_at=context_model.created_at,
+                updated_at=context_model.updated_at
+            )
 
-    async def update_context(self, context_id: str, context: ContextT) -> None:
+    async def update_context(self, context_id: UUID, context: Context) -> None:
         """Update the context using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
+        async with self.session_factory() as session:
             # Try to get existing context
             stmt = select(ContextModel).where(ContextModel.id == context_id)
             result = await session.execute(stmt)
@@ -325,10 +327,9 @@ class PostgreSQLStorage(Storage[ContextT]):
             
             await session.commit()
 
-    async def get_tasks_by_context(self, context_id: str, limit: int = 100) -> list[Task]:
+    async def get_tasks_by_context(self, context_id: UUID, limit: int = 100) -> list[Task]:
         """Get all tasks for a specific context using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
+        async with self.session_factory() as session:
             stmt = (
                 select(TaskModel)
                 .where(TaskModel.context_id == context_id)
@@ -342,7 +343,7 @@ class PostgreSQLStorage(Storage[ContextT]):
             for task_model in task_models:
                 task_status = TaskStatus(state=task_model.state, timestamp=task_model.timestamp.isoformat())
                 task = Task(
-                    id=task_model.id,
+                    task_id=task_model.id,
                     context_id=task_model.context_id,
                     kind=task_model.kind,
                     status=task_status,
@@ -353,21 +354,9 @@ class PostgreSQLStorage(Storage[ContextT]):
             
             return tasks
 
-    async def cleanup_old_tasks(self, days: int = 30) -> int:
-        """Clean up tasks older than specified days using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
-            cutoff_date = datetime.now() - datetime.timedelta(days=days)
-            stmt = delete(TaskModel).where(TaskModel.created_at < cutoff_date)
-            result = await session.execute(stmt)
-            await session.commit()
-            
-            return result.rowcount
-
     async def list_tasks(self, length: int | None = None) -> list[Task]:
         """List all tasks in storage using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
+        async with self.session_factory() as session:
             stmt = select(TaskModel).order_by(TaskModel.created_at.desc())
             if length:
                 stmt = stmt.limit(length)
@@ -379,7 +368,7 @@ class PostgreSQLStorage(Storage[ContextT]):
             for task_model in task_models:
                 task_status = TaskStatus(state=task_model.state, timestamp=task_model.timestamp.isoformat())
                 task = Task(
-                    id=task_model.id,
+                    task_id=task_model.id,
                     context_id=task_model.context_id,
                     kind=task_model.kind,
                     status=task_status,
@@ -390,10 +379,9 @@ class PostgreSQLStorage(Storage[ContextT]):
             
             return tasks
 
-    async def list_contexts(self, length: int | None = None) -> list[dict]:
+    async def list_contexts(self, length: int | None = None) -> list[Context]:
         """List all contexts in storage using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
+        async with self.session_factory() as session:
             stmt = select(ContextModel).order_by(ContextModel.created_at.desc())
             if length:
                 stmt = stmt.limit(length)
@@ -403,22 +391,49 @@ class PostgreSQLStorage(Storage[ContextT]):
             
             contexts = []
             for context_model in context_models:
-                context_dict = {
-                    'id': context_model.id,
-                    'context_data': context_model.context_data,
-                    'created_at': context_model.created_at,
-                    'updated_at': context_model.updated_at
-                }
-                contexts.append(context_dict)
+                context = Context(
+                    context_id=context_model.id,
+                    context_data=context_model.context_data,
+                    created_at=context_model.created_at,
+                    updated_at=context_model.updated_at
+                )
+                contexts.append(context)
             
             return contexts
 
     async def clear_all(self) -> None:
         """Clear all tasks and contexts from storage using ORM."""
-        await self._ensure_initialized()
-        async with self._get_session() as session:
+        async with self.session_factory() as session:
             # Delete all tasks
             await session.execute(delete(TaskModel))
             # Delete all contexts
             await session.execute(delete(ContextModel))
+            # Delete all task feedback
+            await session.execute(delete(TaskFeedbackModel))
             await session.commit()
+
+    async def store_task_feedback(self, task_id: uuid.UUID, feedback_data: dict[str, Any]) -> None:
+        """Store feedback for a task."""
+        async with self.session_factory() as session:
+            feedback_model = TaskFeedbackModel(
+                task_id=task_id,
+                feedback_data=feedback_data
+            )
+            session.add(feedback_model)
+            await session.commit()
+
+    async def get_task_feedback(self, task_id: uuid.UUID) -> list[dict[str, Any]] | None:
+        """Retrieve feedback for a task."""
+        async with self.session_factory() as session:
+            stmt = (
+                select(TaskFeedbackModel)
+                .where(TaskFeedbackModel.task_id == task_id)
+                .order_by(TaskFeedbackModel.created_at.asc())
+            )
+            result = await session.execute(stmt)
+            feedback_models = result.scalars().all()
+            
+            if not feedback_models:
+                return None
+                
+            return [feedback_model.feedback_data for feedback_model in feedback_models]

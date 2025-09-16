@@ -55,7 +55,7 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus, Context
 
 from .base import Storage
 
@@ -141,11 +141,11 @@ class InMemoryStorage(Storage[ContextT]):
 
         return task
 
-    async def update_context(self, context_id: UUID, context: ContextT) -> None:
+    async def update_context(self, context_id: UUID, context: Context) -> None:
         """Updates the context given the `context_id`."""
         self.contexts[context_id] = context
 
-    async def load_context(self, context_id: UUID) -> ContextT | None:
+    async def load_context(self, context_id: UUID) -> Context | None:
         """Retrieve the stored context given the `context_id`."""
         return self.contexts.get(context_id)
 
@@ -156,7 +156,7 @@ class InMemoryStorage(Storage[ContextT]):
             tasks = tasks[-length:]
         return tasks
 
-    async def list_contexts(self, length: int | None = None) -> list[dict]:
+    async def list_contexts(self, length: int | None = None) -> list[Context]:
         """List all contexts in storage."""
         contexts_list = list(self.contexts.values())
         if length:

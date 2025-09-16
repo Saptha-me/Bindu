@@ -6,7 +6,6 @@ file I/O operations, directory handling, and path resolution.
 """
 
 import os
-from pathlib import Path
 from typing import Optional
 
 from pebbling.utils.constants import CERTIFICATE_DIR

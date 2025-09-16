@@ -55,8 +55,9 @@ from __future__ import annotations as _annotations
 
 from abc import ABC, abstractmethod
 from typing import Any, Generic
-from typing_extensions import TypeVar
 from uuid import UUID
+
+from typing_extensions import TypeVar
 
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskState
 

@@ -17,6 +17,7 @@ allowing agents to be discovered and accessed by other systems.
 
 import asyncio
 from typing import Any, Dict
+
 from pydantic.types import SecretStr
 
 from pebbling.common.models import AgentManifest

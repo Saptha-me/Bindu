@@ -1,8 +1,17 @@
 from contextlib import asynccontextmanager
-from typing import Any, Union, Sequence, Optional, AsyncIterator
-from uuid import UUID
 from pathlib import Path
+from typing import Any, AsyncIterator, Optional, Sequence, Union
+from uuid import UUID
+
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.requests import Request
+from starlette.responses import FileResponse, Response
+from starlette.routing import Route
+from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
+
 from pebbling.common.models import AgentManifest
+from pebbling.common.protocol.types import AgentCard, agent_card_ta, pebble_request_ta, pebble_response_ta
 
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .scheduler.redis_scheduler import RedisScheduler
@@ -10,20 +19,7 @@ from .storage.memory_storage import InMemoryStorage
 from .storage.postgres_storage import PostgreSQLStorage
 from .storage.qdrant_storage import QdrantStorage
 from .task_manager import TaskManager
-from .routers.run import agent_run_endpoint
 
-from pebbling.common.protocol.types import AgentCard
-from pebbling.common.protocol.types import agent_card_ta
-from pebbling.common.protocol.types import pebble_request_ta
-from pebbling.common.protocol.types import pebble_response_ta
-
-from starlette.middleware import Middleware
-from starlette.routing import Route
-from starlette.requests import Request
-from starlette.responses import Response, FileResponse
-from starlette.types import ExceptionHandler, Scope, Receive, Send
-from starlette.types import Lifespan
-from starlette.applications import Starlette
 
 class PebbleApplication(Starlette):
     """Pebble application class for creating Pebble-compatible servers."""
@@ -126,7 +122,6 @@ class PebbleApplication(Starlette):
 
     async def _agent_card_endpoint(self, request: Request) -> Response:
         if self._agent_card_json_schema is None:
-            from uuid import uuid4
             from time import time
             
             # Create a complete AgentCard with all required fields

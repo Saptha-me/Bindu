@@ -57,6 +57,7 @@ from typing import Any
 import anyio
 from opentelemetry.trace import get_current_span
 
+from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
 from pebbling.server.scheduler.base import (
     Scheduler,
     TaskOperation,
@@ -65,7 +66,6 @@ from pebbling.server.scheduler.base import (
     _ResumeTask,
     _RunTask,
 )
-from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
 
 
 class InMemoryScheduler(Scheduler):

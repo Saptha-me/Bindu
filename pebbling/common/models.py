@@ -1,17 +1,8 @@
 from dataclasses import dataclass
-from typing import Optional, NamedTuple, List, Any, Dict, Callable, Literal
+from typing import Any, Dict, List, Literal, NamedTuple, Optional
 from uuid import UUID
-import inspect
-import abc
-from typing import AsyncGenerator, Generator, Coroutine
 
-from .protocol.types import (
-    AgentCard, 
-    AgentCapabilities, 
-    AgentSkill, 
-    AgentIdentity,
-    AgentTrust
-)
+from .protocol.types import AgentCapabilities, AgentCard, AgentIdentity, AgentSkill, AgentTrust
 
 
 class KeyPaths(NamedTuple):

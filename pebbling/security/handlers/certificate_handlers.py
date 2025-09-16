@@ -5,9 +5,8 @@ This module provides handlers for certificate-related operations,
 including certificate status and verification.
 """
 
-import time
 import logging
-from typing import Dict, Any, Optional
+import time
 
 from aiohttp import web
 

@@ -4,16 +4,8 @@ from __future__ import annotations
 
 import uuid
 from typing import Any
-from uuid import UUID
 
-from pebbling.common.protocol.types import (
-    Artifact,
-    Message,
-    Part,
-    TextPart,
-    FilePart,
-    DataPart
-)
+from pebbling.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
 
 
 class MessageConverter:

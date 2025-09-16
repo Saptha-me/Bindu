@@ -1,6 +1,6 @@
 from starlette.requests import Request
 from starlette.responses import Response
-from pydantic import TypeAdapter
+
 from pebbling.common.protocol.types import pebble_request_ta, pebble_response_ta
 
 

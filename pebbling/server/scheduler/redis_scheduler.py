@@ -56,12 +56,13 @@
 from __future__ import annotations as _annotations
 
 import json
-import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
 import redis.asyncio as redis
 from opentelemetry.trace import get_current_span
+
+from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
 
 from .base import (
     Scheduler,
@@ -71,7 +72,6 @@ from .base import (
     _ResumeTask,
     _RunTask,
 )
-from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
 
 
 class RedisScheduler(Scheduler):

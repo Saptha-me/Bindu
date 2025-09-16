@@ -3,19 +3,14 @@
 from __future__ import annotations as _annotations
 
 from abc import ABC, abstractmethod
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, AsyncIterator
-from contextlib import asynccontextmanager
 
 import anyio
 from opentelemetry.trace import get_tracer, use_span
 
-from pebbling.common.protocol.types import (
-    Artifact, 
-    Message, 
-    TaskIdParams, 
-    TaskSendParams
-)
+from pebbling.common.protocol.types import Artifact, Message, TaskIdParams, TaskSendParams
 from pebbling.server.scheduler.base import Scheduler
 from pebbling.server.storage.base import Storage
 

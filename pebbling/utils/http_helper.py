@@ -10,8 +10,8 @@
 
 """HTTP utility functions for Pebbling services."""
 
-from typing import Any, Dict, Optional, Union
 import os
+from typing import Any, Dict, Optional, Union
 
 import httpx
 from pydantic import SecretStr

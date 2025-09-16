@@ -19,8 +19,6 @@ from typing import Any, Dict
 
 import orjson
 
-from pebbling.common.protocol.types import AgentCapabilities, AgentSkill
-
 
 def create_did_document(
     did: str, 

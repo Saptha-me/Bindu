@@ -14,8 +14,8 @@ Transform agents from any framework (Agno, CrewAI, LangChain) into production-re
 
 """
 
+from .manifest import create_manifest, validate_agent_function
 from .pebblify import pebblify
-from .manifest import validate_agent_function, create_manifest
 
 __all__ = [
     "pebblify",

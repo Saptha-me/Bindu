@@ -11,7 +11,7 @@
 """Hibiscus DID registry integration for Pebbling servers."""
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from pydantic.types import SecretStr
 

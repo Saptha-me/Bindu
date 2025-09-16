@@ -21,48 +21,36 @@ This module provides the core decorator that handles:
 """
 
 import inspect
-import uuid
-from typing import Optional, Callable, List, Dict, Any, Literal
-from pathlib import Path
 import os
-from functools import partial
-from contextlib import asynccontextmanager
-from typing import AsyncIterator
+import uuid
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Literal, Optional
 
 import uvicorn
 
+from pebbling.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
 from pebbling.common.protocol.types import (
-    AgentCapabilities, 
-    AgentSkill,
+    AgentCapabilities,
     AgentIdentity,
+    AgentSkill,
     AgentTrust,
 )
-from pebbling.common.models import (
-    DeploymentConfig,
-    StorageConfig,
-    SchedulerConfig
-)
-from pebbling.utils.constants import (
-    PKI_DIR,
-    CERTIFICATE_DIR
-)
+from pebbling.penguin.manifest import create_manifest, validate_agent_function
 from pebbling.security.agent_identity import create_agent_identity
-from pebbling.penguin.manifest import validate_agent_function, create_manifest
-from pebbling.common.models import AgentManifest
-
-# Import logging from pebbling utils
-from pebbling.utils.logging import get_logger
 
 # Import server components for deployment
 from pebbling.server import (
-    InMemoryScheduler, 
-    RedisScheduler,
-    InMemoryStorage, 
-    QdrantStorage,
+    InMemoryScheduler,
+    InMemoryStorage,
+    PebbleApplication,
     PostgreSQLStorage,
-    ManifestWorker,
-    PebbleApplication
+    QdrantStorage,
+    RedisScheduler,
 )
+from pebbling.utils.constants import CERTIFICATE_DIR, PKI_DIR
+
+# Import logging from pebbling utils
+from pebbling.utils.logging import get_logger
 
 # Configure logging for the module
 logger = get_logger("pebbling.penguin.pebblify")

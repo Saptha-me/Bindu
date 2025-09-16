@@ -7,11 +7,11 @@ authentication management.
 
 import importlib.util
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Iterable
 
-import subprocess
-import sys
 import typer
 from pydantic import BaseModel, ValidationError
 from rich.console import Console

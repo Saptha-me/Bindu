@@ -158,20 +158,21 @@ class InMemoryStorage(Storage[ContextT]):
         existing_context = self.contexts.get(context_id)
         
         if existing_context is None:
-            for message in messages:
-                self.contexts[context_id] = Context(
-                    context_id=context_id,
-                    kind='context',
-                    task_id=message['task_id'],
-                    role=message['role'],
-                    created_at=datetime.now(timezone.utc).isoformat(),
-                    updated_at=datetime.now(timezone.utc).isoformat(),
-                    status='active'
-                )
-        
-        # Since Context no longer has message_history field, we might need to store messages differently
-        # For now, just update the timestamp
-        self.contexts[context_id]['updated_at'] = datetime.now(timezone.utc).isoformat()
+            # Create new context with message history
+            self.contexts[context_id] = {
+                'context_id': context_id,
+                'kind': 'context',
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'updated_at': datetime.now(timezone.utc).isoformat(),
+                'status': 'active',
+                'message_history': messages.copy()
+            }
+        else:
+            # Append to existing message history
+            if 'message_history' not in existing_context:
+                existing_context['message_history'] = []
+            existing_context['message_history'].extend(messages)
+            existing_context['updated_at'] = datetime.now(timezone.utc).isoformat()
 
     async def list_tasks(self, length: int | None = None) -> list[Task]:
         """List all tasks in storage."""

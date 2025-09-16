@@ -36,5 +36,12 @@
     "protocol_version": "1.0.0",
     "proxy_urls": ["https://simple.pebbling.ai"],
     "cors_origins": ["*"]
+  },
+  "storage": {
+    "type": "memory",
+    "connection_string": ""
+  },
+  "scheduler": {
+    "type": "memory"
   }
 }

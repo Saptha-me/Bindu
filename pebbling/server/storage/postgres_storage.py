@@ -126,9 +126,13 @@ class PostgreSQLStorage(Storage[ContextT]):
         self.pool_size = pool_size
         self.engine = None
         self.session_factory = None
+        self._initialized = False
 
     async def initialize(self) -> None:
         """Initialize the database engine and create tables if needed."""
+        if self._initialized:
+            return
+            
         self.engine = create_async_engine(
             self.connection_string,
             pool_size=self.pool_size,
@@ -145,11 +149,18 @@ class PostgreSQLStorage(Storage[ContextT]):
         # Create tables
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            
+        self._initialized = True
 
     async def close(self) -> None:
         """Close the database engine."""
         if self.engine:
             await self.engine.dispose()
+
+    async def _ensure_initialized(self) -> None:
+        """Ensure storage is initialized before use."""
+        if not self._initialized:
+            await self.initialize()
 
     def _get_session(self) -> AsyncSession:
         """Get a new database session."""
@@ -167,6 +178,7 @@ class PostgreSQLStorage(Storage[ContextT]):
         Returns:
             The task or None if not found.
         """
+        await self._ensure_initialized()
         async with self._get_session() as session:
             stmt = select(TaskModel).where(TaskModel.id == task_id)
             result = await session.execute(stmt)
@@ -193,6 +205,7 @@ class PostgreSQLStorage(Storage[ContextT]):
 
     async def submit_task(self, context_id: str, message: Message) -> Task:
         """Submit a task using ORM."""
+        await self._ensure_initialized()
         # Generate a unique task ID
         task_id = str(uuid.uuid4())
         
@@ -234,6 +247,7 @@ class PostgreSQLStorage(Storage[ContextT]):
         new_messages: list[Message] | None = None,
     ) -> Task:
         """Update the state of a task using ORM."""
+        await self._ensure_initialized()
         async with self._get_session() as session:
             # Start a transaction
             async with session.begin():
@@ -276,6 +290,7 @@ class PostgreSQLStorage(Storage[ContextT]):
 
     async def load_context(self, context_id: str) -> ContextT | None:
         """Retrieve the stored context using ORM."""
+        await self._ensure_initialized()
         async with self._get_session() as session:
             stmt = select(ContextModel).where(ContextModel.id == context_id)
             result = await session.execute(stmt)
@@ -288,6 +303,7 @@ class PostgreSQLStorage(Storage[ContextT]):
 
     async def update_context(self, context_id: str, context: ContextT) -> None:
         """Update the context using ORM."""
+        await self._ensure_initialized()
         async with self._get_session() as session:
             # Try to get existing context
             stmt = select(ContextModel).where(ContextModel.id == context_id)
@@ -310,6 +326,7 @@ class PostgreSQLStorage(Storage[ContextT]):
 
     async def get_tasks_by_context(self, context_id: str, limit: int = 100) -> list[Task]:
         """Get all tasks for a specific context using ORM."""
+        await self._ensure_initialized()
         async with self._get_session() as session:
             stmt = (
                 select(TaskModel)
@@ -337,6 +354,7 @@ class PostgreSQLStorage(Storage[ContextT]):
 
     async def cleanup_old_tasks(self, days: int = 30) -> int:
         """Clean up tasks older than specified days using ORM."""
+        await self._ensure_initialized()
         async with self._get_session() as session:
             cutoff_date = datetime.now() - datetime.timedelta(days=days)
             stmt = delete(TaskModel).where(TaskModel.created_at < cutoff_date)
@@ -344,3 +362,62 @@ class PostgreSQLStorage(Storage[ContextT]):
             await session.commit()
             
             return result.rowcount
+
+    async def list_tasks(self, length: int | None = None) -> list[Task]:
+        """List all tasks in storage using ORM."""
+        await self._ensure_initialized()
+        async with self._get_session() as session:
+            stmt = select(TaskModel).order_by(TaskModel.created_at.desc())
+            if length:
+                stmt = stmt.limit(length)
+            
+            result = await session.execute(stmt)
+            task_models = result.scalars().all()
+            
+            tasks = []
+            for task_model in task_models:
+                task_status = TaskStatus(state=task_model.state, timestamp=task_model.timestamp.isoformat())
+                task = Task(
+                    id=task_model.id,
+                    context_id=task_model.context_id,
+                    kind=task_model.kind,
+                    status=task_status,
+                    history=task_model.history or [],
+                    artifacts=task_model.artifacts or []
+                )
+                tasks.append(task)
+            
+            return tasks
+
+    async def list_contexts(self, length: int | None = None) -> list[dict]:
+        """List all contexts in storage using ORM."""
+        await self._ensure_initialized()
+        async with self._get_session() as session:
+            stmt = select(ContextModel).order_by(ContextModel.created_at.desc())
+            if length:
+                stmt = stmt.limit(length)
+            
+            result = await session.execute(stmt)
+            context_models = result.scalars().all()
+            
+            contexts = []
+            for context_model in context_models:
+                context_dict = {
+                    'id': context_model.id,
+                    'context_data': context_model.context_data,
+                    'created_at': context_model.created_at,
+                    'updated_at': context_model.updated_at
+                }
+                contexts.append(context_dict)
+            
+            return contexts
+
+    async def clear_all(self) -> None:
+        """Clear all tasks and contexts from storage using ORM."""
+        await self._ensure_initialized()
+        async with self._get_session() as session:
+            # Delete all tasks
+            await session.execute(delete(TaskModel))
+            # Delete all contexts
+            await session.execute(delete(ContextModel))
+            await session.commit()

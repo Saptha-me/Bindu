@@ -66,6 +66,7 @@ class InMemoryStorage(Storage[ContextT]):
     def __init__(self):
         self.tasks: dict[str, Task] = {}
         self.contexts: dict[str, ContextT] = {}
+        self.task_feedback: dict[str, list[dict[str, Any]]] = {}
 
     async def load_task(self, task_id: str, history_length: int | None = None) -> Task | None:
         """Load a task from memory.
@@ -164,3 +165,14 @@ class InMemoryStorage(Storage[ContextT]):
         """Clear all tasks and contexts from storage."""
         self.tasks.clear()
         self.contexts.clear()
+        self.task_feedback.clear()
+
+    async def store_task_feedback(self, task_id: UUID, feedback_data: dict[str, Any]) -> None:
+        """Store feedback for a task."""
+        if task_id not in self.task_feedback:
+            self.task_feedback[task_id] = []
+        self.task_feedback[task_id].append(feedback_data)
+
+    async def get_task_feedback(self, task_id: UUID) -> list[dict[str, Any]] | None:
+        """Retrieve feedback for a task."""
+        return self.task_feedback.get(task_id)

@@ -5,7 +5,7 @@ from typing import AsyncGenerator, Generator, List
 
 from pebbling.common.protocol.types import AgentCapabilities, AgentSkill
 from pebbling.penguin.pebblify import pebblify
-from pebbling.common.models import DeploymentConfig
+from pebbling.common.models import DeploymentConfig, StorageConfig, SchedulerConfig
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
@@ -161,6 +161,8 @@ simple_config = load_config("simple_agent_config.json")
     documentation_url=simple_config.get("documentation_url"),
     extra_metadata=simple_config.get("extra_metadata", {}),
     deployment_config=DeploymentConfig(**simple_config["deployment"]),
+    storage_config=StorageConfig(**simple_config["storage"]),
+    scheduler_config=SchedulerConfig(**simple_config["scheduler"]),
 )
 def simple_agent(messages: List[str]) -> str:
     """Regular function example - returns single result."""

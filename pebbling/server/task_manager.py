@@ -92,7 +92,7 @@ from __future__ import annotations as _annotations
 import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from pebbling.common.protocol.types import (
@@ -118,6 +118,8 @@ from pebbling.common.protocol.types import (
     StreamMessageRequest,
     StreamMessageResponse,
     Task,
+    TaskFeedbackRequest,
+    TaskFeedbackResponse,
     TaskNotFoundError,
     TaskSendParams,
 )
@@ -268,6 +270,40 @@ class TaskManager:
         context_id = request['params'].get('context_id')
         await self.storage.clear_context(context_id)
         return ClearContextsResponse(jsonrpc='2.0', id=request['id'], result={'message': 'All tasks and contexts cleared successfully'})
+
+    @trace_task_operation("task_feedback")
+    async def task_feedback(self, request: TaskFeedbackRequest) -> TaskFeedbackResponse:
+        """Submit feedback for a completed task."""
+        task_id = request['params']['task_id']
+        
+        # Check if task exists
+        task = await self.storage.load_task(task_id)
+        if task is None:
+            return TaskFeedbackResponse(
+                jsonrpc='2.0',
+                id=request['id'],
+                error=TaskNotFoundError(code=-32001, message='Task not found'),
+            )
+        
+        # Store feedback (this will need to be implemented in storage)
+        feedback_data = {
+            'task_id': task_id,
+            'feedback': request['params']['feedback'],
+            'rating': request['params']['rating'],
+            'metadata': request['params']['metadata'],
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }
+        
+        # For now, we'll store feedback as task metadata
+        # In the future, this could be a separate feedback storage system
+        if hasattr(self.storage, 'store_task_feedback'):
+            await self.storage.store_task_feedback(task_id, feedback_data)
+        
+        return TaskFeedbackResponse(
+            jsonrpc='2.0', 
+            id=request['id'], 
+            result={'message': 'Feedback submitted successfully', 'task_id': str(task_id)}
+        )
 
     async def resubscribe_task(self, request: ResubscribeTaskRequest) -> None:
         raise NotImplementedError('Resubscribe is not implemented yet.')

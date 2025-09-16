@@ -408,6 +408,15 @@ class ListTasksParams(TypedDict):
     metadata: NotRequired[dict[str, Any]]
 
 @pydantic.with_config({'alias_generator': to_camel})
+class TaskFeedbackParams(TypedDict):
+    """Parameters for providing feedback on a task."""
+    
+    task_id: Required[UUID]
+    feedback: Required[str]
+    rating: NotRequired[int]  # Optional rating 1-5
+    metadata: NotRequired[dict[str, Any]]
+
+@pydantic.with_config({'alias_generator': to_camel})
 class MessageSendConfiguration(TypedDict):
     """Configuration for message sending."""
     
@@ -708,6 +717,9 @@ CancelTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNot
 ListTasksRequest = JSONRPCRequest[Literal['tasks/list'], ListTasksParams]
 ListTasksResponse = JSONRPCResponse[List[Task], Union[TaskNotFoundError, TaskNotCancelableError]]
 
+TaskFeedbackRequest = JSONRPCRequest[Literal['tasks/feedback'], TaskFeedbackParams]
+TaskFeedbackResponse = JSONRPCResponse[Dict[str, str], TaskNotFoundError]
+
 ListContextsRequest = JSONRPCRequest[Literal['contexts/list'], ListContextsParams]
 ListContextsResponse = JSONRPCResponse[List[Context], Union[ContextNotFoundError, ContextNotCancelableError]]
 
@@ -744,6 +756,7 @@ PebblingRequest = Annotated[
         GetTaskRequest,
         CancelTaskRequest,
         ListTasksRequest,
+        TaskFeedbackRequest,
         ListContextsRequest,
         ClearContextsRequest,
         SetTaskPushNotificationRequest,
@@ -761,6 +774,7 @@ PebblingResponse: TypeAlias = Union[
     GetTaskResponse,
     CancelTaskResponse,
     ListTasksResponse,
+    TaskFeedbackResponse,
     ListContextsResponse,
     ClearContextsResponse,
     SetTaskPushNotificationResponse,

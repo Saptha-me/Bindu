@@ -15,32 +15,30 @@ managing cryptographic keys used in the Pebbling security framework.
 """
 
 import os
-from typing import Tuple, Union, Dict, Any, Optional
 from datetime import datetime, timedelta, timezone
-import jwt
+from typing import Optional, Tuple, Union
 
-from cryptography.hazmat.primitives import serialization
+import jwt
 from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
+from cryptography.x509.oid import NameOID
+
+from pebbling.common.models import KeyPaths
 
 # Import constants from central location
 from pebbling.utils.constants import (
-    DEFAULT_KEY_ALGORITHM,
-    PRIVATE_KEY_FILENAME, 
-    PUBLIC_KEY_FILENAME, 
-    RSA_KEY_SIZE, 
-    RSA_PUBLIC_EXPONENT,
-    DEFAULT_JWT_EXPIRY_HOURS,
     CSR_FILENAME,
-    KeyType, 
-    PrivateKeyTypes, 
-    PublicKeyTypes
+    DEFAULT_KEY_ALGORITHM,
+    PRIVATE_KEY_FILENAME,
+    PUBLIC_KEY_FILENAME,
+    RSA_KEY_SIZE,
+    RSA_PUBLIC_EXPONENT,
+    KeyType,
+    PrivateKeyTypes,
+    PublicKeyTypes,
 )
-from pebbling.common.models import KeyPaths
-
 from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.security.common.keys")

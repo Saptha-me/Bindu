@@ -5,17 +5,14 @@ This module provides middleware for verifying security credentials
 in requests, including DID verification and mTLS certificate validation.
 """
 
-import time
 import logging
-import ssl
-from typing import Dict, Any, Callable, Optional
+from typing import Callable
 
 from aiohttp import web
 from aiohttp.web import middleware
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509 import load_der_x509_certificate
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 
 from pebbling.security.config import SECURITY_ENDPOINTS
 

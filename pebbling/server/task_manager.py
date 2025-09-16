@@ -100,7 +100,6 @@ from pebbling.common.protocol.types import (
     CancelTaskResponse,
     ClearContextsRequest,
     ClearContextsResponse,
-    Context,
     ContextNotFoundError,
     GetTaskPushNotificationRequest,
     GetTaskPushNotificationResponse,
@@ -124,10 +123,10 @@ from pebbling.common.protocol.types import (
     TaskSendParams,
 )
 
+from ..utils.task_telemetry import trace_context_operation, trace_task_operation, track_active_task
 from .scheduler import Scheduler
 from .storage import Storage
 from .workers import ManifestWorker
-from ..utils.task_telemetry import trace_task_operation, track_active_task, trace_context_operation
 
 
 @dataclass

@@ -16,15 +16,11 @@ and validating protocol compliance for agents and workflows.
 """
 
 import inspect
-from typing import Any, Callable, Dict, List, Optional, Literal
+from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import UUID
-from pebbling.common.protocol.types import (
-    AgentCapabilities, 
-    AgentSkill, 
-    AgentIdentity,
-    AgentTrust
-)
+
 from pebbling.common.models import AgentManifest
+from pebbling.common.protocol.types import AgentCapabilities, AgentIdentity, AgentSkill, AgentTrust
 
 
 def validate_agent_function(agent_function: Callable):

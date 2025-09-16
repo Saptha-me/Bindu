@@ -54,17 +54,21 @@ from __future__ import annotations as _annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional, List, Dict
+from typing import Any, List, Optional
+
+from qdrant_client import AsyncQdrantClient
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    VectorParams,
+)
 from typing_extensions import TypeVar
 
-import numpy as np
-from qdrant_client import QdrantClient, AsyncQdrantClient
-from qdrant_client.models import (
-    Distance, VectorParams, CreateCollection, PointStruct, Filter, 
-    FieldCondition, MatchValue, UpdateResult, ScoredPoint
-)
-
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+
 from .base import Storage
 
 ContextT = TypeVar('ContextT', default=Any)

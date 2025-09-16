@@ -5,19 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from pebbling.common.protocol.types import (
-    Artifact,
-    Message,
-    TaskIdParams,
-    TaskSendParams
-)
+from pebbling.common.protocol.types import Artifact, Message, TaskIdParams, TaskSendParams
 from pebbling.penguin.manifest import AgentManifest
 from pebbling.server.workers.base import Worker
-from pebbling.utils.worker_utils import (
-    MessageConverter,
-    ArtifactBuilder,
-    TaskStateManager
-)
+from pebbling.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
 
 @dataclass

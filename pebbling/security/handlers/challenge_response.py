@@ -5,15 +5,15 @@ This module provides handlers for challenge-response authentication
 between agents using cryptographic signatures.
 """
 
+import logging
 import time
 import uuid
-import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from aiohttp import web
 
-from pebbling.security.did_manager import DIDManager
 from pebbling.security.config import DEFAULT_CHALLENGE_TIMEOUT_SECONDS
+from pebbling.security.did_manager import DIDManager
 
 logger = logging.getLogger(__name__)
 

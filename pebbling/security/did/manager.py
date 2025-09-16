@@ -16,8 +16,7 @@ authentication for agents in the Pebbling framework.
 """
 
 import os
-import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import orjson
 

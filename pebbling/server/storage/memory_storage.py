@@ -49,12 +49,14 @@
 
 from __future__ import annotations as _annotations
 
-from uuid import UUID
 from datetime import datetime
 from typing import Any
+from uuid import UUID
+
 from typing_extensions import TypeVar
 
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+
 from .base import Storage
 
 ContextT = TypeVar('ContextT', default=Any)

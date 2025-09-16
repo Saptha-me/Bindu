@@ -19,15 +19,10 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from pebbling.common.protocol.types import AgentIdentity
 from pebbling.security.common.keys import generate_csr, generate_key_pair
 from pebbling.security.did.manager import DIDManager
-from pebbling.common.protocol.types import AgentIdentity
-from pebbling.utils.constants import (
-    DEFAULT_KEY_ALGORITHM,
-    PRIVATE_KEY_FILENAME,
-    PUBLIC_KEY_FILENAME
-)
-
+from pebbling.utils.constants import DEFAULT_KEY_ALGORITHM, PRIVATE_KEY_FILENAME, PUBLIC_KEY_FILENAME
 from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.security.setup_security")

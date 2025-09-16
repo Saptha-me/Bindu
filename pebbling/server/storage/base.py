@@ -114,3 +114,20 @@ class Storage(ABC, Generic[ContextT]):
     @abstractmethod
     async def clear_all(self) -> None:
         """Clear all tasks and contexts from storage."""
+
+    async def store_task_feedback(self, task_id: UUID, feedback_data: dict[str, Any]) -> None:
+        """Store feedback for a task.
+        
+        Default implementation stores feedback as task metadata.
+        Subclasses can override for dedicated feedback storage.
+        """
+        # Default implementation - can be overridden by specific storage implementations
+        pass
+
+    async def get_task_feedback(self, task_id: UUID) -> list[dict[str, Any]] | None:
+        """Retrieve feedback for a task.
+        
+        Returns list of feedback entries or None if no feedback exists.
+        """
+        # Default implementation - can be overridden by specific storage implementations
+        return None

@@ -47,6 +47,16 @@ class DeploymentConfig:
     cors_origins: Optional[List[str]] = None
     openapi_schema: Optional[str] = None
 
+@dataclass
+class StorageConfig:
+    """Organized storage configuration."""
+    type: Literal['postgres', 'qdrant', 'memory']
+    connection_string: str
+
+@dataclass
+class SchedulerConfig:
+    """Organized scheduler configuration."""
+    type: Literal['redis', 'memory']
 
 class AgentManifest:
     """Runtime agent manifest with all AgentCard properties and execution capability."""

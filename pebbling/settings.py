@@ -39,41 +39,8 @@ class ProjectSettings(BaseSettings):
         return self.environment == "testing"
 
 
-class BrandingSettings(BaseSettings):
-    """Branding and UI configuration settings."""
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_prefix="BRANDING__",
-        extra="allow",
-    )
-
-    logo_emoji: str = "🐧"
-    default_agent_name: str = "Pebbling Agent"
-    protocol_name: str = "Pebbling Protocol"
-    protocol_url: str = "https://pebbling.ai"
-    powered_by_text: str = "Fueled by"
-
-
-class LinksSettings(BaseSettings):
-    """External links configuration."""
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_prefix="LINKS__",
-        extra="allow",
-    )
-
-    docs_url: str = "https://docs.pebbling.ai"
-    docs_text: str = "Documentation"
-    github_url: str = "https://github.com/Pebbling-ai/pebble"
-    github_text: str = "GitHub"
-    github_issues_url: str = "https://github.com/Pebbling-ai/pebble/issues"
-    github_issues_text: str = "Report Issue"
-
-
 class UISettings(BaseSettings):
-    """UI text and status configuration."""
+    """Consolidated UI, branding, links, and footer configuration."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -81,9 +48,32 @@ class UISettings(BaseSettings):
         extra="allow",
     )
 
+    # Branding settings
+    logo_emoji: str = "🐧"
+    default_agent_name: str = "Pebbling Agent"
+    protocol_name: str = "Pebbling Protocol"
+    protocol_url: str = "https://pebbling.ai"
+    powered_by_text: str = "Fueled by"
+
+    # Status and interface text
     status_online_text: str = "Online"
     status_active_text: str = "Active"
     agent_subtitle_default: str = "Agent Information & Capabilities"
+
+    # External links
+    docs_url: str = "https://docs.pebbling.ai"
+    docs_text: str = "Documentation"
+    github_url: str = "https://github.com/Pebbling-ai/pebble"
+    github_text: str = "GitHub"
+    github_issues_url: str = "https://github.com/Pebbling-ai/pebble/issues"
+    github_issues_text: str = "Report Issue"
+
+    # Footer content
+    footer_description: str = "Pebbling is a decentralized agent-to-agent communication protocol. <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform where you can pebblify your agent and be part of the agent economy."
+    footer_local_version_text: str = "This is the local version. For production deployment, please follow the"
+    footer_copyright_year: str = "2025"
+    footer_company: str = "Pebbling AI"
+    footer_location: str = "Amsterdam"
 
     @computed_field
     @property
@@ -97,22 +87,6 @@ class UISettings(BaseSettings):
         }
 
 
-class FooterSettings(BaseSettings):
-    """Footer content configuration."""
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_prefix="FOOTER__",
-        extra="allow",
-    )
-
-    description: str = "Pebbling is a decentralized agent-to-agent communication protocol. <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform where you can pebblify your agent and be part of the agent economy."
-    local_version_text: str = "This is the local version. For production deployment, please follow the"
-    copyright_year: str = "2025"
-    company: str = "Pebbling AI"
-    location: str = "Amsterdam"
-
-
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -123,10 +97,7 @@ class Settings(BaseSettings):
     )
 
     project: ProjectSettings = ProjectSettings()
-    branding: BrandingSettings = BrandingSettings()
-    links: LinksSettings = LinksSettings()
     ui: UISettings = UISettings()
-    footer: FooterSettings = FooterSettings()
 
 
 app_settings = Settings()

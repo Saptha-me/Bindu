@@ -37,7 +37,11 @@ from pebbling.common.protocol.types import (
     AgentIdentity,
     AgentTrust,
 )
-from pebbling.common.models import DeploymentConfig
+from pebbling.common.models import (
+    DeploymentConfig,
+    StorageConfig,
+    SchedulerConfig
+)
 from pebbling.utils.constants import (
     PKI_DIR,
     CERTIFICATE_DIR
@@ -64,6 +68,37 @@ from pebbling.server import (
 logger = get_logger("pebbling.penguin.pebblify")
 
 
+def _create_storage_instance(storage_config: Optional[StorageConfig]) -> Any:
+    """Factory function to create storage instance based on configuration."""
+    if not storage_config:
+        return InMemoryStorage()
+    
+    if storage_config.type == "postgres":
+        storage = PostgreSQLStorage(connection_string=storage_config.connection_string)
+        storage.initialize()
+        return storage
+    elif storage_config.type == "qdrant":
+        storage = QdrantStorage(connection_string=storage_config.connection_string)
+        storage.initialize()
+        return storage
+    else:
+        return InMemoryStorage()
+
+
+def _create_scheduler_instance(scheduler_config: Optional[SchedulerConfig]) -> Any:
+    """Factory function to create scheduler instance based on configuration."""
+    if not scheduler_config:
+        return InMemoryScheduler()
+    
+    scheduler_factories = {
+        "redis": lambda: RedisScheduler(),
+        "memory": lambda: InMemoryScheduler()
+    }
+    
+    factory = scheduler_factories.get(scheduler_config.type, scheduler_factories["memory"])
+    return factory()
+
+
 def pebblify(
     author: Optional[str] = None,
     name: Optional[str] = None,
@@ -82,10 +117,9 @@ def pebblify(
     num_history_sessions: int = 10,
     documentation_url: Optional[str] = None,
     extra_metadata: Optional[Dict[str, Any]] = {},
-    storage: Optional[InMemoryStorage | PostgreSQLStorage | QdrantStorage] = None,
-    scheduler: Optional[InMemoryScheduler | RedisScheduler] = None,
     deployment_config: Optional[DeploymentConfig] = None,
-    
+    storage_config: Optional[StorageConfig] = None,
+    scheduler_config: Optional[SchedulerConfig] = None,
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
     
@@ -140,25 +174,31 @@ def pebblify(
 
         logger.info(f"🚀 Agent '{_manifest.identity['did']}' successfully pebblified!")
         logger.debug(f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}")
-        logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 
-        # Create server components
-        storage_instance = storage or InMemoryStorage()
-        scheduler_instance = scheduler or InMemoryScheduler()
-        
-        # Create the manifest worker
-        pebble_app = PebbleApplication(
-            storage=storage_instance,
-            scheduler=scheduler_instance,
-            penguin_id=agent_id,
-            manifest=_manifest,
-            version=version
-        )    
+        async def run_agent():
+            """Async function to initialize storage and run the agent."""
+            logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 
-        # Deploy the server
-        from urllib.parse import urlparse
-        parsed_url = urlparse(deployment_config.url)
-        uvicorn.run(pebble_app, host=parsed_url.hostname or "localhost", port=parsed_url.port or 3773)
+            # Create server components using factory functions
+            storage_instance = _create_storage_instance(storage_config)
+            scheduler_instance = _create_scheduler_instance(scheduler_config)
+            
+            # Create the manifest worker
+            pebble_app = PebbleApplication(
+                storage=storage_instance,
+                scheduler=scheduler_instance,
+                penguin_id=agent_id,
+                manifest=_manifest,
+                version=version
+            )    
+
+            # Deploy the server
+            from urllib.parse import urlparse
+            parsed_url = urlparse(deployment_config.url)
+            uvicorn.run(pebble_app, host=parsed_url.hostname or "localhost", port=parsed_url.port or 3773)
+
+        # Attach the run function to the manifest for later execution
+        _manifest.run_agent = run_agent
             
         return _manifest
     return decorator

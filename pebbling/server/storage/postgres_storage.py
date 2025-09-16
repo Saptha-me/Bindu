@@ -315,13 +315,13 @@ class PostgreSQLStorage(Storage[ContextT]):
             
             if context_model:
                 # Update existing
-                context_model.context_data = context
+                context_model.context_data = context.context_data
                 context_model.updated_at = datetime.now()
             else:
                 # Create new
                 context_model = ContextModel(
                     id=context_id,
-                    context_data=context
+                    context_data=context.context_data
                 )
                 session.add(context_model)
             

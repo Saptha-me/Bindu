@@ -7,7 +7,7 @@ from typing import Any
 from uuid import UUID
 
 from datetime import datetime
-from pebbling.common.protocol.types import Artifact, Context, Message, TaskIdParams, TaskSendParams
+from pebbling.common.protocol.types import Artifact, Context, Message, TaskIdParams, TaskSendParams, Task
 from pebbling.penguin.manifest import AgentManifest
 from pebbling.server.workers.base import Worker
 from pebbling.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
@@ -35,7 +35,7 @@ class ManifestWorker(Worker):
         await self.storage.update_task(task['task_id'], state='working')
 
         # Build complete message history
-        message_history = await self._build_complete_message_history(task['context_id'])
+        message_history = await self._build_complete_message_history(task)
         
         try:
             # Execute manifest
@@ -64,22 +64,30 @@ class ManifestWorker(Worker):
         """Convert manifest execution result to pebble protocol artifacts."""
         return ArtifactBuilder.from_result(results)
     
-    async def _build_complete_message_history(self, context_id: UUID) -> list[dict[str, str]]:
+    async def _build_complete_message_history(self, task: Task) -> list[dict[str, str]]:
         """Build complete message history combining existing context with current message."""
-        tasks_by_context = await self.storage.list_tasks_by_context(context_id)
-        previous_history = []
-
-        if len(tasks_by_context) > 0:
-            for task in tasks_by_context:
-                previous_history.append(task.get('history', []))
-            
+        tasks_by_context = await self.storage.list_tasks_by_context(task['context_id'])
         
-        # Build message history from task history (current user message)
-        current_message_history = self.build_message_history(task.get('history', []))
+        # Filter out the current task to avoid duplication
+        previous_tasks = [t for t in tasks_by_context if t['task_id'] != task['task_id']]
         
-        # Combine existing conversation history with current message
-        previous_history = self.build_message_history(existing_context)
-        return previous_history + current_message_history
+        # Early return if no previous tasks
+        if not previous_tasks:
+            return self.build_message_history(task.get('history', []))
+        
+        # Flatten all previous task histories efficiently
+        all_previous_messages = []
+        for prev_task in previous_tasks:
+            history = prev_task.get('history', [])
+            if history:  # Only extend if history exists
+                all_previous_messages.extend(history)
+        
+        # Get current task messages
+        current_messages = task.get('history', [])
+        
+        # Combine and convert all messages in one operation
+        all_messages = all_previous_messages + current_messages
+        return self.build_message_history(all_messages) if all_messages else []
     
     def _normalize_message_order(self, message: dict) -> dict:
         """Normalize message field order for consistency."""
@@ -103,18 +111,13 @@ class ManifestWorker(Worker):
             results, task['task_id'], task['context_id']
         )
         
-        # Prepare new messages to append: current task + agent response
-        current_messages = self._normalize_messages(task.get('history', []))
+        # Normalize messages for consistency
         normalized_agent_messages = self._normalize_messages(agent_messages)
-        new_messages = current_messages + normalized_agent_messages
         
-        # Efficiently append only new messages to context history
-        await self.storage.append_to_contexts(task['context_id'], new_messages)
+        # Update context with new agent messages only (task history already in context)
+        await self.storage.append_to_contexts(task['context_id'], normalized_agent_messages)
 
-        # Process results and convert to messages
-        response_messages = TaskStateManager.build_response_messages(results)
-        
-        # Build artifacts
+        # Build artifacts from results
         artifacts = self.build_artifacts(results)
 
         # Update task with completion
@@ -122,5 +125,5 @@ class ManifestWorker(Worker):
             task['task_id'], 
             state='completed', 
             new_artifacts=artifacts, 
-            new_messages=response_messages
+            new_messages=normalized_agent_messages
         )

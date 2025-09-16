@@ -254,6 +254,9 @@ class PebbleApplication(Starlette):
             jsonrpc_response = await self.task_manager.list_contexts(pebble_request)
         elif pebble_request['method'] == 'tasks/clear':
             jsonrpc_response = await self.task_manager.clear_tasks(pebble_request)
+        elif pebble_request['method'] == 'tasks/feedback':
+            jsonrpc_response = await self.task_manager.task_feedback(pebble_request)
+            
         else:
             raise NotImplementedError(f'Method {pebble_request["method"]} not implemented.')
         return Response(

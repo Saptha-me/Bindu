@@ -6,33 +6,33 @@
 # |---------------------------------------------------------|
 #
 # REDIS SCHEDULER IMPLEMENTATION:
-# 
+#
 # This is a Redis-based implementation of the Scheduler using Upstash Redis
 # for distributed task operations. Perfect for production deployments,
 # multi-process systems, and cloud environments.
 #
 # BURGER STORE ANALOGY - REDIS IMPLEMENTATION:
-# 
+#
 # Think of a burger chain with multiple restaurant locations:
-# 
+#
 # 1. CENTRAL ORDER SYSTEM (Redis):
 #    - Cloud-based order management system (Upstash Redis)
 #    - All restaurants connect to the same order queue
 #    - Orders persist even if individual restaurants go offline
 #    - Real-time synchronization across all locations
-# 
+#
 # 2. ORDER FLOW:
 #    - Customer order comes in → Sent to central system (Redis queue)
 #    - Any kitchen staff at any location → Can pick up orders
 #    - Special requests: pause, cancel, resume orders across locations
 #    - Order history preserved in central database
-# 
+#
 # 3. ADVANTAGES:
 #    - Distributed: Multiple processes can share the same queue
 #    - Persistent: Orders survive restaurant restarts
 #    - Scalable: Add more locations without changing the system
 #    - Reliable: Cloud-hosted with automatic backups
-# 
+#
 # 4. FEATURES:
 #    - Multi-process support (multiple restaurant locations)
 #    - Persistence across restarts (orders don't get lost)
@@ -85,7 +85,7 @@ class RedisScheduler(Scheduler):
         retry_on_timeout: bool = True,
     ):
         """Initialize Redis scheduler.
-        
+
         Args:
             redis_url: Upstash Redis URL (redis://...)
             queue_name: Redis queue name for task operations
@@ -107,7 +107,7 @@ class RedisScheduler(Scheduler):
             max_connections=self.max_connections,
             retry_on_timeout=self.retry_on_timeout,
         )
-        
+
         # Test connection
         await self._redis_client.ping()
         return self
@@ -120,38 +120,22 @@ class RedisScheduler(Scheduler):
 
     async def run_task(self, params: TaskSendParams) -> None:
         """Send a run task operation to Redis queue."""
-        task_operation = _RunTask(
-            operation='run',
-            params=params,
-            _current_span=get_current_span()
-        )
+        task_operation = _RunTask(operation="run", params=params, _current_span=get_current_span())
         await self._push_task_operation(task_operation)
 
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Send a cancel task operation to Redis queue."""
-        task_operation = _CancelTask(
-            operation='cancel',
-            params=params,
-            _current_span=get_current_span()
-        )
+        task_operation = _CancelTask(operation="cancel", params=params, _current_span=get_current_span())
         await self._push_task_operation(task_operation)
 
     async def pause_task(self, params: TaskIdParams) -> None:
         """Send a pause task operation to Redis queue."""
-        task_operation = _PauseTask(
-            operation='pause',
-            params=params,
-            _current_span=get_current_span()
-        )
+        task_operation = _PauseTask(operation="pause", params=params, _current_span=get_current_span())
         await self._push_task_operation(task_operation)
 
     async def resume_task(self, params: TaskIdParams) -> None:
         """Send a resume task operation to Redis queue."""
-        task_operation = _ResumeTask(
-            operation='resume',
-            params=params,
-            _current_span=get_current_span()
-        )
+        task_operation = _ResumeTask(operation="resume", params=params, _current_span=get_current_span())
         await self._push_task_operation(task_operation)
 
     async def receive_task_operations(self) -> AsyncIterator[TaskOperation]:
@@ -163,12 +147,12 @@ class RedisScheduler(Scheduler):
             try:
                 # Blocking pop with 1 second timeout
                 result = await self._redis_client.blpop(self.queue_name, timeout=1)
-                
+
                 if result:
                     _, task_data = result
                     task_operation = self._deserialize_task_operation(task_data)
                     yield task_operation
-                    
+
             except redis.RedisError as e:
                 # Log error and continue (could add exponential backoff here)
                 print(f"Redis error in receive_task_operations: {e}")
@@ -200,32 +184,20 @@ class RedisScheduler(Scheduler):
     def _deserialize_task_operation(self, task_data: str) -> TaskOperation:
         """Deserialize task operation from JSON string."""
         data = json.loads(task_data)
-        
+
         # Reconstruct the task operation (span will be recreated by the worker)
         if data["operation"] == "run":
             return _RunTask(
                 operation="run",
                 params=data["params"],
-                _current_span=get_current_span()  # Use current span context
+                _current_span=get_current_span(),  # Use current span context
             )
         elif data["operation"] == "cancel":
-            return _CancelTask(
-                operation="cancel",
-                params=data["params"],
-                _current_span=get_current_span()
-            )
+            return _CancelTask(operation="cancel", params=data["params"], _current_span=get_current_span())
         elif data["operation"] == "pause":
-            return _PauseTask(
-                operation="pause",
-                params=data["params"],
-                _current_span=get_current_span()
-            )
+            return _PauseTask(operation="pause", params=data["params"], _current_span=get_current_span())
         elif data["operation"] == "resume":
-            return _ResumeTask(
-                operation="resume",
-                params=data["params"],
-                _current_span=get_current_span()
-            )
+            return _ResumeTask(operation="resume", params=data["params"], _current_span=get_current_span())
         else:
             raise ValueError(f"Unknown operation type: {data['operation']}")
 
@@ -233,14 +205,14 @@ class RedisScheduler(Scheduler):
         """Get the current length of the task queue."""
         if not self._redis_client:
             raise RuntimeError("Redis client not initialized. Use async context manager.")
-        
+
         return await self._redis_client.llen(self.queue_name)
 
     async def clear_queue(self) -> int:
         """Clear all tasks from the queue. Returns number of tasks removed."""
         if not self._redis_client:
             raise RuntimeError("Redis client not initialized. Use async context manager.")
-        
+
         return await self._redis_client.delete(self.queue_name)
 
     async def health_check(self) -> bool:

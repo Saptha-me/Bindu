@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -11,7 +11,7 @@
 """
 Pebbling Server Module.
 
-Unified server supporting JSON-RPC 
+Unified server supporting JSON-RPC
 protocols with shared task management and session contexts.
 """
 
@@ -24,7 +24,7 @@ from .workers import ManifestWorker
 __all__ = [
     "PebbleApplication",
     "InMemoryStorage",
-    "PostgreSQLStorage", 
+    "PostgreSQLStorage",
     "QdrantStorage",
     "InMemoryScheduler",
     "RedisScheduler",

@@ -15,11 +15,12 @@ def load_config(config_path: str):
     # Get the directory of the current file
     current_dir = os.path.dirname(os.path.abspath(__file__))
     full_path = os.path.join(current_dir, config_path)
-    
-    with open(full_path, 'r') as f:
+
+    with open(full_path, "r") as f:
         config = json.load(f)
         print(f"Loaded config from {full_path}")
         return config
+
 
 # Load different configs for each agent
 news_config = load_config("news_reporter_config.json")
@@ -50,14 +51,14 @@ simple_config = load_config("simple_agent_config.json")
 # )
 # async def news_reporter_agent(messages: List[str]) -> AsyncGenerator[str, None]:
 #     """Async generator function example - yields multiple results asynchronously."""
-    
+
 #     # Use any framework internally
 #     agent = Agent(
 #         instructions="Get current news from amsterdam",
 #         model=OpenAIChat(id="gpt-4o")
 #     )
 #     result = agent.run(messages=messages)
-    
+
 #     # Yield protocol-compliant response
 #     yield result.to_dict()['content']
 
@@ -84,16 +85,16 @@ simple_config = load_config("simple_agent_config.json")
 # )
 # async def weather_agent(messages: List[str]):
 #     """Coroutine function example - manifest handles streaming automatically."""
-    
+
 #     # User writes simple agent code - manifest handles streaming
 #     agent = Agent(
 #         instructions="Provide weather information for the requested location",
 #         model=OpenAIChat(id="gpt-4o")
 #     )
-    
+
 #     # Await the agent result - this returns the streaming object
 #     result = await agent.arun(messages=messages, stream=True)
-    
+
 #     # Return the streaming result - manifest will detect it's async iterable
 #     return result
 
@@ -120,24 +121,24 @@ simple_config = load_config("simple_agent_config.json")
 # )
 # def story_agent(messages: List[str]) -> Generator[str, None, None]:
 #     """Generator function example - yields multiple results synchronously."""
-    
+
 #     # Use any framework internally
 #     agent = Agent(
 #         instructions="Create an engaging story based on the user's request, tell it in parts",
 #         model=OpenAIChat(id="gpt-4o")
 #     )
-    
+
 #     # Simulate streaming response by yielding parts
 #     yield "Starting the story..."
-    
+
 #     result = agent.run(messages=messages)
 #     content = result.to_dict()['content']
 
 #     yield content
-    
+
 #     # Split content into parts and yield each
 #     sleep(2)
-    
+
 #     yield "Story complete!"
 
 
@@ -165,21 +166,18 @@ simple_config = load_config("simple_agent_config.json")
 )
 def simple_agent(messages: List[str]) -> str:
     """Regular function example - returns single result."""
-    
+
     # Use any framework internally
-    agent = Agent(
-        instructions="Provide a simple response to the user's message",
-        model=OpenAIChat(id="gpt-4o")
-    )
-    
+    agent = Agent(instructions="Provide a simple response to the user's message", model=OpenAIChat(id="gpt-4o"))
+
     result = agent.run(input=messages)
-    
-    return result.to_dict()['content']
+
+    return result.to_dict()["content"]
 
 
 if __name__ == "__main__":
     print("Agno Example - All Function Types")
     print("1. news_reporter_agent - Async Generator")
-    print("2. weather_agent - Coroutine") 
+    print("2. weather_agent - Coroutine")
     print("3. story_agent - Generator")
     print("4. simple_agent - Regular Function")

@@ -27,6 +27,7 @@ class PebbleUserCredentials(BaseModel):
         email: User's email address for Pebble authentication.
         api_key: API key for authenticating with Pebble services.
     """
+
     email: str
     api_key: str
 
@@ -39,6 +40,7 @@ class PebbleConfig(BaseModel):
         auth: Path to the credentials file, or None if not set.
         agent_entrypoint: Path to the agent entrypoint file.
     """
+
     config: str
     auth: str | None
     agent_entrypoint: str
@@ -52,7 +54,9 @@ CONFIG_DIR_ERROR = "[bold red]❌ Config directory {} does not exist. Run 'pebbl
 CONFIG_FILE_ERROR = "[bold red]❌ Config file {} does not exist. Run 'pebble init' first.[/bold red]"
 INVALID_CONFIG_ERROR = "[bold red]❌ Invalid config structure: {}[/bold red]"
 AUTH_PATH_NULL_ERROR = "[bold red]❌ Auth path is null in config. Run 'pebble auth' with authentication.[/bold red]"
-CREDENTIALS_FILE_ERROR = "[bold red]❌ Credentials file {} does not exist. Run 'pebble auth' with authentication.[/bold red]"
+CREDENTIALS_FILE_ERROR = (
+    "[bold red]❌ Credentials file {} does not exist. Run 'pebble auth' with authentication.[/bold red]"
+)
 PEBBLE_INSTALLED_SUCCESS = "[bold green]✅ Pebble installed successfully![/bold green]"
 PEBBLE_INIT_SUCCESS = "[bold green]✅ Pebble initialized successfully![/bold green]"
 LAUNCH_COMPLETED = "[bold green]🚀 Launch completed![/bold green]"

@@ -6,7 +6,7 @@ agent = Agent(
     role="Senior Data Scientist",
     goal="Analyze and interpret complex datasets to provide actionable insights",
     backstory="With over 10 years of experience in data science and machine learning, "
-              "you excel at finding patterns in complex datasets.",
+    "you excel at finding patterns in complex datasets.",
     llm="gpt-4",  # Default: OPENAI_MODEL_NAME or "gpt-4"
     function_calling_llm=None,  # Optional: Separate LLM for tool calling
     verbose=False,  # Default: False
@@ -36,7 +36,7 @@ agent = Agent(
 messages = [
     {"role": "user", "content": "I need information about large language models"},
     {"role": "assistant", "content": "I'd be happy to help with that! What specifically would you like to know?"},
-    {"role": "user", "content": "What are the latest developments in 2025?"}
+    {"role": "user", "content": "What are the latest developments in 2025?"},
 ]
 
 result = agent.kickoff(messages)

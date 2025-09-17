@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -29,19 +29,16 @@ class DIDManager:
 
     @staticmethod
     def get_or_create_did(
-        agent_id: str,
-        config_path: str, 
-        pki_dir: str, 
-        recreate: bool = False
+        agent_id: str, config_path: str, pki_dir: str, recreate: bool = False
     ) -> Tuple[str, Dict[str, Any]]:
         """Get or create a DID for the agent.
-        
+
         Args:
 
             config_path: Path to the DID configuration file
             pki_dir: Directory containing the key files
             recreate: Whether to recreate the DID if it exists
-            
+
         Returns:
             Tuple of (did, did_document)
         """
@@ -56,40 +53,31 @@ class DIDManager:
             except Exception:
                 # If there's an error reading the file, we'll create a new DID
                 pass
-        
+
         # Make sure the keys directory exists
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
-        
+
         # Generate keys if needed
         public_key_pem = load_public_key(pki_dir)
-        
+
         # Create a new DID
         did = f"did:pebble:{agent_id}"
-        
+
         # Create a DID document
         did_document = create_did_document(
             did=did,
             public_key_pem=public_key_pem,
         )
-        
+
         # Save the DID configuration
         with open(config_path, "wb") as f:
-            f.write(orjson.dumps({
-                "did": did,
-                "didDocument": did_document
-            }))
-    
+            f.write(orjson.dumps({"did": did, "didDocument": did_document}))
+
         return did, did_document
 
-    def __init__(
-        self, 
-        agent_id: str,
-        config_path="did.json", 
-        pki_dir="keys", 
-        endpoint=None, 
-        recreate: bool = False):
+    def __init__(self, agent_id: str, config_path="did.json", pki_dir="keys", endpoint=None, recreate: bool = False):
         """Initialize the DID manager.
-        
+
         Args:
             agent_id: The agent ID to use for the DID
             config_path: Path to the DID configuration file
@@ -102,18 +90,16 @@ class DIDManager:
         self.agent_id = agent_id
         self.config_path = config_path
         self.did, self.did_document = self.get_or_create_did(
-            agent_id=agent_id,
-            config_path=config_path, 
-            pki_dir=pki_dir, 
-            recreate=recreate)
-        
+            agent_id=agent_id, config_path=config_path, pki_dir=pki_dir, recreate=recreate
+        )
+
         # Update service endpoint if provided
         if endpoint:
             self.update_service_endpoint(endpoint)
-        
+
     def update_service_endpoint(self, endpoint):
         """Update the service endpoint in the DID document.
-        
+
         Args:
             endpoint: The new service endpoint
         """
@@ -121,7 +107,7 @@ class DIDManager:
 
     def get_did(self) -> str:
         """Get the DID of the agent.
-        
+
         Returns:
             The DID as a string
         """
@@ -129,7 +115,7 @@ class DIDManager:
 
     def get_did_document(self) -> Dict[str, Any]:
         """Get the DID document of the agent.
-        
+
         Returns:
             The DID document as a dictionary
         """

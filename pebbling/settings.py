@@ -79,10 +79,10 @@ class UISettings(BaseSettings):
     def page_subtitles(self) -> dict[str, str]:
         """Page subtitle mappings."""
         return {
-            'agent': 'Agent Information & Capabilities',
-            'chat': 'Interactive Chat Interface',
-            'storage': 'Task History & Storage Management',
-            'docs': 'API Documentation & Examples'
+            "agent": "Agent Information & Capabilities",
+            "chat": "Interactive Chat Interface",
+            "storage": "Task History & Storage Management",
+            "docs": "API Documentation & Examples",
         }
 
 

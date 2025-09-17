@@ -117,11 +117,11 @@ def pebblify(
     certificate_validity_days: int = 365,
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
-    
+
     Args:
         author: Agent author email (required for Hibiscus registration, or set PEBBLE_HIBISCUS_EMAIL env var)
         name: Human-readable agent name
-        id: Unique agent identifier  
+        id: Unique agent identifier
         description: Agent description
         version: Agent version string
         recreate_keys: Force regeneration of existing keys
@@ -144,11 +144,11 @@ def pebblify(
         hibiscus_pat_token: Hibiscus Personal Access Token (required for registration, or set PEBBLE_HIBISCUS_PAT_TOKEN env var)
         issue_certificate: Whether to issue a certificate during registration
         certificate_validity_days: Certificate validity period in days (default: 365)
-        
+
     Environment Variables:
         PEBBLE_HIBISCUS_EMAIL: Agent author email for Hibiscus registration (alternative to 'author' parameter)
         PEBBLE_HIBISCUS_PAT_TOKEN: Hibiscus Personal Access Token (alternative to 'hibiscus_pat_token' parameter)
-        
+
     Returns:
         Decorated function that returns an AgentManifest
     """
@@ -201,7 +201,7 @@ def pebblify(
             extra_metadata=extra_metadata,
         )
 
-        agent_did = _manifest.identity.get('did', 'None') if _manifest.identity else 'None'
+        agent_did = _manifest.identity.get("did", "None") if _manifest.identity else "None"
         logger.info(f"🚀 Agent '{agent_did}' successfully pebblified!")
         logger.debug(
             f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}"
@@ -210,28 +210,32 @@ def pebblify(
         # Register with Hibiscus if requested
         if register_with_hibiscus:
             # Get author email from parameter or environment variable
-            registry_author = os.getenv('PEBBLE_HIBISCUS_EMAIL') or author 
+            registry_author = os.getenv("PEBBLE_HIBISCUS_EMAIL") or author
             if not registry_author:
-                logger.error("Author email is required for Hibiscus registration. Provide via 'author' parameter or PEBBLE_HIBISCUS_EMAIL environment variable")
+                logger.error(
+                    "Author email is required for Hibiscus registration. Provide via 'author' parameter or PEBBLE_HIBISCUS_EMAIL environment variable"
+                )
                 raise ValueError("Author email is required when register_with_hibiscus=True")
-            
+
             # Get PAT token from parameter or environment variable
-            registry_pat_token = hibiscus_pat_token or os.getenv('PEBBLE_HIBISCUS_PAT_TOKEN')
+            registry_pat_token = hibiscus_pat_token or os.getenv("PEBBLE_HIBISCUS_PAT_TOKEN")
             if not registry_pat_token:
-                logger.error("Hibiscus PAT token is required for registration. Provide via 'hibiscus_pat_token' parameter or PEBBLE_HIBISCUS_PAT_TOKEN environment variable")  
+                logger.error(
+                    "Hibiscus PAT token is required for registration. Provide via 'hibiscus_pat_token' parameter or PEBBLE_HIBISCUS_PAT_TOKEN environment variable"
+                )
                 raise ValueError("Hibiscus PAT token is required when register_with_hibiscus=True")
-            
+
             try:
                 logger.info("🌺 Registering agent with Hibiscus registry...")
                 from pebbling.hibiscus.agent_registry import register_with_registry
-                
+
                 # Get CSR data from agent identity if certificate issuance is requested
                 csr_data = None
-                if issue_certificate and agent_identity and agent_identity.get('csr'):
-                    csr_file_path = agent_identity['csr']
+                if issue_certificate and agent_identity and agent_identity.get("csr"):
+                    csr_file_path = agent_identity["csr"]
                     # Read the CSR content from the file path
                     try:
-                        with open(csr_file_path, 'r') as f:
+                        with open(csr_file_path, "r") as f:
                             csr_data = f.read()
                     except Exception as e:
                         logger.error(f"Failed to read CSR file {csr_file_path}: {e}")
@@ -239,7 +243,7 @@ def pebblify(
                 elif issue_certificate:
                     logger.error("Certificate issuance requested but no CSR found in agent identity")
                     raise ValueError("Certificate issuance requested but no CSR was generated")
-                
+
                 registration_result = register_with_registry(
                     author=registry_author,
                     agent_manifest=_manifest,
@@ -250,11 +254,11 @@ def pebblify(
                     csr_data=csr_data,
                     certificate_validity_days=certificate_validity_days,
                 )
-                
+
                 logger.info("✅ Successfully registered with Hibiscus!")
                 if issue_certificate and registration_result and registration_result.get("certificate"):
                     logger.info("🔐 Certificate issued and linked to agent registration")
-                
+
             except Exception as e:
                 logger.error(f"❌ Failed to register with Hibiscus: {e}")
                 # Don't stop deployment if registration fails, just warn
@@ -285,7 +289,7 @@ def pebblify(
         parsed_url = urlparse(deployment_config.url)
         host = parsed_url.hostname or "localhost"
         port = parsed_url.port or 3773
-        
+
         # Display beautiful server startup banner with all info
         print(prepare_server_display(host=host, port=port, agent_id=agent_id))
         uvicorn.run(pebble_app, host=host, port=port)

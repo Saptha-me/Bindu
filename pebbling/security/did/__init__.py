@@ -20,12 +20,11 @@ from pebbling.security.did.manager import DIDManager
 # Define public API
 __all__ = [
     # Main class
-    'DIDManager',
-    
+    "DIDManager",
     # Document operations
-    'create_did_document',
-    'update_service_endpoint',
-    'import_did_document',
-    'export_did_document',
-    'validate_did_document',
+    "create_did_document",
+    "update_service_endpoint",
+    "import_did_document",
+    "export_did_document",
+    "validate_did_document",
 ]

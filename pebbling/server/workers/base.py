@@ -20,12 +20,12 @@ tracer = get_tracer(__name__)
 @dataclass
 class Worker(ABC):
     """Base worker class for executing tasks.
-    
+
     This worker bridges the gap between the pebble task execution system
     and the execution logic. It follows the Pebble pattern for
     proper lifecycle management.
     """
-    
+
     scheduler: Scheduler
     storage: Storage
 
@@ -48,25 +48,24 @@ class Worker(ABC):
     async def _handle_task_operation(self, task_operation) -> None:
         """Handle a task operation from the scheduler."""
         operation_handlers = {
-            'run': self.run_task,
-            'cancel': self.cancel_task,
-            'pause': self._handle_pause,
-            'resume': self._handle_resume
+            "run": self.run_task,
+            "cancel": self.cancel_task,
+            "pause": self._handle_pause,
+            "resume": self._handle_resume,
         }
-        
+
         try:
-            with use_span(task_operation['_current_span']):
+            with use_span(task_operation["_current_span"]):
                 with tracer.start_as_current_span(
-                    f'{task_operation["operation"]} task', 
-                    attributes={'logfire.tags': ['pebble']}
+                    f"{task_operation['operation']} task", attributes={"logfire.tags": ["pebble"]}
                 ):
-                    handler = operation_handlers.get(task_operation['operation'])
+                    handler = operation_handlers.get(task_operation["operation"])
                     if handler:
-                        await handler(task_operation['params'])
+                        await handler(task_operation["params"])
         except Exception:
             # Update task status to failed on any exception
-            task_id = task_operation['params']['task_id']
-            await self.storage.update_task(task_id, state='failed')
+            task_id = task_operation["params"]["task_id"]
+            await self.storage.update_task(task_id, state="failed")
 
     @abstractmethod
     async def run_task(self, params: TaskSendParams) -> None:
@@ -87,11 +86,11 @@ class Worker(ABC):
     def build_artifacts(self, result: Any) -> list[Artifact]:
         """Convert execution result to pebble protocol artifacts."""
         ...
-    
+
     async def _handle_pause(self, params: TaskIdParams) -> None:
         """Handle pause operation. Override in subclasses if pause is supported."""
         pass
-    
+
     async def _handle_resume(self, params: TaskIdParams) -> None:
         """Handle resume operation. Override in subclasses if resume is supported."""
         pass

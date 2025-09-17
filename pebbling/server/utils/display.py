@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -9,6 +9,7 @@
 #  Thank you users! We ❤️ you! - 🐧
 
 """Display utilities for the Pebbling server."""
+
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
@@ -17,7 +18,7 @@ from rich.text import Text
 
 def prepare_server_display() -> str:
     """Prepare the colorful ASCII display for the server.
-    
+
     Returns:
         A string containing a formatted ASCII art display for the server
     """
@@ -59,7 +60,7 @@ def prepare_server_display() -> str:
 #####################################################################"""
 
         version_info = Text("v0.1.0", style="bold bright_yellow")
-        
+
         # Create colorful display with the pebbling art
         display_content = (
             Text(pebbling_art, style="bold bright_cyan")
@@ -67,17 +68,16 @@ def prepare_server_display() -> str:
             + Text("Pebbling ", style="bold bright_magenta")
             + version_info
             + "\n"
-            + Text("🐧 A Protocol Framework for Agent to Agent Communication", 
-                  style="bold bright_green italic")
+            + Text("🐧 A Protocol Framework for Agent to Agent Communication", style="bold bright_green italic")
         )
-        
+
         display_panel = Panel.fit(
             display_content,
             title="[bold rainbow]🐧 Pebbling Protocol Framework[/bold rainbow]",
             border_style="bright_blue",
             box=box.DOUBLE,
         )
-        
+
         console.print(display_panel)
         return console.export_text()
     except ImportError:

@@ -6,26 +6,26 @@
 # |---------------------------------------------------------|
 #
 # IN-MEMORY STORAGE IMPLEMENTATION:
-# 
+#
 # This is the in-memory implementation of the Storage interface for the Pebbling framework.
 # It provides fast, temporary storage for tasks and contexts during agent execution.
 #
 # BURGER STORE ANALOGY:
-# 
+#
 # Think of this as the restaurant's whiteboard order tracking system:
-# 
+#
 # 1. WHITEBOARD ORDERS (InMemoryStorage):
 #    - Orders written on whiteboard for current shift
 #    - Fast to read and update during busy periods
 #    - Gets erased at end of day (when server restarts)
 #    - Perfect for high-speed order processing
-# 
+#
 # 2. ORDER TRACKING:
 #    - self.tasks: Dictionary of all current orders on the whiteboard
 #    - self.contexts: Customer preferences and conversation history
 #    - Quick lookup by order ID or customer ID
 #    - Immediate updates when order status changes
-# 
+#
 # 3. PERFORMANCE CHARACTERISTICS:
 #    - Lightning fast: O(1) lookups and updates
 #    - Memory efficient: Only stores current active orders
@@ -59,7 +59,7 @@ from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, T
 
 from .base import Storage
 
-ContextT = TypeVar('ContextT', default=Any)
+ContextT = TypeVar("ContextT", default=Any)
 
 
 class InMemoryStorage(Storage[ContextT]):
@@ -83,33 +83,27 @@ class InMemoryStorage(Storage[ContextT]):
         if task_id not in self.tasks:
             return None
 
-        task = self.tasks[task_id] 
-        if history_length and 'history' in task:
-            task['history'] = task['history'][-history_length:]
+        task = self.tasks[task_id]
+        if history_length and "history" in task:
+            task["history"] = task["history"][-history_length:]
         return task
 
     async def submit_task(self, context_id: UUID, message: Message) -> Task:
         """Submit a task to storage."""
         # Use existing task ID from message or generate new one
-        task_id = message.get('task_id')
+        task_id = message.get("task_id")
         if isinstance(task_id, str):
             task_id = UUID(task_id)
-        
-        # Ensure all UUID fields are proper UUID objects
-        message['task_id'] = task_id
-        message['context_id'] = context_id
-        
-        if 'message_id' in message and isinstance(message['message_id'], str):
-            message['message_id'] = UUID(message['message_id'])
 
-        task_status = TaskStatus(state='submitted', timestamp=datetime.now(timezone.utc).isoformat())
-        task = Task(
-            task_id=task_id, 
-            context_id=context_id, 
-            kind='task', 
-            status=task_status, 
-            history=[message]
-        )
+        # Ensure all UUID fields are proper UUID objects
+        message["task_id"] = task_id
+        message["context_id"] = context_id
+
+        if "message_id" in message and isinstance(message["message_id"], str):
+            message["message_id"] = UUID(message["message_id"])
+
+        task_status = TaskStatus(state="submitted", timestamp=datetime.now(timezone.utc).isoformat())
+        task = Task(task_id=task_id, context_id=context_id, kind="task", status=task_status, history=[message])
         self.tasks[task_id] = task
 
         return task
@@ -123,21 +117,21 @@ class InMemoryStorage(Storage[ContextT]):
     ) -> Task:
         """Update the state of a task."""
         task = self.tasks[task_id]
-        task['status'] = TaskStatus(state=state, timestamp=datetime.now(timezone.utc).isoformat())
+        task["status"] = TaskStatus(state=state, timestamp=datetime.now(timezone.utc).isoformat())
 
         if new_artifacts:
-            if 'artifacts' not in task:
-                task['artifacts'] = []
-            task['artifacts'].extend(new_artifacts)
+            if "artifacts" not in task:
+                task["artifacts"] = []
+            task["artifacts"].extend(new_artifacts)
 
         if new_messages:
-            if 'history' not in task:
-                task['history'] = []
+            if "history" not in task:
+                task["history"] = []
             # Add IDs to messages for consistency
             for message in new_messages:
-                message['task_id'] = task_id
-                message['context_id'] = task['context_id']
-                task['history'].append(message)
+                message["task_id"] = task_id
+                message["context_id"] = task["context_id"]
+                task["history"].append(message)
 
         return task
 
@@ -149,30 +143,30 @@ class InMemoryStorage(Storage[ContextT]):
     async def load_context(self, context_id: UUID) -> Context | None:
         """Retrieve the stored context given the `context_id`."""
         return self.contexts.get(context_id)
-    
+
     async def append_to_contexts(self, context_id: UUID, messages: list[Message]) -> None:
         """Efficiently append new messages to context history without rebuilding entire context."""
         if not messages:
             return
-            
+
         existing_context = self.contexts.get(context_id)
-        
+
         if existing_context is None:
             # Create new context with message history
             self.contexts[context_id] = {
-                'context_id': context_id,
-                'kind': 'context',
-                'created_at': datetime.now(timezone.utc).isoformat(),
-                'updated_at': datetime.now(timezone.utc).isoformat(),
-                'status': 'active',
-                'message_history': messages.copy()
+                "context_id": context_id,
+                "kind": "context",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "status": "active",
+                "message_history": messages.copy(),
             }
         else:
             # Append to existing message history
-            if 'message_history' not in existing_context:
-                existing_context['message_history'] = []
-            existing_context['message_history'].extend(messages)
-            existing_context['updated_at'] = datetime.now(timezone.utc).isoformat()
+            if "message_history" not in existing_context:
+                existing_context["message_history"] = []
+            existing_context["message_history"].extend(messages)
+            existing_context["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     async def list_tasks(self, length: int | None = None) -> list[Task]:
         """List all tasks in storage."""
@@ -183,7 +177,7 @@ class InMemoryStorage(Storage[ContextT]):
 
     async def list_tasks_by_context(self, context_id: UUID, length: int | None = None) -> list[Task]:
         """List all tasks in storage."""
-        tasks = [task for task in self.tasks.values() if task['context_id'] == context_id]
+        tasks = [task for task in self.tasks.values() if task["context_id"] == context_id]
         if length:
             tasks = tasks[-length:]
         return tasks

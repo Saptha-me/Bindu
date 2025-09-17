@@ -4,7 +4,7 @@ This module provides the version information of the Pebbling package
 by accessing the installed package metadata.
 """
 
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |

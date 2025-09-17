@@ -38,6 +38,7 @@ dependencies = [
     "redis>=6.4.0",
     "sqlalchemy>=2.0.43",
     "opentelemetry-exporter-otlp>=1.35.0",
+    "starlette>=0.48.0",
 ]
 
 [project.optional-dependencies]

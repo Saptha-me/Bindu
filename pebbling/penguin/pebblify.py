@@ -26,6 +26,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
+from pydantic.types import SecretStr
+from urllib.parse import urlparse
 import uvicorn
 
 from pebbling.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
@@ -37,6 +39,7 @@ from pebbling.common.protocol.types import (
 )
 from pebbling.penguin.manifest import create_manifest, validate_agent_function
 from pebbling.security.agent_identity import create_agent_identity
+import pebbling.observability.openinference as OpenInferenceObservability
 
 # Import server components for deployment
 from pebbling.server import (
@@ -47,6 +50,7 @@ from pebbling.server import (
     QdrantStorage,
     RedisScheduler,
 )
+from pebbling.server.utils.display import prepare_server_display
 from pebbling.utils.constants import CERTIFICATE_DIR, PKI_DIR
 
 # Import logging from pebbling utils
@@ -105,8 +109,49 @@ def pebblify(
     deployment_config: Optional[DeploymentConfig] = None,
     storage_config: Optional[StorageConfig] = None,
     scheduler_config: Optional[SchedulerConfig] = None,
+    # Registry and certificate parameters
+    register_with_hibiscus: bool = False,
+    hibiscus_url: str = "http://localhost:19191",
+    hibiscus_pat_token: Optional[str] = None,
+    issue_certificate: bool = False,
+    certificate_validity_days: int = 365,
 ) -> Callable:
-    """Transform a protocol-compliant function into a Pebbling-compatible agent."""
+    """Transform a protocol-compliant function into a Pebbling-compatible agent.
+    
+    Args:
+        author: Agent author email (required for Hibiscus registration, or set PEBBLE_HIBISCUS_EMAIL env var)
+        name: Human-readable agent name
+        id: Unique agent identifier  
+        description: Agent description
+        version: Agent version string
+        recreate_keys: Force regeneration of existing keys
+        skills: List of agent skills/capabilities
+        capabilities: Technical capabilities (streaming, notifications, etc.)
+        agent_trust: Trust and security configuration
+        kind: Agent type ('agent', 'team', or 'workflow')
+        debug_mode: Enable debug logging
+        debug_level: Debug verbosity level
+        monitoring: Enable monitoring/metrics
+        telemetry: Enable telemetry collection
+        num_history_sessions: Number of conversation histories to maintain
+        documentation_url: URL to agent documentation
+        extra_metadata: Additional metadata dictionary
+        deployment_config: Server deployment configuration
+        storage_config: Storage backend configuration
+        scheduler_config: Task scheduler configuration
+        register_with_hibiscus: Whether to register agent with Hibiscus registry
+        hibiscus_url: Hibiscus registry URL (default: http://localhost:19191)
+        hibiscus_pat_token: Hibiscus Personal Access Token (required for registration, or set PEBBLE_HIBISCUS_PAT_TOKEN env var)
+        issue_certificate: Whether to issue a certificate during registration
+        certificate_validity_days: Certificate validity period in days (default: 365)
+        
+    Environment Variables:
+        PEBBLE_HIBISCUS_EMAIL: Agent author email for Hibiscus registration (alternative to 'author' parameter)
+        PEBBLE_HIBISCUS_PAT_TOKEN: Hibiscus Personal Access Token (alternative to 'hibiscus_pat_token' parameter)
+        
+    Returns:
+        Decorated function that returns an AgentManifest
+    """
 
     def decorator(agent_function: Callable) -> AgentManifest:
         # Validate that this is a protocol-compliant function
@@ -126,7 +171,7 @@ def pebblify(
             id=agent_id,
             did_required=True,  # We encourage the use of DID for agent-to-agent communication
             recreate_keys=recreate_keys,
-            create_csr=True,
+            create_csr=issue_certificate,  # Generate CSR only if certificate will be issued
             pki_dir=Path(os.path.join(caller_dir, PKI_DIR)),
             cert_dir=Path(os.path.join(caller_dir, CERTIFICATE_DIR)),
         )
@@ -156,10 +201,64 @@ def pebblify(
             extra_metadata=extra_metadata,
         )
 
-        logger.info(f"🚀 Agent '{_manifest.identity['did']}' successfully pebblified!")
+        agent_did = _manifest.identity.get('did', 'None') if _manifest.identity else 'None'
+        logger.info(f"🚀 Agent '{agent_did}' successfully pebblified!")
         logger.debug(
             f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}"
         )
+
+        # Register with Hibiscus if requested
+        if register_with_hibiscus:
+            # Get author email from parameter or environment variable
+            registry_author = os.getenv('PEBBLE_HIBISCUS_EMAIL') or author 
+            if not registry_author:
+                logger.error("Author email is required for Hibiscus registration. Provide via 'author' parameter or PEBBLE_HIBISCUS_EMAIL environment variable")
+                raise ValueError("Author email is required when register_with_hibiscus=True")
+            
+            # Get PAT token from parameter or environment variable
+            registry_pat_token = hibiscus_pat_token or os.getenv('PEBBLE_HIBISCUS_PAT_TOKEN')
+            if not registry_pat_token:
+                logger.error("Hibiscus PAT token is required for registration. Provide via 'hibiscus_pat_token' parameter or PEBBLE_HIBISCUS_PAT_TOKEN environment variable")  
+                raise ValueError("Hibiscus PAT token is required when register_with_hibiscus=True")
+            
+            try:
+                logger.info("🌺 Registering agent with Hibiscus registry...")
+                from pebbling.hibiscus.agent_registry import register_with_registry
+                
+                # Get CSR data from agent identity if certificate issuance is requested
+                csr_data = None
+                if issue_certificate and agent_identity and agent_identity.get('csr'):
+                    csr_file_path = agent_identity['csr']
+                    # Read the CSR content from the file path
+                    try:
+                        with open(csr_file_path, 'r') as f:
+                            csr_data = f.read()
+                    except Exception as e:
+                        logger.error(f"Failed to read CSR file {csr_file_path}: {e}")
+                        raise ValueError(f"Failed to read CSR file: {e}")
+                elif issue_certificate:
+                    logger.error("Certificate issuance requested but no CSR found in agent identity")
+                    raise ValueError("Certificate issuance requested but no CSR was generated")
+                
+                registration_result = register_with_registry(
+                    author=registry_author,
+                    agent_manifest=_manifest,
+                    agent_registry_pat_token=SecretStr(registry_pat_token),
+                    agent_registry="hibiscus",
+                    agent_registry_url=hibiscus_url,
+                    issue_certificate=issue_certificate,
+                    csr_data=csr_data,
+                    certificate_validity_days=certificate_validity_days,
+                )
+                
+                logger.info("✅ Successfully registered with Hibiscus!")
+                if issue_certificate and registration_result and registration_result.get("certificate"):
+                    logger.info("🔐 Certificate issued and linked to agent registration")
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to register with Hibiscus: {e}")
+                # Don't stop deployment if registration fails, just warn
+                logger.warning("⚠️ Proceeding with deployment without registry registration")
 
         logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 
@@ -176,8 +275,6 @@ def pebblify(
             version=version,
         )
 
-        import pebbling.observability.openinference as OpenInferenceObservability
-
         if telemetry:
             try:
                 OpenInferenceObservability.setup()
@@ -185,10 +282,13 @@ def pebblify(
                 logger.warn("OpenInference telemetry setup failed", error=str(exc))
 
         # Deploy the server
-        from urllib.parse import urlparse
-
         parsed_url = urlparse(deployment_config.url)
-        uvicorn.run(pebble_app, host=parsed_url.hostname or "localhost", port=parsed_url.port or 3773)
+        host = parsed_url.hostname or "localhost"
+        port = parsed_url.port or 3773
+        
+        # Display beautiful server startup banner with all info
+        print(prepare_server_display(host=host, port=port, agent_id=agent_id))
+        uvicorn.run(pebble_app, host=host, port=port)
 
         return _manifest
 

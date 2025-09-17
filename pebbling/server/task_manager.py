@@ -87,13 +87,13 @@ and we coordinate the entire kitchen operation to deliver perfect results.
 Thank you users! We ❤️ you! - 🐧
 """
 
-from __future__ import annotations as _annotations
+from __future__ import annotations
 
 import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from pebbling.common.protocol.types import (
     CancelTaskRequest,
@@ -131,90 +131,128 @@ from .workers import ManifestWorker
 
 @dataclass
 class TaskManager:
-    """A task manager responsible for managing tasks."""
+    """A task manager responsible for managing tasks and coordinating the AI agent ecosystem."""
 
     scheduler: Scheduler
     storage: Storage[Any]
-    manifest: Any = None  # AgentManifest for creating workers
+    manifest: Optional[Any] = None  # AgentManifest for creating workers
 
-    _aexit_stack: AsyncExitStack | None = field(default=None, init=False)
+    _aexit_stack: Optional[AsyncExitStack] = field(default=None, init=False)
     _workers: list[ManifestWorker] = field(default_factory=list, init=False)
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "TaskManager":
+        """Initialize the task manager and start all components."""
         self._aexit_stack = AsyncExitStack()
         await self._aexit_stack.__aenter__()
         await self._aexit_stack.enter_async_context(self.scheduler)
 
         # Create and start workers if manifest is provided
         if self.manifest:
-            # Create a worker to process tasks
-            worker = ManifestWorker(scheduler=self.scheduler, storage=self.storage, manifest=self.manifest)
+            worker = ManifestWorker(
+                scheduler=self.scheduler,
+                storage=self.storage,
+                manifest=self.manifest
+            )
             self._workers.append(worker)
-            # Start the worker
             await self._aexit_stack.enter_async_context(worker.run())
 
         return self
 
     @property
     def is_running(self) -> bool:
+        """Check if the task manager is currently running."""
         return self._aexit_stack is not None
 
-    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any):
+    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        """Clean up resources and stop all components."""
         if self._aexit_stack is None:
             raise RuntimeError("TaskManager was not properly initialized.")
         await self._aexit_stack.__aexit__(exc_type, exc_value, traceback)
         self._aexit_stack = None
 
+    def _create_error_response(
+        self, 
+        response_class: type, 
+        request_id: str, 
+        error_class: type, 
+        message: str
+    ) -> Any:
+        """Create a standardized error response."""
+        return response_class(
+            jsonrpc='2.0',
+            id=request_id,
+            error=error_class(code=-32001, message=message)
+        )
+
+    def _parse_context_id(self, context_id: Any) -> uuid.UUID:
+        """Parse and validate context_id, generating a new one if needed."""
+        if context_id is None:
+            return uuid.uuid4()
+        if isinstance(context_id, str):
+            return uuid.UUID(context_id)
+        if isinstance(context_id, uuid.UUID):
+            return context_id
+        return uuid.uuid4()
+
     @trace_task_operation("send_message")
     @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
         """Send a message using the Pebble protocol."""
-        request_id = str(request["id"])  # Convert UUID to string
-        message = request["params"]["message"]
-        context_id = message.get("context_id", uuid.uuid4())
-        if isinstance(context_id, str):
-            context_id = uuid.UUID(context_id)
+        request_id = str(request['id'])
+        message = request['params']['message']
+        context_id = self._parse_context_id(message.get('context_id'))
 
         task: Task = await self.storage.submit_task(context_id, message)
 
-        scheduler_params: TaskSendParams = {"task_id": task["task_id"], "context_id": context_id, "message": message}
-        config = request["params"].get("configuration", {})
-        history_length = config.get("history_length")
-        if history_length is not None:
-            scheduler_params["history_length"] = history_length
+        scheduler_params: TaskSendParams = {
+            'task_id': task['task_id'], 
+            'context_id': context_id, 
+            'message': message
+        }
+        
+        # Add optional configuration parameters
+        config = request['params'].get('configuration', {})
+        if history_length := config.get('history_length'):
+            scheduler_params['history_length'] = history_length
 
         await self.scheduler.run_task(scheduler_params)
         return SendMessageResponse(jsonrpc="2.0", id=request_id, result=task)
 
     @trace_task_operation("get_task")
     async def get_task(self, request: GetTaskRequest) -> GetTaskResponse:
-        """Get a task, and return it to the client.
-
-        No further actions are needed here.
-        """
-        task_id = request["params"]["task_id"]
-        history_length = request["params"].get("history_length")
+        """Get a task and return it to the client."""
+        task_id = request['params']['task_id']
+        history_length = request['params'].get('history_length')
+        
         task = await self.storage.load_task(task_id, history_length)
         if task is None:
-            return GetTaskResponse(
-                jsonrpc="2.0",
-                id=request["id"],
-                error=TaskNotFoundError(code=-32001, message="Task not found"),
+            return self._create_error_response(
+                GetTaskResponse, 
+                request['id'], 
+                TaskNotFoundError, 
+                'Task not found'
             )
-        return GetTaskResponse(jsonrpc="2.0", id=request["id"], result=task)
+        
+        return GetTaskResponse(jsonrpc='2.0', id=request['id'], result=task)
 
     @trace_task_operation("cancel_task")
     @track_active_task
     async def cancel_task(self, request: CancelTaskRequest) -> CancelTaskResponse:
-        await self.scheduler.cancel_task(request["params"])
-        task = await self.storage.load_task(request["params"]["task_id"])
+        """Cancel a running task."""
+        task_id = request['params']['task_id']
+        
+        await self.scheduler.cancel_task(request['params'])
+        task = await self.storage.load_task(task_id)
+        
         if task is None:
-            return CancelTaskResponse(
-                jsonrpc="2.0",
-                id=request["id"],
-                error=TaskNotFoundError(code=-32001, message="Task not found"),
+            return self._create_error_response(
+                CancelTaskResponse, 
+                request['id'], 
+                TaskNotFoundError, 
+                'Task not found'
             )
-        return CancelTaskResponse(jsonrpc="2.0", id=request["id"], result=task)
+        
+        return CancelTaskResponse(jsonrpc='2.0', id=request['id'], result=task)
 
     async def stream_message(self, request: StreamMessageRequest) -> StreamMessageResponse:
         """Stream messages using Server-Sent Events."""
@@ -223,12 +261,14 @@ class TaskManager:
     async def set_task_push_notification(
         self, request: SetTaskPushNotificationRequest
     ) -> SetTaskPushNotificationResponse:
-        raise NotImplementedError("SetTaskPushNotification is not implemented yet.")
+        """Set push notification settings for a task."""
+        raise NotImplementedError('SetTaskPushNotification is not implemented yet.')
 
     async def get_task_push_notification(
         self, request: GetTaskPushNotificationRequest
     ) -> GetTaskPushNotificationResponse:
-        raise NotImplementedError("GetTaskPushNotification is not implemented yet.")
+        """Get push notification settings for a task."""
+        raise NotImplementedError('GetTaskPushNotification is not implemented yet.')
 
     @trace_task_operation("list_tasks", include_params=False)
     async def list_tasks(self, request: ListTasksRequest) -> ListTasksResponse:
@@ -237,10 +277,11 @@ class TaskManager:
         tasks = await self.storage.list_tasks(length)
 
         if tasks is None:
-            return ListTasksResponse(
-                jsonrpc="2.0",
-                id=request["id"],
-                error=TaskNotFoundError(code=-32001, message="Task not found"),
+            return self._create_error_response(
+                ListTasksResponse, 
+                request['id'], 
+                TaskNotFoundError, 
+                'No tasks found'
             )
 
         return ListTasksResponse(jsonrpc="2.0", id=request["id"], result=tasks)
@@ -250,38 +291,45 @@ class TaskManager:
         """List all contexts in storage."""
         length = request["params"].get("length")
         contexts = await self.storage.list_contexts(length)
+        
         if contexts is None:
-            return ListContextsResponse(
-                jsonrpc="2.0",
-                id=request["id"],
-                error=ContextNotFoundError(code=-32001, message="Context not found"),
+            return self._create_error_response(
+                ListContextsResponse, 
+                request['id'], 
+                ContextNotFoundError, 
+                'No contexts found'
             )
-        return ListContextsResponse(jsonrpc="2.0", id=request["id"], result=contexts)
+        
+        return ListContextsResponse(jsonrpc='2.0', id=request['id'], result=contexts)
 
     @trace_context_operation("clear_context")
     async def clear_context(self, request: ClearContextsRequest) -> ClearContextsResponse:
         """Clear a context from storage."""
         context_id = request["params"].get("context_id")
         await self.storage.clear_context(context_id)
+        
         return ClearContextsResponse(
-            jsonrpc="2.0", id=request["id"], result={"message": "All tasks and contexts cleared successfully"}
+            jsonrpc='2.0', 
+            id=request['id'], 
+            result={'message': 'All tasks and contexts cleared successfully'}
         )
 
     @trace_task_operation("task_feedback")
     async def task_feedback(self, request: TaskFeedbackRequest) -> TaskFeedbackResponse:
         """Submit feedback for a completed task."""
-        task_id = request["params"]["task_id"]
-
-        # Check if task exists
+        task_id = request['params']['task_id']
+        
+        # Verify task exists
         task = await self.storage.load_task(task_id)
         if task is None:
-            return TaskFeedbackResponse(
-                jsonrpc="2.0",
-                id=request["id"],
-                error=TaskNotFoundError(code=-32001, message="Task not found"),
+            return self._create_error_response(
+                TaskFeedbackResponse, 
+                request['id'], 
+                TaskNotFoundError, 
+                'Task not found'
             )
-
-        # Store feedback (this will need to be implemented in storage)
+        
+        # Prepare feedback data
         feedback_data = {
             "task_id": task_id,
             "feedback": request["params"]["feedback"],
@@ -289,17 +337,20 @@ class TaskManager:
             "metadata": request["params"]["metadata"],
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-
-        # For now, we'll store feedback as task metadata
-        # In the future, this could be a separate feedback storage system
-        if hasattr(self.storage, "store_task_feedback"):
+        
+        # Store feedback if storage supports it
+        if hasattr(self.storage, 'store_task_feedback'):
             await self.storage.store_task_feedback(task_id, feedback_data)
 
         return TaskFeedbackResponse(
-            jsonrpc="2.0",
-            id=request["id"],
-            result={"message": "Feedback submitted successfully", "task_id": str(task_id)},
+            jsonrpc='2.0', 
+            id=request['id'], 
+            result={
+                'message': 'Feedback submitted successfully', 
+                'task_id': str(task_id)
+            }
         )
 
     async def resubscribe_task(self, request: ResubscribeTaskRequest) -> None:
-        raise NotImplementedError("Resubscribe is not implemented yet.")
+        """Resubscribe to task updates."""
+        raise NotImplementedError('Resubscribe is not implemented yet.')

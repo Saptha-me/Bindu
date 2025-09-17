@@ -91,6 +91,7 @@ class PebbleApplication(Starlette):
         self.router.add_route('/storage.html', self._storage_page_endpoint, methods=['GET'])
         self.router.add_route('/docs.html', self._docs_endpoint, methods=['GET'])
         self.router.add_route('/common.js', self._common_js_endpoint, methods=['GET'])
+        self.router.add_route('/common.css', self._common_css_endpoint, methods=['GET'])
         self.router.add_route('/components/layout.js', self._layout_js_endpoint, methods=['GET'])
         self.router.add_route('/components/header.html', self._header_component_endpoint, methods=['GET'])
         self.router.add_route('/components/footer.html', self._footer_component_endpoint, methods=['GET'])
@@ -175,6 +176,11 @@ class PebbleApplication(Starlette):
         """Serve the common JavaScript file."""
         js_path = Path(__file__).parent / 'static' / 'common.js'
         return FileResponse(js_path, media_type='application/javascript')
+
+    async def _common_css_endpoint(self, request: Request) -> Response:
+        """Serve the common CSS file."""
+        css_path = Path(__file__).parent / 'static' / 'common.css'
+        return FileResponse(css_path, media_type='text/css')
 
     async def _layout_js_endpoint(self, request: Request) -> Response:
         """Serve the layout JavaScript file."""

@@ -50,7 +50,7 @@ def setup() -> None:
 
     framework_dist = installed_distributions[framework_spec.framework]
     installed_version = framework_dist.version
-    
+
     if version.parse(installed_version) < version.parse(framework_spec.min_version):
         logger.warn(
             "OpenInference setup skipped - agent framework package is below the supported package version",
@@ -106,10 +106,7 @@ def setup() -> None:
 
         tracer_provider = trace_sdk.TracerProvider()
 
-        otel_endpoint = (
-            os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-            or os.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
-        )
+        otel_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") or os.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
         if otel_endpoint:
             tracer_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter(otel_endpoint)))
             logger.info("Configured OTLP exporter", endpoint=otel_endpoint)

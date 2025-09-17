@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -26,26 +26,22 @@ from pebbling.utils.logging import get_logger
 
 logger = get_logger("pebbling.hibiscus.agent_registry")
 
+
 def register_with_registry(
     author: str,
     agent_manifest: AgentManifest,
     agent_registry_pat_token: SecretStr,
     agent_registry: str = "hibiscus",
     agent_registry_url: str = "http://localhost:19191",
-    **kwargs: Dict[str, Any]
+    **kwargs: Dict[str, Any],
 ):
     if agent_registry == "hibiscus":
         logger.info(f"Registering agent with Hibiscus at {agent_registry_url}")
         hibiscus_client: HibiscusClient = HibiscusClient(
-            hibiscus_url=agent_registry_url,
-            pat_token=agent_registry_pat_token,
-            email=author
+            hibiscus_url=agent_registry_url, pat_token=agent_registry_pat_token, email=author
         )
         try:
-            asyncio.run(hibiscus_client.register_agent(
-                agent_manifest=agent_manifest,
-                **kwargs
-            ))
+            asyncio.run(hibiscus_client.register_agent(agent_manifest=agent_manifest, **kwargs))
             if agent_manifest.identity and agent_manifest.identity.did:
                 logger.info(f"Agent registered with DID: {agent_manifest.identity.did}")
         except Exception as e:

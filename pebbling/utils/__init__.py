@@ -4,7 +4,7 @@ from .worker_utils import ArtifactBuilder, MessageConverter, PartConverter, Task
 
 __all__ = [
     "MessageConverter",
-    "PartConverter", 
+    "PartConverter",
     "ArtifactBuilder",
     "TaskStateManager",
 ]

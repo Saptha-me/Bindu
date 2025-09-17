@@ -6,27 +6,27 @@
 # |---------------------------------------------------------|
 #
 # SCHEDULER MODULE EXPORTS:
-# 
+#
 # This module provides the scheduler layer for the Pebbling framework.
 # It exposes different scheduler implementations for task queue management.
 #
 # BURGER STORE ANALOGY:
-# 
+#
 # Think of this as the restaurant's order board system catalog:
-# 
+#
 # 1. SCHEDULER INTERFACE (Scheduler):
 #    - Abstract base class defining the scheduler contract
 #    - All scheduler implementations must follow this interface
 #    - Ensures consistent API across different scheduling backends
-# 
+#
 # 2. SCHEDULER IMPLEMENTATIONS:
 #    - InMemoryScheduler: Simple whiteboard system (development/testing)
 #    - RedisScheduler: Distributed cloud system (production/multi-process)
-# 
+#
 # 3. TASK OPERATIONS:
 #    - TaskOperation: Union type for all task operations (run, cancel, pause, resume)
 #    - Individual operation types for type safety and validation
-# 
+#
 # 4. USAGE PATTERNS:
 #    - Import the base Scheduler class for type hints and interfaces
 #    - Import specific implementations based on your deployment needs
@@ -49,10 +49,9 @@ from .redis_scheduler import RedisScheduler
 
 __all__ = [
     # Base interface
-    'Scheduler',
-    'TaskOperation',
-    
+    "Scheduler",
+    "TaskOperation",
     # Scheduler implementations
-    'InMemoryScheduler',
-    'RedisScheduler'
+    "InMemoryScheduler",
+    "RedisScheduler",
 ]

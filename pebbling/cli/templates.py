@@ -18,5 +18,3 @@ from pebbling.common.models.models import SecurityConfig, DeploymentConfig
 async def hello_agent(input: str) -> AsyncGenerator[str, None]:
     yield f"Hello, {input}!"
 """
-
-

@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -14,6 +14,7 @@ Pebbling Protocol Type Definitions.
 This module contains all the protocol data models used for communication between
 agents and the Pebbling framework.
 """
+
 from __future__ import annotations as _annotations
 
 from typing import Annotated, Any, Dict, Generic, List, Literal, Optional, TypeVar, Union
@@ -24,142 +25,126 @@ from pydantic import Discriminator, Field, TypeAdapter
 from pydantic.alias_generators import to_camel
 from typing_extensions import NotRequired, Required, TypeAlias, TypedDict
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Base Types and Enums
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # TypeVars for generic types
-ResultT = TypeVar('ResultT')
-ErrorT = TypeVar('ErrorT')
+ResultT = TypeVar("ResultT")
+ErrorT = TypeVar("ErrorT")
 
-Role: TypeAlias = Literal['agent', 'user']
+Role: TypeAlias = Literal["agent", "user"]
 
 TaskState: TypeAlias = Literal[
-    'submitted',
-    'working', 
-    'input-required',
-    'completed',
-    'canceled',
-    'failed',
-    'rejected',
-    'auth-required',
-    'unknown',
-    'trust-verification-required',
-    'pending',
-    'suspended',
-    'resumed',
-    'negotiation-bid-submitted',
-    'negotiation-bid-lost',
-    'negotiation-bid-won',
+    "submitted",
+    "working",
+    "input-required",
+    "completed",
+    "canceled",
+    "failed",
+    "rejected",
+    "auth-required",
+    "unknown",
+    "trust-verification-required",
+    "pending",
+    "suspended",
+    "resumed",
+    "negotiation-bid-submitted",
+    "negotiation-bid-lost",
+    "negotiation-bid-won",
 ]
 
 
-ErrorCode: TypeAlias = Literal[
-    "server_error",
-    "invalid_input", 
-    "not_found"
-]
+ErrorCode: TypeAlias = Literal["server_error", "invalid_input", "not_found"]
 
 
 RunMode: TypeAlias = Literal[
-    "sync",        # Synchronous execution, wait for complete response
-    "async",       # Asynchronous execution, don't wait for response  
-    "stream"       # Streaming execution, receive partial results
+    "sync",  # Synchronous execution, wait for complete response
+    "async",  # Asynchronous execution, don't wait for response
+    "stream",  # Streaming execution, receive partial results
 ]
 
-NegotiationStatus: TypeAlias = Literal[
-    "proposed",
-    "accepted",
-    "rejected",
-    "countered"
-]
+NegotiationStatus: TypeAlias = Literal["proposed", "accepted", "rejected", "countered"]
 
-NegotiationSessionStatus: TypeAlias = Literal[
-    "initiated",
-    "ongoing",
-    "completed",
-    "rejected"
-]
+NegotiationSessionStatus: TypeAlias = Literal["initiated", "ongoing", "completed", "rejected"]
 
 TrustLevel: TypeAlias = Literal[
-    "admin",           # Admin operations, minimal risk
-    "analyst",     # Standard operations
-    "auditor",         # Sensitive operations
-    "editor",         # Edit operations, moderate risk
-    "guest",           # Limited access, read-only operations
-    "manager",       # Management operations, elevated permissions
-    "operator",     # System operations, moderate risk
-    "super_admin", # Highest level access, all operations permitted
-    "support",       # Support operations, troubleshooting access
-    "viewer"         # View-only access, minimal permissions
+    "admin",  # Admin operations, minimal risk
+    "analyst",  # Standard operations
+    "auditor",  # Sensitive operations
+    "editor",  # Edit operations, moderate risk
+    "guest",  # Limited access, read-only operations
+    "manager",  # Management operations, elevated permissions
+    "operator",  # System operations, moderate risk
+    "super_admin",  # Highest level access, all operations permitted
+    "support",  # Support operations, troubleshooting access
+    "viewer",  # View-only access, minimal permissions
 ]
 
-IdentityProvider: TypeAlias = Literal[
-    "keycloak",
-    "azure_ad",
-    "okta",
-    "auth0",
-    "custom"
-]
+IdentityProvider: TypeAlias = Literal["keycloak", "azure_ad", "okta", "auth0", "custom"]
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Content & Message Parts
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class TextPart(TypedDict):
     """Represents a text segment within parts."""
-    
-    kind: Required[Literal['text']]
+
+    kind: Required[Literal["text"]]
     metadata: NotRequired[dict[str, Any]]
     text: Required[str]
     embeddings: NotRequired[list[float]]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class FileWithBytes(TypedDict):
     """File representation with binary content."""
-    
+
     bytes: Required[str]
     mimeType: NotRequired[str]
     name: NotRequired[str]
     embeddings: NotRequired[list[float]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class FileWithUri(FileWithBytes):
     """File representation with URI reference."""
-    
+
     uri: Required[str]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class FilePart(TextPart):
     """Represents a file part in a message."""
-    
-    kind: Required[Literal['file']]
+
+    kind: Required[Literal["file"]]
     file: Required[FileWithBytes | FileWithUri]
 
 
 class DataPart(TextPart):
     """Represents a structured data part in a message."""
-    
-    kind: Required[Literal['data']]
+
+    kind: Required[Literal["data"]]
     data: Required[dict[str, Any]]
     embeddings: NotRequired[list[float]]
 
 
-Part = Annotated[Union[TextPart, FilePart, DataPart], Field(discriminator='kind')]
+Part = Annotated[Union[TextPart, FilePart, DataPart], Field(discriminator="kind")]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Artifacts
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class Artifact(TypedDict):
     """Represents the final output generated by an agent after completing a task.
 
     Artifacts are immutable data structures that contain the results of agent execution.
-    They can contain multiple parts (text, files, structured data) and are uniquely 
+    They can contain multiple parts (text, files, structured data) and are uniquely
     identified for tracking and retrieval.
 
     Key Properties:
@@ -171,7 +156,7 @@ class Artifact(TypedDict):
     A single task may produce multiple artifacts when the output naturally
     separates into distinct deliverables (e.g., frontend + backend code).
     """
-    
+
     artifact_id: Required[UUID] = Field(..., description="Unique identifier for the artifact")
     name: NotRequired[str]
     description: NotRequired[str]
@@ -182,7 +167,7 @@ class Artifact(TypedDict):
     extra_data: NotRequired[dict[str, Any]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class Message(TypedDict):
     """Communication content exchanged between agents, users, and systems.
 
@@ -199,7 +184,7 @@ class Message(TypedDict):
     Multi-part Structure:
     Messages can contain multiple parts to organize different content types:
     - Text parts for instructions or descriptions
-    - File parts for context documents or references  
+    - File parts for context documents or references
     - Data parts for structured metadata or parameters
 
     Flow Pattern:
@@ -210,67 +195,69 @@ class Message(TypedDict):
     task_id: Required[UUID]
     reference_task_ids: NotRequired[list[UUID]]
     message_id: Required[UUID]
-    kind: Required[Literal['message']]
-    
+    kind: Required[Literal["message"]]
+
     metadata: NotRequired[dict[str, Any]]
     parts: Required[list[Part]]
     role: Required[Role]
     extra_data: NotRequired[dict[str, Any]]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Security Schemes
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class HttpSecurityScheme(TypedDict):
     """HTTP security scheme."""
 
-    type: Required[Literal['http']]
+    type: Required[Literal["http"]]
     scheme: Required[str]
     bearer_format: NotRequired[str]
     description: NotRequired[str]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class ApiKeySecurityScheme(TypedDict):
     """API Key security scheme."""
 
-    type: Required[Literal['apiKey']]
+    type: Required[Literal["apiKey"]]
     name: Required[str]
-    in_: Required[Literal['query', 'header', 'cookie']]
+    in_: Required[Literal["query", "header", "cookie"]]
     description: NotRequired[str]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class OAuth2SecurityScheme(TypedDict):
     """OAuth2 security scheme."""
 
-    type: Required[Literal['oauth2']]
+    type: Required[Literal["oauth2"]]
     flows: Required[dict[str, Any]]
     description: NotRequired[str]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class OpenIdConnectSecurityScheme(TypedDict):
     """OpenID Connect security scheme."""
 
-    type: Required[Literal['openIdConnect']]
+    type: Required[Literal["openIdConnect"]]
     open_id_connect_url: Required[str]
     description: NotRequired[str]
 
+
 SecurityScheme = Annotated[
-    Union[HttpSecurityScheme, ApiKeySecurityScheme, OAuth2SecurityScheme, OpenIdConnectSecurityScheme], 
-    Discriminator('type')
+    Union[HttpSecurityScheme, ApiKeySecurityScheme, OAuth2SecurityScheme, OpenIdConnectSecurityScheme],
+    Discriminator("type"),
 ]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Push Notification Configuration
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class PushNotificationConfig(TypedDict):
     """Configuration for push notifications.
 
@@ -283,30 +270,31 @@ class PushNotificationConfig(TypedDict):
     authentication: NotRequired[SecurityScheme]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskPushNotificationConfig(TypedDict):
     """Configuration for task push notifications."""
 
     id: Required[UUID]
     push_notification_config: Required[PushNotificationConfig]
 
-#-----------------------------------------------------------------------------
-# Task
-#-----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+# -----------------------------------------------------------------------------
+# Task
+# -----------------------------------------------------------------------------
+
+
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskStatus(TypedDict):
     """Status information for a task."""
-    
+
     message: NotRequired[Message]
     state: Required[TaskState]
     timestamp: Required[str] = Field(
-        examples=['2023-10-27T10:00:00Z'],
-        description="ISO datetime value of when the status was updated."
+        examples=["2023-10-27T10:00:00Z"], description="ISO datetime value of when the status was updated."
     )
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class Task(TypedDict):
     """Stateful execution unit that coordinates client-agent interaction to achieve a goal.
 
@@ -339,10 +327,10 @@ class Task(TypedDict):
     - References: Other tasks via reference_task_ids for coordination
     - Belongs to: Specific context for session management
     """
-    
+
     task_id: Required[UUID]
     context_id: Required[UUID]
-    kind: Required[Literal['task']]
+    kind: Required[Literal["task"]]
     status: Required[TaskStatus]
 
     artifacts: NotRequired[list[Artifact]]
@@ -350,32 +338,32 @@ class Task(TypedDict):
     metadata: NotRequired[dict[str, Any]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskStatusUpdateEvent(TypedDict):
     """Event for task status updates."""
-    
+
     context_id: Required[UUID]
     final: Required[bool]
-    kind: Required[Literal['status-update']]
+    kind: Required[Literal["status-update"]]
     metadata: NotRequired[dict[str, Any]]
     status: Required[TaskStatus]
     task_id: Required[UUID]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskArtifactUpdateEvent(TypedDict):
     """Event for task artifact updates."""
-    
+
     append: NotRequired[bool]
     artifact: Required[Artifact]
     context_id: Required[UUID]
-    kind: Required[Literal['artifact-update']]
+    kind: Required[Literal["artifact-update"]]
     last_chunk: NotRequired[bool]
     metadata: NotRequired[dict[str, Any]]
     task_id: Required[UUID]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskSendParams(TypedDict):
     """Internal parameters for task execution within the framework."""
 
@@ -386,55 +374,59 @@ class TaskSendParams(TypedDict):
     metadata: NotRequired[dict[str, Any]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskIdParams(TypedDict):
     """Parameters for task identification."""
-    
+
     task_id: Required[UUID]
     metadata: NotRequired[dict[str, Any]]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskQueryParams(TaskIdParams):
     """Query parameters for a task."""
 
     length: NotRequired[int]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class ListTasksParams(TypedDict):
     """Parameters for listing tasks."""
-    
+
     length: NotRequired[int]
     metadata: NotRequired[dict[str, Any]]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class TaskFeedbackParams(TypedDict):
     """Parameters for providing feedback on a task."""
-    
+
     task_id: Required[UUID]
     feedback: Required[str]
     rating: NotRequired[int]  # Optional rating 1-5
     metadata: NotRequired[dict[str, Any]]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class MessageSendConfiguration(TypedDict):
     """Configuration for message sending."""
-    
+
     accepted_output_modes: Required[list[str]]
     blocking: NotRequired[bool]
     history_length: NotRequired[int]
     push_notification_config: NotRequired[PushNotificationConfig]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class MessageSendParams(TypedDict):
     """Parameters for sending messages."""
-    
+
     configuration: Required[MessageSendConfiguration]
     message: Required[Message]
     metadata: NotRequired[dict[str, Any]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class ListTaskPushNotificationConfigParams(TypedDict):
     """Parameters for getting list of pushNotificationConfigurations associated with a Task."""
 
@@ -442,7 +434,7 @@ class ListTaskPushNotificationConfigParams(TypedDict):
     metadata: NotRequired[dict[str, Any]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class DeleteTaskPushNotificationConfigParams(TypedDict):
     """Parameters for removing pushNotificationConfiguration associated with a Task."""
 
@@ -451,108 +443,112 @@ class DeleteTaskPushNotificationConfigParams(TypedDict):
     metadata: NotRequired[dict[str, Any]]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Context
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class Context(TypedDict):
     """Conversation session that groups related tasks and maintains interaction history.
-    
+
     Contexts serve as conversation containers in the Pebbling protocol, managing
     the complete interaction lifecycle between clients and agents. They maintain
     conversation continuity, preserve context across multiple tasks, and provide
     session-level organization.
-    
+
     Core Responsibilities:
     - Session Management: Group related tasks under a unified conversation
     - History Preservation: Maintain complete message history across tasks
     - Context Continuity: Preserve conversation state and references
     - Metadata Tracking: Store session-level information and preferences
-    
+
     Context Lifecycle:
     1. Creation: Client initiates conversation or system creates implicit context
     2. Task Association: Multiple tasks can belong to the same context
     3. History Building: Messages and artifacts accumulate over time
     4. State Management: Track conversation status and metadata
     5. Completion: Context can be closed or archived when conversation ends
-    
+
     Key Properties:
     - Multi-Task: Contains multiple related tasks over time
     - Stateful: Maintains conversation history and context
     - Client-Controlled: Clients can explicitly manage context lifecycle
     - Traceable: Unique ID enables context tracking and reference
-    
+
     Context Relationships:
     - Contains: Multiple tasks (one-to-many relationship)
     - Maintains: Complete conversation history across all tasks
     - Preserves: Session-level metadata and preferences
     - References: Can link to other contexts for complex workflows
     """
-    
+
     context_id: Required[UUID]
-    kind: Required[Literal['context']]
-    
+    kind: Required[Literal["context"]]
+
     # Core context data
     tasks: NotRequired[list[UUID]]  # List of task IDs belonging to this context
-    
+
     # Context metadata
     name: NotRequired[str]  # Human-readable context name
     description: NotRequired[str]  # Context purpose or summary
     role: Required[str]  # Role of the context
     created_at: Required[str] = Field(
-        examples=['2023-10-27T10:00:00Z'],
-        description="ISO datetime when context was created"
+        examples=["2023-10-27T10:00:00Z"], description="ISO datetime when context was created"
     )
     updated_at: Required[str] = Field(
-        examples=['2023-10-27T10:00:00Z'], 
-        description="ISO datetime when context was last updated"
+        examples=["2023-10-27T10:00:00Z"], description="ISO datetime when context was last updated"
     )
-    
+
     # Context state and organization
-    status: NotRequired[Literal['active', 'paused', 'completed', 'archived']]
+    status: NotRequired[Literal["active", "paused", "completed", "archived"]]
     tags: NotRequired[list[str]]  # Organizational tags
     metadata: NotRequired[dict[str, Any]]  # Custom context metadata
-    
+
     # Context relationships
     parent_context_id: NotRequired[UUID]  # For nested or related contexts
     reference_context_ids: NotRequired[list[UUID]]  # Related contexts
-    
+
     extra_data: NotRequired[dict[str, Any]]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Context Operations
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class ContextIdParams(TypedDict):
     """Parameters for context identification."""
-    
+
     context_id: Required[UUID]
     metadata: NotRequired[dict[str, Any]]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class ContextQueryParams(ContextIdParams):
     """Query parameters for a context."""
 
     history_length: NotRequired[int]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class ListContextsParams(TypedDict):
     """Parameters for listing contexts."""
-    
+
     length: NotRequired[int]
     metadata: NotRequired[dict[str, Any]]
 
-#-----------------------------------------------------------------------------
-# Agent-to-Agent Negotiation Models
-#-----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+# -----------------------------------------------------------------------------
+# Agent-to-Agent Negotiation Models
+# -----------------------------------------------------------------------------
+
+
+@pydantic.with_config({"alias_generator": to_camel})
 class NegotiationProposal(TypedDict):
     """Structured negotiation proposal exchanged between agents."""
-    
+
     proposal_id: Required[UUID]
     from_agent: Required[UUID]
     to_agent: Required[UUID]
@@ -561,57 +557,61 @@ class NegotiationProposal(TypedDict):
     status: Required[NegotiationStatus]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class NegotiationSession(TypedDict):
     """Session details for agent-to-agent negotiations."""
-    
+
     session_id: Required[UUID]
     status: Required[NegotiationSessionStatus]
     participants: Required[List[UUID]]
     proposals: Required[List[NegotiationProposal]]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Payment Models
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class Payment(TypedDict):
     """Represents a payment."""
-    
+
     id: Required[UUID]
     amount: Required[float]
     currency: Required[str]
     billing_period: Required[Literal["daily", "weekly", "monthly", "yearly", "one-time"]]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class PaymentAction(TypedDict):
     """Represents the possible payment actions."""
-    
-    action_type: Required[Literal['submit', 'cancel', 'unknown']]
+
+    action_type: Required[Literal["submit", "cancel", "unknown"]]
     amount: Required[float]
     currency: Required[str]
     billing_period: Required[Literal["daily", "weekly", "monthly", "yearly", "one-time"]]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Credit System for Hibiscus Centralized Management
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class AgentExecutionCost(TypedDict):
     """Defines the credit cost for executing an agent."""
-    
+
     agent_id: Required[str]
     agent_name: Required[str]
     credits_per_request: Required[int]
     creator_did: Required[str]
     minimum_trust_level: Required[TrustLevel]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class ExecutionRequest(TypedDict):
     """Represents a request to execute an agent with credit verification."""
-    
+
     request_id: Required[UUID]
     executor_did: Required[str]
     agent_id: Required[str]
@@ -619,10 +619,11 @@ class ExecutionRequest(TypedDict):
     estimated_credits: Required[int]
     trust_level: Required[TrustLevel]
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class ExecutionResponse(TypedDict):
     """Represents the response from an agent execution with credit deduction."""
-    
+
     request_id: Required[UUID]
     execution_id: Required[UUID]
     success: Required[bool]
@@ -633,21 +634,21 @@ class ExecutionResponse(TypedDict):
     execution_time: Required[str]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # JSON-RPC Definition and Error Types
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-CodeT = TypeVar('CodeT', bound=int)
-MessageT = TypeVar('MessageT', bound=str)
+CodeT = TypeVar("CodeT", bound=int)
+MessageT = TypeVar("MessageT", bound=str)
 
-Method = TypeVar('Method')
-Params = TypeVar('Params')
+Method = TypeVar("Method")
+Params = TypeVar("Params")
 
 
 class JSONRPCMessage(TypedDict):
     """A JSON RPC message."""
 
-    jsonrpc: Required[Literal['2.0']]
+    jsonrpc: Required[Literal["2.0"]]
     id: Required[UUID]
 
 
@@ -658,13 +659,7 @@ class JSONRPCRequest(JSONRPCMessage, Generic[Method, Params]):
     params: Required[Params]
 
 
-class JSONRPCError(
-    TypedDict,
-    Generic[
-        CodeT,
-        MessageT
-    ]
-):
+class JSONRPCError(TypedDict, Generic[CodeT, MessageT]):
     """A JSON RPC error."""
 
     code: Required[CodeT]
@@ -672,77 +667,137 @@ class JSONRPCError(
     data: NotRequired[Any]
 
 
-class JSONRPCResponse(
-    JSONRPCMessage,
-    Generic[ResultT, ErrorT]
-):
+class JSONRPCResponse(JSONRPCMessage, Generic[ResultT, ErrorT]):
     """A JSON RPC response."""
 
     result: NotRequired[ResultT]
     error: NotRequired[ErrorT]
 
 
-JSONParseError = JSONRPCError[Literal[-32700], Literal['Failed to parse JSON payload. Please ensure the request body contains valid JSON syntax. See: https://www.jsonrpc.org/specification#error_object']]
-InvalidRequestError = JSONRPCError[Literal[-32600], Literal['Request payload validation failed. The request structure does not conform to JSON-RPC 2.0 specification. See: https://www.jsonrpc.org/specification#request_object']]
-MethodNotFoundError = JSONRPCError[Literal[-32601], Literal['The requested method is not available on this server. Please check the method name and try again. See API docs: /docs']]
-InvalidParamsError = JSONRPCError[Literal[-32602], Literal['Invalid or missing parameters for the requested method. Please verify parameter types and required fields. See API docs: /docs']]
-InternalError = JSONRPCError[Literal[-32603], Literal['An internal server error occurred while processing the request. Please try again or contact support if the issue persists. See: /health']]
-TaskNotFoundError = JSONRPCError[Literal[-32001], Literal['The specified task ID was not found. The task may have been completed, canceled, or expired. Check task status: GET /tasks/{id}']]
-TaskNotCancelableError = JSONRPCError[Literal[-32002], Literal['This task cannot be canceled in its current state. Tasks can only be canceled while pending or running. See task lifecycle: /docs/tasks']]
-ContextNotFoundError = JSONRPCError[Literal[-32003], Literal['The specified context ID was not found. The context may have been deleted or expired. Check context status: GET /contexts/{id}']]
-ContextNotCancelableError = JSONRPCError[Literal[-32004], Literal['This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. See context lifecycle: /docs/contexts']]
-PushNotificationNotSupportedError = JSONRPCError[Literal[-32005], Literal['Push notifications are not supported by this server configuration. Please use polling to check task status. See: GET /tasks/{id}']]
-UnsupportedOperationError = JSONRPCError[Literal[-32006], Literal['The requested operation is not supported by this agent or server configuration. See supported operations: /docs/capabilities']]
-ContentTypeNotSupportedError = JSONRPCError[Literal[-32007], Literal['The content type in the request is not supported. Please use application/json or check supported content types. See: /docs/content-types']]
-InvalidAgentResponseError = JSONRPCError[Literal[-32008], Literal['The agent returned an invalid or malformed response. This may indicate an agent configuration issue. See troubleshooting: /docs/troubleshooting']]
+JSONParseError = JSONRPCError[
+    Literal[-32700],
+    Literal[
+        "Failed to parse JSON payload. Please ensure the request body contains valid JSON syntax. See: https://www.jsonrpc.org/specification#error_object"
+    ],
+]
+InvalidRequestError = JSONRPCError[
+    Literal[-32600],
+    Literal[
+        "Request payload validation failed. The request structure does not conform to JSON-RPC 2.0 specification. See: https://www.jsonrpc.org/specification#request_object"
+    ],
+]
+MethodNotFoundError = JSONRPCError[
+    Literal[-32601],
+    Literal[
+        "The requested method is not available on this server. Please check the method name and try again. See API docs: /docs"
+    ],
+]
+InvalidParamsError = JSONRPCError[
+    Literal[-32602],
+    Literal[
+        "Invalid or missing parameters for the requested method. Please verify parameter types and required fields. See API docs: /docs"
+    ],
+]
+InternalError = JSONRPCError[
+    Literal[-32603],
+    Literal[
+        "An internal server error occurred while processing the request. Please try again or contact support if the issue persists. See: /health"
+    ],
+]
+TaskNotFoundError = JSONRPCError[
+    Literal[-32001],
+    Literal[
+        "The specified task ID was not found. The task may have been completed, canceled, or expired. Check task status: GET /tasks/{id}"
+    ],
+]
+TaskNotCancelableError = JSONRPCError[
+    Literal[-32002],
+    Literal[
+        "This task cannot be canceled in its current state. Tasks can only be canceled while pending or running. See task lifecycle: /docs/tasks"
+    ],
+]
+ContextNotFoundError = JSONRPCError[
+    Literal[-32003],
+    Literal[
+        "The specified context ID was not found. The context may have been deleted or expired. Check context status: GET /contexts/{id}"
+    ],
+]
+ContextNotCancelableError = JSONRPCError[
+    Literal[-32004],
+    Literal[
+        "This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. See context lifecycle: /docs/contexts"
+    ],
+]
+PushNotificationNotSupportedError = JSONRPCError[
+    Literal[-32005],
+    Literal[
+        "Push notifications are not supported by this server configuration. Please use polling to check task status. See: GET /tasks/{id}"
+    ],
+]
+UnsupportedOperationError = JSONRPCError[
+    Literal[-32006],
+    Literal[
+        "The requested operation is not supported by this agent or server configuration. See supported operations: /docs/capabilities"
+    ],
+]
+ContentTypeNotSupportedError = JSONRPCError[
+    Literal[-32007],
+    Literal[
+        "The content type in the request is not supported. Please use application/json or check supported content types. See: /docs/content-types"
+    ],
+]
+InvalidAgentResponseError = JSONRPCError[
+    Literal[-32008],
+    Literal[
+        "The agent returned an invalid or malformed response. This may indicate an agent configuration issue. See troubleshooting: /docs/troubleshooting"
+    ],
+]
 
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # JSON-RPC Request & Response Types
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-SendMessageRequest = JSONRPCRequest[Literal['message/send'], MessageSendParams]
+SendMessageRequest = JSONRPCRequest[Literal["message/send"], MessageSendParams]
 SendMessageResponse = JSONRPCResponse[Union[Task, Message], JSONRPCError[Any, Any]]
 
-StreamMessageRequest = JSONRPCRequest[Literal['message/stream'], MessageSendParams]
+StreamMessageRequest = JSONRPCRequest[Literal["message/stream"], MessageSendParams]
 StreamMessageResponse = JSONRPCResponse[Union[Task, Message], JSONRPCError[Any, Any]]
 
-GetTaskRequest = JSONRPCRequest[Literal['tasks/get'], TaskQueryParams]
+GetTaskRequest = JSONRPCRequest[Literal["tasks/get"], TaskQueryParams]
 GetTaskResponse = JSONRPCResponse[Task, TaskNotFoundError]
 
-CancelTaskRequest = JSONRPCRequest[Literal['tasks/cancel'], TaskIdParams]
+CancelTaskRequest = JSONRPCRequest[Literal["tasks/cancel"], TaskIdParams]
 CancelTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
 
-ListTasksRequest = JSONRPCRequest[Literal['tasks/list'], ListTasksParams]
+ListTasksRequest = JSONRPCRequest[Literal["tasks/list"], ListTasksParams]
 ListTasksResponse = JSONRPCResponse[List[Task], Union[TaskNotFoundError, TaskNotCancelableError]]
 
-TaskFeedbackRequest = JSONRPCRequest[Literal['tasks/feedback'], TaskFeedbackParams]
+TaskFeedbackRequest = JSONRPCRequest[Literal["tasks/feedback"], TaskFeedbackParams]
 TaskFeedbackResponse = JSONRPCResponse[Dict[str, str], TaskNotFoundError]
 
-ListContextsRequest = JSONRPCRequest[Literal['contexts/list'], ListContextsParams]
+ListContextsRequest = JSONRPCRequest[Literal["contexts/list"], ListContextsParams]
 ListContextsResponse = JSONRPCResponse[List[Context], Union[ContextNotFoundError, ContextNotCancelableError]]
 
-ClearContextsRequest = JSONRPCRequest[Literal['contexts/clear'], ContextIdParams]
+ClearContextsRequest = JSONRPCRequest[Literal["contexts/clear"], ContextIdParams]
 ClearContextsResponse = JSONRPCResponse[Context, JSONRPCError[ContextNotFoundError, ContextNotCancelableError]]
 
-SetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/set'], TaskPushNotificationConfig]
+SetTaskPushNotificationRequest = JSONRPCRequest[Literal["tasks/pushNotification/set"], TaskPushNotificationConfig]
 SetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
 
-GetTaskPushNotificationRequest = JSONRPCRequest[Literal['tasks/pushNotification/get'], TaskIdParams]
+GetTaskPushNotificationRequest = JSONRPCRequest[Literal["tasks/pushNotification/get"], TaskIdParams]
 GetTaskPushNotificationResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
 
-ResubscribeTaskRequest = JSONRPCRequest[Literal['tasks/resubscribe'], TaskIdParams]
+ResubscribeTaskRequest = JSONRPCRequest[Literal["tasks/resubscribe"], TaskIdParams]
 ResubscribeTaskResponse = JSONRPCResponse[Task, Union[TaskNotCancelableError, TaskNotFoundError]]
 
 ListTaskPushNotificationConfigRequest = JSONRPCRequest[
-    Literal['tasks/pushNotificationConfig/list'], ListTaskPushNotificationConfigParams
+    Literal["tasks/pushNotificationConfig/list"], ListTaskPushNotificationConfigParams
 ]
-ListTaskPushNotificationConfigResponse = JSONRPCResponse[
-    TaskPushNotificationConfig, PushNotificationNotSupportedError
-]
+ListTaskPushNotificationConfigResponse = JSONRPCResponse[TaskPushNotificationConfig, PushNotificationNotSupportedError]
 
 DeleteTaskPushNotificationConfigRequest = JSONRPCRequest[
-    Literal['tasks/pushNotificationConfig/delete'], DeleteTaskPushNotificationConfigParams
+    Literal["tasks/pushNotificationConfig/delete"], DeleteTaskPushNotificationConfigParams
 ]
 DeleteTaskPushNotificationConfigResponse = JSONRPCResponse[
     TaskPushNotificationConfig, PushNotificationNotSupportedError
@@ -764,7 +819,7 @@ PebblingRequest = Annotated[
         ListTaskPushNotificationConfigRequest,
         DeleteTaskPushNotificationConfigRequest,
     ],
-    Discriminator('method'),
+    Discriminator("method"),
 ]
 
 PebblingResponse: TypeAlias = Union[
@@ -790,13 +845,15 @@ send_message_response_ta: TypeAdapter[SendMessageResponse] = TypeAdapter(SendMes
 stream_message_request_ta: TypeAdapter[StreamMessageRequest] = TypeAdapter(StreamMessageRequest)
 stream_message_response_ta: TypeAdapter[StreamMessageResponse] = TypeAdapter(StreamMessageResponse)
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Lets handle Trust
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class KeycloakRole(TypedDict):
     """Keycloak role model."""
+
     role_id: Required[UUID]
     role_name: Required[str]
     permissions: Required[List[str]]
@@ -806,9 +863,10 @@ class KeycloakRole(TypedDict):
     operation_permissions: Optional[Dict[str, TrustLevel]] = None
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class AgentTrust(TypedDict):
     """Trust configuration for an agent."""
+
     identity_provider: Required[IdentityProvider]
     inherited_roles: Required[List[KeycloakRole]]
     certificate: Optional[str]
@@ -818,26 +876,28 @@ class AgentTrust(TypedDict):
     trust_verification_required: bool
     allowed_operations: Dict[str, TrustLevel]
 
-#-----------------------------------------------------------------------------
-# Agent 
-#-----------------------------------------------------------------------------
 
-@pydantic.with_config({'alias_generator': to_camel})
+# -----------------------------------------------------------------------------
+# Agent
+# -----------------------------------------------------------------------------
+
+
+@pydantic.with_config({"alias_generator": to_camel})
 class AgentIdentity(TypedDict):
     """Agent identity configuration with DID and other identifiers."""
-    
+
     did: Required[str]
     did_document: Required[Dict[str, Any]]
     agentdns_url: NotRequired[str]
     endpoint: NotRequired[str]
     public_key: Required[str]
     csr: Required[str]
-    
 
-@pydantic.with_config({'alias_generator': to_camel})
+
+@pydantic.with_config({"alias_generator": to_camel})
 class AgentSkill(TypedDict):
     """Represents a distinct capability or function that an agent can perform."""
-    
+
     id: Required[UUID]
     description: NotRequired[str]
     examples: NotRequired[list[str]]
@@ -845,27 +905,27 @@ class AgentSkill(TypedDict):
     tags: NotRequired[list[str]]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class AgentExtension(TypedDict):
     """A declaration of a protocol extension supported by an Agent."""
-    
+
     description: NotRequired[str]
     params: NotRequired[dict[str, Any]]
     required: Required[bool]
     uri: Required[str]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class AgentCapabilities(TypedDict):
     """Defines optional capabilities supported by an agent."""
-    
+
     extensions: NotRequired[list[AgentExtension]]
     push_notifications: NotRequired[bool]
     state_transition_history: NotRequired[bool]
     streaming: NotRequired[bool]
 
 
-@pydantic.with_config({'alias_generator': to_camel})
+@pydantic.with_config({"alias_generator": to_camel})
 class AgentCard(TypedDict):
     """The card that describes an agent - following Pebbling pattern."""
 
@@ -883,18 +943,19 @@ class AgentCard(TypedDict):
     capabilities: Required[AgentCapabilities]
     skills: Required[List[AgentSkill]]
 
-    kind: Required[Literal['agent', 'team', 'workflow']]
+    kind: Required[Literal["agent", "team", "workflow"]]
 
     execution_cost: NotRequired[AgentExecutionCost]
 
     num_history_sessions: Required[int]
     extra_data: Required[Dict[str, Any]]
-    
+
     debug_mode: Required[bool]
     debug_level: Required[Literal[1, 2]]
-    
+
     monitoring: Required[bool]
     telemetry: Required[bool]
+
 
 agent_card_ta = pydantic.TypeAdapter(AgentCard)
 

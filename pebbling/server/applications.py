@@ -14,10 +14,7 @@ from pebbling.common.models import AgentManifest
 from pebbling.common.protocol.types import AgentCard, agent_card_ta, pebble_request_ta, pebble_response_ta
 
 from .scheduler.memory_scheduler import InMemoryScheduler
-from .scheduler.redis_scheduler import RedisScheduler
 from .storage.memory_storage import InMemoryStorage
-from .storage.postgres_storage import PostgreSQLStorage
-from .storage.qdrant_storage import QdrantStorage
 from .task_manager import TaskManager
 
 
@@ -26,8 +23,8 @@ class PebbleApplication(Starlette):
 
     def __init__(
         self,
-        storage: Union[InMemoryStorage, PostgreSQLStorage, QdrantStorage],
-        scheduler: Union[InMemoryScheduler, RedisScheduler],
+        storage: InMemoryStorage,
+        scheduler: InMemoryScheduler,
         penguin_id: UUID,
         manifest: AgentManifest,
         url: str = "http://localhost",
@@ -36,7 +33,7 @@ class PebbleApplication(Starlette):
         description: Optional[str] = None,
         debug: bool = False,
         lifespan: Optional[Lifespan] = None,
-        routes: Optional[Sequence[Route]] = None,
+    routes: Optional[Sequence[Route]] = None,
         middleware: Optional[Sequence[Middleware]] = None,
         exception_handlers: Optional[dict[Any, ExceptionHandler]] = None,
     ):
@@ -98,8 +95,8 @@ class PebbleApplication(Starlette):
 
     def _create_default_lifespan(
         self,
-        storage: Union[InMemoryStorage, PostgreSQLStorage, QdrantStorage],
-        scheduler: Union[InMemoryScheduler, RedisScheduler],
+        storage: InMemoryStorage,
+        scheduler: InMemoryScheduler,
         manifest: AgentManifest,
     ) -> Lifespan:
         """Create default lifespan that manages TaskManager lifecycle."""

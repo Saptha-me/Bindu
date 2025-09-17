@@ -46,9 +46,9 @@ from pebbling.server import (
     InMemoryScheduler,
     InMemoryStorage,
     PebbleApplication,
-    PostgreSQLStorage,
-    QdrantStorage,
-    RedisScheduler,
+    # PostgreSQLStorage,
+    # QdrantStorage,
+    # RedisScheduler,
 )
 from pebbling.server.utils.display import prepare_server_display
 from pebbling.utils.constants import CERTIFICATE_DIR, PKI_DIR
@@ -66,26 +66,16 @@ def _create_storage_instance(storage_config: Optional[StorageConfig]) -> Any:
         return InMemoryStorage()
 
     if storage_config.type == "postgres":
-        storage = PostgreSQLStorage(connection_string=storage_config.connection_string)
-        # Note: initialize() will be called when the server starts
-        return storage
+        return InMemoryStorage()
     elif storage_config.type == "qdrant":
-        storage = QdrantStorage(connection_string=storage_config.connection_string)
-        # Note: initialize() will be called when the server starts
-        return storage
+        return InMemoryStorage()
     else:
         return InMemoryStorage()
 
 
 def _create_scheduler_instance(scheduler_config: Optional[SchedulerConfig]) -> Any:
     """Factory function to create scheduler instance based on configuration."""
-    if not scheduler_config:
-        return InMemoryScheduler()
-
-    scheduler_factories = {"redis": lambda: RedisScheduler(), "memory": lambda: InMemoryScheduler()}
-
-    factory = scheduler_factories.get(scheduler_config.type, scheduler_factories["memory"])
-    return factory()
+    return InMemoryScheduler()
 
 
 def pebblify(

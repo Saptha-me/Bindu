@@ -38,7 +38,7 @@
     "cors_origins": ["*"]
   },
   "storage": {
-    "type": "postgres",
+    "type": "memory",
     "connection_string" : "postgresql+asyncpg://rahuldutta@localhost:5432/pebble-example"
   },
   "scheduler": {

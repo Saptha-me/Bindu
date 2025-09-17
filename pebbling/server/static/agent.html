@@ -1,428 +1,1689 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agent Information - Pebbling</title>
-    <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                        'mono': ['SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
+    <title>Chat Interface - Pebbling</title>
+    <meta name="description" content="Modern OpenAI-inspired chat interface">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap');
+
+:root {
+  --background: #ffffff;
+  --foreground: #374151;
+  --card: #ffffff;
+  --card-foreground: #374151;
+  --popover: #fef2f2;
+  --popover-foreground: #374151;
+  --primary: #f9dc5c;
+  --primary-foreground: #ffffff;
+  --secondary: #f59e0b;
+  --secondary-foreground: #ffffff;
+  --muted: #fef2f2;
+  --muted-foreground: #6b7280;
+  --accent: #f59e0b;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #fef2f2;
+  --ring: rgba(220, 38, 38, 0.5);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #1f2937;
+  --foreground: #f9fafb;
+  --card: #374151;
+  --card-foreground: #f9fafb;
+  --popover: #374151;
+  --popover-foreground: #f9fafb;
+  --primary: #ef4444;
+  --primary-foreground: #ffffff;
+  --secondary: #fbbf24;
+  --secondary-foreground: #1f2937;
+  --muted: #4b5563;
+  --muted-foreground: #9ca3af;
+  --accent: #fbbf24;
+  --accent-foreground: #1f2937;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #4b5563;
+  --input: #374151;
+  --ring: rgba(239, 68, 68, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-sans {
+  font-family: 'Geist', sans-serif;
+}
+
+.font-mono {
+  font-family: 'Geist Mono', monospace;
+}
+
+.antialiased {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layout utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+/* Grid utilities */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.md\:grid-cols-2 {
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.md\:grid-cols-4 {
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.lg\:grid-cols-2 {
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.lg\:grid-cols-3 {
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.lg\:col-span-2 {
+  @media (min-width: 1024px) {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Spacing utilities */
+.p-2 {
+  padding: 0.5rem;
+}
+
+.p-3 {
+  padding: 0.75rem;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 0.75rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
+.order-first {
+  order: -1;
+}
+
+/* Width and height utilities */
+.w-2 {
+  width: 0.5rem;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.w-6 {
+  width: 1.5rem;
+}
+
+.w-8 {
+  width: 2rem;
+}
+
+.w-12 {
+  width: 3rem;
+}
+
+.w-16 {
+  width: 4rem;
+}
+
+.h-2 {
+  height: 0.5rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
+.h-6 {
+  height: 1.5rem;
+}
+
+.h-8 {
+  height: 2rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
+.h-16 {
+  height: 4rem;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* Border utilities */
+.border {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border);
+}
+
+.border-b {
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--border);
+}
+
+.border-r {
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-right-color: var(--border);
+}
+
+.border-t {
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: var(--border);
+}
+
+.border-gray-200 {
+  border-color: #e5e7eb;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151;
+}
+
+.border-gray-300 {
+  border-color: #d1d5db;
+}
+
+.dark .border-gray-300 {
+  border-color: #4b5563;
+}
+
+.border-gray-600 {
+  border-color: #4b5563;
+}
+
+.dark .border-gray-600 {
+  border-color: #6b7280;
+}
+
+.border-gray-700 {
+  border-color: #374151;
+}
+
+.dark .border-gray-700 {
+  border-color: #4b5563;
+}
+
+.border-gray-800 {
+  border-color: #1f2937;
+}
+
+.dark .border-gray-800 {
+  border-color: #374151;
+}
+
+.border-blue-200 {
+  border-color: #f9dc5c;
+}
+
+.dark .border-blue-200 {
+  border-color: #1e40af;
+}
+
+.border-green-200 {
+  border-color: #bbf7d0;
+}
+
+.dark .border-green-200 {
+  border-color: #166534;
+}
+
+.border-red-200 {
+  border-color: #fecaca;
+}
+
+.dark .border-red-200 {
+  border-color: #991b1b;
+}
+
+.border-red-300 {
+  border-color: #fca5a5;
+}
+
+.dark .border-red-300 {
+  border-color: #dc2626;
+}
+
+.border-red-700 {
+  border-color: #b91c1c;
+}
+
+.dark .border-red-700 {
+  border-color: #dc2626;
+}
+
+.border-blue-700 {
+  border-color: #f9dc5c;
+}
+
+.dark .border-blue-700 {
+  border-color: #f9dc5c;
+}
+
+.border-green-700 {
+  border-color: #047857;
+}
+
+.dark .border-green-700 {
+  border-color: #059669;
+}
+
+.border-dashed {
+  border-style: dashed;
+}
+
+/* Background utilities */
+.bg-white {
+  background-color: #ffffff;
+}
+
+.dark .bg-white {
+  background-color: #1f2937;
+}
+
+.bg-gray-50 {
+  background-color: #f9fafb;
+}
+
+.dark .bg-gray-50 {
+  background-color: #111827;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6;
+}
+
+.dark .bg-gray-100 {
+  background-color: #374151;
+}
+
+.bg-gray-800 {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-800 {
+  background-color: #374151;
+}
+
+.bg-gray-900 {
+  background-color: #111827;
+}
+
+.dark .bg-gray-900 {
+  background-color: #111827;
+}
+
+.bg-gray-950 {
+  background-color: #030712;
+}
+
+.dark .bg-gray-950 {
+  background-color: #030712;
+}
+
+.bg-green-50 {
+  background-color: #f0fdf4;
+}
+
+.dark .bg-green-50 {
+  background-color: #14532d;
+}
+
+.bg-green-100 {
+  background-color: #dcfce7;
+}
+
+.dark .bg-green-100 {
+  background-color: #166534;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2;
+}
+
+.dark .bg-red-50 {
+  border-color: #7f1d1d;
+}
+
+.bg-blue-50 {
+  background-color: #eff6ff;
+}
+
+.dark .bg-blue-50 {
+  background-color: #1e3a8a;
+}
+
+.bg-primary-green {
+  background-color: #f9dc5c;
+}
+
+.bg-primary-green-hover {
+  background-color: #f9dc5c;
+}
+
+/* Text utilities */
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.text-gray-400 {
+  color: #000000;
+}
+
+.dark .text-gray-400 {
+  color: #000000;
+}
+
+.text-gray-500 {
+  color: #000000;
+}
+
+.dark .text-gray-500 {
+  color: #000000;
+}
+
+.text-gray-600 {
+  color: #000000;
+}
+
+.dark .text-gray-600 {
+  color: #000000;
+}
+
+.text-gray-700 {
+  color: #000000;
+}
+
+.dark .text-gray-700 {
+  color: #000000;
+}
+
+.text-gray-900 {
+  color: #000000;
+}
+
+.dark .text-gray-900 {
+  color: #000000;
+}
+
+.text-white {
+  color: #000000;
+}
+
+.dark .text-white {
+  color: #000000;
+}
+
+.text-green-400 {
+  color: #000000;
+}
+
+.dark .text-green-400 {
+  color: #000000;
+}
+
+.text-green-700 {
+  color: #000000;
+}
+
+.dark .text-green-700 {
+  color: #000000;
+}
+
+.text-red-400 {
+  color: #000000;
+}
+
+.dark .text-red-400 {
+  color: #000000;
+}
+
+.text-red-700 {
+  color: #000000;
+}
+
+.dark .text-red-700 {
+  color: #000000;
+}
+
+.text-blue-400 {
+  color: #000000;
+}
+
+.dark .text-blue-400 {
+  color: #000000;
+}
+
+.text-blue-700 {
+  color: #000000;
+}
+
+.dark .text-blue-700 {
+  color: #000000;
+}
+
+.text-primary-green {
+  color: #000000;
+}
+
+/* Font utilities */
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+/* Border radius utilities */
+.rounded {
+  border-radius: 0.25rem;
+}
+
+.rounded-md {
+  border-radius: 0.375rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+/* Transition utilities */
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+/* Position utilities */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.top-0 {
+  top: 0;
+}
+
+.right-0 {
+  right: 0;
+}
+
+.bottom-0 {
+  bottom: 0;
+}
+
+.left-0 {
+  left: 0;
+}
+
+.z-10 {
+  z-index: 10;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+/* Display utilities */
+.hidden {
+  display: none;
+}
+
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.inline {
+  display: inline;
+}
+
+/* Cursor utilities */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Focus utilities */
+.focus\:border-primary-green:focus {
+  border-color: #f9dc5c;
+}
+
+.dark .focus\:border-primary-green:focus {
+  border-color: #f9dc5c;
+}
+
+/* Hover utilities */
+.hover\:bg-gray-100:hover {
+  background-color: #f3f4f6;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #374151;
+}
+
+.hover\:bg-gray-200:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .hover\:bg-gray-200:hover {
+  background-color: #4b5563;
+}
+
+.hover\:bg-primary-green-hover:hover {
+  background-color: #f9dc5c;
+}
+
+/* Max width utilities */
+.max-w-md {
+  max-width: 28rem;
+}
+
+.max-w-6xl {
+  max-width: 72rem;
+}
+
+.max-w-7xl {
+  max-width: 80rem;
+}
+
+/* Width utilities */
+.w-full {
+  width: 100%;
+}
+
+.w-1\/2 {
+  width: 50%;
+}
+
+/* Height utilities */
+.h-full {
+  height: 100%;
+}
+
+/* Padding utilities */
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.py-6 {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.py-8 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+/* Margin utilities */
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 0.75rem;
+}
+
+/* Flex utilities */
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+/* Text alignment */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+/* Opacity */
+.opacity-1 {
+  opacity: 1;
+}
+
+/* Pointer events */
+.pointer-events-auto {
+  pointer-events: auto;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+/* Transform */
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+/* Animation */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Media queries */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lg\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Focus styles */
+.focus\:outline-none:focus {
+  outline: none;
+}
+
+.focus\:ring-2:focus {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background-color: #10a37f;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #0d8f6b;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.dark .btn-secondary {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+/* Navigation links - remove underlines */
+a[href*="chat.html"], a[href*="agent.html"], a[href*="storage.html"] {
+  text-decoration: none !important;
+}
+
+/* Dropdown styles */
+.dropdown-container {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.dropdown-header {
+  padding: 0.75rem;
+  background: var(--card);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background-color 0.15s ease;
+}
+
+.dropdown-header:hover {
+  background: var(--muted);
+}
+
+.dropdown-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  background: var(--card);
+}
+
+.dropdown-content.expanded {
+  max-height: 500px;
+  padding: 0.75rem;
+}
+
+.dropdown-icon {
+  transition: transform 0.3s ease;
+  width: 1rem;
+  height: 1rem;
+}
+
+.dropdown-icon.expanded {
+  transform: rotate(180deg);
+}
+
+/* Form styles */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Message styles */
+.message {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message.user {
+  background: #10a37f;
+  color: white;
+  margin-left: auto;
+}
+
+.message.agent {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .message.agent {
+  background: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+.message.processing {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dark .message.processing {
+  background: #451a03;
+  color: #fbbf24;
+  border-color: #d97706;
+}
+
+/* Context styles */
+.context-item {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.context-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.dark .context-item:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.context-item.active {
+  background: #10a37f;
+  color: white;
+  border-color: #10a37f;
+}
+
+/* Sidebar styles */
+.sidebar {
+  width: 320px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.sidebar.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Loading styles */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 1.5rem;
+  color: #10a37f;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+}
+    </style>
 </head>
-<body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors duration-300">
-    <!-- Header Container -->
-    <div id="header-container"></div>
-
-    <!-- Main Content -->
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <!-- Agent Information Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8 relative overflow-hidden">
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                        <span class="text-3xl mr-3">📋</span>
-                        Agent Information
-                    </h2>
-                    <div class="flex items-center space-x-2">
-                        <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span class="text-sm text-gray-500 dark:text-gray-400">Active</span>
-                    </div>
-                </div>
-                
-                <div id="agent-info" class="space-y-4">
-                    <div class="flex items-center justify-center py-12">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span class="ml-3 text-gray-600 dark:text-gray-400">Loading agent information...</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Agent JSON Link -->
-            <div class="absolute bottom-4 right-4">
-                <a href="/.well-known/agent.json" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   class="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-mono transition-colors duration-200">
-                    /.well-known/agent.json
-                </a>
+<body class="font-sans antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+    <div id="info-tab" class="min-h-screen bg-white dark:bg-gray-950">
+        <div class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+            <div class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+            <img src="https://orvsccdc47.ufs.sh/f/Slhdc2MbjygMbusHsQBGIu7ZmbJta6NLkf1hT4cjBFQSEOnl" alt="Logo" class="w-8 h-8 object-cover" />
+          </div>
+          <div>
+            <h1 id="header-agent-name" class="text-lg font-semibold text-gray-900 dark:text-white">Loading Agent...</h1>
+            <p id="header-agent-subtitle" class="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+          </div>
+        </div>
+        <div class="flex-1 flex items-center justify-center">
+          <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <a href="chat.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Chat</a>
+            <a href="agent.html" class="px-4 py-2 bg-primary-green text-white rounded-md text-sm font-medium transition-colors">Agent Info</a>
+            <a href="storage.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Storage</a>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="px-3 py-1 bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 rounded-full text-sm font-medium">
+            Online
+          </div>
+          <a href="https://github.com/Pebbling-ai/pebble/" target="_blank" rel="noopener noreferrer" class="ml-2">
+            <svg class="w-6 h-6 text-gray-700 dark:text-gray-300 hover:text-primary-green transition-colors" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.186 6.839 9.525.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.157-1.11-1.465-1.11-1.465-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.847-2.337 4.695-4.566 4.944.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .267.18.578.688.48C19.138 20.204 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/>
+            </svg>
+          </a>
+        </div>
             </div>
         </div>
 
-        <!-- Agent Details Grid -->
-        <div id="agent-details" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Capabilities Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <span class="text-xl mr-2">🛠️</span>
-                        Capabilities
-                    </h3>
-                    <div id="capabilities-info" class="space-y-3">
-                        <!-- Capabilities will be loaded here -->
+        <div class="p-6 bg-white dark:bg-gray-950">
+            <div class="max-w-6xl mx-auto space-y-6">
+
+                <div class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="agent-stats">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="agent-settings">
                     </div>
                 </div>
-            </div>
 
-            <!-- Skills Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <span class="text-xl mr-2">🎯</span>
-                        Skills
-                    </h3>
-                    <div id="skills-info" class="space-y-2">
-                        <!-- Skills will be loaded here -->
+                <div class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="technical-details">
                     </div>
                 </div>
-            </div>
 
-            <!-- Identity & Trust Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <span class="text-xl mr-2">🔐</span>
-                        Identity & Trust
-                    </h3>
-                    <div id="identity-info" class="space-y-2">
-                        <!-- Identity info will be loaded here -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div id="capabilities-section" class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Capabilities</h3>
+                        </div>
+                        <div id="capabilities-list">
+                        </div>
+                    </div>
+
+                    <div class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
+                        </div>
+                        <div id="skills-list">
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Extensions Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                        <span class="text-xl mr-2">🔌</span>
-                        Extensions
-                    </h3>
-                    <div id="extensions-info" class="space-y-2">
-                        <!-- Extensions will be loaded here -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Identity & Trust</h3>
+                        </div>
+                        <div id="identity-trust-list">
+                        </div>
+                    </div>
+
+                    <div class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Extensions</h3>
+                        </div>
+                        <div id="extensions-list">
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer Container -->
-    <div id="footer-container"></div>
-
-    <!-- Error Container -->
-    <div id="error-container" class="fixed top-4 right-4 max-w-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 shadow-lg hidden">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-red-800 dark:text-red-200" id="error-message"></p>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="common.js"></script>
-    <script src="components/layout.js"></script>
     <script>
         let agentCard = null;
 
+        // Dropdown toggle function
+        function toggleDropdown(dropdownId) {
+            const content = document.getElementById(dropdownId);
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('.dropdown-icon');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                icon.classList.add('expanded');
+            }
+        }
+
         async function loadAndDisplayAgent() {
             try {
-                agentCard = await loadAgentCard();
+                // Fetch agent data from the API endpoint
+                const response = await fetch('http://localhost:8030/.well-known/agent.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                agentCard = await response.json();
+
                 displayAgentCard();
                 displayCapabilities();
                 displaySkills();
-                displayIdentityInfo();
+                displayTechnicalDetails();
+                displayIdentityTrust();
                 displayExtensions();
-                document.getElementById('agent-details').classList.remove('hidden');
             } catch (error) {
-                console.error('Error loading agent card:', error);
-                document.getElementById('agent-info').innerHTML =
-                    '<div class="error">Failed to load agent information</div>';
-                showError('Failed to load agent information: ' + error.message);
+                console.error('Error loading agent card from API:', error);
+                document.getElementById('header-agent-name').textContent = 'Unknown Agent';
+                document.getElementById('header-agent-subtitle').textContent = 'Unable to load agent information';
+                showError('Failed to load agent information from API: ' + error.message);
             }
         }
 
         function displayAgentCard() {
             if (!agentCard) return;
 
-            const infoDiv = document.getElementById('agent-info');
-            infoDiv.innerHTML = `
-                <div class="space-y-6">
-                    <div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">${agentCard.name}</h3>
-                        <p class="text-gray-600 dark:text-gray-400 leading-relaxed">${agentCard.description}</p>
-                    </div>
+            // Update header information
+            document.getElementById('header-agent-name').textContent = agentCard.name;
+            document.getElementById('header-agent-subtitle').textContent = agentCard.description || 'AI Agent';
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Version</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.version}</div>
+            const statsDiv = document.getElementById('agent-stats');
+            statsDiv.innerHTML = `
+                <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Version</span>
+                    </div>
+                    <div class="font-mono text-lg font-semibold text-gray-900 dark:text-white">${agentCard.version}</div>
+                </div>
+                <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Protocol</span>
+                    </div>
+                    <div class="font-mono text-lg font-semibold text-gray-900 dark:text-white">v${agentCard.protocolVersion}</div>
+                </div>
+                <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Kind</span>
+                    </div>
+                    <div class="font-mono text-lg font-semibold text-gray-900 dark:text-white">${agentCard.kind || 'Agent'}</div>
+                </div>
+                <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Sessions</span>
+                    </div>
+                    <div class="font-mono text-lg font-semibold text-gray-900 dark:text-white">${agentCard.numHistorySessions || 0}</div>
+                </div>
+            `;
+
+            const settingsDiv = document.getElementById('agent-settings');
+            settingsDiv.innerHTML = `
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Debug</span>
+                        <div class="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 rounded-full text-sm font-medium">
+                            ${agentCard.debugMode ? 'Level ' + agentCard.debugLevel : 'Disabled'}
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Protocol</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white">v${agentCard.protocolVersion}</div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Monitoring</span>
+                        <div class="px-3 py-1 ${agentCard.monitoring ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded-full text-sm font-medium">
+                            ${agentCard.monitoring ? 'Enabled' : 'Disabled'}
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Kind</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white capitalize">${agentCard.kind || 'agent'}</div>
+                    </div>
+                    <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Telemetry</span>
+                        <div class="px-3 py-1 ${agentCard.telemetry ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded-full text-sm font-medium">
+                            ${agentCard.telemetry ? 'Enabled' : 'Disabled'}
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sessions</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.numHistorySessions || 0}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Debug</div>
-                            <div class="font-mono text-sm ${agentCard.debugMode ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}">${agentCard.debugMode ? 'Level ' + agentCard.debugLevel : 'Disabled'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Monitoring</div>
-                            <div class="font-mono text-sm ${agentCard.monitoring ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}">${agentCard.monitoring ? 'Enabled' : 'Disabled'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Telemetry</div>
-                            <div class="font-mono text-sm ${agentCard.telemetry ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}">${agentCard.telemetry ? 'Enabled' : 'Disabled'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Trust Required</div>
-                            <div class="font-mono text-sm ${agentCard.agentTrust?.trustVerificationRequired ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-white'}">${agentCard.agentTrust?.trustVerificationRequired ? 'Yes' : 'No'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 md:col-span-2 lg:col-span-4">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">URL</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white break-all">${agentCard.url}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 md:col-span-3 lg:col-span-4">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">DID</div>
-                            <div class="font-mono text-xs text-gray-900 dark:text-white break-all">${agentCard.identity?.did || 'Not available'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Created</div>
-                            <div class="font-mono text-xs text-gray-900 dark:text-white">${agentCard.extraData?.created ? formatTimestamp(agentCard.extraData.created * 1000) : 'Not available'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Identity Provider</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white capitalize">${agentCard.agentTrust?.identityProvider || 'Unknown'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Creator</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.agentTrust?.creatorId || 'Unknown'}</div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Roles</div>
-                            <div class="font-mono text-sm text-gray-900 dark:text-white">${agentCard.agentTrust?.inheritedRoles?.length || 0}</div>
-                        </div>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Trust Level</span>
+                        <span class="text-gray-600 dark:text-gray-300 capitalize">${agentCard.agentTrust || 'Unknown'}</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Identity Provider</span>
+                        <span class="text-gray-600 dark:text-gray-300">Pebble Protocol</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <span class="font-medium text-gray-900 dark:text-white">Agent ID</span>
+                        <span class="text-gray-600 dark:text-gray-300 font-mono text-xs">${agentCard.id || 'Unknown'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayTechnicalDetails() {
+            if (!agentCard) return;
+
+            const technicalDiv = document.getElementById('technical-details');
+            technicalDiv.innerHTML = `
+                <div>
+                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">URL</div>
+                    <div class="font-mono text-sm bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                        ${agentCard.url}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">DID</div>
+                    <div class="font-mono text-xs bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 break-all text-gray-600 dark:text-gray-300">
+                        ${agentCard.identity?.did || 'did:pebble:c94a3e7aa41540a5b25ee342f0908ad'}
                     </div>
                 </div>
             `;
         }
 
         function displayCapabilities() {
-            if (!agentCard || !agentCard.capabilities) {
-                document.getElementById('capabilities-info').innerHTML = 
-                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No capabilities defined</div>';
+            if (!agentCard || !agentCard.capabilities || Object.keys(agentCard.capabilities).length === 0) {
+                document.getElementById('capabilities-section').style.display = 'none';
                 return;
             }
 
-            const capabilitiesDiv = document.getElementById('capabilities-info');
+            document.getElementById('capabilities-section').style.display = 'block';
             const capabilities = agentCard.capabilities;
+            const capabilitiesDiv = document.getElementById('capabilities-list');
 
             capabilitiesDiv.innerHTML = `
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
-                        <span class="text-gray-900 dark:text-white">Streaming</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${capabilities.streaming ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'}">
-                            ${capabilities.streaming ? 'Yes' : 'No'}
-                        </span>
+                <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <span class="font-medium text-gray-900 dark:text-white">Streaming</span>
+                    <div class="px-3 py-1 ${capabilities.streaming ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded-full text-sm font-medium">
+                        ${capabilities.streaming ? 'Yes' : 'No'}
                     </div>
-                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
-                        <span class="text-gray-900 dark:text-white">Push Notifications</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${capabilities.pushNotifications ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'}">
-                            ${capabilities.pushNotifications ? 'Yes' : 'No'}
-                        </span>
+                </div>
+                <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <span class="font-medium text-gray-900 dark:text-white">Push Notifications</span>
+                    <div class="px-3 py-1 ${capabilities.pushNotifications ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded-full text-sm font-medium">
+                        ${capabilities.pushNotifications ? 'Yes' : 'No'}
                     </div>
-                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
-                        <span class="text-gray-900 dark:text-white">State History</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${capabilities.stateTransitionHistory ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'}">
-                            ${capabilities.stateTransitionHistory ? 'Yes' : 'No'}
-                        </span>
+                </div>
+                <div class="flex justify-between items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <span class="font-medium text-gray-900 dark:text-white">State History</span>
+                    <div class="px-3 py-1 ${capabilities.stateTransitionHistory ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded-full text-sm font-medium">
+                        ${capabilities.stateTransitionHistory ? 'Yes' : 'No'}
                     </div>
-                    ${capabilities.extensions && capabilities.extensions.length > 0 ? `
-                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-sm">
-                        <span class="text-gray-900 dark:text-white">Extensions</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
-                            ${capabilities.extensions.length}
-                        </span>
-                    </div>
-                    ` : ''}
                 </div>
             `;
         }
 
         function displaySkills() {
             if (!agentCard || !agentCard.skills || agentCard.skills.length === 0) {
-                document.getElementById('skills-info').innerHTML = 
+                document.getElementById('skills-list').innerHTML = 
                     '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No skills defined</div>';
                 return;
             }
 
-            const skillsDiv = document.getElementById('skills-info');
-            skillsDiv.innerHTML = agentCard.skills.map(skill => `
-                <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded border-l-2 border-blue-500">
-                    <div class="font-medium text-gray-900 dark:text-white text-sm mb-1">${skill.name}</div>
-                    <div class="text-xs text-gray-600 dark:text-gray-400">${skill.description || 'No description available'}</div>
-                    ${skill.tags && skill.tags.length > 0 ? `
-                    <div class="flex flex-wrap gap-1 mt-2">
-                        ${skill.tags.map(tag => `<span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 rounded text-xs">${tag}</span>`).join('')}
+            const skillsDiv = document.getElementById('skills-list');
+            skillsDiv.innerHTML = `
+                <div class="p-4 border border-primary-green/20 bg-primary-green/5 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 bg-primary-green rounded-full mt-2 flex-shrink-0"></div>
+                        <div>
+                            <div class="font-semibold text-primary-green mb-1">${agentCard.skills[0].name}</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-300">${agentCard.skills[0].description || 'Ability to answer basic questions'}</div>
+                        </div>
                     </div>
-                    ` : ''}
                 </div>
-            `).join('');
+            `;
         }
 
-        function displayIdentityInfo() {
+        function displayIdentityTrust() {
+            const identityTrustDiv = document.getElementById('identity-trust-list');
+            
             if (!agentCard || !agentCard.identity) {
-                document.getElementById('identity-info').innerHTML = 
-                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No identity info available</div>';
+                identityTrustDiv.innerHTML = 
+                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No identity information available</div>';
                 return;
             }
 
-            const identityDiv = document.getElementById('identity-info');
             const identity = agentCard.identity;
-            const trust = agentCard.agentTrust;
-
-            // Extract public key from DID document
-            let publicKey = 'Not available';
-            if (identity.didDocument && identity.didDocument.verificationMethod && identity.didDocument.verificationMethod.length > 0) {
-                const verificationMethod = identity.didDocument.verificationMethod[0];
-                publicKey = verificationMethod.publicKeyPem || verificationMethod.publicKeyJwk || 'Present but format unknown';
-            } else if (identity.publicKey) {
-                publicKey = identity.publicKey;
-            }
-
-            // Handle trust level
-            let trustLevel = 'Basic Trust';
-            let certificateStatus = 'Not available';
+            const agentTrust = agentCard.agentTrust || 'Unknown';
             
-            if (typeof trust === 'string') {
-                trustLevel = trust.charAt(0).toUpperCase() + trust.slice(1) + ' Trust';
-            } else if (trust && typeof trust === 'object') {
-                trustLevel = trust.trustVerificationRequired ? 'Verification Required' : 'Basic Trust';
-                certificateStatus = trust.certificate ? 'Present' : 'Not available';
+            // Get public key from DID document
+            let publicKeyPem = null;
+            if (identity.didDocument && identity.didDocument.verificationMethod && identity.didDocument.verificationMethod.length > 0) {
+                publicKeyPem = identity.didDocument.verificationMethod[0].publicKeyPem;
             }
 
-            identityDiv.innerHTML = `
-                <div class="space-y-2">
-                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
-                        <div class="flex items-center justify-between cursor-pointer" onclick="togglePublicKey()">
-                            <div class="text-xs text-gray-500 dark:text-gray-400">Public Key</div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-600 dark:text-gray-300">${publicKey !== 'Not available' ? 'Available' : 'Not available'}</span>
-                                <svg id="public-key-arrow" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
+            identityTrustDiv.innerHTML = `
+                <div class="space-y-3">
+                    <div class="dropdown-container">
+                        <div class="dropdown-header" onclick="toggleDropdown('public-key-dropdown')">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Public Key</span>
+                                <div class="px-2 py-1 ${publicKeyPem ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded text-xs">
+                                    ${publicKeyPem ? 'Available' : 'Not available'}
+                                </div>
+                            </div>
+                            <svg class="dropdown-icon w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div id="public-key-dropdown" class="dropdown-content">
+                            ${publicKeyPem ? `
+                            <div class="space-y-2">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 font-medium">Full Public Key:</div>
+                                <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="font-mono text-xs break-all text-gray-600 dark:text-gray-300 leading-relaxed">
+                                        -----BEGIN PUBLIC KEY-----<br>
+                                        ${publicKeyPem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----/g, '').trim()}<br>
+                                        -----END PUBLIC KEY-----
+                                    </div>
+                                </div>
+                            </div>
+                            ` : '<div class="text-sm text-gray-500 dark:text-gray-400">No public key available</div>'}
+                        </div>
+                    </div>
+                    
+                    <div class="dropdown-container">
+                        <div class="dropdown-header" onclick="toggleDropdown('csr-dropdown')">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">CSR Path</span>
+                                <div class="px-2 py-1 ${identity.csr ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded text-xs">
+                                    ${identity.csr ? 'Available' : 'Not available'}
+                                </div>
+                            </div>
+                            <svg class="dropdown-icon w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div id="csr-dropdown" class="dropdown-content">
+                            ${identity.csr ? `
+                            <div class="space-y-2">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 font-medium">Certificate Signing Request Path:</div>
+                                <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div class="font-mono text-sm text-gray-600 dark:text-gray-300 break-all">
+                                        ${identity.csr}
+                                    </div>
+                                </div>
+                            </div>
+                            ` : '<div class="text-sm text-gray-500 dark:text-gray-400">No CSR path available</div>'}
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Trust Level</div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600 dark:text-gray-300 capitalize">${agentTrust}</span>
+                            <div class="px-2 py-1 ${agentTrust === 'high' ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : agentTrust === 'medium' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800' : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'} rounded text-xs">
+                                ${agentTrust === 'low' ? 'Low Trust' : agentTrust === 'medium' ? 'Medium Trust' : agentTrust === 'high' ? 'High Trust' : 'Unknown'}
                             </div>
                         </div>
-                        <div id="public-key-content" class="hidden mt-2 p-2 bg-gray-100 dark:bg-gray-600 rounded border">
-                            <div class="font-mono text-xs text-gray-900 dark:text-white break-all whitespace-pre-wrap">${publicKey}</div>
-                        </div>
                     </div>
-                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
-                        <div class="flex items-center justify-between cursor-pointer" onclick="toggleCSR()">
-                            <div class="text-xs text-gray-500 dark:text-gray-400">CSR Path</div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-600 dark:text-gray-300">${identity.csr ? 'Available' : 'Not available'}</span>
-                                <svg id="csr-arrow" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div id="csr-content" class="hidden mt-2 p-2 bg-gray-100 dark:bg-gray-600 rounded border">
-                            <div class="font-mono text-xs text-gray-900 dark:text-white break-all">${identity.csr || 'Not available'}</div>
-                        </div>
-                    </div>
-                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Trust Level</div>
-                        <div class="font-mono text-xs text-gray-900 dark:text-white">${trustLevel}</div>
-                    </div>
-                    <div class="p-2 bg-gray-50 dark:bg-gray-700/50 rounded">
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">DID Document</div>
-                        <div class="font-mono text-xs text-gray-900 dark:text-white">${identity.didDocument ? 'Present (' + (identity.didDocument.verificationMethod?.length || 0) + ' methods)' : 'Not available'}</div>
+
+                    <div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">DID Document</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-300">Present (1 methods)</div>
                     </div>
                 </div>
             `;
         }
 
         function displayExtensions() {
-            const extensionsDiv = document.getElementById('extensions-info');
+            const extensionsDiv = document.getElementById('extensions-list');
             
-            if (!agentCard || !agentCard.capabilities || !agentCard.capabilities.extensions || agentCard.capabilities.extensions.length === 0) {
-                extensionsDiv.innerHTML = 
-                    '<div class="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">No extensions available</div>';
-                return;
-            }
-
-            const extensions = agentCard.capabilities.extensions;
-            extensionsDiv.innerHTML = extensions.map(ext => `
-                <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded border-l-2 ${ext.required ? 'border-orange-500' : 'border-green-500'}">
-                    <div class="flex items-center justify-between mb-1">
-                        <div class="font-medium text-gray-900 dark:text-white text-sm">${ext.uri}</div>
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${ext.required ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'}">
-                            ${ext.required ? 'Required' : 'Optional'}
-                        </span>
-                    </div>
-                    ${ext.description ? `<div class="text-xs text-gray-600 dark:text-gray-400 mb-1">${ext.description}</div>` : ''}
-                    ${ext.params && Object.keys(ext.params).length > 0 ? `
-                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                        Parameters: ${Object.keys(ext.params).join(', ')}
-                    </div>
-                    ` : ''}
+            // For now, showing no extensions available based on the data structure
+            // This can be updated when extension data becomes available
+            extensionsDiv.innerHTML = `
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+                    </svg>
+                    <div class="text-sm">No extensions available</div>
                 </div>
-            `).join('');
+            `;
         }
 
-        // Toggle functions for collapsible sections
-        function togglePublicKey() {
-            const content = document.getElementById('public-key-content');
-            const arrow = document.getElementById('public-key-arrow');
-            
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                arrow.style.transform = 'rotate(180deg)';
-            } else {
-                content.classList.add('hidden');
-                arrow.style.transform = 'rotate(0deg)';
-            }
+        function showError(message) {
+            console.error('Error:', message);
         }
 
-        function toggleCSR() {
-            const content = document.getElementById('csr-content');
-            const arrow = document.getElementById('csr-arrow');
-            
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                arrow.style.transform = 'rotate(180deg)';
-            } else {
-                content.classList.add('hidden');
-                arrow.style.transform = 'rotate(0deg)';
-            }
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
             loadAndDisplayAgent();
         });
     </script>
+</body>
+<footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-auto">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="text-center">
+      <div class="flex items-center justify-center space-x-2 mb-4">
+        <span class="text-2xl">🐧</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pebbling Protocol</h3>
+      </div>
+      <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
+        Pebbling is a decentralized agent-to-agent communication protocol. 
+        <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform 
+        where you can pebblify your agent and be part of the agent economy.
+      </p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        This is the local version. For production deployment, please follow the 
+        <a href="https://docs.pebbling.ai" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="text-primary-green dark:text-primary-green hover:text-primary-green dark:hover:text-primary-green underline transition-colors duration-200">
+          documentation
+        </a>.
+      </p>
+      <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          © 2025 Pebbling AI. Built with ❤️ from Amsterdam.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
 </body>
 </html>

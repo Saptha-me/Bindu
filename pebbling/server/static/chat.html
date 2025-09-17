@@ -1,402 +1,1365 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Interface - Pebbling</title>
     <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
+    <meta name="description" content="Chat interface">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                        'mono': ['SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        .chat-container {
-            height: 500px;
-            display: flex;
-            flex-direction: column;
-        }
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap');
 
-        .chat-messages {
-            flex: 1;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            overflow-y: auto;
-            margin-bottom: 1rem;
-        }
+:root {
+  --background: #ffffff;
+  --foreground: #374151;
+  --card: #ffffff;
+  --card-foreground: #374151;
+  --popover: #fef2f2;
+  --popover-foreground: #374151;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f59e0b;
+  --secondary-foreground: #ffffff;
+  --muted: #fef2f2;
+  --muted-foreground: #6b7280;
+  --accent: #f59e0b;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #fef2f2;
+  --ring: rgba(220, 38, 38, 0.5);
+  --radius: 0.5rem;
+}
 
-        .message {
-            margin-bottom: 1rem;
-            padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
-            max-width: 80%;
-            word-wrap: break-word;
-        }
+.dark {
+  --background: #1f2937;
+  --foreground: #f9fafb;
+  --card: #374151;
+  --card-foreground: #f9fafb;
+  --popover: #374151;
+  --popover-foreground: #f9fafb;
+  --primary: #ef4444;
+  --primary-foreground: #ffffff;
+  --secondary: #fbbf24;
+  --secondary-foreground: #1f2937;
+  --muted: #4b5563;
+  --muted-foreground: #9ca3af;
+  --accent: #fbbf24;
+  --accent-foreground: #1f2937;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #4b5563;
+  --input: #374151;
+  --ring: rgba(239, 68, 68, 0.5);
+}
 
-        .message.user {
-            background: var(--accent-primary);
-            color: white;
-            margin-left: auto;
-        }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-        .message.agent {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
+body {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-        .message.status {
-            background: var(--bg-tertiary);
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-style: italic;
-            text-align: center;
-            padding: 0.5rem 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
-            margin: 0.75rem auto;
-            max-width: 60%;
-        }
+/* Using utility classes for the thinking pill; no custom styles here. */
 
-        .message.user[data-task-id], .message.agent[data-task-id] {
-            cursor: default;
-            position: relative;
-        }
+.font-sans {
+  font-family: 'Geist', sans-serif;
+}
 
-        .message.user[data-task-id]:hover::after, .message.agent[data-task-id]:hover::after {
-            content: "Task ID: " attr(data-task-id);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            white-space: nowrap;
-            z-index: 1000;
-            margin-bottom: 5px;
-        }
+.font-mono {
+  font-family: 'Geist Mono', monospace;
+}
 
-        .message.user[data-task-id]:hover::before, .message.agent[data-task-id]:hover::before {
-            content: "";
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 5px solid transparent;
-            border-top-color: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-        }
+.antialiased {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-        .message h1, .message h2, .message h3, .message h4, .message h5, .message h6 {
-            margin: 0.5em 0;
-            font-weight: bold;
-        }
+/* Layout utilities */
+.flex {
+  display: flex;
+}
 
-        .message h1 { font-size: 1.5em; }
-        .message h2 { font-size: 1.3em; }
-        .message h3 { font-size: 1.2em; }
-        .message h4 { font-size: 1.1em; }
-        .message h5 { font-size: 1em; }
-        .message h6 { font-size: 0.9em; }
+.flex-col {
+  flex-direction: column;
+}
 
-        .message p {
-            margin: 0.5em 0;
-            line-height: 1.4;
-        }
+.flex-1 {
+  flex: 1 1 0%;
+}
 
-        .message ul, .message ol {
-            margin: 0.5em 0;
-            padding-left: 1.5em;
-        }
+.items-center {
+  align-items: center;
+}
 
-        .message li {
-            margin: 0.2em 0;
-        }
+.items-start {
+  align-items: flex-start;
+}
 
-        .message code {
-            background: var(--bg-tertiary);
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
-            font-size: 0.875rem;
-        }
+.justify-center {
+  justify-content: center;
+}
 
-        .message.user code {
-            background: rgba(255, 255, 255, 0.2);
-        }
+.justify-between {
+  justify-content: space-between;
+}
 
-        .message pre {
-            background: var(--bg-tertiary);
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            margin: 0.5rem 0;
-            border: 1px solid var(--border-color);
-        }
+.justify-end {
+  justify-content: flex-end;
+}
 
-        .message.user pre {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
+.gap-2 {
+  gap: 0.5rem;
+}
 
-        .message pre code {
-            background: none;
-            padding: 0;
-            font-size: 0.9em;
-        }
+.gap-3 {
+  gap: 0.75rem;
+}
 
-        .message blockquote {
-            border-left: 4px solid var(--accent-primary);
-            padding-left: 1rem;
-            margin: 0.5rem 0;
-            font-style: italic;
-            background: var(--bg-tertiary);
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-        }
+.gap-4 {
+  gap: 1rem;
+}
 
-        .message.user blockquote {
-            border-left-color: rgba(255, 255, 255, 0.5);
-            background: rgba(255, 255, 255, 0.1);
-        }
+.gap-6 {
+  gap: 1.5rem;
+}
 
-        .message a {
-            color: var(--accent-primary);
-            text-decoration: none;
-        }
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
 
-        .message a:hover {
-            text-decoration: underline;
-        }
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
 
-        .message.user a {
-            color: rgba(255, 255, 255, 0.9);
-        }
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
 
-        .message table {
-            border-collapse: collapse;
-            margin: 0.5em 0;
-            width: 100%;
-        }
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
 
-        .message th, .message td {
-            border: 1px solid #ddd;
-            padding: 0.5em;
-            text-align: left;
-        }
+/* Grid utilities */
+.grid {
+  display: grid;
+}
 
-        .message th {
-            background: rgba(0, 0, 0, 0.1);
-            font-weight: bold;
-        }
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
 
-        .chat-input {
-            display: flex;
-            gap: 0.75rem;
-        }
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
-        .chat-input input {
-            flex: 1;
-        }
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 
-        .chat-input button {
-            padding: 0.75rem 1.5rem;
-        }
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 1.5rem;
-            color: var(--accent-primary);
-        }
+.md\:grid-cols-2 {
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
-        .message.processing {
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+.md\:grid-cols-4 {
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 
-        .chat-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 0.75rem;
-        }
+.lg\:grid-cols-2 {
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
-        .chat-controls button {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
+.lg\:grid-cols-3 {
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 
-        .chat-controls button:hover {
-            background: var(--bg-secondary);
-            border-color: var(--border-hover);
-        }
+.lg\:col-span-2 {
+  @media (min-width: 1024px) {
+    grid-column: span 2 / span 2;
+  }
+}
 
-        .context-info {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
-        }
+/* Spacing utilities */
+.p-2 {
+  padding: 0.5rem;
+}
 
-        @media (max-width: 768px) {
-            .chat-container {
-                height: 400px;
-            }
+.p-3 {
+  padding: 0.75rem;
+}
 
-            .chat-controls {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-        }
+.p-4 {
+  padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 0.75rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
+.order-first {
+  order: -1;
+}
+
+/* Width and height utilities */
+.w-2 {
+  width: 0.5rem;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.w-6 {
+  width: 1.5rem;
+}
+
+.w-8 {
+  width: 2rem;
+}
+
+.w-12 {
+  width: 3rem;
+}
+
+.w-16 {
+  width: 4rem;
+}
+
+.h-2 {
+  height: 0.5rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
+.h-6 {
+  height: 1.5rem;
+}
+
+.h-8 {
+  height: 2rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
+.h-16 {
+  height: 4rem;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* Border utilities */
+.border {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border);
+}
+
+.border-b {
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--border);
+}
+
+.border-r {
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-right-color: var(--border);
+}
+
+.border-t {
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: var(--border);
+}
+
+.border-gray-200 {
+  border-color: #e5e7eb;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151;
+}
+
+.border-gray-300 {
+  border-color: #d1d5db;
+}
+
+.dark .border-gray-300 {
+  border-color: #4b5563;
+}
+
+.border-gray-600 {
+  border-color: #4b5563;
+}
+
+.dark .border-gray-600 {
+  border-color: #6b7280;
+}
+
+.border-gray-700 {
+  border-color: #374151;
+}
+
+.dark .border-gray-700 {
+  border-color: #4b5563;
+}
+
+.border-gray-800 {
+  border-color: #1f2937;
+}
+
+.dark .border-gray-800 {
+  border-color: #374151;
+}
+
+.border-blue-200 {
+  border-color: #f9dc5c;
+}
+
+.dark .border-blue-200 {
+  border-color: #f9dc5c;
+}
+
+.border-green-200 {
+  border-color: #bbf7d0;
+}
+
+.dark .border-green-200 {
+  border-color: #166534;
+}
+
+.border-red-200 {
+  border-color: #fecaca;
+}
+
+.dark .border-red-200 {
+  border-color: #991b1b;
+}
+
+.border-red-300 {
+  border-color: #fca5a5;
+}
+
+.dark .border-red-300 {
+  border-color: #dc2626;
+}
+
+.border-red-700 {
+  border-color: #b91c1c;
+}
+
+.dark .border-red-700 {
+  border-color: #dc2626;
+}
+
+.border-blue-700 {
+  border-color: #f9dc5c;
+}
+
+.dark .border-blue-700 {
+  border-color: #f9dc5c;
+}
+
+.border-green-700 {
+  border-color: #047857;
+}
+
+.dark .border-green-700 {
+  border-color: #059669;
+}
+
+.border-dashed {
+  border-style: dashed;
+}
+
+/* Background utilities */
+.bg-white {
+  background-color: #ffffff;
+}
+
+.dark .bg-white {
+  background-color: #1f2937;
+}
+
+.bg-gray-50 {
+  background-color: #f9fafb;
+}
+
+.dark .bg-gray-50 {
+  background-color: #111827;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6;
+}
+
+.dark .bg-gray-100 {
+  background-color: #374151;
+}
+
+.bg-gray-800 {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-800 {
+  background-color: #374151;
+}
+
+.bg-gray-900 {
+  background-color: #111827;
+}
+
+.dark .bg-gray-900 {
+  background-color: #111827;
+}
+
+.bg-gray-950 {
+  background-color: #030712;
+}
+
+.dark .bg-gray-950 {
+  background-color: #030712;
+}
+
+.bg-green-50 {
+  background-color: #f0fdf4;
+}
+
+.dark .bg-green-50 {
+  background-color: #14532d;
+}
+
+.bg-green-100 {
+  background-color: #dcfce7;
+}
+
+.dark .bg-green-100 {
+  background-color: #166534;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2;
+}
+
+.dark .bg-red-50 {
+  border-color: #7f1d1d;
+}
+
+.bg-blue-50 {
+  background-color: #eff6ff;
+}
+
+.dark .bg-blue-50 {
+  background-color: #1e3a8a;
+}
+
+.bg-primary-green {
+  background-color: #f9dc5c;
+}
+
+.bg-primary-green-hover {
+  background-color: #f9dc5c;
+}
+
+/* Text utilities */
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.text-gray-400 {
+  color: #000000;
+}
+
+.dark .text-gray-400 {
+  color: #000000;
+}
+
+.text-gray-500 {
+  color: #000000;
+}
+
+.dark .text-gray-500 {
+  color: #000000;
+}
+
+.text-gray-600 {
+  color: #000000;
+}
+
+.dark .text-gray-600 {
+  color: #000000;
+}
+
+.text-gray-700 {
+  color: #000000;
+}
+
+.dark .text-gray-700 {
+  color: #000000;
+}
+
+.text-gray-900 {
+  color: #000000;
+}
+
+.dark .text-gray-900 {
+  color: #000000;
+}
+
+.text-white {
+  color: #000000;
+}
+
+.dark .text-white {
+  color: #000000;
+}
+
+.text-green-400 {
+  color: #4ade80;
+}
+
+.dark .text-green-400 {
+  color: #4ade80;
+}
+
+.text-green-700 {
+  color: #047857;
+}
+
+.dark .text-green-700 {
+  color: #4ade80;
+}
+
+.text-red-400 {
+  color: #000000;
+}
+
+.dark .text-red-400 {
+  color: #000000;
+}
+
+.text-red-700 {
+  color: #000000;
+}
+
+.dark .text-red-700 {
+  color: #000000;
+}
+
+.text-blue-400 {
+  color: #000000;
+}
+
+.dark .text-blue-400 {
+  color: #000000;
+}
+
+.text-blue-700 {
+  color: #000000;
+}
+
+.dark .text-blue-700 {
+  color: #000000;
+}
+
+.text-primary-green {
+  color: #000000;
+}
+
+/* Font utilities */
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+/* Border radius utilities */
+.rounded {
+  border-radius: 0.25rem;
+}
+
+.rounded-md {
+  border-radius: 0.375rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+/* Transition utilities */
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+/* Position utilities */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.top-0 {
+  top: 0;
+}
+
+.right-0 {
+  right: 0;
+}
+
+.bottom-0 {
+  bottom: 0;
+}
+
+.left-0 {
+  left: 0;
+}
+
+.z-10 {
+  z-index: 10;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+/* Display utilities */
+.hidden {
+  display: none;
+}
+
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.inline {
+  display: inline;
+}
+
+/* Cursor utilities */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Focus utilities */
+.focus\:border-primary-green:focus {
+  border-color: #f9dc5c;
+}
+
+.dark .focus\:border-primary-green:focus {
+  border-color: #f9dc5c;
+}
+
+/* Hover utilities */
+.hover\:bg-gray-100:hover {
+  background-color: #f3f4f6;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #374151;
+}
+
+.hover\:bg-gray-200:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .hover\:bg-gray-200:hover {
+  background-color: #4b5563;
+}
+
+.hover\:bg-primary-green-hover:hover {
+  background-color: #f9dc5c;
+}
+
+.hover\:text-blue-600:hover {
+  color: #f9dc5c;
+}
+
+.text-blue-600 {
+  color: #f9dc5c;
+}
+
+.dark .text-blue-400 {
+  color: #f9dc5c;
+}
+
+.hover\:text-blue-800:hover {
+  color: #f9dc5c;
+}
+
+.dark .hover\:text-blue-300:hover {
+  color: #f9dc5c;
+}
+
+/* Max width utilities */
+.max-w-md {
+  max-width: 28rem;
+}
+
+.max-w-6xl {
+  max-width: 72rem;
+}
+
+.max-w-7xl {
+  max-width: 80rem;
+}
+
+/* Width utilities */
+.w-full {
+  width: 100%;
+}
+
+.w-1\/2 {
+  width: 50%;
+}
+
+/* Height utilities */
+.h-full {
+  height: 100%;
+}
+
+/* Padding utilities */
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.py-6 {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.py-8 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+/* Margin utilities */
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 0.75rem;
+}
+
+/* Flex utilities */
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+/* Text alignment */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+/* Opacity */
+.opacity-1 {
+  opacity: 1;
+}
+
+/* Pointer events */
+.pointer-events-auto {
+  pointer-events: auto;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+/* Transform */
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+/* Animation */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Media queries */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lg\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Focus styles */
+.focus\:outline-none:focus {
+  outline: none;
+}
+
+.focus\:ring-2:focus {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background-color: #10a37f;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #0d8f6b;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Ensure sidebar and send buttons don't show borders */
+button,
+.sidebar button,
+#send-btn {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Navigation links - remove underlines */
+a[href*="chat.html"], a[href*="agent.html"], a[href*="storage.html"] {
+  text-decoration: none !important;
+}
+
+/* Optional: keep accessible focus but remove default outline if desired */
+.sidebar button:focus,
+#send-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.dark .btn-secondary {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+/* Form styles */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Message action buttons */
+.message-actions {
+  justify-content: flex-start;
+}
+
+.copy-btn:hover svg {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.like-btn:hover svg, .dislike-btn:hover svg {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.like-btn.liked svg {
+  fill: currentColor;
+}
+
+.dislike-btn.disliked svg {
+  fill: currentColor;
+}
+
+/* Button animations */
+.copy-btn, .like-btn, .dislike-btn {
+  transition: all 0.2s ease;
+}
+
+.copy-btn:active, .like-btn:active, .dislike-btn:active {
+  transform: scale(0.95);
+}
+
+/* Context styles */
+.context-item {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.context-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.dark .context-item:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.context-item.active {
+  background: #10a37f;
+  color: #000000;
+  border-color: #10a37f;
+}
+
+/* Sidebar styles */
+.sidebar {
+  width: 320px;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.sidebar.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Loading styles */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 1.5rem;
+  color: #000000;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+}
+
+/* Message action buttons */
+.message-actions {
+  justify-content: flex-start;
+}
+
+.copy-btn:hover svg {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.like-btn:hover svg, .dislike-btn:hover svg {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.like-btn.liked svg {
+  fill: currentColor;
+}
+
+.dislike-btn.disliked svg {
+  fill: currentColor;
+}
+
+/* Button animations */
+.copy-btn, .like-btn, .dislike-btn {
+  transition: all 0.2s ease;
+}
+
+.copy-btn:active, .like-btn:active, .dislike-btn:active {
+  transform: scale(0.95);
+}
     </style>
 </head>
-<body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors duration-300">
-    <!-- Header Container -->
-    <div id="header-container"></div>
-
-    <!-- Main Content -->
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <!-- Chat Controls -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8 p-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-full">
-                        <div class="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        <span class="text-sm font-medium text-blue-700 dark:text-blue-400" id="context-status">No active context</span>
-                    </div>
-                </div>
-                <div class="flex space-x-3">
-                    <button onclick="clearChat()" 
-                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all duration-200 hover:shadow-md">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                        Clear Chat
-                    </button>
-                    <button onclick="newContext()" 
-                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all duration-200 hover:shadow-md">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                        New Context
-                    </button>
-                </div>
+<body class="font-sans antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+    <div id="chat-tab" class="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
+        <div class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+            <div class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+            <img src="https://orvsccdc47.ufs.sh/f/Slhdc2MbjygMbusHsQBGIu7ZmbJta6NLkf1hT4cjBFQSEOnl" alt="Logo" class="w-8 h-8 object-cover" />
+          </div>
+          <div>
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Chat Interface</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Powered by Pebbling AI Agent</p>
+          </div>
+        </div>
+        <div class="flex-1 flex items-center justify-center">
+          <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <a href="chat.html" class="px-4 py-2 bg-primary-green text-white rounded-md text-sm font-medium transition-colors">Chat</a>
+            <a href="agent.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Agent Info</a>
+            <a href="storage.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Storage</a>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="px-3 py-1 bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 rounded-full text-sm font-medium">
+            Online
+          </div>
+          <a href="https://github.com/Pebbling-ai/pebble/" target="_blank" rel="noopener noreferrer" class="ml-2">
+            <svg class="w-6 h-6 text-gray-700 dark:text-gray-300 hover:text-gray-900 transition-colors" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.186 6.839 9.525.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.157-1.11-1.465-1.11-1.465-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.847-2.337 4.695-4.566 4.944.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .267.18.578.688.48C19.138 20.204 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/>
+            </svg>
+          </a>
+        </div>
             </div>
         </div>
 
-        <!-- Chat Interface -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col h-[650px] overflow-hidden">
-            <!-- Chat Header -->
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/10 dark:to-purple-900/10">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-                            <svg class="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        <div class="flex flex-1 overflow-hidden">
+            <div id="sidebar" class="sidebar border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-all duration-300 flex flex-col" style="width: 320px;">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+                    <div class="flex items-center justify-between">
+                        <button id="toggle-sidebar" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
-                            Chat Interface
-                        </h2>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Powered by Pebbling AI Agent</p>
+                        </button>
                     </div>
-                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full">
-                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span class="text-xs font-medium text-green-700 dark:text-green-400">Agent Ready</span>
+                </div>
+
+                <div class="flex-1 p-4 space-y-4 sidebar-content" style="transition: opacity 0.3s ease, visibility 0.3s ease;">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-medium text-gray-900 dark:text-white">Contexts</h3>
+                            <button id="new-context" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div id="contexts-list" class="space-y-2">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button id="clear-chat" class="w-full justify-start hover:bg-gray-100 dark:hover:bg-gray-800 p-3 rounded-lg transition-colors flex items-center gap-2 text-left">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            Clear Chat
+                        </button>
+                        <button class="w-full justify-start hover:bg-gray-100 dark:hover:bg-gray-800 p-3 rounded-lg transition-colors flex items-center gap-2 text-left">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Settings
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Messages Container -->
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4">
-                <div class="flex justify-center">
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 max-w-md text-center">
-                        <p class="text-blue-800 dark:text-blue-200 text-sm">
-                            👋 Welcome! Start a conversation with the agent by typing a message below.
-                        </p>
+            <div class="flex-1 flex flex-col bg-white dark:bg-gray-950">
+                <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+                </div>
+
+                <div class="p-6 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+                    <div class="flex gap-3">
+                        <input id="message-input" type="text" placeholder="Type your message here..." class="flex-1 h-12 px-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-primary-green dark:focus:border-primary-green bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" />
+                        <button id="send-btn" class="h-12 px-6 bg-primary-green hover:bg-primary-green-hover text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                            Send
+                        </button>
                     </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+                        AI can make mistakes. Consider checking important information.
+                    </p>
                 </div>
             </div>
-
-            <!-- Chat Input -->
-            <div class="p-6 border-t border-gray-200 dark:border-gray-700">
-                <div class="flex space-x-4">
-                    <input
-                        type="text"
-                        id="message-input"
-                        class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
-                        placeholder="Type your message here..."
-                        onkeypress="handleKeyPress(event)"
-                    >
-                    <button onclick="sendMessage()" 
-                            id="send-button" 
-                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors duration-200 flex items-center space-x-2">
-                        <span>Send</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer Container -->
-    <div id="footer-container"></div>
-
-    <!-- Error Toast -->
-    <div id="error-toast" class="fixed top-4 right-4 max-w-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 shadow-lg hidden transform transition-all duration-300">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-red-800 dark:text-red-200" id="error-message"></p>
-            </div>
-            <button onclick="hideError()" class="ml-auto pl-3">
-                <svg class="h-4 w-4 text-red-400 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="common.js"></script>
-    <script src="components/layout.js"></script>
     <script>
-        // Generate UUID v4
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -404,12 +1367,12 @@
             });
         }
 
-        // Alias for compatibility
         function generateId() {
             return generateUUID();
         }
 
-        let contextId = generateUUID(); // Generate proper UUID for context
+        let contextId = generateUUID();
+        let currentTaskId = null;
 
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
@@ -424,85 +1387,94 @@
             if (!message) return;
 
             input.value = '';
-            const sendButton = document.getElementById('send-button');
+            const sendButton = document.getElementById('send-btn');
             sendButton.disabled = true;
 
-            try {
-                // Generate IDs
-                const messageId = generateId();
-                const taskId = generateId();
-                if (!contextId) {
-                    contextId = generateId();
-                    updateContextStatus();
-                }
+      try {
+        const messageId = generateId();
+        const taskId = generateId();
+        if (!contextId) {
+          contextId = generateId();
+        }
 
-                // Create JSON-RPC request payload
-                const payload = {
-                    "jsonrpc": "2.0",
-                    "method": "message/send",
-                    "params": {
-                        "message": {
-                            "role": "user",
-                            "parts": [{
-                                "kind": "text",
-                                "text": message
-                            }],
-                            "kind": "message",
-                            "messageId": messageId,
-                            "contextId": contextId,
-                            "taskId": taskId
-                        },
-                        "configuration": {
-                            "acceptedOutputModes": ["application/json"]
-                        }
-                    },
-                    "id": generateId()
-                };
-
-                // Send message using fetch directly for JSON-RPC
-                const response = await fetch('/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.error) {
-                    throw new Error(result.error.message || 'Unknown error');
-                }
-
-                // Store task ID from the result
-                currentTaskId = result.result.task_id;
-                
-                // Store context ID from the result
-                if (result.result.context_id) {
-                    contextId = result.result.context_id;
-                    updateContextStatus();
-                }
-
-                // Add user message to chat with task ID
-                addMessage(message, 'user', currentTaskId);
-
-                // Add processing indicator
-                addProcessingMessage();
-
-                // Start polling for task completion
-                pollTaskStatus();
-
-            } catch (error) {
-                console.error('Error sending message:', error);
-                addMessage('Error: ' + error.message, 'status');
-                showError('Failed to send message: ' + error.message, 'chat-error');
-            } finally {
-                sendButton.disabled = false;
+        const payload = {
+          "jsonrpc": "2.0",
+          "method": "message/send",
+          "params": {
+            "message": {
+              "role": "user",
+              "parts": [{
+                "kind": "text",
+                "text": message
+              }],
+              "kind": "message",
+              "messageId": messageId,
+              "contextId": contextId,
+              "taskId": taskId
+            },
+            "configuration": {
+              "acceptedOutputModes": ["application/json"]
             }
+          },
+          "id": generateId()
+        };
+
+        const response = await fetch('/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Backend response:', result);
+
+        if (result.error) {
+          throw new Error(result.error.message || 'Unknown error');
+        }
+
+        // Store task ID from the result
+        currentTaskId = result.result.task_id;
+
+        if (result.result.context_id) {
+          contextId = result.result.context_id;
+        }
+
+        addMessage(message, 'user', currentTaskId);
+
+        // Try to display agent message from possible fields
+        if (result.result) {
+          if (result.result.reply) {
+            addMessage(result.result.reply, 'agent', currentTaskId);
+            currentTaskId = null;
+          } else if (result.result.content) {
+            addMessage(result.result.content, 'agent', currentTaskId);
+            currentTaskId = null;
+          } else if (result.result.messages && result.result.messages.length > 0) {
+            const agentMsg = result.result.messages.find(m => m.role === 'assistant' || m.role === 'agent');
+            if (agentMsg && agentMsg.content) {
+              addMessage(agentMsg.content, 'agent', currentTaskId);
+              currentTaskId = null;
+            }
+          }
+        }
+        if (currentTaskId) {
+          // Add processing indicator and start polling for task completion
+          addProcessingMessage();
+          pollTaskStatus();
+        }
+
+      } catch (error) {
+        console.error('Error sending message:', error);
+        addMessage('Error: ' + error.message, 'status');
+      } finally {
+        sendButton.disabled = false;
+      }
         }
 
         async function pollTaskStatus() {
@@ -543,24 +1515,18 @@
                 removeProcessingMessage();
 
                 if (task.status.state === 'completed') {
-                    // Extract the agent's response from the task history
-                    if (task.history && task.history.length > 0) {
-                        // Find the last assistant/agent message in history
-                        const agentMessages = task.history.filter(msg => 
-                            msg.role === 'assistant' || msg.role === 'agent'
-                        );
-                        
-                        if (agentMessages.length > 0) {
-                            const lastAgentMessage = agentMessages[agentMessages.length - 1];
-                            if (lastAgentMessage.parts && lastAgentMessage.parts.length > 0) {
-                                const textPart = lastAgentMessage.parts.find(part => part.kind === 'text');
-                                if (textPart) {
-                                    addMessage(textPart.text, 'agent', task.task_id);
-                                }
-                            }
-                        }
-                    }
-                    currentTaskId = null;
+          // Extract the agent's response from the latest message in history
+          if (task.history && task.history.length > 0) {
+            // Find the last message with role 'agent' or 'assistant'
+            const lastAgentMessage = [...task.history].reverse().find(msg => msg.role === 'agent' || msg.role === 'assistant');
+            if (lastAgentMessage && lastAgentMessage.parts && lastAgentMessage.parts.length > 0) {
+              const textPart = lastAgentMessage.parts.find(part => part.kind === 'text');
+              if (textPart) {
+                addMessage(textPart.text, 'agent', task.task_id);
+              }
+            }
+          }
+          currentTaskId = null;
                 } else if (task.status.state === 'failed') {
                     addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
                     currentTaskId = null;
@@ -582,73 +1548,52 @@
         }
 
         function addMessage(content, sender, taskId = null) {
-            const messagesDiv = document.getElementById('chat-messages');
+            const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             
-            if (sender === 'user') {
-                messageDiv.className = 'flex justify-end group';
-                messageDiv.innerHTML = `
-                    <div class="relative max-w-xs lg:max-w-md">
-                        <div class="px-4 py-3 bg-blue-600 text-white rounded-lg shadow-sm ${taskId ? 'hover:bg-blue-700 transition-colors cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
-                            <p class="text-sm">${content}</p>
-                        </div>
-                        ${taskId ? `
-                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                            Task ID: ${taskId.substring(0, 8)}...
-                        </div>
-                        ` : ''}
-                    </div>
-                `;
-            } else if (sender === 'agent') {
-                messageDiv.className = 'flex justify-start group';
-                const parsedContent = marked.parse(content);
-                messageDiv.innerHTML = `
-                    <div class="relative max-w-xs lg:max-w-md">
-                        <div class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm ${taskId ? 'hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
-                            <div class="text-sm prose prose-sm dark:prose-invert max-w-none">${parsedContent}</div>
-                        </div>
-                        ${taskId ? `
-                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                            Task ID: ${taskId.substring(0, 8)}...
-                        </div>
-                        <div class="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-center space-x-2">
-                            <button onclick="pauseTask('${taskId}')" class="p-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full shadow-lg transition-colors" title="Pause Task">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <button onclick="cancelTask('${taskId}')" class="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors" title="Cancel Task">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <button onclick="resumeTask('${taskId}')" class="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-colors" title="Resume Task">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <button onclick="thumbsUp('${taskId}')" class="p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg transition-colors" title="Thumbs Up">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                                </svg>
-                            </button>
-                            <button onclick="thumbsDown('${taskId}')" class="p-1.5 bg-gray-500 hover:bg-gray-600 text-white rounded-full shadow-lg transition-colors" title="Thumbs Down">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667v-5.43a2 2 0 00-1.106-1.79l-.05-.025A4 4 0 0011.057 2H5.64a2 2 0 00-1.962 1.608l-1.2 6A2 2 0 004.44 12H8v4a2 2 0 002 2 1 1 0 001-1v-.667a4 4 0 01.8-2.4l1.4-1.866a4 4 0 00.8-2.4z" />
-                                </svg>
-                            </button>
-                        </div>
-                        ` : ''}
-                    </div>
-                `;
-            } else if (sender === 'status') {
-                messageDiv.className = 'flex justify-center';
-                messageDiv.innerHTML = `
-                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-2 max-w-md text-center">
-                        <p class="text-yellow-800 dark:text-yellow-200 text-sm italic">${content}</p>
-                    </div>
-                `;
-            }
+        if (sender === 'user') {
+        messageDiv.className = 'flex justify-end';
+        messageDiv.innerHTML = `
+          <div class="max-w-2xl px-4 py-2 bg-primary-green text-white rounded-full ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
+            <div class="flex items-center">
+              <p class="text-lg m-0">${content}</p>
+            </div>
+          </div>
+        `;
+      } else if (sender === 'agent') {
+        messageDiv.className = 'flex justify-start';
+        const parsedContent = marked.parse(content);
+        const messageId = generateId();
+          messageDiv.innerHTML = `
+            <div class="group max-w-2xl px-4 py-3 text-gray-900 dark:text-white ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
+              <div class="text-lg prose dark:prose-invert max-w-none message-content" data-message-id="${messageId}">${parsedContent}</div>
+              <div class="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 message-actions" data-message-id="${messageId}">
+                <button class="copy-btn p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 transform hover:scale-110" title="Copy message" data-message-id="${messageId}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                  </svg>
+                </button>
+                <button class="like-btn p-2 rounded-md hover:bg-green-100 dark:hover:bg-green-900 transition-all duration-200 transform hover:scale-110" title="Like" data-message-id="${messageId}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                  </svg>
+                </button>
+                <button class="dislike-btn p-2 rounded-md hover:bg-red-100 dark:hover:bg-red-900 transition-all duration-200 transform hover:scale-110" title="Dislike" data-message-id="${messageId}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          `;
+      } else if (sender === 'status') {
+        messageDiv.className = 'flex justify-center';
+        messageDiv.innerHTML = `
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-2 max-w-md text-center">
+            <p class="text-base text-yellow-800 dark:text-yellow-200 italic">${content}</p>
+          </div>
+        `;
+      }
 
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -657,18 +1602,17 @@
         function addProcessingMessage() {
             removeProcessingMessage();
             
-            const messagesDiv = document.getElementById('chat-messages');
+            const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'flex justify-start';
             messageDiv.id = 'processing-message';
-            messageDiv.innerHTML = `
-                <div class="max-w-xs lg:max-w-md px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg shadow-sm">
-                    <div class="flex items-center space-x-2">
-                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                        <span class="text-sm">Agent is thinking...</span>
-                    </div>
-                </div>
-            `;
+      messageDiv.innerHTML = `
+        <div class="max-w-2xl px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-3" role="status" aria-live="polite">
+          <div class="flex items-center">
+            <span class="text-sm text-gray-600 dark:text-gray-300">Agent is thinking...</span>
+          </div>
+        </div>
+      `;
             
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -681,139 +1625,215 @@
             }
         }
 
-        function showError(message) {
-            const errorToast = document.getElementById('error-toast');
-            const errorMessage = document.getElementById('error-message');
-            errorMessage.textContent = message;
-            errorToast.classList.remove('hidden');
-            
-            setTimeout(() => {
-                hideError();
-            }, 5000);
+        // Copy message functionality
+        async function copyMessage(messageId) {
+            const messageContent = document.querySelector(`.message-content[data-message-id="${messageId}"]`);
+            if (messageContent) {
+                const text = messageContent.textContent || messageContent.innerText;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showCopyFeedback(messageId);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showCopyFeedback(messageId);
+                }
+            }
         }
 
-        function hideError() {
-            const errorToast = document.getElementById('error-toast');
-            errorToast.classList.add('hidden');
+        // Show copy feedback animation
+        function showCopyFeedback(messageId) {
+            const copyBtn = document.querySelector(`.copy-btn[data-message-id="${messageId}"]`);
+            if (copyBtn) {
+                const originalIcon = copyBtn.innerHTML;
+                copyBtn.innerHTML = `
+                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                `;
+                copyBtn.classList.add('animate-pulse');
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalIcon;
+                    copyBtn.classList.remove('animate-pulse');
+                }, 1000);
+            }
+        }
+
+        // Like message functionality
+        function likeMessage(messageId) {
+            const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
+            const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
+            
+            if (likeBtn && dislikeBtn) {
+                if (likeBtn.classList.contains('liked')) {
+                    // Unlike
+                    likeBtn.classList.remove('liked', 'text-green-500');
+                    likeBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                        </svg>
+                    `;
+                } else {
+                    // Like
+                    likeBtn.classList.add('liked', 'text-green-500');
+                    likeBtn.innerHTML = `
+                        <svg class="w-4 h-4 text-green-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                        </svg>
+                    `;
+                    // Remove dislike if present
+                    dislikeBtn.classList.remove('disliked', 'text-red-500');
+                    dislikeBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                        </svg>
+                    `;
+                }
+            }
+        }
+
+        // Dislike message functionality
+        function dislikeMessage(messageId) {
+            const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
+            const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
+            
+            if (dislikeBtn && likeBtn) {
+                if (dislikeBtn.classList.contains('disliked')) {
+                    // Undislike
+                    dislikeBtn.classList.remove('disliked', 'text-red-500');
+                    dislikeBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                        </svg>
+                    `;
+                } else {
+                    // Dislike
+                    dislikeBtn.classList.add('disliked', 'text-red-500');
+                    dislikeBtn.innerHTML = `
+                        <svg class="w-4 h-4 text-red-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                        </svg>
+                    `;
+                    // Remove like if present
+                    likeBtn.classList.remove('liked', 'text-green-500');
+                    likeBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                        </svg>
+                    `;
+                }
+            }
         }
 
         function clearChat() {
-            const messagesDiv = document.getElementById('chat-messages');
-            messagesDiv.innerHTML = `
-                <div class="flex justify-center">
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 max-w-md text-center">
-                        <p class="text-blue-800 dark:text-blue-200 text-sm">
-                            🧹 Chat cleared. Start a new conversation by typing a message below.
-                        </p>
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = '';
+            addMessage('Chat cleared. Start a new conversation!', 'status');
+        }
+
+        function newContext() {
+            contextId = generateId();
+            addMessage('New context started', 'status');
+            renderContexts(); // Update the UI to show the new context
+        }
+
+        // Initialize contexts list
+        function renderContexts() {
+            const contextsList = document.getElementById('contexts-list');
+            contextsList.innerHTML = `
+                <div class="w-full text-left p-3 rounded-lg border bg-primary-green text-white border-primary-green">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-white"></div>
+                        <span class="text-sm font-medium">Context: ${contextId.substring(0, 8)}...</span>
                     </div>
                 </div>
             `;
         }
 
-        function newContext() {
-            contextId = generateId();
-            updateContextStatus();
-            addMessage('New context started', 'status');
-        }
-
-        function updateContextStatus() {
-            const statusElement = document.getElementById('context-status');
-            if (contextId) {
-                statusElement.textContent = `Context: ${contextId.substring(0, 8)}...`;
-            } else {
-                statusElement.textContent = 'No active context';
-            }
-        }
-
-        // Task action functions
-        function pauseTask(taskId) {
-            console.log('Pausing task:', taskId);
-            // TODO: Implement pause task API call
-            showError('Pause functionality not yet implemented');
-        }
-
-        async function cancelTask(taskId) {
-            console.log('Canceling task:', taskId);
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggle-sidebar');
+            const icon = toggleBtn.querySelector('svg path');
+            const isCollapsed = sidebar.classList.contains('collapsed');
             
-            if (!confirm('Are you sure you want to cancel this task?')) {
-                return;
-            }
-
-            try {
-                // Create JSON-RPC request for task cancellation
-                const payload = {
-                    "jsonrpc": "2.0",
-                    "method": "tasks/cancel",
-                    "params": {
-                        "task_id": taskId
-                    },
-                    "id": generateId()
-                };
-
-                const response = await fetch('/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.error) {
-                    throw new Error(result.error.message || 'Unknown error');
-                }
-
-                // Show success message
-                addMessage(`Task ${taskId.substring(0, 8)}... has been canceled`, 'status');
-                
-                // Clear current task if it's the one we canceled
-                if (currentTaskId === taskId) {
-                    currentTaskId = null;
-                    removeProcessingMessage();
-                }
-
-            } catch (error) {
-                console.error('Error canceling task:', error);
-                showError('Failed to cancel task: ' + error.message);
+            if (isCollapsed) {
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '320px';
+                // Change to right-pointing chevron (expand)
+                icon.setAttribute('d', 'M9 5l7 7-7 7');
+            } else {
+                sidebar.classList.add('collapsed');
+                sidebar.style.width = '64px';
+                // Change to left-pointing chevron (collapse)
+                icon.setAttribute('d', 'M15 19l-7-7 7-7');
             }
         }
 
-        function resumeTask(taskId) {
-            console.log('Resuming task:', taskId);
-            // TODO: Implement resume task API call
-            showError('Resume functionality not yet implemented');
-        }
-
-        function thumbsUp(taskId) {
-            console.log('Thumbs up for task:', taskId);
-            // TODO: Implement feedback API call
-            // Visual feedback
-            const button = event.target.closest('button');
-            button.classList.add('bg-green-500');
-            button.classList.remove('bg-blue-500');
-            setTimeout(() => {
-                button.classList.add('bg-blue-500');
-                button.classList.remove('bg-green-500');
-            }, 1000);
-        }
-
-        function thumbsDown(taskId) {
-            console.log('Thumbs down for task:', taskId);
-            // TODO: Implement feedback API call
-            // Visual feedback
-            const button = event.target.closest('button');
-            button.classList.add('bg-red-500');
-            button.classList.remove('bg-gray-500');
-            setTimeout(() => {
-                button.classList.add('bg-gray-500');
-                button.classList.remove('bg-red-500');
-            }, 1000);
-        }
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderContexts();
+            
+            // Set up event listeners
+            document.getElementById('send-btn').addEventListener('click', sendMessage);
+            document.getElementById('message-input').addEventListener('keypress', handleKeyPress);
+            document.getElementById('clear-chat').addEventListener('click', clearChat);
+            document.getElementById('new-context').addEventListener('click', newContext);
+            document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
+            
+            // Event delegation for message action buttons
+            document.getElementById('messages').addEventListener('click', function(event) {
+                const target = event.target.closest('button');
+                if (!target) return;
+                
+                const messageId = target.getAttribute('data-message-id');
+                if (!messageId) return;
+                
+                if (target.classList.contains('copy-btn')) {
+                    copyMessage(messageId);
+                } else if (target.classList.contains('like-btn')) {
+                    likeMessage(messageId);
+                } else if (target.classList.contains('dislike-btn')) {
+                    dislikeMessage(messageId);
+                }
+            });
+        });
     </script>
+</body>
+<footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-auto">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="text-center">
+      <div class="flex items-center justify-center space-x-2 mb-4">
+        <span class="text-2xl">🐧</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pebbling Protocol</h3>
+      </div>
+      <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
+        Pebbling is a decentralized agent-to-agent communication protocol. 
+        <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform 
+        where you can pebblify your agent and be part of the agent economy.
+      </p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        This is the local version. For production deployment, please follow the 
+        <a href="https://docs.pebbling.ai" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="text-gray-900 dark:text-gray-900 hover:text-gray-700 dark:hover:text-gray-700 underline transition-colors duration-200">
+          documentation
+        </a>.
+      </p>
+      <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          © 2025 Pebbling AI. Built with ❤️ from Amsterdam.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
 </body>
 </html>

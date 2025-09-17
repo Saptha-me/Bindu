@@ -53,7 +53,7 @@
 from __future__ import annotations as _annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -305,27 +305,73 @@ class PostgreSQLStorage(Storage[ContextT]):
                 updated_at=context_model.updated_at
             )
 
+    async def append_to_contexts(self, context_id: UUID, messages: list[Message]) -> None:
+        """Efficiently append new messages to context history without rebuilding entire context."""
+        if not messages:
+            return
+            
+        existing_context = await self.load_context(context_id)
+        
+        if existing_context is None:
+            # Create new context with message history
+            new_context = {
+                'context_id': context_id,
+                'kind': 'context',
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'updated_at': datetime.now(timezone.utc).isoformat(),
+                'status': 'active',
+                'message_history': messages.copy()
+            }
+            await self.update_context(context_id, new_context)
+        else:
+            # Append to existing message history
+            if 'message_history' not in existing_context:
+                existing_context['message_history'] = []
+            existing_context['message_history'].extend(messages)
+            existing_context['updated_at'] = datetime.now(timezone.utc).isoformat()
+            await self.update_context(context_id, existing_context)
+
     async def update_context(self, context_id: UUID, context: Context) -> None:
         """Update the context using ORM."""
         async with self.session_factory() as session:
-            # Try to get existing context
-            stmt = select(ContextModel).where(ContextModel.id == context_id)
-            result = await session.execute(stmt)
-            context_model = result.scalar_one_or_none()
-            
-            if context_model:
-                # Update existing
-                context_model.context_data = context.context_data
-                context_model.updated_at = datetime.now()
-            else:
-                # Create new
-                context_model = ContextModel(
-                    id=context_id,
-                    context_data=context.context_data
-                )
-                session.add(context_model)
-            
-            await session.commit()
+            try:
+                # Try to get existing context
+                stmt = select(ContextModel).where(ContextModel.id == context_id)
+                result = await session.execute(stmt)
+                context_model = result.scalar_one_or_none()
+                
+                # Convert UUIDs to strings for JSON serialization
+                json_serializable_context = self._convert_uuids_to_strings(context)
+                
+                if context_model:
+                    # Update existing
+                    context_model.context_data = json_serializable_context
+                    context_model.updated_at = datetime.now(timezone.utc)
+                else:
+                    # Create new
+                    context_model = ContextModel()
+                    context_model.id = context_id
+                    context_model.context_data = json_serializable_context
+                    context_model.created_at = datetime.now(timezone.utc)
+                    context_model.updated_at = datetime.now(timezone.utc)
+                    session.add(context_model)
+                
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    def _convert_uuids_to_strings(self, data: Any) -> Any:
+        """Recursively convert UUID objects to strings for JSON serialization."""
+        import uuid
+        if isinstance(data, (UUID, uuid.UUID)):
+            return str(data)
+        elif isinstance(data, dict):
+            return {self._convert_uuids_to_strings(key): self._convert_uuids_to_strings(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self._convert_uuids_to_strings(item) for item in data]
+        else:
+            return data
 
     async def get_tasks_by_context(self, context_id: UUID, limit: int = 100) -> list[Task]:
         """Get all tasks for a specific context using ORM."""
@@ -358,6 +404,31 @@ class PostgreSQLStorage(Storage[ContextT]):
         """List all tasks in storage using ORM."""
         async with self.session_factory() as session:
             stmt = select(TaskModel).order_by(TaskModel.created_at.desc())
+            if length:
+                stmt = stmt.limit(length)
+            
+            result = await session.execute(stmt)
+            task_models = result.scalars().all()
+            
+            tasks = []
+            for task_model in task_models:
+                task_status = TaskStatus(state=task_model.state, timestamp=task_model.timestamp.isoformat())
+                task = Task(
+                    task_id=task_model.id,
+                    context_id=task_model.context_id,
+                    kind=task_model.kind,
+                    status=task_status,
+                    history=task_model.history or [],
+                    artifacts=task_model.artifacts or []
+                )
+                tasks.append(task)
+            
+            return tasks
+
+    async def list_tasks_by_context(self, context_id: UUID, length: int | None = None) -> list[Task]:
+        """List all tasks in storage using ORM."""
+        async with self.session_factory() as session:
+            stmt = select(TaskModel).where(TaskModel.context_id == context_id).order_by(TaskModel.created_at.desc())
             if length:
                 stmt = stmt.limit(length)
             

@@ -102,7 +102,7 @@ class InMemoryStorage(Storage[ContextT]):
         if 'message_id' in message and isinstance(message['message_id'], str):
             message['message_id'] = UUID(message['message_id'])
 
-        task_status = TaskStatus(state='submitted', timestamp=datetime.now().isoformat())
+        task_status = TaskStatus(state='submitted', timestamp=datetime.now(timezone.utc).isoformat())
         task = Task(
             task_id=task_id, 
             context_id=context_id, 
@@ -123,7 +123,7 @@ class InMemoryStorage(Storage[ContextT]):
     ) -> Task:
         """Update the state of a task."""
         task = self.tasks[task_id]
-        task['status'] = TaskStatus(state=state, timestamp=datetime.now().isoformat())
+        task['status'] = TaskStatus(state=state, timestamp=datetime.now(timezone.utc).isoformat())
 
         if new_artifacts:
             if 'artifacts' not in task:

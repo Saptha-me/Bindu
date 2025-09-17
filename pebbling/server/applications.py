@@ -195,15 +195,15 @@ class PebbleApplication(Starlette):
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="text-center">
             <div class="flex items-center justify-center space-x-2 mb-4">
-                <span class="text-2xl">{app_settings.branding.logo_emoji}</span>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{app_settings.branding.protocol_name}</h3>
+                <span class="text-2xl">{app_settings.ui.logo_emoji}</span>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{app_settings.ui.protocol_name}</h3>
             </div>
             <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
-                {app_settings.footer.description}
+                {app_settings.ui.footer_description}
             </p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                {app_settings.footer.local_version_text} 
-                <a href="{app_settings.links.docs_url}" 
+                {app_settings.ui.footer_local_version_text} 
+                <a href="{app_settings.ui.docs_url}" 
                    target="_blank" 
                    rel="noopener noreferrer"
                    class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors duration-200">
@@ -212,7 +212,7 @@ class PebbleApplication(Starlette):
             </p>
             <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                    © {app_settings.footer.copyright_year} {app_settings.footer.company}. Built with ❤️ from {app_settings.footer.location}.
+                    © {app_settings.ui.footer_copyright_year} {app_settings.ui.footer_company}. Built with ❤️ from {app_settings.ui.footer_location}.
                 </p>
             </div>
         </div>
@@ -251,7 +251,7 @@ class PebbleApplication(Starlette):
             jsonrpc_response = await self.task_manager.clear_tasks(pebble_request)
         elif pebble_request['method'] == 'tasks/feedback':
             jsonrpc_response = await self.task_manager.task_feedback(pebble_request)
-            
+
         else:
             raise NotImplementedError(f'Method {pebble_request["method"]} not implemented.')
         return Response(

@@ -83,18 +83,18 @@ class PebbleApplication(Starlette):
 
         # Setup
         self._agent_card_json_schema: bytes | None = None
-        self.router.add_route('/.well-known/agent.json', self._agent_card_endpoint, methods=['HEAD', 'GET', 'OPTIONS'])
-        self.router.add_route('/', self._agent_run_endpoint, methods=['POST'])
-        self.router.add_route('/docs', self._docs_endpoint, methods=['GET'])
-        self.router.add_route('/agent.html', self._agent_page_endpoint, methods=['GET'])
-        self.router.add_route('/chat.html', self._chat_page_endpoint, methods=['GET'])
-        self.router.add_route('/storage.html', self._storage_page_endpoint, methods=['GET'])
-        self.router.add_route('/docs.html', self._docs_endpoint, methods=['GET'])
-        self.router.add_route('/common.js', self._common_js_endpoint, methods=['GET'])
-        self.router.add_route('/common.css', self._common_css_endpoint, methods=['GET'])
-        self.router.add_route('/components/layout.js', self._layout_js_endpoint, methods=['GET'])
-        self.router.add_route('/components/header.html', self._header_component_endpoint, methods=['GET'])
-        self.router.add_route('/components/footer.html', self._footer_component_endpoint, methods=['GET'])
+        self.router.add_route("/.well-known/agent.json", self._agent_card_endpoint, methods=["HEAD", "GET", "OPTIONS"])
+        self.router.add_route("/", self._agent_run_endpoint, methods=["POST"])
+        self.router.add_route("/docs", self._docs_endpoint, methods=["GET"])
+        self.router.add_route("/agent.html", self._agent_page_endpoint, methods=["GET"])
+        self.router.add_route("/chat.html", self._chat_page_endpoint, methods=["GET"])
+        self.router.add_route("/storage.html", self._storage_page_endpoint, methods=["GET"])
+        self.router.add_route("/docs.html", self._docs_endpoint, methods=["GET"])
+        self.router.add_route("/common.js", self._common_js_endpoint, methods=["GET"])
+        self.router.add_route("/common.css", self._common_css_endpoint, methods=["GET"])
+        self.router.add_route("/components/layout.js", self._layout_js_endpoint, methods=["GET"])
+        self.router.add_route("/components/header.html", self._header_component_endpoint, methods=["GET"])
+        self.router.add_route("/components/footer.html", self._footer_component_endpoint, methods=["GET"])
 
     def _create_default_lifespan(
         self,
@@ -174,8 +174,8 @@ class PebbleApplication(Starlette):
 
     async def _common_css_endpoint(self, request: Request) -> Response:
         """Serve the common CSS file."""
-        css_path = Path(__file__).parent / 'static' / 'common.css'
-        return FileResponse(css_path, media_type='text/css')
+        css_path = Path(__file__).parent / "static" / "common.css"
+        return FileResponse(css_path, media_type="text/css")
 
     async def _layout_js_endpoint(self, request: Request) -> Response:
         """Serve the layout JavaScript file."""

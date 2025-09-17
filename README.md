@@ -1,5 +1,8 @@
-<h1 align="center">pebbling ![Pebbling Logo](assets/pebbling-logo.svg)</h1>
-<img src="./banner.jpg" alt="Pebbling Banner" width="800">
+<h1 align="center">pebbling</h1>
+<p align="center">
+  <img src="assets/pebbling-logo.svg" alt="Pebbling Logo" width="200">
+</p>
+
 <h1 align="center">Agent-to-Agent Communication </h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -53,13 +56,9 @@ uv add pebbling
 ```python
 from pebbling import pebblify
 
-# Define your agent
-class MyAgent:
-    def say_hello(self):
-        return "Hello, Agent!"
-
-# Pebblify your agent
-pebblify(MyAgent())
+@pebblify(name="My Agent", description="A simple agent", version="1.0.0")
+def my_agent(message: str) -> str:
+    return "Hello, Agent!"
 
 # You're now ready to communicate securely between agents!
 ```
@@ -71,17 +70,20 @@ from pebbling import pebblify
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 
-# Define your agent
-agent = Agent(
-    model=OpenAIChat(id="gpt-4o"),
-    instructions="You are a helpful assistant.",
-)
-
-# Pebblify your agent
-pebblify(agent)
+@pebblify(name="Agno Agent", description="A helpful assistant", version="1.0.0")
+def agno_agent(message: str) -> str:
+    agent = Agent(
+        model=OpenAIChat(id="gpt-4o"),
+        instructions="You are a helpful assistant.",
+    )
+    result = agent.run(message)
+    return result.to_dict()["content"]
 
 # You're now ready to communicate securely between agents!
 ```
+
+## 🎥 Agent in Action
+[Watch Video](./pebbling_demo.mp4)
 
 ## 🛠️ Supported Agent Frameworks
 

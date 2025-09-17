@@ -172,7 +172,7 @@ def simple_agent(messages: List[str]) -> str:
         model=OpenAIChat(id="gpt-4o")
     )
     
-    result = agent.run(messages=messages)
+    result = agent.run(input=messages)
     
     return result.to_dict()['content']
 

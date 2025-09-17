@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -60,7 +60,7 @@ def _create_storage_instance(storage_config: Optional[StorageConfig]) -> Any:
     """Factory function to create storage instance based on configuration."""
     if not storage_config:
         return InMemoryStorage()
-    
+
     if storage_config.type == "postgres":
         storage = PostgreSQLStorage(connection_string=storage_config.connection_string)
         # Note: initialize() will be called when the server starts
@@ -77,12 +77,9 @@ def _create_scheduler_instance(scheduler_config: Optional[SchedulerConfig]) -> A
     """Factory function to create scheduler instance based on configuration."""
     if not scheduler_config:
         return InMemoryScheduler()
-    
-    scheduler_factories = {
-        "redis": lambda: RedisScheduler(),
-        "memory": lambda: InMemoryScheduler()
-    }
-    
+
+    scheduler_factories = {"redis": lambda: RedisScheduler(), "memory": lambda: InMemoryScheduler()}
+
     factory = scheduler_factories.get(scheduler_config.type, scheduler_factories["memory"])
     return factory()
 
@@ -95,9 +92,9 @@ def pebblify(
     version: str = "1.0.0",
     recreate_keys: bool = True,
     skills: List[Optional[AgentSkill]] = None,
-    capabilities: Optional[AgentCapabilities] = None, 
+    capabilities: Optional[AgentCapabilities] = None,
     agent_trust: Optional[AgentTrust] = None,
-    kind: Literal['agent', 'team', 'workflow'] = 'agent',
+    kind: Literal["agent", "team", "workflow"] = "agent",
     debug_mode: bool = False,
     debug_level: Literal[1, 2] = 1,
     monitoring: bool = False,
@@ -109,9 +106,8 @@ def pebblify(
     storage_config: Optional[StorageConfig] = None,
     scheduler_config: Optional[SchedulerConfig] = None,
 ) -> Callable:
-    """Transform a protocol-compliant function into a Pebbling-compatible agent.
-    
-    """
+    """Transform a protocol-compliant function into a Pebbling-compatible agent."""
+
     def decorator(agent_function: Callable) -> AgentManifest:
         # Validate that this is a protocol-compliant function
         logger.info(f"🔍 Validating agent function: {agent_function.__name__}")
@@ -123,7 +119,7 @@ def pebblify(
         caller_file = inspect.getframeinfo(inspect.currentframe().f_back).filename
         if not caller_file:
             raise RuntimeError("Unable to determine caller file path")
-            
+
         caller_dir = Path(os.path.abspath(caller_file)).parent
 
         agent_identity: AgentIdentity = create_agent_identity(
@@ -134,7 +130,7 @@ def pebblify(
             pki_dir=Path(os.path.join(caller_dir, PKI_DIR)),
             cert_dir=Path(os.path.join(caller_dir, CERTIFICATE_DIR)),
         )
-       
+
         logger.info(f"✅ Security setup complete - DID: {agent_identity['did'] if agent_identity else 'None'}")
         logger.info("📋 Creating agent manifest...")
 
@@ -161,27 +157,38 @@ def pebblify(
         )
 
         logger.info(f"🚀 Agent '{_manifest.identity['did']}' successfully pebblified!")
-        logger.debug(f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}")
+        logger.debug(
+            f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}"
+        )
 
         logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 
         # Create server components using factory functions
         storage_instance = _create_storage_instance(storage_config)
         scheduler_instance = _create_scheduler_instance(scheduler_config)
-            
+
         # Create the manifest worker
         pebble_app = PebbleApplication(
             storage=storage_instance,
             scheduler=scheduler_instance,
             penguin_id=agent_id,
             manifest=_manifest,
-            version=version
-        )    
+            version=version,
+        )
+
+        import pebbling.observability.openinference as OpenInferenceObservability
+
+        try:
+            OpenInferenceObservability.setup()
+        except Exception as exc:
+            logger.warn(f"OpenInference telemetry setup failed", error=str(exc))
 
         # Deploy the server
         from urllib.parse import urlparse
+
         parsed_url = urlparse(deployment_config.url)
         uvicorn.run(pebble_app, host=parsed_url.hostname or "localhost", port=parsed_url.port or 3773)
 
         return _manifest
+
     return decorator

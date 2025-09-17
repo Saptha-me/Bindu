@@ -99,12 +99,6 @@ def pebblify(
     deployment_config: Optional[DeploymentConfig] = None,
     storage_config: Optional[StorageConfig] = None,
     scheduler_config: Optional[SchedulerConfig] = None,
-    # Registry and certificate parameters
-    register_with_hibiscus: bool = False,
-    hibiscus_url: str = "http://localhost:19191",
-    hibiscus_pat_token: Optional[str] = None,
-    issue_certificate: bool = False,
-    certificate_validity_days: int = 365,
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
 
@@ -161,7 +155,7 @@ def pebblify(
             id=agent_id,
             did_required=True,  # We encourage the use of DID for agent-to-agent communication
             recreate_keys=recreate_keys,
-            create_csr=issue_certificate,  # Generate CSR only if certificate will be issued
+            create_csr=True,  # Generate CSR only if certificate will be issued
             pki_dir=Path(os.path.join(caller_dir, PKI_DIR)),
             cert_dir=Path(os.path.join(caller_dir, CERTIFICATE_DIR)),
         )
@@ -196,63 +190,6 @@ def pebblify(
         logger.debug(
             f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}"
         )
-
-        # Register with Hibiscus if requested
-        if register_with_hibiscus:
-            # Get author email from parameter or environment variable
-            registry_author = os.getenv("PEBBLE_HIBISCUS_EMAIL") or author
-            if not registry_author:
-                logger.error(
-                    "Author email is required for Hibiscus registration. Provide via 'author' parameter or PEBBLE_HIBISCUS_EMAIL environment variable"
-                )
-                raise ValueError("Author email is required when register_with_hibiscus=True")
-
-            # Get PAT token from parameter or environment variable
-            registry_pat_token = hibiscus_pat_token or os.getenv("PEBBLE_HIBISCUS_PAT_TOKEN")
-            if not registry_pat_token:
-                logger.error(
-                    "Hibiscus PAT token is required for registration. Provide via 'hibiscus_pat_token' parameter or PEBBLE_HIBISCUS_PAT_TOKEN environment variable"
-                )
-                raise ValueError("Hibiscus PAT token is required when register_with_hibiscus=True")
-
-            try:
-                logger.info("🌺 Registering agent with Hibiscus registry...")
-                from pebbling.hibiscus.agent_registry import register_with_registry
-
-                # Get CSR data from agent identity if certificate issuance is requested
-                csr_data = None
-                if issue_certificate and agent_identity and agent_identity.get("csr"):
-                    csr_file_path = agent_identity["csr"]
-                    # Read the CSR content from the file path
-                    try:
-                        with open(csr_file_path, "r") as f:
-                            csr_data = f.read()
-                    except Exception as e:
-                        logger.error(f"Failed to read CSR file {csr_file_path}: {e}")
-                        raise ValueError(f"Failed to read CSR file: {e}")
-                elif issue_certificate:
-                    logger.error("Certificate issuance requested but no CSR found in agent identity")
-                    raise ValueError("Certificate issuance requested but no CSR was generated")
-
-                registration_result = register_with_registry(
-                    author=registry_author,
-                    agent_manifest=_manifest,
-                    agent_registry_pat_token=SecretStr(registry_pat_token),
-                    agent_registry="hibiscus",
-                    agent_registry_url=hibiscus_url,
-                    issue_certificate=issue_certificate,
-                    csr_data=csr_data,
-                    certificate_validity_days=certificate_validity_days,
-                )
-
-                logger.info("✅ Successfully registered with Hibiscus!")
-                if issue_certificate and registration_result and registration_result.get("certificate"):
-                    logger.info("🔐 Certificate issued and linked to agent registration")
-
-            except Exception as e:
-                logger.error(f"❌ Failed to register with Hibiscus: {e}")
-                # Don't stop deployment if registration fails, just warn
-                logger.warning("⚠️ Proceeding with deployment without registry registration")
 
         logger.info(f"🚀 Starting deployment for agent: {agent_id}")
 

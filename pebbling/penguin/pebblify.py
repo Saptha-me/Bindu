@@ -182,7 +182,7 @@ def pebblify(
             try:
                 OpenInferenceObservability.setup()
             except Exception as exc:
-                logger.warn(f"OpenInference telemetry setup failed", error=str(exc))
+                logger.warn("OpenInference telemetry setup failed", error=str(exc))
 
         # Deploy the server
         from urllib.parse import urlparse

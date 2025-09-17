@@ -1,107 +1,1310 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Storage Management - Pebbling</title>
+    <title>Storage Interface - Pebbling</title>
     <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                        'mono': ['SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
+    <meta name="description" content="Storage interface">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap');
+
+:root {
+  --background: #ffffff;
+  --foreground: #374151;
+  --card: #ffffff;
+  --card-foreground: #374151;
+  --popover: #fef2f2;
+  --popover-foreground: #374151;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f59e0b;
+  --secondary-foreground: #ffffff;
+  --muted: #fef2f2;
+  --muted-foreground: #6b7280;
+  --accent: #f59e0b;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: #fef2f2;
+  --ring: rgba(220, 38, 38, 0.5);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #1f2937;
+  --foreground: #f9fafb;
+  --card: #374151;
+  --card-foreground: #f9fafb;
+  --popover: #374151;
+  --popover-foreground: #f9fafb;
+  --primary: #ef4444;
+  --primary-foreground: #ffffff;
+  --secondary: #fbbf24;
+  --secondary-foreground: #1f2937;
+  --muted: #4b5563;
+  --muted-foreground: #9ca3af;
+  --accent: #fbbf24;
+  --accent-foreground: #1f2937;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #4b5563;
+  --input: #374151;
+  --ring: rgba(239, 68, 68, 0.5);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: var(--background);
+  color: #000000;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-sans {
+  font-family: 'Geist', sans-serif;
+}
+
+.font-mono {
+  font-family: 'Geist Mono', monospace;
+}
+
+.antialiased {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Layout utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+/* Grid utilities */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.md\:grid-cols-2 {
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.md\:grid-cols-4 {
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.lg\:grid-cols-2 {
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.lg\:grid-cols-3 {
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.lg\:col-span-2 {
+  @media (min-width: 1024px) {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Spacing utilities */
+.p-2 {
+  padding: 0.5rem;
+}
+
+.p-3 {
+  padding: 0.75rem;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 0.75rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mt-6 {
+  margin-top: 1.5rem;
+}
+
+.order-first {
+  order: -1;
+}
+
+/* Width and height utilities */
+.w-2 {
+  width: 0.5rem;
+}
+
+.w-4 {
+  width: 1rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.w-6 {
+  width: 1.5rem;
+}
+
+.w-8 {
+  width: 2rem;
+}
+
+.w-12 {
+  width: 3rem;
+}
+
+.w-16 {
+  width: 4rem;
+}
+
+.h-2 {
+  height: 0.5rem;
+}
+
+.h-4 {
+  height: 1rem;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
+.h-6 {
+  height: 1.5rem;
+}
+
+.h-8 {
+  height: 2rem;
+}
+
+.h-12 {
+  height: 3rem;
+}
+
+.h-16 {
+  height: 4rem;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* Border utilities */
+.border {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border);
+}
+
+.border-b {
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--border);
+}
+
+.border-r {
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-right-color: var(--border);
+}
+
+.border-t {
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-top-color: var(--border);
+}
+
+.border-gray-200 {
+  border-color: #e5e7eb;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151;
+}
+
+.border-gray-300 {
+  border-color: #d1d5db;
+}
+
+.dark .border-gray-300 {
+  border-color: #4b5563;
+}
+
+.border-gray-600 {
+  border-color: #4b5563;
+}
+
+.dark .border-gray-600 {
+  border-color: #6b7280;
+}
+
+.border-gray-700 {
+  border-color: #374151;
+}
+
+.dark .border-gray-700 {
+  border-color: #4b5563;
+}
+
+.border-gray-800 {
+  border-color: #1f2937;
+}
+
+.dark .border-gray-800 {
+  border-color: #374151;
+}
+
+.border-blue-200 {
+  border-color: #f9dc5c;
+}
+
+.dark .border-blue-200 {
+  border-color: #f9dc5c;
+}
+
+.border-green-200 {
+  border-color: #bbf7d0;
+}
+
+.dark .border-green-200 {
+  border-color: #166534;
+}
+
+.border-red-200 {
+  border-color: #fecaca;
+}
+
+.dark .border-red-200 {
+  border-color: #991b1b;
+}
+
+.border-red-300 {
+  border-color: #fca5a5;
+}
+
+.dark .border-red-300 {
+  border-color: #dc2626;
+}
+
+.border-red-700 {
+  border-color: #b91c1c;
+}
+
+.dark .border-red-700 {
+  border-color: #dc2626;
+}
+
+.border-blue-700 {
+  border-color: #f9dc5c;
+}
+
+.dark .border-blue-700 {
+  border-color: #f9dc5c;
+}
+
+.border-green-700 {
+  border-color: #047857;
+}
+
+.dark .border-green-700 {
+  border-color: #059669;
+}
+
+.border-dashed {
+  border-style: dashed;
+}
+
+/* Background utilities */
+.bg-white {
+  background-color: #ffffff;
+}
+
+.dark .bg-white {
+  background-color: #1f2937;
+}
+
+.bg-gray-50 {
+  background-color: #f9fafb;
+}
+
+.dark .bg-gray-50 {
+  background-color: #111827;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6;
+}
+
+.dark .bg-gray-100 {
+  background-color: #374151;
+}
+
+.bg-gray-800 {
+  background-color: #1f2937;
+}
+
+.dark .bg-gray-800 {
+  background-color: #374151;
+}
+
+.bg-gray-900 {
+  background-color: #111827;
+}
+
+.dark .bg-gray-900 {
+  background-color: #111827;
+}
+
+.bg-gray-950 {
+  background-color: #030712;
+}
+
+.dark .bg-gray-950 {
+  background-color: #030712;
+}
+
+.bg-green-50 {
+  background-color: #f0fdf4;
+}
+
+.dark .bg-green-50 {
+  background-color: #14532d;
+}
+
+.bg-green-100 {
+  background-color: #dcfce7;
+}
+
+.dark .bg-green-100 {
+  background-color: #166534;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2;
+}
+
+.dark .bg-red-50 {
+  border-color: #7f1d1d;
+}
+
+.bg-blue-50 {
+  background-color: #eff6ff;
+}
+
+.dark .bg-blue-50 {
+  background-color: #1e3a8a;
+}
+
+.bg-primary-green {
+  background-color: #f9dc5c;
+}
+
+.bg-primary-green-hover {
+  background-color: #f9dc5c;
+}
+
+/* Text utilities */
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.text-gray-400 {
+  color: #000000;
+}
+
+.dark .text-gray-400 {
+  color: #000000;
+}
+
+.text-gray-500 {
+  color: #000000;
+}
+
+.dark .text-gray-500 {
+  color: #000000;
+}
+
+.text-gray-600 {
+  color: #000000;
+}
+
+.dark .text-gray-600 {
+  color: #000000;
+}
+
+.text-gray-700 {
+  color: #000000;
+}
+
+.dark .text-gray-700 {
+  color: #000000;
+}
+
+.text-gray-900 {
+  color: #000000;
+}
+
+.dark .text-gray-900 {
+  color: #000000;
+}
+
+.text-white {
+  color: #000000;
+}
+
+.dark .text-white {
+  color: #000000;
+}
+
+.text-green-400 {
+  color: #000000;
+}
+
+.dark .text-green-400 {
+  color: #000000;
+}
+
+.text-green-700 {
+  color: #000000;
+}
+
+.dark .text-green-700 {
+  color: #000000;
+}
+
+.text-red-400 {
+  color: #000000;
+}
+
+.dark .text-red-400 {
+  color: #000000;
+}
+
+.text-red-700 {
+  color: #000000;
+}
+
+.dark .text-red-700 {
+  color: #000000;
+}
+
+.text-blue-400 {
+  color: #000000;
+}
+
+.dark .text-blue-400 {
+  color: #000000;
+}
+
+.text-blue-700 {
+  color: #000000;
+}
+
+.dark .text-blue-700 {
+  color: #000000;
+}
+
+.text-primary-green {
+  color: #000000;
+}
+
+/* Font utilities */
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+/* Border radius utilities */
+.rounded {
+  border-radius: 0.25rem;
+}
+
+.rounded-md {
+  border-radius: 0.375rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+/* Transition utilities */
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+/* Position utilities */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.top-0 {
+  top: 0;
+}
+
+.right-0 {
+  right: 0;
+}
+
+.bottom-0 {
+  bottom: 0;
+}
+
+.left-0 {
+  left: 0;
+}
+
+.z-10 {
+  z-index: 10;
+}
+
+.z-50 {
+  z-index: 50;
+}
+
+/* Display utilities */
+.hidden {
+  display: none;
+}
+
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.inline {
+  display: inline;
+}
+
+/* Cursor utilities */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Focus utilities */
+.focus\:border-primary-green:focus {
+  border-color: #f9dc5c;
+}
+
+.dark .focus\:border-primary-green:focus {
+  border-color: #f9dc5c;
+}
+
+/* Hover utilities */
+.hover\:bg-gray-100:hover {
+  background-color: #f3f4f6;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #374151;
+}
+
+.hover\:bg-gray-200:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .hover\:bg-gray-200:hover {
+  background-color: #4b5563;
+}
+
+.hover\:bg-primary-green-hover:hover {
+  background-color: #f9dc5c;
+}
+
+/* Max width utilities */
+.max-w-md {
+  max-width: 28rem;
+}
+
+.max-w-6xl {
+  max-width: 72rem;
+}
+
+.max-w-7xl {
+  max-width: 80rem;
+}
+
+/* Width utilities */
+.w-full {
+  width: 100%;
+}
+
+.w-1\/2 {
+  width: 50%;
+}
+
+/* Height utilities */
+.h-full {
+  height: 100%;
+}
+
+/* Padding utilities */
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.py-6 {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.py-8 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+/* Margin utilities */
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 0.75rem;
+}
+
+/* Flex utilities */
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+/* Text alignment */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+/* Opacity */
+.opacity-1 {
+  opacity: 1;
+}
+
+/* Pointer events */
+.pointer-events-auto {
+  pointer-events: auto;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+/* Transform */
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+/* Animation */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+/* Media queries */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lg\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Focus styles */
+.focus\:outline-none:focus {
+  outline: none;
+}
+
+.focus\:ring-2:focus {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background-color: #10a37f;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #0d8f6b;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.dark .btn-secondary {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.dark .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+/* Navigation links - remove underlines */
+a[href*="chat.html"], a[href*="agent.html"], a[href*="storage.html"] {
+  text-decoration: none !important;
+}
+
+/* Form styles */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Message styles */
+.message {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.message.user {
+  background: #10a37f;
+  color: white;
+}
+
+.message.agent {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .message.agent {
+  background: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+.message.processing {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dark .message.processing {
+  background: #451a03;
+  color: #fbbf24;
+  border-color: #d97706;
+}
+
+/* Context styles */
+.context-item {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.context-item:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.dark .context-item:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.context-item.active {
+  background: #10a37f;
+  color: white;
+  border-color: #10a37f;
+}
+
+/* Sidebar styles */
+.sidebar {
+  width: 320px;
+  transition: all 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.sidebar.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Loading styles */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 1.5rem;
+  color: #10a37f;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+  }
+
+  .sidebar.collapsed {
+    width: 0;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+}
+    </style>
 </head>
-<body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors duration-300">
-    <!-- Header Container -->
-    <div id="header-container"></div>
-
-    <!-- Main Content -->
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <!-- View Toggle -->
-        <div class="mb-6">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex space-x-4">
-                        <button id="contexts-view-btn" onclick="switchView('contexts')" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200">
-                            <span class="mr-2">🗂️</span>
-                            Contexts View
-                        </button>
-                        <button id="tasks-view-btn" onclick="switchView('tasks')" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200">
-                            <span class="mr-2">📋</span>
-                            Tasks View
-                        </button>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="refreshData()" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <span class="mr-1">🔄</span>
-                            Refresh
-                        </button>
-                        <button onclick="clearStorage()" class="inline-flex items-center px-3 py-2 border border-red-300 dark:border-red-600 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 dark:text-red-200 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                            <span class="mr-1">🗑️</span>
-                            Clear All
-                        </button>
-                    </div>
-                </div>
+<body class="font-sans antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+    <div id="storage-tab" class="min-h-screen bg-white dark:bg-gray-950">
+        <div class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+            <div class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+            <img src="https://orvsccdc47.ufs.sh/f/Slhdc2MbjygMbusHsQBGIu7ZmbJta6NLkf1hT4cjBFQSEOnl" alt="Logo" class="w-8 h-8 object-cover" />
+          </div>
+          <div>
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Storage Management</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Manage contexts and tasks</p>
+          </div>
+        </div>
+        <div class="flex-1 flex items-center justify-center">
+          <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <a href="chat.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Chat</a>
+            <a href="agent.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Agent Info</a>
+            <a href="storage.html" class="px-4 py-2 bg-primary-green text-white rounded-md text-sm font-medium transition-colors">Storage</a>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="px-3 py-1 bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 rounded-full text-sm font-medium">
+            Online
+          </div>
+          <a href="https://github.com/Pebbling-ai/pebble/" target="_blank" rel="noopener noreferrer" class="ml-2">
+            <svg class="w-6 h-6 text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.186 6.839 9.525.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.157-1.11-1.465-1.11-1.465-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.847-2.337 4.695-4.566 4.944.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .267.18.578.688.48C19.138 20.204 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/>
+            </svg>
+          </a>
+        </div>
             </div>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Context/Task List -->
-            <div class="lg:col-span-2">
-                <!-- Contexts View -->
-                <div id="contexts-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Contexts & Tasks</h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Each context contains multiple related tasks</p>
-                    </div>
-                    <div class="p-6">
-                        <div id="contexts-list" class="space-y-4">
-                            <!-- Contexts will be loaded here -->
+        <div class="p-6 bg-white dark:bg-gray-950">
+            <div class="max-w-6xl mx-auto space-y-6">
+                <div class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex gap-4">
+                            <button id="contexts-view-btn" onclick="switchView('contexts')" class="flex items-center gap-2 px-4 py-2 text-primary-green rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                                Contexts View
+                            </button>
+                            <button id="tasks-view-btn" onclick="switchView('tasks')" class="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Tasks View
+                            </button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="refreshData()" class="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                            <button onclick="clearStorage()" class="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg text-sm font-medium transition-colors hover:bg-red-100 dark:hover:bg-red-900/30">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                Clear All
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tasks View -->
-                <div id="tasks-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hidden">
-                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">All Tasks</h2>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Flat view of all tasks across contexts</p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div id="contexts-container" class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                            <div class="flex items-center gap-2 mb-4">
+                                <svg class="w-5 h-5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Contexts & Tasks</h3>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Each context contains multiple related tasks</p>
+                            <div id="contexts-list" class="space-y-4">
+                            </div>
+                        </div>
+
+                        <div id="tasks-container" class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg hidden">
+                            <div class="flex items-center gap-2 mb-4">
+                                <svg class="w-5 h-5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">All Tasks</h3>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Flat view of all tasks across contexts</p>
+                            <div id="task-list" class="space-y-4">
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-6">
-                        <div id="task-list" class="space-y-4">
-                            <!-- Tasks will be loaded here -->
+
+                    <div class="p-6 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-lg">
+                        <div class="flex items-center gap-2 mb-4">
+                            <svg class="w-5 h-5 text-primary-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Storage Statistics</h3>
+                        </div>
+                        <div id="storage-stats">
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Storage Stats Sidebar -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Storage Statistics</h3>
-                <div id="storage-stats">
-                    <!-- Stats will be populated by JavaScript -->
-                </div>
-            </div>
         </div>
-       
-    </main>
+    </div>
 
-    <!-- Footer Container -->
-    <div id="footer-container"></div>
-
-    <!-- Scripts -->
     <script src="common.js"></script>
-    <script src="components/layout.js"></script>
     <script>
         let tasks = [];
         let contexts = [];
@@ -184,11 +1387,15 @@
             } catch (error) {
                 console.error('Error loading tasks:', error);
                 document.getElementById('task-list').innerHTML = `
-                    <div class="text-center py-8">
-                        <div class="text-red-500 mb-4">❌</div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Tasks</h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">Failed to load tasks: ${error.message}</p>
-                        <button onclick="loadTasks()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Retry</button>
+                    <div class="text-center py-12">
+                        <div class="text-gray-400 dark:text-gray-500 mb-4">
+                            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 text-lg font-medium">Error Loading Tasks</p>
+                        <p class="text-gray-500 dark:text-gray-500 mt-1">Failed to load tasks: ${error.message}</p>
+                        <button onclick="loadTasks()" class="mt-4 px-4 py-2 bg-primary-green text-white rounded-lg hover:bg-primary-green-hover transition-colors">Retry</button>
                     </div>
                 `;
             }
@@ -373,7 +1580,7 @@
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
                         <div class="flex items-start justify-between">
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-center space-x-3 mb-2">
+                                <div class="flex items-center gap-3 mb-2">
                                     <span class="text-lg">${statusIcon}</span>
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
                                         ${task.status?.state || 'unknown'}
@@ -502,18 +1709,20 @@
             if (view === 'contexts') {
                 contextsContainer.classList.remove('hidden');
                 tasksContainer.classList.add('hidden');
-                contextsBtn.classList.add('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
-                contextsBtn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
-                tasksBtn.classList.remove('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
-                tasksBtn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
+                contextsBtn.classList.add('bg-primary-green');
+                contextsBtn.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
+                contextsBtn.classList.add('text-white');
+                tasksBtn.classList.remove('bg-primary-green', 'text-white');
+                tasksBtn.classList.add('bg-gray-100', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
                 displayContexts();
             } else {
                 contextsContainer.classList.add('hidden');
                 tasksContainer.classList.remove('hidden');
-                tasksBtn.classList.add('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
-                tasksBtn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
-                contextsBtn.classList.remove('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900/20', 'dark:text-blue-400');
-                contextsBtn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-gray-200');
+                tasksBtn.classList.add('bg-primary-green');
+                tasksBtn.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
+                tasksBtn.classList.add('text-white');
+                contextsBtn.classList.remove('bg-primary-green', 'text-white');
+                contextsBtn.classList.add('bg-gray-100', 'dark:bg-gray-800', 'text-gray-600', 'dark:text-gray-300');
                 displayTasks();
             }
         }
@@ -639,10 +1848,9 @@
                 
                 return `
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        <!-- Context Header -->
                         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 border-b border-gray-200 dark:border-gray-700">
                             <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
+                                <div class="flex items-center gap-3">
                                     <span class="text-lg">🗂️</span>
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -656,7 +1864,7 @@
                                         </p>
                                     </div>
                                 </div>
-                                <div class="flex items-center space-x-2">
+                                <div class="flex items-center gap-2">
                                     <button onclick="toggleContext('${contextId}')" 
                                             class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
                                         <span id="toggle-${contextId}">Show Tasks</span>
@@ -669,7 +1877,6 @@
                             </div>
                         </div>
                         
-                        <!-- Context Tasks (Initially Hidden) -->
                         <div id="context-tasks-${contextId}" class="hidden">
                             ${contextTasks.length > 0 ? contextTasks.map(task => {
                                 const statusColor = getStatusColor(task.status?.state);
@@ -679,7 +1886,7 @@
                                     <div class="p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
                                         <div class="flex items-start justify-between">
                                             <div class="flex-1 min-w-0">
-                                                <div class="flex items-center space-x-3 mb-2">
+                                                <div class="flex items-center gap-3 mb-2">
                                                     <span class="text-lg">${statusIcon}</span>
                                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
                                                         ${task.status?.state || 'unknown'}
@@ -791,5 +1998,35 @@
             }, 100);
         });
     </script>
+</body>
+<footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-auto">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="text-center">
+      <div class="flex items-center justify-center space-x-2 mb-4">
+        <span class="text-2xl">🐧</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pebbling Protocol</h3>
+      </div>
+      <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
+        Pebbling is a decentralized agent-to-agent communication protocol. 
+        <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform 
+        where you can pebblify your agent and be part of the agent economy.
+      </p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        This is the local version. For production deployment, please follow the 
+        <a href="https://docs.pebbling.ai" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors duration-200">
+          documentation
+        </a>.
+      </p>
+      <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          © 2025 Pebbling AI. Built with ❤️ from Amsterdam.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
 </body>
 </html>

@@ -84,6 +84,29 @@ def agno_agent(message: str) -> str:
 ## 🎥 Agent in Action
 <img src="./pebble-cli.gif" alt="Agent Demo" width="640">
 
+## 📊 Interactive Diagrams
+
+<table>
+<tr>
+<td>
+
+**🔄 Sequence Diagram**
+[![View Interactive Diagram](https://img.shields.io/badge/View%20Interactive%20Diagram-📊-blue?style=for-the-badge)](https://www.mermaidchart.com/app/projects/818fccf7-4d32-4f82-8a5f-006808d90e34/diagrams/89f06b06-fe7c-4c8f-ab91-20eb0146fc0f/version/v0.1/edit)
+
+Open the interactive version of this sequence diagram in MermaidChart
+
+</td>
+<td>
+
+**🏗️ Orchestration Diagram**
+[![View Interactive Diagram](https://img.shields.io/badge/View%20Interactive%20Diagram-📊-green?style=for-the-badge)](https://www.mermaidchart.com/app/projects/818fccf7-4d32-4f82-8a5f-006808d90e34/diagrams/143c8f38-3810-4404-898c-cceb59b39670/version/v0.1/edit)
+
+Open the interactive version of this orchestration diagram in MermaidChart
+
+</td>
+</tr>
+</table>
+
 ## 🛠️ Supported Agent Frameworks
 
 Pebbling is tested and integrated with popular agent frameworks:

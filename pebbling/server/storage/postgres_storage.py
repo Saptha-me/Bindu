@@ -155,28 +155,26 @@ class PostgreSQLStorage(Storage[ContextT]):
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    async def load_task(self, task_id: UUID, history_length: int | None = None) -> Task | None:
-        """Load a task using ORM.
-
-        Args:
-            task_id: The id of the task to load.
-            history_length: The number of messages to return in the history.
-
-        Returns:
-            The task or None if not found.
-        """
+    async def load_task(self, task_id: UUID, history_length: int = 50) -> Task | None:
+        """Retrieve a task by ID using ORM."""
+        print(f"PostgreSQL load_task: looking for task_id={task_id}")
+        
         async with self.session_factory() as session:
             stmt = select(TaskModel).where(TaskModel.id == task_id)
             result = await session.execute(stmt)
             task_model = result.scalar_one_or_none()
             
             if not task_model:
+                print(f"PostgreSQL load_task: task {task_id} not found")
                 return None
-
-            history = task_model.history
-            if history_length and len(history) > history_length:
+            
+            print(f"PostgreSQL load_task: found task {task_id}, state={task_model.state}")
+            
+            # Get history with limit
+            history = task_model.history or []
+            if history_length > 0:
                 history = history[-history_length:]
-
+            
             task_status = TaskStatus(state=task_model.state, timestamp=task_model.timestamp.isoformat())
             task = Task(
                 task_id=task_model.id,
@@ -194,6 +192,8 @@ class PostgreSQLStorage(Storage[ContextT]):
         # Use existing task ID from message or generate new one
         task_id = message.get('task_id')
         
+        print(f"PostgreSQL submit_task: task_id={task_id}, context_id={context_id}")
+        
         # Create a copy of message with string UUIDs for JSON serialization
         message_for_storage = message.copy()
         message_for_storage['task_id'] = str(task_id)
@@ -205,18 +205,24 @@ class PostgreSQLStorage(Storage[ContextT]):
         task_status = TaskStatus(state='submitted', timestamp=datetime.now().isoformat())
         
         async with self.session_factory() as session:
-            task_model = TaskModel(
-                id=task_id,
-                context_id=context_id,
-                kind='task',
-                state='submitted',
-                timestamp=datetime.now(),
-                history=[message_for_storage],
-                artifacts=[]
-            )
-            
-            session.add(task_model)
-            await session.commit()
+            try:
+                task_model = TaskModel(
+                    id=task_id,
+                    context_id=context_id,
+                    kind='task',
+                    state='submitted',
+                    timestamp=datetime.now(),
+                    history=[message_for_storage],
+                    artifacts=[]
+                )
+                
+                session.add(task_model)
+                await session.commit()
+                print(f"PostgreSQL task submitted successfully: {task_id}")
+            except Exception as e:
+                print(f"PostgreSQL task submission failed: {e}")
+                await session.rollback()
+                raise
 
         # Ensure original message has proper UUIDs for protocol compliance
         message['task_id'] = task_id
@@ -298,38 +304,73 @@ class PostgreSQLStorage(Storage[ContextT]):
             if not context_model:
                 return None
                 
-            return Context(
-                context_id=context_model.id,
-                context_data=context_model.context_data,
-                created_at=context_model.created_at,
-                updated_at=context_model.updated_at
-            )
+            # Return context in the same format as memory storage
+            context_data = context_model.context_data or {}
+            
+            # Debug: Print what we're loading from PostgreSQL
+            print(f"PostgreSQL context_data: {context_data}")
+            message_history = context_data.get('message_history', [])
+            print(f"PostgreSQL message_history: {message_history}")
+            
+            return {
+                'context_id': context_model.id,
+                'kind': 'context',
+                'created_at': context_model.created_at.isoformat() if hasattr(context_model.created_at, 'isoformat') else str(context_model.created_at),
+                'updated_at': context_model.updated_at.isoformat() if hasattr(context_model.updated_at, 'isoformat') else str(context_model.updated_at),
+                'status': context_data.get('status', 'active'),
+                'message_history': message_history
+            }
 
     async def append_to_contexts(self, context_id: UUID, messages: list[Message]) -> None:
         """Efficiently append new messages to context history without rebuilding entire context."""
         if not messages:
             return
             
+        print(f"PostgreSQL append_to_contexts called with {len(messages)} messages")
+        for msg in messages:
+            print(f"  Message: role={msg.get('role')}, text={msg.get('parts', [{}])[0].get('text', 'N/A')[:50]}...")
+            
         existing_context = await self.load_context(context_id)
         
         if existing_context is None:
-            # Create new context with message history
+            # Create new context with message history - store in context_data field
+            context_data = {
+                'status': 'active',
+                'message_history': messages.copy()
+            }
             new_context = {
                 'context_id': context_id,
                 'kind': 'context',
                 'created_at': datetime.now(timezone.utc).isoformat(),
                 'updated_at': datetime.now(timezone.utc).isoformat(),
-                'status': 'active',
-                'message_history': messages.copy()
+                'context_data': context_data
             }
+            print(f"Creating new context with {len(messages)} messages")
             await self.update_context(context_id, new_context)
         else:
             # Append to existing message history
             if 'message_history' not in existing_context:
                 existing_context['message_history'] = []
+            
+            print(f"Before append: {len(existing_context['message_history'])} messages")
             existing_context['message_history'].extend(messages)
+            print(f"After append: {len(existing_context['message_history'])} messages")
             existing_context['updated_at'] = datetime.now(timezone.utc).isoformat()
-            await self.update_context(context_id, existing_context)
+            
+            # Update the context_data field for PostgreSQL storage
+            context_data = {
+                'status': existing_context.get('status', 'active'),
+                'message_history': existing_context['message_history']
+            }
+            updated_context = {
+                'context_id': context_id,
+                'kind': 'context',
+                'created_at': existing_context['created_at'],
+                'updated_at': existing_context['updated_at'],
+                'context_data': context_data
+            }
+            print(f"Updating context with {len(context_data['message_history'])} total messages")
+            await self.update_context(context_id, updated_context)
 
     async def update_context(self, context_id: UUID, context: Context) -> None:
         """Update the context using ORM."""

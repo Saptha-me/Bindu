@@ -22,17 +22,16 @@ async def agent_run_endpoint(request: Request) -> Response:
 
     # Access task_manager from the app instance
     task_manager = request.app.task_manager
-    
-    if pebble_request['method'] == 'message/send':
+
+    if pebble_request["method"] == "message/send":
         jsonrpc_response = await task_manager.send_message(pebble_request)
-    elif pebble_request['method'] == 'tasks/get':
+    elif pebble_request["method"] == "tasks/get":
         jsonrpc_response = await task_manager.get_task(pebble_request)
-    elif pebble_request['method'] == 'tasks/cancel':
+    elif pebble_request["method"] == "tasks/cancel":
         jsonrpc_response = await task_manager.cancel_task(pebble_request)
     else:
-        raise NotImplementedError(f'Method {pebble_request["method"]} not implemented.')
-    
+        raise NotImplementedError(f"Method {pebble_request['method']} not implemented.")
+
     return Response(
-        content=pebble_response_ta.dump_json(jsonrpc_response, by_alias=True), 
-        media_type='application/json'
+        content=pebble_response_ta.dump_json(jsonrpc_response, by_alias=True), media_type="application/json"
     )

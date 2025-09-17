@@ -6,30 +6,30 @@
 # |---------------------------------------------------------|
 #
 # STORAGE OVERVIEW:
-# 
+#
 # The Storage is the order tracking system in the Pebbling framework.
 # It stores and retrieves tasks, contexts, and maintains the complete order history
 # for the burger restaurant (agent execution system).
 #
 # BURGER STORE ANALOGY:
-# 
+#
 # Think of a busy burger restaurant's order tracking system:
-# 
+#
 # 1. CUSTOMER ORDERS (TaskManager):
 #    - Customer places order: "I want a cheeseburger"
 #    - TaskManager creates the order and sends it to Storage
-# 
+#
 # 2. ORDER QUEUE (Scheduler):
 #    - Scheduler acts like the kitchen order board
 #    - Queues orders: [Order #1: Cheeseburger, Order #2: Fries, ...]
 #    - Decides which orders go to which kitchen stations (workers)
 #    - Handles special requests: pause order, cancel order, resume order
-# 
+#
 # 3. KITCHEN WORKERS (Workers):
 #    - Receive orders from the Scheduler
 #    - Cook the food (execute the task)
 #    - Report back when done
-# 
+#
 # 4. ORDER TRACKING (Storage):
 #    - Keeps track of order status: submitted, cooking, ready, delivered
 #    - Stores order history and customer preferences
@@ -61,7 +61,8 @@ from uuid import UUID
 from typing_extensions import TypeVar
 
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskState
-ContextT = TypeVar('ContextT', default=Any)
+
+ContextT = TypeVar("ContextT", default=Any)
 
 
 class Storage(ABC, Generic[ContextT]):
@@ -126,7 +127,7 @@ class Storage(ABC, Generic[ContextT]):
 
     async def store_task_feedback(self, task_id: UUID, feedback_data: dict[str, Any]) -> None:
         """Store feedback for a task.
-        
+
         Default implementation stores feedback as task metadata.
         Subclasses can override for dedicated feedback storage.
         """
@@ -135,7 +136,7 @@ class Storage(ABC, Generic[ContextT]):
 
     async def get_task_feedback(self, task_id: UUID) -> list[dict[str, Any]] | None:
         """Retrieve feedback for a task.
-        
+
         Returns list of feedback entries or None if no feedback exists.
         """
         # Default implementation - can be overridden by specific storage implementations

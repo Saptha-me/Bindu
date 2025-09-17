@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -16,7 +16,7 @@ each constant serves a specific purpose in the greater architecture.
 
 🏗️ Categories:
    • Security: Cryptographic keys, file names, algorithms
-   • Networking: Ports, timeouts, protocols  
+   • Networking: Ports, timeouts, protocols
    • Registry: Default URLs, authentication
    • Deployment: Docker, Fly.io configurations
 """
@@ -64,7 +64,7 @@ KEY_ALGORITHMS = {"rsa": "RS256", "ed25519": "EdDSA"}
 DEFAULT_KEY_ALGORITHM = KEY_ALGORITHMS["ed25519"]
 
 # =============================================================================
-# 🌐 NETWORKING CONSTANTS  
+# 🌐 NETWORKING CONSTANTS
 # =============================================================================
 
 # Default Ports

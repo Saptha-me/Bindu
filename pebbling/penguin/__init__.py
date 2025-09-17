@@ -1,4 +1,4 @@
-# 
+#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
@@ -19,6 +19,6 @@ from .pebblify import pebblify
 
 __all__ = [
     "pebblify",
-    "validate_agent_function", 
+    "validate_agent_function",
     "create_manifest",
 ]

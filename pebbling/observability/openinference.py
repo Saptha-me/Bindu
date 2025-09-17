@@ -94,7 +94,6 @@ def setup() -> None:
         otel_endpoint = (
             os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
             or os.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
-            or "http://127.0.0.1:6006/v1/traces"
         )
         if otel_endpoint:
             tracer_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter(otel_endpoint)))

@@ -1,9 +1,8 @@
-<h1 align="center">pebbling</h1>
 <p align="center">
   <img src="assets/pebbling-logo.svg" alt="Pebbling Logo" width="200">
 </p>
 
-<h1 align="center">Agent-to-Agent Communication </h1>
+<h1 align="center">Pebbling: Agent-to-Agent Communication </h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Hits](https://hits.sh/github.com/Pebbling-ai/pebble.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/Pebbling-ai/pebble/)
@@ -83,7 +82,10 @@ def agno_agent(message: str) -> str:
 ```
 
 ## 🎥 Agent in Action
-[Watch Video](./pebbling_demo.mp4)
+<video width="640" height="360" controls>
+  <source src="./pebbling_demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## 🛠️ Supported Agent Frameworks
 

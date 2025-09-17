@@ -174,8 +174,6 @@ def simple_agent(messages: List[str]) -> str:
     
     result = agent.run(messages=messages)
     
-    # Return single result
-    print(result)
     return result.to_dict()['content']
 
 

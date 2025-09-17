@@ -543,13 +543,20 @@
                 removeProcessingMessage();
 
                 if (task.status.state === 'completed') {
-                    // Extract the agent's response from the latest message in history
+                    // Extract the agent's response from the task history
                     if (task.history && task.history.length > 0) {
-                        const lastMessage = task.history[task.history.length - 1];
-                        if (lastMessage.role === 'agent' && lastMessage.parts && lastMessage.parts.length > 0) {
-                            const textPart = lastMessage.parts.find(part => part.kind === 'text');
-                            if (textPart) {
-                                addMessage(textPart.text, 'agent', task.task_id);
+                        // Find the last assistant/agent message in history
+                        const agentMessages = task.history.filter(msg => 
+                            msg.role === 'assistant' || msg.role === 'agent'
+                        );
+                        
+                        if (agentMessages.length > 0) {
+                            const lastAgentMessage = agentMessages[agentMessages.length - 1];
+                            if (lastAgentMessage.parts && lastAgentMessage.parts.length > 0) {
+                                const textPart = lastAgentMessage.parts.find(part => part.kind === 'text');
+                                if (textPart) {
+                                    addMessage(textPart.text, 'agent', task.task_id);
+                                }
                             }
                         }
                     }

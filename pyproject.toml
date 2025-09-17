@@ -91,9 +91,6 @@ members = ["pebbling-template/my_project", "pebbling-template/project1"]
 [tool.uv.sources]
 pebbling = { workspace = true }
 
-[project.scripts]
-pebble = "pebbling.cli.app:app"
-
 [dependency-groups]
 dev = [
     "pebbling",

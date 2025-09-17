@@ -15,10 +15,8 @@ managing cryptographic keys used in the Pebbling security framework.
 """
 
 import os
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
-import jwt
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
@@ -196,73 +194,3 @@ def generate_rsa_key_pair(key_path: str, recreate: bool = False) -> Tuple[Privat
 def generate_ed25519_key_pair(key_path: str, recreate: bool = False) -> Tuple[PrivateKeyTypes, str, str, bool]:
     """Generate an Ed25519 key pair (for backward compatibility)."""
     return generate_key_pair(key_path, "ed25519", recreate)
-
-
-def generate_challenge_response_jwt(
-    agent_manifest, challenge: str, expiry_minutes: int = 5, pat_token: Optional[str] = None
-) -> str:
-    """Generate JWT token for challenge-response authentication with Sheldon CA.
-
-    This function creates a JWT token signed with the agent's private key containing
-    the challenge response for secure DID-based authentication.
-
-    Args:
-        agent_manifest: Agent manifest containing identity and security config
-        challenge: Challenge string received from CA
-        expiry_minutes: Token expiry in minutes (default: 5 for security)
-        pat_token: Optional Personal Access Token for additional auth
-
-    Returns:
-        JWT token string signed with agent's private key
-
-    Raises:
-        ValueError: If agent manifest lacks required security configuration
-        FileNotFoundError: If private key file doesn't exist
-    """
-    # Extract DID from agent manifest
-    if not hasattr(agent_manifest, "identity") or not agent_manifest.identity:
-        raise ValueError("Agent manifest must have identity with DID")
-
-    did = agent_manifest.identity.did
-    if not did:
-        raise ValueError("Agent manifest identity must have DID")
-
-    # Get private key from security configuration
-    private_key_pem = None
-
-    # Check security_config first
-    if hasattr(agent_manifest, "security") and agent_manifest.security:
-        if hasattr(agent_manifest.security, "pki_dir") and agent_manifest.security.pki_dir:
-            private_key_pem_path = os.path.join(agent_manifest.security.pki_dir, PRIVATE_KEY_FILENAME)
-            with open(private_key_pem_path, "r") as f:
-                private_key_pem = f.read()
-
-    if not private_key_pem:
-        raise ValueError("Agent manifest must have private key (PEM) in security configuration")
-
-    # Create JWT payload with challenge response
-    now = datetime.now(timezone.utc)
-    payload = {
-        # Standard JWT claims
-        "iss": did,  # Issuer: the DID of the agent
-        "sub": did,  # Subject: the DID of the agent
-        "aud": "sheldon-ca",  # Audience: Sheldon CA
-        "iat": now,  # Issued at
-        "exp": now + timedelta(minutes=expiry_minutes),  # Expiration
-        "jti": f"{did}-{int(now.timestamp())}",  # JWT ID for uniqueness
-        # DID-specific claims
-        "did": did,
-        # Challenge-response claims
-        "challenge": challenge,
-        "response_type": "challenge_response",
-        "timestamp": now.isoformat(),
-    }
-
-    # Sign JWT with private key
-    try:
-        token = jwt.encode(payload, private_key_pem, algorithm=DEFAULT_KEY_ALGORITHM)
-        logger.info(f"Generated challenge-response JWT for DID: {did}")
-        return token
-    except Exception as e:
-        logger.error(f"Failed to generate JWT token: {e}")
-        raise ValueError(f"JWT token generation failed: {e}")

@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from importlib.metadata import distributions
 from dataclasses import dataclass
+from packaging import version
 
 
 from pebbling.utils.logging import get_logger
@@ -13,6 +14,7 @@ from pebbling.utils.logging import get_logger
 class AgentFrameworkSpec:
     framework: str
     instrumentation_package: str
+    min_version: str
 
 
 logger = get_logger("pebbling.observability.openinference")
@@ -23,10 +25,10 @@ logger = get_logger("pebbling.observability.openinference")
 # instrumentation for both packages. To avoid this, agent frameworks are given higher
 # priority than LLM provider packages.
 SUPPORTED_FRAMEWORKS = [
-    AgentFrameworkSpec("agno", "openinference-instrumentation-agno"),
-    AgentFrameworkSpec("crewai", "openinference-instrumentation-crewai"),
-    AgentFrameworkSpec("litellm", "openinference-instrumentation-litellm"),
-    AgentFrameworkSpec("openai", "openinference-instrumentation-openai"),
+    AgentFrameworkSpec("agno", "openinference-instrumentation-agno", "1.5.2"),
+    AgentFrameworkSpec("crewai", "openinference-instrumentation-crewai", "0.41.1"),
+    AgentFrameworkSpec("litellm", "openinference-instrumentation-litellm", "1.43.0"),
+    AgentFrameworkSpec("openai", "openinference-instrumentation-openai", "1.69.0"),
 ]
 
 BASE_PACKAGES = [
@@ -36,8 +38,8 @@ BASE_PACKAGES = [
 
 
 def setup() -> None:
-    installed_packages = {dist.name for dist in distributions()}
-    framework_spec = next((spec for spec in SUPPORTED_FRAMEWORKS if spec.framework in installed_packages), None)
+    installed_distributions = {dist.name: dist for dist in distributions()}
+    framework_spec = next((spec for spec in SUPPORTED_FRAMEWORKS if spec.framework in installed_distributions), None)
 
     if not framework_spec:
         logger.info(
@@ -46,14 +48,27 @@ def setup() -> None:
         )
         return
 
+    framework_dist = installed_distributions[framework_spec.framework]
+    installed_version = framework_dist.version
+    
+    if version.parse(installed_version) < version.parse(framework_spec.min_version):
+        logger.warn(
+            "OpenInference setup skipped - agent framework package is below the supported package version",
+            agent_framework=framework_spec.framework,
+            installed_version=installed_version,
+            required_version=framework_spec.min_version,
+        )
+        return
+
     logger.info(
         "Agent framework identified",
         agent_framework=framework_spec.framework,
         instrumentation_package=framework_spec.instrumentation_package,
+        version=installed_version,
     )
 
     required_packages = BASE_PACKAGES + [framework_spec.instrumentation_package]
-    missing_packages = [package for package in required_packages if package not in installed_packages]
+    missing_packages = [package for package in required_packages if package not in installed_distributions]
 
     if missing_packages:
         logger.info("Installing the following packages", packages=", ".join(missing_packages))

@@ -1,11 +1,11 @@
 import os
 import subprocess
 import sys
-from pathlib import Path
-from importlib.metadata import distributions
 from dataclasses import dataclass
-from packaging import version
+from importlib.metadata import distributions
+from pathlib import Path
 
+from packaging import version
 
 from pebbling.utils.logging import get_logger
 
@@ -100,9 +100,9 @@ def setup() -> None:
     logger.info("Starting OpenInference instrumentation setup", framework=framework_spec.framework)
 
     try:
-        from opentelemetry.sdk import trace as trace_sdk
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-        from opentelemetry.sdk.trace.export import ConsoleSpanExporter, BatchSpanProcessor, SimpleSpanProcessor
+        from opentelemetry.sdk import trace as trace_sdk
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor
 
         tracer_provider = trace_sdk.TracerProvider()
 

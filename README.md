@@ -50,7 +50,74 @@ uv add pebbling
 
 ## 🚀 Quick Start
 
-### Pebblify an Agent
+### 🍪 Quick Start with Cookiecutter Template
+
+The fastest way to get started with Pebbling is using our cookiecutter template:
+
+```bash
+# Create a new Pebbling project
+uv tool run cookiecutter cookiecutter-pebbling/
+```
+
+Follow the interactive prompts:
+```
+[1/4] name (pebble_project): my_weather_agent
+[2/4] description (): A weather forecasting agent
+[3/4] pebbling_email (): your.email@example.com
+[4/4] Select agent_framework
+  1 - none
+  2 - agno
+  3 - crew
+  4 - langchain
+  Choose from [1/2/3/4] (1): 2
+```
+
+After project creation:
+```bash
+🎉 Project created successfully!
+
+🐧 Welcome to Pebbling — powered by the Pebble CLI.
+Next steps:
+  1️⃣  cd 'my_weather_agent'
+  2️⃣  Set it up using uv: 📦
+      uv sync
+  3️⃣  Run your agent locally: 💻
+      PYTHONPATH=src python3 -m my_weather_agent
+      or
+      python3 src/<filename.py>
+  4️⃣  Deploy your agent: 🚀
+      pebble launch
+
+🤖 Selected agent framework: agno
+Need help? See README.md for details. ✨
+```
+
+**Setup and run your agent:**
+```bash
+# Navigate to your project
+cd my_weather_agent
+
+# Create virtual environment
+uv venv --python 3.12.9
+source .venv/bin/activate
+
+# Install dependencies
+uv sync
+
+# Run your agent
+uv run src/pebble_agent.py
+```
+
+Your agent will start with full Pebbling capabilities:
+- ✅ Automatic DID identity generation
+- ✅ Security setup with mTLS certificates
+- ✅ Agent manifest creation
+- ✅ Local server running on http://localhost:8030
+- ✅ OpenInference observability integration
+
+> 📂 **Template Repository**: [cookiecutter-pebbling](https://github.com/Pebbling-ai/cookiecutter-pebbling)
+
+### Manual Setup - Pebblify an Agent
 
 ```python
 from pebbling import pebblify

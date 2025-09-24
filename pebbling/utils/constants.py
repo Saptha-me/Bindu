@@ -77,26 +77,6 @@ DEFAULT_REQUEST_TIMEOUT = 30
 DEFAULT_CONNECTION_TIMEOUT = 10
 
 # =============================================================================
-# 🏛️ REGISTRY CONSTANTS
-# =============================================================================
-
-# Hibiscus Registry
-DEFAULT_HIBISCUS_URL = "http://localhost:19191"
-PROD_HIBISCUS_URL = "https://hibiscus.pebbling.ai"
-HIBISCUS_REGISTRY_TYPE = "hibiscus"
-
-# =============================================================================
-# 🏛️ CA CONSTANTS
-# =============================================================================
-
-# Sheldon CA
-DEFAULT_SHELDON_URL = "http://localhost:19190"
-PROD_SHELDON_URL = "https://sheldon.pebbling.ai"
-ISSUE_CERTIFICATE_ENDPOINT = "issue/"
-CHALLENGE_ENDPOINT = "auth/challenge"
-PUBLIC_CERTIFICATE_ENDPOINT = "public-certificate/"
-
-# =============================================================================
 # 🚀 DEPLOYMENT CONSTANTS
 # =============================================================================
 

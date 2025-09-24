@@ -59,12 +59,12 @@ from uuid import UUID
 
 from sqlalchemy import DateTime, Index, String, delete, func, select
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus, Context
+from pebbling.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
 
 from .base import Storage
 

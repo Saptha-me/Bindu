@@ -32,7 +32,6 @@ PEBBLING_THEME = Theme(
         "pebbling.did": "bold green",
         "pebbling.security": "bold magenta",
         "pebbling.agent": "bold blue",
-        "pebbling.hibiscus": "bold yellow",
     }
 )
 

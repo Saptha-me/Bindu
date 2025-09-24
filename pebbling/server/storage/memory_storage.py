@@ -55,7 +55,7 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus, Context
+from pebbling.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
 
 from .base import Storage
 

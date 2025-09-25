@@ -937,7 +937,6 @@ class AgentCard(TypedDict):
     protocol_version: Required[str]
     documentation_url: NotRequired[str]
 
-    identity: Required[AgentIdentity]
     agent_trust: Required[AgentTrust]
 
     capabilities: Required[AgentCapabilities]

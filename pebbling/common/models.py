@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, NamedTuple, Optional
 from uuid import UUID
 
+from pebbling.extensions.did import DIDAgentExtension
+
 from .protocol.types import AgentCapabilities, AgentCard, AgentIdentity, AgentSkill, AgentTrust
 
 
@@ -72,7 +74,7 @@ class AgentManifest:
         url: str,
         version: str,
         protocol_version: str,
-        identity: AgentIdentity,
+        did_extension: DIDAgentExtension,
         agent_trust: AgentTrust,
         capabilities: AgentCapabilities,
         skills: List[AgentSkill],
@@ -96,8 +98,8 @@ class AgentManifest:
         self.documentation_url = documentation_url
 
         # Security and identity
-        self.identity = identity
         self.agent_trust = agent_trust
+        self.did_extension = did_extension
 
         # Capabilities and skills
         self.capabilities = capabilities
@@ -127,7 +129,6 @@ class AgentManifest:
             version=self.version,
             protocol_version=self.protocol_version,
             documentation_url=self.documentation_url,
-            identity=self.identity,
             agent_trust=self.agent_trust,
             capabilities=self.capabilities,
             skills=self.skills,

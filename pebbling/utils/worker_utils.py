@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import uuid
-from typing import Any
+from typing import Any, Optional
+from uuid import uuid4
 
 from pebbling.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
+from pebbling.extensions.did import DIDAgentExtension, DIDAgentExtensionMetadata
 
 
 class MessageConverter:
@@ -45,7 +46,7 @@ class MessageConverter:
         Returns:
             List of pebble protocol messages
         """
-        message_id = uuid.uuid4()
+        message_id = uuid4()
         parts = PartConverter.result_to_parts(result)
 
         message_data = {"role": "assistant", "parts": parts, "kind": "message", "message_id": message_id}
@@ -97,44 +98,47 @@ class PartConverter:
     def result_to_parts(result: Any) -> list[Part]:
         """Convert result to list of Parts."""
         if isinstance(result, str):
-            return [TextPart(kind="text", text=result, embeddings=None)]
+            return [TextPart(kind="text", text=result)]
         elif isinstance(result, (list, tuple)):
             if all(isinstance(item, str) for item in result):
                 # Handle streaming results
-                return [TextPart(kind="text", text=item, embeddings=None) for item in result]
+                return [TextPart(kind="text", text=item) for item in result]
             else:
                 # Handle mixed list
                 parts = []
                 for item in result:
                     if isinstance(item, str):
-                        parts.append(TextPart(kind="text", text=item, embeddings=None))
+                        parts.append(TextPart(kind="text", text=item))
                     elif isinstance(item, dict):
                         parts.append(PartConverter.dict_to_part(item))
                     else:
-                        parts.append(TextPart(kind="text", text=str(item), embeddings=None))
+                        parts.append(TextPart(kind="text", text=str(item)))
                 return parts
         elif isinstance(result, dict):
             return [PartConverter.dict_to_part(result)]
         else:
             # Convert other types to text representation
-            return [TextPart(kind="text", text=str(result), embeddings=None)]
+            return [TextPart(kind="text", text=str(result))]
 
 
 class ArtifactBuilder:
     """Utility class for building artifacts from results."""
 
     @staticmethod
-    def from_result(results: Any, artifact_name: str = "result") -> list[Artifact]:
+    def from_result(
+        results: Any, artifact_name: str = "result", did_extension: Optional[DIDAgentExtension] = None
+    ) -> list[Artifact]:
         """Convert manifest execution result to pebble protocol artifacts.
 
         Args:
             results: Result from manifest execution
             artifact_name: Name for the artifact
+            did_extension: Optional DID extension to add signatures to parts
 
         Returns:
             List of pebble protocol artifacts
         """
-        artifact_id = str(uuid.uuid4())
+        artifact_id = uuid4()
 
         # Convert result to appropriate part type
         if isinstance(results, str):
@@ -144,7 +148,14 @@ class ArtifactBuilder:
             parts = [{"kind": "text", "text": "\n".join(results)}]
         else:
             # Handle structured data
-            parts = [{"kind": "data", "data": {"result": results}, "metadata": {"type": type(results).__name__}}]
+            parts = [{"kind": "data", "data": {"result": results}}]
+
+        # Apply signing if did_extension provided
+        if did_extension:
+            for part in parts:
+                if part.get("kind") == "text" and "text" in part:
+                    signature = did_extension.sign_text(part["text"])
+                    part.setdefault("metadata", {})[DIDAgentExtensionMetadata.SIGNATURE_KEY] = signature
 
         return [Artifact(artifact_id=artifact_id, name=artifact_name, parts=parts)]
 
@@ -178,8 +189,6 @@ class TaskStateManager:
             parts = PartConverter.result_to_parts(message)
 
             if parts:
-                response_messages.append(
-                    Message(role="agent", parts=parts, kind="message", message_id=str(uuid.uuid4()))
-                )
+                response_messages.append(Message(role="agent", parts=parts, kind="message", message_id=uuid4()))
 
         return response_messages

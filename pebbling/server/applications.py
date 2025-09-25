@@ -33,7 +33,7 @@ class PebbleApplication(Starlette):
         description: Optional[str] = None,
         debug: bool = False,
         lifespan: Optional[Lifespan] = None,
-    routes: Optional[Sequence[Route]] = None,
+        routes: Optional[Sequence[Route]] = None,
         middleware: Optional[Sequence[Middleware]] = None,
         exception_handlers: Optional[dict[Any, ExceptionHandler]] = None,
     ):
@@ -138,7 +138,6 @@ class PebbleApplication(Starlette):
                 debug_level=self.manifest.debug_level,
                 monitoring=self.manifest.monitoring,
                 telemetry=self.manifest.telemetry,
-                identity=self.manifest.identity,
                 agent_trust=self.manifest.agent_trust,
             )
             self._agent_card_json_schema = agent_card_ta.dump_json(agent_card, by_alias=True)

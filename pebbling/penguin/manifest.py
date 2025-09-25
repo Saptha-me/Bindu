@@ -21,6 +21,7 @@ from uuid import UUID
 
 from pebbling.common.models import AgentManifest
 from pebbling.common.protocol.types import AgentCapabilities, AgentIdentity, AgentSkill, AgentTrust
+from pebbling.extensions.did import DIDAgentExtension
 
 
 def validate_agent_function(agent_function: Callable):
@@ -43,7 +44,7 @@ def create_manifest(
     agent_function: Callable,
     id: UUID,
     name: Optional[str],
-    identity: AgentIdentity,
+    did_extension: DIDAgentExtension,
     description: Optional[str],
     skills: Optional[List[AgentSkill]],
     capabilities: Optional[AgentCapabilities],
@@ -198,7 +199,7 @@ def create_manifest(
         url=url,
         version=version,
         protocol_version=protocol_version,
-        identity=identity,
+        did_extension=did_extension,
         agent_trust=agent_trust,
         capabilities=capabilities,
         skills=skills,

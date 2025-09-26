@@ -1646,9 +1646,6 @@ class AgentCard(TypedDict):
     icon_url: NotRequired[str]
     """A URL to an icon for the agent."""
 
-    identity: Required[AgentIdentity]
-    """Identity of the agent."""
-    
     agent_trust: Required[AgentTrust]
     """Trust of the agent."""
 

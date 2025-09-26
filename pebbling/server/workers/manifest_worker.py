@@ -75,9 +75,10 @@ class ManifestWorker(Worker):
         """Convert pebble protocol messages to format suitable for manifest execution."""
         return MessageConverter.to_chat_format(history)
 
-    def build_artifacts(self, results: Any) -> list[Artifact]:
+    def build_artifacts(self, result: Any) -> list[Artifact]:
         """Convert manifest execution result to pebble protocol artifacts."""
-        return ArtifactBuilder.from_result(results)
+        did_extension = self.manifest.did_extension
+        return ArtifactBuilder.from_result(result, did_extension=did_extension)
 
     async def _build_complete_message_history(self, task: Task) -> list[dict[str, str]]:
         """Build complete message history following A2A Protocol.

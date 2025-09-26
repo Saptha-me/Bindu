@@ -38,7 +38,7 @@ from pebbling.common.protocol.types import (
     AgentTrust,
 )
 from pebbling.penguin.manifest import create_manifest, validate_agent_function
-from pebbling.security.agent_identity import create_agent_identity
+from pebbling.extensions.did import DIDAgentExtension
 import pebbling.observability.openinference as OpenInferenceObservability
 
 # Import server components for deployment
@@ -186,26 +186,36 @@ def pebblify(
 
     caller_dir = Path(os.path.abspath(caller_file)).parent
 
-    agent_identity: AgentIdentity = create_agent_identity(
-        id=agent_id,
-        did_required=True,  # We encourage the use of DID for agent-to-agent communication
-        recreate_keys=recreate_keys,
-        create_csr=True,  # Generate CSR only if certificate will be issued
-        pki_dir=Path(os.path.join(caller_dir, PKI_DIR)),
-        cert_dir=Path(os.path.join(caller_dir, CERTIFICATE_DIR)),
-    )
+    did_extension = DIDAgentExtension(recreate_keys=recreate_keys, key_dir=Path(os.path.join(caller_dir, PKI_DIR)))
+    did_extension.generate_and_save_key_pair()
 
-    logger.info(f"✅ Security setup complete - DID: {agent_identity['did'] if agent_identity else 'None'}")
+    logger.info(f"DID Extension setup complete", did=did_extension.did)
     logger.info("📋 Creating agent manifest...")
+
+    # Update capabilities to include DID extension
+    if capabilities and isinstance(capabilities, dict):
+        if "extensions" in capabilities:
+            capabilities["extensions"].append(did_extension.agent_extension)
+        else:
+            capabilities["extensions"] = [did_extension.agent_extension]
+        capabilities = AgentCapabilities(**capabilities)
+    elif capabilities:
+        # capabilities is already an AgentCapabilities object
+        if hasattr(capabilities, 'extensions') and capabilities.extensions:
+            capabilities.extensions.append(did_extension.agent_extension)
+        else:
+            capabilities.extensions = [did_extension.agent_extension]
+    else:
+        capabilities = AgentCapabilities(extensions=[did_extension.agent_extension])
 
     _manifest = create_manifest(
         agent_function=handler,
         id=agent_id,
         name=name,
-        identity=agent_identity,
         description=description,
         skills=skills,
         capabilities=capabilities,
+        did_extension=did_extension,
         agent_trust=agent_trust,
         version=version,
         url=deployment_config.url if deployment_config else "http://localhost:3773",
@@ -220,7 +230,7 @@ def pebblify(
         extra_metadata=extra_metadata,
     )
 
-    agent_did = _manifest.identity.get("did", "None") if _manifest.identity else "None"
+    agent_did = did_extension.did
     logger.info(f"🚀 Agent '{agent_did}' successfully pebblified!")
     logger.debug(
         f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}"

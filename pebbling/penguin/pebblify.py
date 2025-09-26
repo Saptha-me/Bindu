@@ -137,34 +137,17 @@ def pebblify(
         manifest = pebblify(agent, config, my_handler)
     """
 
-    # Extract configuration with defaults
-    author = config.get("author")
-    name = config.get("name", "pebble-agent")
-    agent_id = config.get("id", uuid.uuid4().hex)
-    description = config.get("description", "A Pebble agent")
-    version = config.get("version", "1.0.0")
-    recreate_keys = config.get("recreate_keys", True)
-    skills = config.get("skills", [])
-    capabilities = config.get("capabilities")
-    agent_trust = config.get("agent_trust")
-    kind = config.get("kind", "agent")
-    debug_mode = config.get("debug_mode", False)
-    debug_level = config.get("debug_level", 1)
-    monitoring = config.get("monitoring", False)
-    telemetry = config.get("telemetry", True)
-    num_history_sessions = config.get("num_history_sessions", 10)
-    documentation_url = config.get("documentation_url")
-    extra_metadata = config.get("extra_metadata", {})
+    # Validate and process configuration
+    from .config_validator import ConfigValidator
+    validated_config = ConfigValidator.validate_and_process(config)
     
-    # Extract nested configs
-    deployment_config_dict = config.get("deployment", {})
-    storage_config_dict = config.get("storage", {})
-    scheduler_config_dict = config.get("scheduler", {})
+    # Generate agent_id if not provided
+    agent_id = validated_config.get("id", uuid.uuid4().hex)
     
     # Create config objects if dictionaries provided
-    deployment_config = DeploymentConfig(**deployment_config_dict) if deployment_config_dict else None
-    storage_config = StorageConfig(**storage_config_dict) if storage_config_dict else None
-    scheduler_config = SchedulerConfig(**scheduler_config_dict) if scheduler_config_dict else None
+    deployment_config = DeploymentConfig(**validated_config["deployment"]) if validated_config.get("deployment") else None
+    storage_config = StorageConfig(**validated_config["storage"]) if validated_config.get("storage") else None
+    scheduler_config = SchedulerConfig(**validated_config["scheduler"]) if validated_config.get("scheduler") else None
     
     # Store the agent reference in the handler's closure (for potential future use)
     handler._pebble_agent = agent
@@ -186,13 +169,14 @@ def pebblify(
 
     caller_dir = Path(os.path.abspath(caller_file)).parent
 
-    did_extension = DIDAgentExtension(recreate_keys=recreate_keys, key_dir=Path(os.path.join(caller_dir, PKI_DIR)))
+    did_extension = DIDAgentExtension(recreate_keys=validated_config["recreate_keys"], key_dir=Path(os.path.join(caller_dir, PKI_DIR)))
     did_extension.generate_and_save_key_pair()
 
     logger.info(f"DID Extension setup complete", did=did_extension.did)
     logger.info("📋 Creating agent manifest...")
 
     # Update capabilities to include DID extension
+    capabilities = validated_config["capabilities"]
     if capabilities and isinstance(capabilities, dict):
         if "extensions" in capabilities:
             capabilities["extensions"].append(did_extension.agent_extension)
@@ -211,23 +195,23 @@ def pebblify(
     _manifest = create_manifest(
         agent_function=handler,
         id=agent_id,
-        name=name,
-        description=description,
-        skills=skills,
+        name=validated_config["name"],
+        description=validated_config["description"],
+        skills=validated_config["skills"],
         capabilities=capabilities,
         did_extension=did_extension,
-        agent_trust=agent_trust,
-        version=version,
+        agent_trust=validated_config["agent_trust"],
+        version=validated_config["version"],
         url=deployment_config.url if deployment_config else "http://localhost:3773",
         protocol_version=deployment_config.protocol_version if deployment_config else "1.0.0",
-        kind=kind,
-        debug_mode=debug_mode,
-        debug_level=debug_level,
-        monitoring=monitoring,
-        telemetry=telemetry,
-        num_history_sessions=num_history_sessions,
-        documentation_url=documentation_url,
-        extra_metadata=extra_metadata,
+        kind=validated_config["kind"],
+        debug_mode=validated_config["debug_mode"],
+        debug_level=validated_config["debug_level"],
+        monitoring=validated_config["monitoring"],
+        telemetry=validated_config["telemetry"],
+        num_history_sessions=validated_config["num_history_sessions"],
+        documentation_url=validated_config["documentation_url"],
+        extra_metadata=validated_config["extra_metadata"],
     )
 
     agent_did = did_extension.did

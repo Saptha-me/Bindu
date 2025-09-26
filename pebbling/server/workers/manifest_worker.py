@@ -55,6 +55,18 @@ class ManifestWorker(Worker):
                     results, task["task_id"], task["context_id"]
                 )
                 await self.storage.append_to_contexts(task["context_id"], agent_messages)
+            elif self._is_auth_required(results):
+                # A2A Protocol: Task requires authentication
+                await self.storage.update_task(
+                    task["task_id"], 
+                    state="auth-required",
+                    metadata={"auth_prompt": results}
+                )
+                # Build response message
+                agent_messages = MessageConverter.to_protocol_messages(
+                    results, task["task_id"], task["context_id"]
+                )
+                await self.storage.append_to_contexts(task["context_id"], agent_messages)
             else:
                 # Normal completion
                 await self._process_and_save_results(task, results)
@@ -178,4 +190,27 @@ class ManifestWorker(Worker):
             ]
             result_lower = result.lower()
             return any(indicator in result_lower for indicator in input_indicators)
+        return False
+    
+    def _is_auth_required(self, result: Any) -> bool:
+        """Detect if agent response indicates authentication is required.
+        
+        A2A Protocol: Agent requiring authentication to access resources.
+        """
+        if isinstance(result, str):
+            # Patterns indicating authentication is needed
+            auth_indicators = [
+                "authentication required",
+                "please authenticate",
+                "login required",
+                "access denied",
+                "unauthorized",
+                "credentials required",
+                "api key required",
+                "token required",
+                "please sign in",
+                "authentication needed"
+            ]
+            result_lower = result.lower()
+            return any(indicator in result_lower for indicator in auth_indicators)
         return False

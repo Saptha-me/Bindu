@@ -2,13 +2,35 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Dict, Optional
 
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams
 from pebbling.penguin.manifest import AgentManifest
 from pebbling.server.workers.base import Worker
 from pebbling.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
+
+
+SYSTEM_PROMPT = """
+IMPORTANT: When you need user input or authentication, you MUST respond with a structured JSON response in the following format:
+
+For requiring user input:
+{
+    "state": "input-required",
+    "prompt": "Your question or prompt for the user"
+}
+
+For requiring authentication:
+{
+    "state": "auth-required",
+    "prompt": "Description of what authentication is needed",
+    "auth_type": "api_key|oauth|credentials|token",  // optional, specify type of auth needed
+    "service": "service_name"  // optional, specify which service needs auth
+}
+
+For normal responses, just return your response as plain text.
+"""
 
 
 @dataclass
@@ -39,32 +61,59 @@ class ManifestWorker(Worker):
             # Execute manifest with conversation context
             # Convert message history to single string for current manifest signature
             # Agent will see conversation and infer context
-            conversation_context = "\n".join(message_history) if message_history else ""
+            # Prepend system prompt to guide structured responses
+            formatted_history = []
+            if message_history:
+                formatted_history = [f"System: {SYSTEM_PROMPT}"] + [
+                    f"{msg['role']}: {msg['content']}" for msg in message_history
+                ]
+            else:
+                formatted_history = [f"System: {SYSTEM_PROMPT}"]
+                
+            conversation_context = "\n".join(formatted_history)
             results = self.manifest.run(conversation_context)
 
-            # Check if agent is asking for input (contains question marks or specific patterns)
+            # Check if agent returned structured response
+            structured_response = self._parse_structured_response(results)
+            
             if self._is_input_required(results):
                 # A2A Protocol: Task completes with input-required state
+                prompt = results
+                if structured_response and "prompt" in structured_response:
+                    prompt = structured_response["prompt"]
+                    
                 await self.storage.update_task(
                     task["task_id"], 
                     state="input-required",
-                    metadata={"prompt": results}
+                    metadata={"prompt": prompt}
                 )
-                # Build response message
+                # Build response message - use prompt instead of full results if structured
+                message_content = prompt if structured_response else results
                 agent_messages = MessageConverter.to_protocol_messages(
-                    results, task["task_id"], task["context_id"]
+                    message_content, task["task_id"], task["context_id"]
                 )
                 await self.storage.append_to_contexts(task["context_id"], agent_messages)
             elif self._is_auth_required(results):
                 # A2A Protocol: Task requires authentication
+                metadata = {"auth_prompt": results}
+                
+                # Extract additional metadata from structured response
+                if structured_response:
+                    metadata["auth_prompt"] = structured_response.get("prompt", results)
+                    if "auth_type" in structured_response:
+                        metadata["auth_type"] = structured_response["auth_type"]
+                    if "service" in structured_response:
+                        metadata["service"] = structured_response["service"]
+                        
                 await self.storage.update_task(
                     task["task_id"], 
                     state="auth-required",
-                    metadata={"auth_prompt": results}
+                    metadata=metadata
                 )
-                # Build response message
+                # Build response message - use prompt instead of full results if structured
+                message_content = metadata["auth_prompt"]
                 agent_messages = MessageConverter.to_protocol_messages(
-                    results, task["task_id"], task["context_id"]
+                    message_content, task["task_id"], task["context_id"]
                 )
                 await self.storage.append_to_contexts(task["context_id"], agent_messages)
             else:
@@ -171,46 +220,61 @@ class ManifestWorker(Worker):
             task["task_id"], state="completed", new_artifacts=artifacts, new_messages=normalized_agent_messages
         )
     
-    def _is_input_required(self, result: Any) -> bool:
-        """Detect if agent response indicates need for user input.
+    def _parse_structured_response(self, result: Any) -> Optional[Dict[str, Any]]:
+        """Parse agent response for structured state transitions.
         
-        A2A Protocol: Agent asking questions means task needs input.
+        Returns:
+            Dict with state info if structured response found, None otherwise
         """
+        if not isinstance(result, str):
+            return None
+            
+        # Try to parse as JSON
+        try:
+            # First check if the entire response is valid JSON
+            parsed = json.loads(result)
+            if isinstance(parsed, dict) and "state" in parsed:
+                return parsed
+        except (json.JSONDecodeError, ValueError):
+            # Try to extract JSON from the response
+            # Look for JSON-like structures in the text
+            import re
+            json_pattern = r'\{[^{}]*"state"[^{}]*\}'
+            matches = re.findall(json_pattern, result, re.DOTALL)
+            
+            for match in matches:
+                try:
+                    parsed = json.loads(match)
+                    if isinstance(parsed, dict) and "state" in parsed:
+                        return parsed
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                    
+        return None
+    
+    def _is_input_required(self, result: Any) -> bool:
+        """Detect if agent response indicates need for user input."""
+        structured = self._parse_structured_response(result)
+        if structured and structured.get("state") == "input-required":
+            return True
+            
+        # Fallback to simple heuristics for backward compatibility
         if isinstance(result, str):
             # Simple heuristic: questions often contain these patterns
-            input_indicators = [
-                "?",  # Question mark
-                "please specify",
-                "could you",
-                "would you like",
-                "what style",
-                "which",
-                "tell me more",
-                "provide more details"
-            ]
+            input_indicators = ["?", "please specify", "could you", "would you like"]
             result_lower = result.lower()
             return any(indicator in result_lower for indicator in input_indicators)
         return False
     
     def _is_auth_required(self, result: Any) -> bool:
-        """Detect if agent response indicates authentication is required.
-        
-        A2A Protocol: Agent requiring authentication to access resources.
-        """
+        """Detect if agent response indicates authentication is required."""
+        structured = self._parse_structured_response(result)
+        if structured and structured.get("state") == "auth-required":
+            return True
+            
+        # Fallback to simple heuristics for backward compatibility
         if isinstance(result, str):
-            # Patterns indicating authentication is needed
-            auth_indicators = [
-                "authentication required",
-                "please authenticate",
-                "login required",
-                "access denied",
-                "unauthorized",
-                "credentials required",
-                "api key required",
-                "token required",
-                "please sign in",
-                "authentication needed"
-            ]
+            auth_indicators = ["authentication required", "unauthorized", "api key required"]
             result_lower = result.lower()
             return any(indicator in result_lower for indicator in auth_indicators)
         return False

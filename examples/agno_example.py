@@ -51,30 +51,11 @@ def simple_handler(messages: str) -> str:
     return result.to_dict()["content"]
 
 
-# Convert the loaded config to match the new pebblify API
-config_dict = {
-    "author": simple_config["author"],
-    "name": simple_config.get("name", "simple-agent"),
-    "description": simple_config.get("description", "A helpful assistant"),
-    "version": simple_config.get("version", "1.0.0"),
-    "recreate_keys": simple_config.get("recreate_keys", True),
-    "skills": simple_config.get("skills", []),
-    "capabilities": simple_config["capabilities"],
-    "agent_trust": simple_config.get("agent_trust"),
-    "kind": simple_config.get("kind", "agent"),
-    "debug_mode": simple_config.get("debug_mode", False),
-    "debug_level": simple_config.get("debug_level", 1),
-    "monitoring": simple_config.get("monitoring", False),
-    "telemetry": simple_config.get("telemetry", True),
-    "num_history_sessions": simple_config.get("num_history_sessions", 10),
-    "documentation_url": simple_config.get("documentation_url"),
-    "extra_metadata": simple_config.get("extra_metadata", {}),
-    "deployment": simple_config["deployment"],
-    "storage": simple_config["storage"],
-    "scheduler": simple_config["scheduler"],
-}
-
 # Pebblify the simple agent
-manifest = pebblify(simple_agent, config_dict, simple_handler)
+manifest = pebblify(
+    agent=simple_agent, 
+    config=simple_config, 
+    handler=simple_handler
+)
 
 

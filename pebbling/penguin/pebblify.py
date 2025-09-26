@@ -232,10 +232,10 @@ def pebblify(
         scheduler=scheduler_instance,
         penguin_id=agent_id,
         manifest=_manifest,
-        version=version,
+        version=validated_config["version"],
     )
 
-    if telemetry:
+    if validated_config["telemetry"]:
         try:
             OpenInferenceObservability.setup()
         except Exception as exc:

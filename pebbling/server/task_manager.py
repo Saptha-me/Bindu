@@ -187,6 +187,9 @@ class TaskManager:
         request_id = str(request["id"])
         message = request["params"]["message"]
         context_id = self._parse_context_id(message.get("context_id"))
+        
+        # A2A Protocol: Extract referenceTaskIds if present
+        reference_task_ids = message.get("reference_task_ids", [])
 
         task: Task = await self.storage.submit_task(context_id, message)
 
@@ -196,6 +199,10 @@ class TaskManager:
         config = request["params"].get("configuration", {})
         if history_length := config.get("history_length"):
             scheduler_params["history_length"] = history_length
+            
+        # Pass referenceTaskIds to scheduler for ManifestWorker to use
+        if reference_task_ids:
+            scheduler_params["reference_task_ids"] = reference_task_ids
 
         await self.scheduler.run_task(scheduler_params)
         return SendMessageResponse(jsonrpc="2.0", id=request_id, result=task)

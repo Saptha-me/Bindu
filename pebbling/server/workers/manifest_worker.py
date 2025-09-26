@@ -36,11 +36,28 @@ class ManifestWorker(Worker):
         message_history = await self._build_complete_message_history(task)
 
         try:
-            # Execute manifest
-            results = self.manifest.run(message_history)
+            # Execute manifest with conversation context
+            # Convert message history to single string for current manifest signature
+            # Agent will see conversation and infer context
+            conversation_context = "\n".join(message_history) if message_history else ""
+            results = self.manifest.run(conversation_context)
 
-            # Process and save results
-            await self._process_and_save_results(task, results)
+            # Check if agent is asking for input (contains question marks or specific patterns)
+            if self._is_input_required(results):
+                # A2A Protocol: Task completes with input-required state
+                await self.storage.update_task(
+                    task["task_id"], 
+                    state="input-required",
+                    metadata={"prompt": results}
+                )
+                # Build response message
+                agent_messages = MessageConverter.to_protocol_messages(
+                    results, task["task_id"], task["context_id"]
+                )
+                await self.storage.append_to_contexts(task["context_id"], agent_messages)
+            else:
+                # Normal completion
+                await self._process_and_save_results(task, results)
 
         except Exception:
             await self.storage.update_task(task["task_id"], state="failed")
@@ -63,28 +80,48 @@ class ManifestWorker(Worker):
         return ArtifactBuilder.from_result(results)
 
     async def _build_complete_message_history(self, task: Task) -> list[dict[str, str]]:
-        """Build complete message history combining existing context with current message."""
-        tasks_by_context = await self.storage.list_tasks_by_context(task["context_id"])
-
-        # Filter out the current task to avoid duplication
-        previous_tasks = [t for t in tasks_by_context if t["task_id"] != task["task_id"]]
-
-        # Early return if no previous tasks
-        if not previous_tasks:
-            return self.build_message_history(task.get("history", []))
-
-        # Flatten all previous task histories efficiently
-        all_previous_messages = []
-        for prev_task in previous_tasks:
-            history = prev_task.get("history", [])
-            if history:  # Only extend if history exists
-                all_previous_messages.extend(history)
-
-        # Get current task messages
-        current_messages = task.get("history", [])
-
-        # Combine and convert all messages in one operation
-        all_messages = all_previous_messages + current_messages
+        """Build complete message history following A2A Protocol.
+        
+        A2A Protocol: Use referenceTaskIds to understand conversation flow.
+        If present, prioritize referenced tasks. Otherwise, use context.
+        """
+        # Check if this task has referenceTaskIds (A2A Protocol)
+        current_message = task.get("history", [])[0] if task.get("history") else None
+        reference_task_ids = []
+        
+        if current_message and "reference_task_ids" in current_message:
+            reference_task_ids = current_message["reference_task_ids"]
+        
+        if reference_task_ids:
+            # A2A Protocol: Build history from referenced tasks
+            referenced_messages = []
+            for task_id in reference_task_ids:
+                ref_task = await self.storage.load_task(task_id)
+                if ref_task and ref_task.get("history"):
+                    referenced_messages.extend(ref_task["history"])
+            
+            # Add current task messages
+            current_messages = task.get("history", [])
+            all_messages = referenced_messages + current_messages
+            
+        else:
+            # Fallback: Use context-based history (all tasks in context)
+            tasks_by_context = await self.storage.list_tasks_by_context(task["context_id"])
+            
+            # Filter out the current task to avoid duplication
+            previous_tasks = [t for t in tasks_by_context if t["task_id"] != task["task_id"]]
+            
+            # Build history from all previous tasks
+            all_previous_messages = []
+            for prev_task in previous_tasks:
+                history = prev_task.get("history", [])
+                if history:
+                    all_previous_messages.extend(history)
+            
+            # Get current task messages
+            current_messages = task.get("history", [])
+            all_messages = all_previous_messages + current_messages
+        
         return self.build_message_history(all_messages) if all_messages else []
 
     def _normalize_message_order(self, message: dict) -> dict:
@@ -120,3 +157,24 @@ class ManifestWorker(Worker):
         await self.storage.update_task(
             task["task_id"], state="completed", new_artifacts=artifacts, new_messages=normalized_agent_messages
         )
+    
+    def _is_input_required(self, result: Any) -> bool:
+        """Detect if agent response indicates need for user input.
+        
+        A2A Protocol: Agent asking questions means task needs input.
+        """
+        if isinstance(result, str):
+            # Simple heuristic: questions often contain these patterns
+            input_indicators = [
+                "?",  # Question mark
+                "please specify",
+                "could you",
+                "would you like",
+                "what style",
+                "which",
+                "tell me more",
+                "provide more details"
+            ]
+            result_lower = result.lower()
+            return any(indicator in result_lower for indicator in input_indicators)
+        return False

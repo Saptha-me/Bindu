@@ -1,4 +1,6 @@
 import os
+import logging
+import asyncio
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List
 from functools import cached_property
@@ -8,6 +10,16 @@ import base58
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from pebbling.common.protocol.types import AgentExtension
+
+logger = logging.getLogger(__name__)
+
+# Optional async file I/O support
+try:
+    import aiofiles
+    AIOFILES_AVAILABLE = True
+except ImportError:
+    AIOFILES_AVAILABLE = False
+    logger.warning("aiofiles not installed. Async file operations will fall back to sync.")
 
 
 class DIDAgentExtensionMetadata:
@@ -84,6 +96,72 @@ class DIDAgentExtension:
         # Set appropriate file permissions (owner read/write only for private key)
         os.chmod(self.private_key_path, 0o600)
         os.chmod(self.public_key_path, 0o644)
+        
+        return self.private_key_path, self.public_key_path
+    
+    async def generate_and_save_key_pair_async(self):
+        """
+        Async version - Generate and save key pair to files if they don't exist.
+
+        Returns:
+            Tuple of (private_key_path, public_key_path)
+
+        Raises:
+            OSError: If unable to write key files
+        """
+        # Check if async file I/O is available
+        if not AIOFILES_AVAILABLE:
+            logger.debug("Falling back to sync key generation (aiofiles not available)")
+            return await asyncio.get_event_loop().run_in_executor(
+                None, self.generate_and_save_key_pair
+            )
+        
+        # Ensure directory exists for the key files
+        os.makedirs(os.path.dirname(self.private_key_path), exist_ok=True)
+
+        # We need to create the keys in the following scenarios
+        # 1. Either private or public key is missing
+        # 2. We're explicitly creating new keys
+        if os.path.exists(self.private_key_path) and os.path.exists(self.public_key_path) and not self.recreate_keys:
+            return self.private_key_path, self.public_key_path
+
+        # Key generation is CPU-bound, so run in executor
+        private_key = await asyncio.get_event_loop().run_in_executor(
+            None, ed25519.Ed25519PrivateKey.generate
+        )
+        public_key = private_key.public_key()
+
+        # Use password protection if provided
+        if self.key_password:
+            encryption_algorithm = serialization.BestAvailableEncryption(self.key_password)
+        else:
+            encryption_algorithm = serialization.NoEncryption()
+        
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=encryption_algorithm,
+        )
+
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM, 
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+        # Async file write
+        async with aiofiles.open(self.private_key_path, "wb") as f:
+            await f.write(private_pem)
+
+        async with aiofiles.open(self.public_key_path, "wb") as f:
+            await f.write(public_pem)
+
+        # Set appropriate file permissions
+        await asyncio.get_event_loop().run_in_executor(
+            None, os.chmod, self.private_key_path, 0o600
+        )
+        await asyncio.get_event_loop().run_in_executor(
+            None, os.chmod, self.public_key_path, 0o644
+        )
 
     @cached_property
     def private_key(self) -> ed25519.Ed25519PrivateKey:

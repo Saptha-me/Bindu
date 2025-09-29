@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pebbling.extensions.did import DIDAgentExtension
 
-from .protocol.types import AgentCapabilities, AgentCard, AgentIdentity, AgentSkill, AgentTrust
+from .protocol.types import AgentCapabilities, AgentCard, AgentIdentity, Skill, AgentTrust
 
 
 class KeyPaths(NamedTuple):
@@ -77,7 +77,7 @@ class AgentManifest:
         did_extension: DIDAgentExtension,
         agent_trust: AgentTrust,
         capabilities: AgentCapabilities,
-        skills: List[AgentSkill],
+        skills: List[Skill],
         kind: Literal["agent", "team", "workflow"],
         num_history_sessions: int,
         extra_data: Dict[str, Any],

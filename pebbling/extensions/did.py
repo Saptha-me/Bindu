@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any, List
 from functools import cached_property
+from datetime import datetime, timezone
 
 import base58
 from cryptography.hazmat.primitives import serialization
@@ -18,11 +19,21 @@ class DIDAgentExtensionMetadata:
 class DIDAgentExtension:
     """DID extension for agent identity management."""
 
-    def __init__(self, recerate_keys: bool, key_dir: Path):
+    def __init__(self, 
+        recreate_keys: bool, 
+        key_dir: Path,
+        user_id: Optional[str] = None,
+        agent_name: Optional[str] = None,
+    ):
         # Store key paths directly instead of key_dir
         self.private_key_path = str(key_dir / "private.pem")
         self.public_key_path = str(key_dir / "public.pem")
-        self.recreate_keys = recerate_keys
+        self.recreate_keys = recreate_keys
+        self.user_id = user_id
+        self.agent_name = agent_name
+        
+        # Store additional metadata that will be included in DID document
+        self.metadata: Dict[str, Any] = {}
 
     def generate_and_save_key_pair(self):
         """
@@ -153,11 +164,20 @@ class DIDAgentExtension:
 
     @cached_property
     def did(self) -> str:
-        """Create did:key format DID based on the public key.
+        """Create custom Pebbling DID format.
 
         Returns:
-            DID string in format did:key:{multibase_encoded_public_key}
+            DID string in format did:pebbling:{user_id}:{agent_name}
+            Falls back to did:key format if user_id or agent_name not provided
         """
+        # Use custom Pebbling format if user_id and agent_name provided
+        if self.user_id and self.agent_name:
+            # Sanitize the components to ensure valid DID format
+            sanitized_user_id = self.user_id.lower().replace(' ', '_')
+            sanitized_agent_name = self.agent_name.lower().replace(' ', '_')
+            return f"did:pebbling:{sanitized_user_id}:{sanitized_agent_name}"
+        
+        # Fallback to did:key format for backward compatibility
         with open(self.public_key_path, "rb") as f:
             public_key_pem = f.read()
 
@@ -169,12 +189,115 @@ class DIDAgentExtension:
 
         return f"did:key:{multibase_encoded}"
 
+    def set_agent_metadata(self, 
+                          skills: Optional[List[Any]] = None,
+                          capabilities: Optional[Dict[str, Any]] = None,
+                          description: Optional[str] = None,
+                          version: Optional[str] = None,
+                          author: Optional[str] = None,
+                          **extra_metadata) -> None:
+        """Set metadata that will be included in the DID document.
+        
+        Args:
+            skills: List of agent skills
+            capabilities: Agent capabilities dictionary
+            description: Agent description
+            version: Agent version
+            author: Agent author
+            **extra_metadata: Any additional metadata to include
+        """
+        if skills is not None:
+            self.metadata["skills"] = skills
+        if capabilities is not None:
+            self.metadata["capabilities"] = capabilities
+        if description is not None:
+            self.metadata["description"] = description
+        if version is not None:
+            self.metadata["version"] = version
+        if author is not None:
+            self.metadata["author"] = author
+        
+        # Add any extra metadata
+        self.metadata.update(extra_metadata)
+    
+    def get_did_document(self) -> Dict[str, Any]:
+        """Generate a complete DID document with all agent information.
+        
+        Returns:
+            Dictionary containing the full DID document with agent metadata
+        """
+        # Get public key for verification
+        public_key_b58 = base58.b58encode(
+            self.public_key.public_bytes(
+                encoding=serialization.Encoding.Raw, 
+                format=serialization.PublicFormat.Raw
+            )
+        ).decode("ascii")
+        
+        did_doc = {
+            "@context": ["https://www.w3.org/ns/did/v1", "https://pebbling.ai/ns/v1"],
+            "id": self.did,
+            "created": datetime.utcnow().isoformat() + "Z",
+            
+            # Authentication method
+            "authentication": [{
+                "id": f"{self.did}#key-1",
+                "type": "Ed25519VerificationKey2020",
+                "controller": self.did,
+                "publicKeyBase58": public_key_b58
+            }],
+            
+            # Pebbling-specific metadata
+            "pebbling": {
+                "agentName": self.agent_name,
+                "userId": self.user_id,
+                **self.metadata  # Include all metadata
+            }
+        }
+        
+        # Add service endpoints if URL is available
+        if "url" in self.metadata:
+            did_doc["service"] = [{
+                "id": f"{self.did}#agent-service",
+                "type": "PebblingAgentService",
+                "serviceEndpoint": self.metadata["url"]
+            }]
+        
+        return did_doc
+    
+    def get_agent_info(self) -> Dict[str, Any]:
+        """Get a simplified agent info JSON (more readable than full DID document).
+        
+        Returns:
+            Dictionary with agent information in a user-friendly format
+        """
+        info = {
+            "did": self.did,
+            "agentName": self.agent_name,
+            "userId": self.user_id,
+            "publicKey": base58.b58encode(
+                self.public_key.public_bytes(
+                    encoding=serialization.Encoding.Raw, 
+                    format=serialization.PublicFormat.Raw
+                )
+            ).decode("ascii"),
+            "created": datetime.now(timezone.utc).isoformat() + "Z",
+        }
+        
+        # Add all metadata fields
+        info.update(self.metadata)
+        
+        return info
+    
     @cached_property
     def agent_extension(self):
         return AgentExtension(
             uri="https://github.com/Saptha-me/septha",
-            # TODO: add a better description
-            description="Manage did's for your agent",
+            description="DID-based identity management for Pebbling agents",
             required=False,
-            params={"did": self.did},
+            params={
+                "did": self.did,
+                "resolver_endpoint": "/did/resolve",  # Endpoint to resolve DID info
+                "info_endpoint": "/agent/info"  # Simplified info endpoint
+            },
         )

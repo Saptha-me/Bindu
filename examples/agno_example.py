@@ -17,11 +17,14 @@ Benefits:
 from typing import Dict, Any, List
 import json
 import os
+import sys
+
+# Add parent directory to path so we can import pebbling
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from pebbling.penguin import pebblify
-from pebbling.common.models import DeploymentConfig, SchedulerConfig, StorageConfig
-from pebbling.common.protocol.types import AgentCapabilities, AgentSkill
+from pebbling.penguin.pebblify import pebblify
 
 # Load configuration
 def load_config(config_path: str):
@@ -52,10 +55,6 @@ def simple_handler(messages: str) -> str:
 
 
 # Pebblify the simple agent
-manifest = pebblify(
-    agent=simple_agent, 
-    config=simple_config, 
-    handler=simple_handler
-)
+pebblify(simple_agent, simple_config, simple_handler)
 
 

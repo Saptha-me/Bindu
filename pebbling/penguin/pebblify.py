@@ -34,7 +34,7 @@ from pebbling.common.models import AgentManifest, DeploymentConfig, SchedulerCon
 from pebbling.common.protocol.types import (
     AgentCapabilities,
     AgentIdentity,
-    AgentSkill,
+    Skill,
     AgentTrust,
 )
 from pebbling.penguin.manifest import create_manifest, validate_agent_function
@@ -169,8 +169,27 @@ def pebblify(
 
     caller_dir = Path(os.path.abspath(caller_file)).parent
 
-    did_extension = DIDAgentExtension(recreate_keys=validated_config["recreate_keys"], key_dir=Path(os.path.join(caller_dir, PKI_DIR)))
+    did_extension = DIDAgentExtension(
+        recreate_keys=validated_config["recreate_keys"],
+        key_dir=Path(os.path.join(caller_dir, PKI_DIR)),
+        user_id=validated_config.get("user_id") or validated_config.get("author"),
+        agent_name=validated_config.get("name")
+    )
     did_extension.generate_and_save_key_pair()
+    
+    # Set agent metadata for DID document
+    did_extension.set_agent_metadata(
+        description=validated_config["description"],
+        version=validated_config["version"],
+        author=validated_config.get("author"),
+        skills=[skill.dict() if hasattr(skill, 'dict') else skill for skill in (validated_config.get("skills") or [])],
+        capabilities=validated_config.get("capabilities"),
+        url=deployment_config.url if deployment_config else "http://localhost:3773",
+        kind=validated_config["kind"],
+        telemetry=validated_config["telemetry"],
+        monitoring=validated_config["monitoring"],
+        documentation_url=validated_config.get("documentation_url"),
+    )
 
     logger.info(f"DID Extension setup complete", did=did_extension.did)
     logger.info("📋 Creating agent manifest...")

@@ -5,6 +5,7 @@ This module provides utilities to validate and process agent configurations,
 ensuring they meet the required schema and have proper defaults.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from pebbling.common.models import DeploymentConfig, SchedulerConfig, StorageConfig
 from pebbling.common.protocol.types import AgentCapabilities, Skill, AgentTrust
@@ -29,6 +30,7 @@ class ConfigValidator:
         "documentation_url": None,
         "extra_metadata": {},
         "agent_trust": None,
+        "key_password": None,
     }
     
     # Required fields that must be present
@@ -89,13 +91,18 @@ class ConfigValidator:
         if isinstance(config.get("agent_trust"), dict):
             config["agent_trust"] = AgentTrust(**config["agent_trust"])
         
+        # Process key password - support environment variable and prompt
+        if config.get("key_password"):
+            from pebbling.utils.security import get_key_password
+            config["key_password"] = get_key_password(config)
+        
         return config
     
     @classmethod
     def _validate_field_types(cls, config: Dict[str, Any]) -> None:
         """Validate that fields have correct types."""
         # Validate string fields
-        string_fields = ["author", "name", "description", "version", "kind"]
+        string_fields = ["author", "name", "description", "version", "kind", "key_password"]
         for field in string_fields:
             if field in config and config[field] is not None and not isinstance(config[field], str):
                 raise ValueError(f"Field '{field}' must be a string")

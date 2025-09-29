@@ -173,7 +173,8 @@ def pebblify(
         recreate_keys=validated_config["recreate_keys"],
         key_dir=Path(os.path.join(caller_dir, PKI_DIR)),
         author=validated_config.get("author"),
-        agent_name=validated_config.get("name")
+        agent_name=validated_config.get("name"),
+        key_password=validated_config.get("key_password")
     )
     did_extension.generate_and_save_key_pair()
     

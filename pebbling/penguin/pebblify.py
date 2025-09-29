@@ -172,7 +172,7 @@ def pebblify(
     did_extension = DIDAgentExtension(
         recreate_keys=validated_config["recreate_keys"],
         key_dir=Path(os.path.join(caller_dir, PKI_DIR)),
-        user_id=validated_config.get("user_id") or validated_config.get("author"),
+        author=validated_config.get("author"),
         agent_name=validated_config.get("name")
     )
     did_extension.generate_and_save_key_pair()

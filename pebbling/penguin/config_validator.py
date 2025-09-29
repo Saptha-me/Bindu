@@ -29,7 +29,6 @@ class ConfigValidator:
         "documentation_url": None,
         "extra_metadata": {},
         "agent_trust": None,
-        "user_id": None,
     }
     
     # Required fields that must be present
@@ -96,7 +95,7 @@ class ConfigValidator:
     def _validate_field_types(cls, config: Dict[str, Any]) -> None:
         """Validate that fields have correct types."""
         # Validate string fields
-        string_fields = ["author", "name", "description", "version", "kind", "user_id"]
+        string_fields = ["author", "name", "description", "version", "kind"]
         for field in string_fields:
             if field in config and config[field] is not None and not isinstance(config[field], str):
                 raise ValueError(f"Field '{field}' must be a string")

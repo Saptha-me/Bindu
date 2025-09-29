@@ -16,21 +16,22 @@ class DIDAgentExtensionMetadata:
     SIGNATURE_KEY = "did.message.signature"
 
 
-class DIDAgentExtension:
     """DID extension for agent identity management."""
 
     def __init__(self, 
         recreate_keys: bool, 
         key_dir: Path,
-        user_id: Optional[str] = None,
+        author: Optional[str] = None,
         agent_name: Optional[str] = None,
+        key_password: Optional[str] = None,
     ):
         # Store key paths directly instead of key_dir
         self.private_key_path = str(key_dir / "private.pem")
         self.public_key_path = str(key_dir / "public.pem")
         self.recreate_keys = recreate_keys
-        self.user_id = user_id
+        self.author = author  # The author/owner of the agent
         self.agent_name = agent_name
+        self.key_password = key_password.encode() if key_password else None
         
         # Store additional metadata that will be included in DID document
         self.metadata: Dict[str, Any] = {}
@@ -167,15 +168,15 @@ class DIDAgentExtension:
         """Create custom Pebbling DID format.
 
         Returns:
-            DID string in format did:pebbling:{user_id}:{agent_name}
-            Falls back to did:key format if user_id or agent_name not provided
+            DID string in format did:pebbling:{author}:{agent_name}
+            Falls back to did:key format if author or agent_name not provided
         """
-        # Use custom Pebbling format if user_id and agent_name provided
-        if self.user_id and self.agent_name:
+        # Use custom Pebbling format if author and agent_name provided
+        if self.author and self.agent_name:
             # Sanitize the components to ensure valid DID format
-            sanitized_user_id = self.user_id.lower().replace(' ', '_')
+            sanitized_author = self.author.lower().replace(' ', '_').replace('@', '_at_').replace('.', '_')
             sanitized_agent_name = self.agent_name.lower().replace(' ', '_')
-            return f"did:pebbling:{sanitized_user_id}:{sanitized_agent_name}"
+            return f"did:pebbling:{sanitized_author}:{sanitized_agent_name}"
         
         # Fallback to did:key format for backward compatibility
         with open(self.public_key_path, "rb") as f:
@@ -237,7 +238,7 @@ class DIDAgentExtension:
         did_doc = {
             "@context": ["https://www.w3.org/ns/did/v1", "https://pebbling.ai/ns/v1"],
             "id": self.did,
-            "created": datetime.utcnow().isoformat() + "Z",
+            "created": datetime.now(timezone.utc).isoformat() + "Z",
             
             # Authentication method
             "authentication": [{
@@ -250,7 +251,7 @@ class DIDAgentExtension:
             # Pebbling-specific metadata
             "pebbling": {
                 "agentName": self.agent_name,
-                "userId": self.user_id,
+                "author": self.author,  # Using author instead of userId
                 **self.metadata  # Include all metadata
             }
         }
@@ -274,14 +275,14 @@ class DIDAgentExtension:
         info = {
             "did": self.did,
             "agentName": self.agent_name,
-            "userId": self.user_id,
+            "author": self.author,  # Using author instead of userId
             "publicKey": base58.b58encode(
                 self.public_key.public_bytes(
                     encoding=serialization.Encoding.Raw, 
                     format=serialization.PublicFormat.Raw
                 )
             ).decode("ascii"),
-            "created": datetime.now(timezone.utc).isoformat() + "Z",
+            "created": datetime.now(timezone.utc).isoformat(),
         }
         
         # Add all metadata fields

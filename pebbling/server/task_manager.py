@@ -89,6 +89,8 @@ Thank you users! We ❤️ you! - 🐧
 
 from __future__ import annotations
 
+import inspect
+import json
 import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
@@ -226,9 +228,116 @@ class TaskManager:
 
         return CancelTaskResponse(jsonrpc="2.0", id=request["id"], result=task)
 
-    async def stream_message(self, request: StreamMessageRequest) -> StreamMessageResponse:
-        """Stream messages using Server-Sent Events."""
-        raise NotImplementedError("message/stream method is not implemented yet.")
+    async def stream_message(self, request: StreamMessageRequest):
+        """Stream messages using Server-Sent Events.
+
+        This method returns a StreamingResponse directly to support SSE,
+        which will be handled at the application layer.
+        """
+        from starlette.responses import StreamingResponse
+
+        request_id = str(request["id"])
+        message = request["params"]["message"]
+        context_id = self._parse_context_id(message.get("context_id"))
+
+        # similar to the "messages/send flow submit the task to the configured storage"
+        task: Task = await self.storage.submit_task(context_id, message)
+
+        async def stream_generator():
+            """Generates a consumable stream based on the function which was decorated using pebblify"""
+            try:
+                await self.storage.update_task(task["task_id"], state="working")
+                # yield the initial status update event to indicate processing of the task has started
+                status_event = {
+                    "kind": "status-update",
+                    "task_id": str(task["task_id"]),
+                    "context_id": str(context_id),
+                    "status": {"state": "working", "timestamp": datetime.now(timezone.utc).isoformat()},
+                    "final": False,
+                }
+                yield f"data: {json.dumps(status_event)}\n\n"
+
+                if self._workers and self.manifest:
+                    worker = self._workers[0]
+                    message_history = await worker._build_complete_message_history(task)
+                    manifest_result = self.manifest.run(message_history)
+                    print(type(manifest_result), 'manifest result')
+
+                    if inspect.isasyncgen(manifest_result):
+                        async for chunk in manifest_result:
+                            print('chunks', chunk)
+                            if chunk:
+                                artifact_event = {
+                                    "kind": "artifact-update",
+                                    "task_id": str(task["task_id"]),
+                                    "context_id": str(context_id),
+                                    "artifact": {
+                                        "artifact_id": str(uuid.uuid4()),
+                                        "name": "streaming_response",
+                                        "parts": [{"kind": "text", "text": str(chunk)}],
+                                    },
+                                    "append": True,
+                                    "last_chunk": False,
+                                }
+                                yield f"data: {json.dumps(artifact_event)}\n\n"
+
+                    elif inspect.isgenerator(manifest_result):
+                        for chunk in manifest_result:
+                            if chunk:
+                                artifact_event = {
+                                    "kind": "artifact-update",
+                                    "task_id": str(task["task_id"]),
+                                    "context_id": str(context_id),
+                                    "artifact": {
+                                        "artifact_id": str(uuid.uuid4()),
+                                        "name": "streaming_response",
+                                        "parts": [{"kind": "text", "text": str(chunk)}],
+                                    },
+                                    "append": True,
+                                    "last_chunk": False,
+                                }
+                                yield f"data: {json.dumps(artifact_event)}\n\n"
+
+                    else:
+                        if manifest_result:
+                            artifact_event = {
+                                "kind": "artifact-update",
+                                "task_id": str(task["task_id"]),
+                                "context_id": str(context_id),
+                                "artifact": {
+                                    "artifact_id": str(uuid.uuid4()),
+                                    "name": "response",
+                                    "parts": [{"kind": "text", "text": str(manifest_result)}],
+                                },
+                                "last_chunk": True,
+                            }
+                            yield f"data: {json.dumps(artifact_event)}\n\n"
+
+                # Send completion status
+                completion_event = {
+                    "kind": "status-update",
+                    "task_id": str(task["task_id"]),
+                    "context_id": str(context_id),
+                    "status": {"state": "completed", "timestamp": datetime.now(timezone.utc).isoformat()},
+                    "final": True,
+                }
+                yield f"data: {json.dumps(completion_event)}\n\n"
+
+                # Update task state in storage
+                await self.storage.update_task(task["task_id"], state="completed")
+            except Exception as e:
+                error_event = {
+                    "kind": "status-update",
+                    "task_id": str(task["task_id"]),
+                    "context_id": str(context_id),
+                    "status": {"state": "failed", "timestamp": datetime.now(timezone.utc).isoformat()},
+                    "final": True,
+                    "error": str(e),
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+                await self.storage.update_task(task["task_id"], state="failed")
+
+        return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
     async def set_task_push_notification(
         self, request: SetTaskPushNotificationRequest

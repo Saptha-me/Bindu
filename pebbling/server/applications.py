@@ -236,6 +236,8 @@ class PebbleApplication(Starlette):
 
         if pebble_request["method"] == "message/send":
             jsonrpc_response = await self.task_manager.send_message(pebble_request)
+        elif pebble_request["method"] == "message/stream":
+            return await self.task_manager.stream_message(pebble_request)
         elif pebble_request["method"] == "tasks/get":
             jsonrpc_response = await self.task_manager.get_task(pebble_request)
         elif pebble_request["method"] == "tasks/cancel":
@@ -244,8 +246,8 @@ class PebbleApplication(Starlette):
             jsonrpc_response = await self.task_manager.list_tasks(pebble_request)
         elif pebble_request["method"] == "contexts/list":
             jsonrpc_response = await self.task_manager.list_contexts(pebble_request)
-        elif pebble_request["method"] == "tasks/clear":
-            jsonrpc_response = await self.task_manager.clear_tasks(pebble_request)
+        elif pebble_request["method"] == "contexts/clear":
+            jsonrpc_response = await self.task_manager.clear_context(pebble_request)
         elif pebble_request["method"] == "tasks/feedback":
             jsonrpc_response = await self.task_manager.task_feedback(pebble_request)
 

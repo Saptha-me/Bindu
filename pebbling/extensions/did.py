@@ -16,6 +16,7 @@ class DIDAgentExtensionMetadata:
     SIGNATURE_KEY = "did.message.signature"
 
 
+class DIDAgentExtension:
     """DID extension for agent identity management."""
 
     def __init__(self, 
@@ -58,13 +59,16 @@ class DIDAgentExtensionMetadata:
         private_key = ed25519.Ed25519PrivateKey.generate()
         public_key = private_key.public_key()
 
-        # Currently we don't accept a password for the keys created
-        # Moving forward to make the process a bit more secure, we can
-        # start accepting passwords for the generated key pair as well
+        # Use password protection if provided
+        if self.key_password:
+            encryption_algorithm = serialization.BestAvailableEncryption(self.key_password)
+        else:
+            encryption_algorithm = serialization.NoEncryption()
+        
         private_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
+            encryption_algorithm=encryption_algorithm,
         )
 
         public_pem = public_key.public_bytes(
@@ -98,7 +102,19 @@ class DIDAgentExtensionMetadata:
         with open(self.private_key_path, "rb") as f:
             private_key_pem = f.read()
 
-        private_key = serialization.load_pem_private_key(private_key_pem, password=None)
+        try:
+            private_key = serialization.load_pem_private_key(
+                private_key_pem, 
+                password=self.key_password
+            )
+        except TypeError as e:
+            if "Password was not given but private key is encrypted" in str(e):
+                raise ValueError(
+                    "Private key is encrypted but no password was provided. "
+                    "Please provide the key password in the configuration."
+                )
+            raise
+        
         if not isinstance(private_key, ed25519.Ed25519PrivateKey):
             raise ValueError("Private key is not an Ed25519 key")
 

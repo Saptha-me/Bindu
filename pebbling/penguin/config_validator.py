@@ -7,7 +7,7 @@ ensuring they meet the required schema and have proper defaults.
 
 from typing import Dict, Any, List, Optional
 from pebbling.common.models import DeploymentConfig, SchedulerConfig, StorageConfig
-from pebbling.common.protocol.types import AgentCapabilities, AgentSkill, AgentTrust
+from pebbling.common.protocol.types import AgentCapabilities, Skill, AgentTrust
 
 
 class ConfigValidator:
@@ -29,6 +29,7 @@ class ConfigValidator:
         "documentation_url": None,
         "extra_metadata": {},
         "agent_trust": None,
+        "user_id": None,
     }
     
     # Required fields that must be present
@@ -79,7 +80,7 @@ class ConfigValidator:
         # Process skills if provided as dict list
         if isinstance(config.get("skills"), list) and config["skills"]:
             if isinstance(config["skills"][0], dict):
-                config["skills"] = [AgentSkill(**skill) for skill in config["skills"]]
+                config["skills"] = [Skill(**skill) for skill in config["skills"]]
         
         # Process capabilities
         if isinstance(config.get("capabilities"), dict):
@@ -95,9 +96,9 @@ class ConfigValidator:
     def _validate_field_types(cls, config: Dict[str, Any]) -> None:
         """Validate that fields have correct types."""
         # Validate string fields
-        string_fields = ["author", "name", "description", "version", "kind"]
+        string_fields = ["author", "name", "description", "version", "kind", "user_id"]
         for field in string_fields:
-            if field in config and not isinstance(config[field], str):
+            if field in config and config[field] is not None and not isinstance(config[field], str):
                 raise ValueError(f"Field '{field}' must be a string")
         
         # Validate boolean fields

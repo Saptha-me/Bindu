@@ -1,18 +1,19 @@
+import asyncio
+import json
+import logging
 from contextlib import asynccontextmanager
-from pathlib import Path
-from typing import Any, AsyncIterator, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Literal, Optional, Sequence
 from uuid import UUID
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import FileResponse, Response
-from starlette.routing import Route
+from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from starlette.routing import BaseRoute
 from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
 
 from pebbling.common.models import AgentManifest
-from pebbling.common.protocol.types import AgentCard, agent_card_ta, pebble_request_ta, pebble_response_ta
-
+from pebbling.common.protocol.types import AgentCard, agent_card_ta, a2a_request_ta, a2a_response_ta
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .storage.memory_storage import InMemoryStorage
 from .task_manager import TaskManager
@@ -92,6 +93,10 @@ class PebbleApplication(Starlette):
         self.router.add_route("/components/layout.js", self._layout_js_endpoint, methods=["GET"])
         self.router.add_route("/components/header.html", self._header_component_endpoint, methods=["GET"])
         self.router.add_route("/components/footer.html", self._footer_component_endpoint, methods=["GET"])
+        
+        # DID endpoints
+        self.router.add_route("/did/resolve", self._did_resolve_endpoint, methods=["GET", "POST"])
+        self.router.add_route("/agent/info", self._agent_info_endpoint, methods=["GET"])
 
     def _create_default_lifespan(
         self,
@@ -232,26 +237,85 @@ class PebbleApplication(Starlette):
         3. The server will send a "working" on the first chunk on `tasks/pushNotification/get`.
         """
         data = await request.body()
-        pebble_request = pebble_request_ta.validate_json(data)
+        a2a_request = a2a_request_ta.validate_json(data)
 
-        if pebble_request["method"] == "message/send":
-            jsonrpc_response = await self.task_manager.send_message(pebble_request)
-        elif pebble_request["method"] == "tasks/get":
-            jsonrpc_response = await self.task_manager.get_task(pebble_request)
-        elif pebble_request["method"] == "tasks/cancel":
-            jsonrpc_response = await self.task_manager.cancel_task(pebble_request)
-        elif pebble_request["method"] == "tasks/list":
-            jsonrpc_response = await self.task_manager.list_tasks(pebble_request)
-        elif pebble_request["method"] == "contexts/list":
-            jsonrpc_response = await self.task_manager.list_contexts(pebble_request)
-        elif pebble_request["method"] == "tasks/clear":
-            jsonrpc_response = await self.task_manager.clear_tasks(pebble_request)
-        elif pebble_request["method"] == "tasks/feedback":
-            jsonrpc_response = await self.task_manager.task_feedback(pebble_request)
+        if a2a_request["method"] == "message/send":
+            jsonrpc_response = await self.task_manager.send_message(a2a_request)
+        elif a2a_request["method"] == "tasks/get":
+            jsonrpc_response = await self.task_manager.get_task(a2a_request)
+        elif a2a_request["method"] == "tasks/cancel":
+            jsonrpc_response = await self.task_manager.cancel_task(a2a_request)
+        elif a2a_request["method"] == "tasks/list":
+            jsonrpc_response = await self.task_manager.list_tasks(a2a_request)
+        elif a2a_request["method"] == "contexts/list":
+            jsonrpc_response = await self.task_manager.list_contexts(a2a_request)
+        elif a2a_request["method"] == "tasks/clear":
+            jsonrpc_response = await self.task_manager.clear_tasks(a2a_request)
+        elif a2a_request["method"] == "tasks/feedback":
+            jsonrpc_response = await self.task_manager.task_feedback(a2a_request)
 
         else:
-            raise NotImplementedError(f"Method {pebble_request['method']} not implemented.")
+            raise NotImplementedError(f"Method {a2a_request['method']} not implemented.")
         return Response(
-            content=pebble_response_ta.dump_json(jsonrpc_response, by_alias=True, serialize_as_any=True),
+            content=a2a_response_ta.dump_json(jsonrpc_response, by_alias=True, serialize_as_any=True),
             media_type="application/json",
+        )
+    
+    async def _did_resolve_endpoint(self, request: Request) -> Response:
+        """Resolve DID and return full DID document.
+        
+        GET /did/resolve?did=did:pebbling:user:agent
+        POST /did/resolve with JSON body {"did": "did:pebbling:user:agent"}
+        """
+        # Get DID from query param or body
+        did = None
+        if request.method == "GET":
+            did = request.query_params.get("did")
+        else:
+            data = await request.json()
+            did = data.get("did")
+        
+        if not did:
+            return Response(
+                content=json.dumps({"error": "Missing 'did' parameter"}),
+                status_code=400,
+                media_type="application/json"
+            )
+        
+        # Check if this is our DID
+        if hasattr(self.manifest, 'did_extension') and self.manifest.did_extension:
+            if did == self.manifest.did_extension.did:
+                did_document = self.manifest.did_extension.get_did_document()
+                return Response(
+                    content=json.dumps(did_document, indent=2),
+                    media_type="application/json"
+                )
+        
+        return Response(
+            content=json.dumps({"error": f"DID '{did}' not found"}),
+            status_code=404,
+            media_type="application/json"
+        )
+    
+    async def _agent_info_endpoint(self, request: Request) -> Response:
+        """Get simplified agent information.
+        
+        GET /agent/info
+        """
+        if hasattr(self.manifest, 'did_extension') and self.manifest.did_extension:
+            agent_info = self.manifest.did_extension.get_agent_info()
+            return Response(
+                content=json.dumps(agent_info, indent=2),
+                media_type="application/json"
+            )
+        
+        # Fallback if no DID extension
+        return Response(
+            content=json.dumps({
+                "name": self.manifest.name,
+                "version": self.manifest.version,
+                "description": self.manifest.description,
+                "url": self.manifest.url
+            }, indent=2),
+            media_type="application/json"
         )

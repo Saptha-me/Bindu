@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import UUID
 
 from pebbling.common.models import AgentManifest
-from pebbling.common.protocol.types import AgentCapabilities, AgentIdentity, AgentSkill, AgentTrust
+from pebbling.common.protocol.types import AgentCapabilities, Skill, AgentTrust
 from pebbling.extensions.did import DIDAgentExtension
 
 
@@ -46,7 +46,7 @@ def create_manifest(
     name: Optional[str],
     did_extension: DIDAgentExtension,
     description: Optional[str],
-    skills: Optional[List[AgentSkill]],
+    skills: Optional[List[Skill]],
     capabilities: Optional[AgentCapabilities],
     agent_trust: Optional[AgentTrust],
     version: str,
@@ -79,7 +79,7 @@ def create_manifest(
         name: Human-readable agent name. If None, uses function name with underscores → hyphens.
         identity: AgentIdentity for decentralized identity management.
         description: Agent description. If None, uses function docstring or generates default.
-        skills: List of AgentSkill objects defining agent capabilities.
+        skills: List of Skill objects defining agent capabilities.
         capabilities: AgentCapabilities defining technical features (streaming, notifications, etc.).
         agent_trust: AgentTrust configuration for security and trust management.
         version: Agent version string (e.g., "1.0.0").

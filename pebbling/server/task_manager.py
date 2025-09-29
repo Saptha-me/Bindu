@@ -261,11 +261,11 @@ class TaskManager:
                     worker = self._workers[0]
                     message_history = await worker._build_complete_message_history(task)
                     manifest_result = self.manifest.run(message_history)
-                    print(type(manifest_result), 'manifest result')
+                    print(type(manifest_result), "manifest result")
 
                     if inspect.isasyncgen(manifest_result):
                         async for chunk in manifest_result:
-                            print('chunks', chunk)
+                            print("chunks", chunk)
                             if chunk:
                                 artifact_event = {
                                     "kind": "artifact-update",

@@ -89,13 +89,14 @@ Thank you users! We ❤️ you! - 🐧
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 import json
 import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from pebbling.common.protocol.types import (
     CancelTaskRequest,
@@ -103,14 +104,19 @@ from pebbling.common.protocol.types import (
     ClearContextsRequest,
     ClearContextsResponse,
     ContextNotFoundError,
+    DeleteTaskPushNotificationConfigRequest,
+    DeleteTaskPushNotificationConfigResponse,
     GetTaskPushNotificationRequest,
     GetTaskPushNotificationResponse,
     GetTaskRequest,
     GetTaskResponse,
     ListContextsRequest,
     ListContextsResponse,
+    ListTaskPushNotificationConfigRequest,
+    ListTaskPushNotificationConfigResponse,
     ListTasksRequest,
     ListTasksResponse,
+    PushNotificationConfig,
     ResubscribeTaskRequest,
     SendMessageRequest,
     SendMessageResponse,
@@ -122,13 +128,24 @@ from pebbling.common.protocol.types import (
     TaskFeedbackRequest,
     TaskFeedbackResponse,
     TaskNotFoundError,
+    TaskPushNotificationConfig,
     TaskSendParams,
 )
 
+from ..utils.logging import get_logger
 from ..utils.task_telemetry import trace_context_operation, trace_task_operation, track_active_task
 from .scheduler import Scheduler
 from .storage import Storage
+from .utils.notifications import NotificationDeliveryError, NotificationService
 from .workers import ManifestWorker
+
+
+logger = get_logger("pebbling.server.task_manager")
+
+PUSH_NOT_SUPPORTED_MESSAGE = (
+    "Push notifications are not supported by this server configuration. Please use polling to check task status. "
+    "See: GET /tasks/{id}"
+)
 
 
 @dataclass
@@ -141,6 +158,9 @@ class TaskManager:
 
     _aexit_stack: Optional[AsyncExitStack] = field(default=None, init=False)
     _workers: list[ManifestWorker] = field(default_factory=list, init=False)
+    notification_service: NotificationService = field(default_factory=NotificationService)
+    _push_notification_configs: dict[uuid.UUID, PushNotificationConfig] = field(default_factory=dict, init=False)
+    _notification_sequences: dict[uuid.UUID, int] = field(default_factory=dict, init=False)
 
     async def __aenter__(self) -> "TaskManager":
         """Initialize the task manager and start all components."""
@@ -150,7 +170,12 @@ class TaskManager:
 
         # Create and start workers if manifest is provided
         if self.manifest:
-            worker = ManifestWorker(scheduler=self.scheduler, storage=self.storage, manifest=self.manifest)
+            worker = ManifestWorker(
+                scheduler=self.scheduler,
+                storage=self.storage,
+                manifest=self.manifest,
+                lifecycle_notifier=self._notify_lifecycle,
+            )
             self._workers.append(worker)
             await self._aexit_stack.enter_async_context(worker.run())
 
@@ -182,6 +207,106 @@ class TaskManager:
             return context_id
         return uuid.uuid4()
 
+    def _push_supported(self) -> bool:
+        if not self.manifest:
+            return False
+        capabilities = getattr(self.manifest, "capabilities", None)
+        if not capabilities:
+            return False
+        if isinstance(capabilities, dict):
+            return bool(capabilities.get("push_notifications"))
+        return bool(getattr(capabilities, "push_notifications", False))
+
+    def _push_not_supported_response(self, response_class: type, request_id: Any):
+        return response_class(
+            jsonrpc="2.0",
+            id=request_id,
+            error={"code": -32005, "message": PUSH_NOT_SUPPORTED_MESSAGE},
+        )
+
+    def _sanitize_push_config(self, config: PushNotificationConfig) -> PushNotificationConfig:
+        sanitized: dict[str, Any] = {"id": config["id"], "url": config["url"]}
+        token = config.get("token")
+        if token is not None:
+            sanitized["token"] = token
+        authentication = config.get("authentication")
+        if authentication is not None:
+            sanitized["authentication"] = authentication
+        return cast(PushNotificationConfig, sanitized)
+
+    def _register_push_config(self, task_id: uuid.UUID, config: PushNotificationConfig) -> None:
+        config_copy = self._sanitize_push_config(config)
+        self.notification_service.validate_config(config_copy)
+        self._push_notification_configs[task_id] = config_copy
+        self._notification_sequences.setdefault(task_id, 0)
+
+    def _remove_push_config(self, task_id: uuid.UUID) -> PushNotificationConfig | None:
+        self._notification_sequences.pop(task_id, None)
+        return self._push_notification_configs.pop(task_id, None)
+
+    def _build_task_push_config(self, task_id: uuid.UUID) -> TaskPushNotificationConfig:
+        config = self._push_notification_configs.get(task_id)
+        if config is None:
+            raise KeyError("No push notification configuration for task")
+        return {"id": task_id, "push_notification_config": self._sanitize_push_config(config)}
+
+    def _next_sequence(self, task_id: uuid.UUID) -> int:
+        current = self._notification_sequences.get(task_id, 0) + 1
+        self._notification_sequences[task_id] = current
+        return current
+
+    def _build_lifecycle_event(
+        self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool
+    ) -> dict[str, Any]:
+        timestamp = datetime.now(timezone.utc).isoformat()
+        return {
+            "event_id": str(uuid.uuid4()),
+            "sequence": self._next_sequence(task_id),
+            "timestamp": timestamp,
+            "kind": "status-update",
+            "task_id": str(task_id),
+            "context_id": str(context_id),
+            "status": {"state": state, "timestamp": timestamp},
+            "final": final,
+        }
+
+    async def _notify_lifecycle(self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool) -> None:
+        if not self._push_supported():
+            return
+        config = self._push_notification_configs.get(task_id)
+        if not config:
+            return
+        event = self._build_lifecycle_event(task_id, context_id, state, final)
+        try:
+            await self.notification_service.send_event(config, event)
+        except NotificationDeliveryError as exc:
+            logger.warning(
+                "Push notification delivery failed",
+                task_id=str(task_id),
+                context_id=str(context_id),
+                state=state,
+                status=exc.status,
+                message=str(exc),
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(
+                "Unexpected error delivering push notification",
+                task_id=str(task_id),
+                context_id=str(context_id),
+                state=state,
+                error=str(exc),
+            )
+
+    def _schedule_notification(self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool) -> None:
+        if not self._push_supported():
+            return
+        if task_id not in self._push_notification_configs:
+            return
+        asyncio.create_task(self._notify_lifecycle(task_id, context_id, state, final))
+
+    def _jsonrpc_error(self, response_class: type, request_id: Any, message: str, code: int = -32001):
+        return response_class(jsonrpc="2.0", id=request_id, error={"code": code, "message": message})
+
     @trace_task_operation("send_message")
     @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
@@ -194,12 +319,40 @@ class TaskManager:
 
         scheduler_params: TaskSendParams = {"task_id": task["task_id"], "context_id": context_id, "message": message}
 
-        # Add optional configuration parameters
         config = request["params"].get("configuration", {})
-        if history_length := config.get("history_length"):
-            scheduler_params["history_length"] = history_length
+        push_config: PushNotificationConfig | None = None
+        if config:
+            if history_length := config.get("history_length"):
+                scheduler_params["history_length"] = history_length
+            if raw_push_config := config.get("push_notification_config"):
+                push_config = cast(PushNotificationConfig, dict(raw_push_config))
 
-        await self.scheduler.run_task(scheduler_params)
+        if push_config and self._push_supported():
+            try:
+                self._register_push_config(task["task_id"], push_config)
+            except ValueError as exc:
+                logger.warning(
+                    "Ignoring invalid inline push notification configuration",
+                    task_id=str(task["task_id"]),
+                    error=str(exc),
+                )
+            else:
+                self._schedule_notification(task["task_id"], context_id, "submitted", final=False)
+        elif push_config and not self._push_supported():
+            logger.debug(
+                "Inline push notification configuration ignored because capability is disabled",
+                task_id=str(task["task_id"]),
+            )
+        elif self._push_supported() and task["task_id"] in self._push_notification_configs:
+            self._schedule_notification(task["task_id"], context_id, "submitted", final=False)
+
+        try:
+            await self.scheduler.run_task(scheduler_params)
+        except Exception:
+            await self.storage.update_task(task["task_id"], state="failed")
+            self._schedule_notification(task["task_id"], context_id, "failed", final=True)
+            raise
+
         return SendMessageResponse(jsonrpc="2.0", id=request_id, result=task)
 
     @trace_task_operation("get_task")
@@ -341,13 +494,118 @@ class TaskManager:
         self, request: SetTaskPushNotificationRequest
     ) -> SetTaskPushNotificationResponse:
         """Set push notification settings for a task."""
-        raise NotImplementedError("SetTaskPushNotification is not implemented yet.")
+        if not self._push_supported():
+            return self._push_not_supported_response(SetTaskPushNotificationResponse, request["id"])
+
+        params = request["params"]
+        task_id = params["id"]
+        push_config = cast(PushNotificationConfig, dict(params["push_notification_config"]))
+
+        task = await self.storage.load_task(task_id)
+        if task is None:
+            return self._create_error_response(
+                SetTaskPushNotificationResponse, request["id"], TaskNotFoundError, "Task not found"
+            )
+
+        try:
+            self._register_push_config(task_id, push_config)
+        except ValueError as exc:
+            return self._jsonrpc_error(
+                SetTaskPushNotificationResponse,
+                request["id"],
+                f"Invalid push notification configuration: {exc}",
+            )
+
+        logger.debug(
+            "Registered push notification subscriber", task_id=str(task_id), subscriber=str(push_config.get("id"))
+        )
+        return SetTaskPushNotificationResponse(
+            jsonrpc="2.0",
+            id=request["id"],
+            result=self._build_task_push_config(task_id),
+        )
 
     async def get_task_push_notification(
         self, request: GetTaskPushNotificationRequest
     ) -> GetTaskPushNotificationResponse:
         """Get push notification settings for a task."""
-        raise NotImplementedError("GetTaskPushNotification is not implemented yet.")
+        if not self._push_supported():
+            return self._push_not_supported_response(GetTaskPushNotificationResponse, request["id"])
+
+        task_id = request["params"]["task_id"]
+        if task_id not in self._push_notification_configs:
+            return self._jsonrpc_error(
+                GetTaskPushNotificationResponse,
+                request["id"],
+                "Push notification configuration not found for task.",
+            )
+
+        return GetTaskPushNotificationResponse(
+            jsonrpc="2.0",
+            id=request["id"],
+            result=self._build_task_push_config(task_id),
+        )
+
+    async def list_task_push_notifications(
+        self, request: ListTaskPushNotificationConfigRequest
+    ) -> ListTaskPushNotificationConfigResponse:
+        if not self._push_supported():
+            return self._push_not_supported_response(ListTaskPushNotificationConfigResponse, request["id"])
+
+        task_id = request["params"]["id"]
+        if task_id not in self._push_notification_configs:
+            return self._jsonrpc_error(
+                ListTaskPushNotificationConfigResponse,
+                request["id"],
+                "Push notification configuration not found for task.",
+            )
+
+        return ListTaskPushNotificationConfigResponse(
+            jsonrpc="2.0",
+            id=request["id"],
+            result=self._build_task_push_config(task_id),
+        )
+
+    async def delete_task_push_notification(
+        self, request: DeleteTaskPushNotificationConfigRequest
+    ) -> DeleteTaskPushNotificationConfigResponse:
+        if not self._push_supported():
+            return self._push_not_supported_response(DeleteTaskPushNotificationConfigResponse, request["id"])
+
+        params = request["params"]
+        task_id = params["id"]
+        config_id = params["push_notification_config_id"]
+
+        existing = self._push_notification_configs.get(task_id)
+        if existing is None:
+            return self._jsonrpc_error(
+                DeleteTaskPushNotificationConfigResponse,
+                request["id"],
+                "Push notification configuration not found for task.",
+            )
+
+        if existing.get("id") != config_id:
+            return self._jsonrpc_error(
+                DeleteTaskPushNotificationConfigResponse,
+                request["id"],
+                "Push notification configuration identifier mismatch.",
+            )
+
+        removed = self._remove_push_config(task_id)
+        if removed is None:
+            return self._jsonrpc_error(
+                DeleteTaskPushNotificationConfigResponse,
+                request["id"],
+                "Push notification configuration not found for task.",
+            )
+
+        logger.debug("Removed push notification subscriber", task_id=str(task_id), subscriber=str(config_id))
+
+        return DeleteTaskPushNotificationConfigResponse(
+            jsonrpc="2.0",
+            id=request["id"],
+            result={"id": task_id, "push_notification_config": self._sanitize_push_config(removed)},
+        )
 
     @trace_task_operation("list_tasks", include_params=False)
     async def list_tasks(self, request: ListTasksRequest) -> ListTasksResponse:

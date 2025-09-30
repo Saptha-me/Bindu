@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Awaitable, Callable, Optional, cast
+from uuid import UUID
 
 from pebbling.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams
 from pebbling.penguin.manifest import AgentManifest
 from pebbling.server.workers.base import Worker
+from pebbling.utils.logging import get_logger
 from pebbling.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
+
+
+logger = get_logger("pebbling.server.manifest_worker")
 
 
 @dataclass
@@ -16,6 +21,7 @@ class ManifestWorker(Worker):
     """A concrete worker implementation that uses an AgentManifest to execute tasks."""
 
     manifest: AgentManifest
+    lifecycle_notifier: Optional[Callable[[UUID, UUID, str, bool], Awaitable[None]]] = None
 
     async def run_task(self, params: TaskSendParams) -> None:
         """Execute a task using the wrapped AgentManifest.
@@ -31,6 +37,7 @@ class ManifestWorker(Worker):
         await TaskStateManager.validate_task_state(task)
 
         await self.storage.update_task(task["task_id"], state="working")
+        await self._notify_state(task, "working", final=False)
 
         # Build complete message history
         message_history = await self._build_complete_message_history(task)
@@ -41,9 +48,11 @@ class ManifestWorker(Worker):
 
             # Process and save results
             await self._process_and_save_results(task, results)
+            await self._notify_state(task, "completed", final=True)
 
         except Exception:
             await self.storage.update_task(task["task_id"], state="failed")
+            await self._notify_state(task, "failed", final=True)
             raise
 
     async def cancel_task(self, params: TaskIdParams) -> None:
@@ -52,7 +61,10 @@ class ManifestWorker(Worker):
         Args:
             params: Task identification parameters
         """
+        task = await self.storage.load_task(params["task_id"])
         await self.storage.update_task(params["task_id"], state="canceled")
+        if task:
+            await self._notify_state(task, "canceled", final=True)
 
     def build_message_history(self, history: list[Message]) -> list[dict[str, str]]:
         """Convert pebble protocol messages to format suitable for manifest execution."""
@@ -103,10 +115,10 @@ class ManifestWorker(Worker):
         """Normalize a list of messages to have consistent field ordering."""
         return [self._normalize_message_order(msg) for msg in messages]
 
-    async def _process_and_save_results(self, task: dict, results: Any) -> None:
+    async def _process_and_save_results(self, task: Task, results: Any) -> None:
         """Process results and save to storage."""
         # Convert agent response to message format
-        agent_messages = MessageConverter.to_protocol_messages(results, task["task_id"], task["context_id"])
+        agent_messages = MessageConverter.to_protocol_messages(results, str(task["task_id"]), str(task["context_id"]))
 
         # Normalize messages for consistency
         normalized_agent_messages = self._normalize_messages(agent_messages)
@@ -121,3 +133,17 @@ class ManifestWorker(Worker):
         await self.storage.update_task(
             task["task_id"], state="completed", new_artifacts=artifacts, new_messages=normalized_agent_messages
         )
+
+    async def _notify_state(self, task: Task, state: str, final: bool) -> None:
+        if not self.lifecycle_notifier:
+            return
+        try:
+            await self.lifecycle_notifier(task["task_id"], task["context_id"], state, final)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning(
+                "Lifecycle notification failed",
+                task_id=str(task["task_id"]),
+                context_id=str(task["context_id"]),
+                state=state,
+                error=str(exc),
+            )

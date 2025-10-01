@@ -1,13 +1,3 @@
-#
-# |---------------------------------------------------------|
-# |                                                         |
-# |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
-# |                                                         |
-# |---------------------------------------------------------|
-#
-#  Thank you users! We ❤️ you! - 🐧
-
 """Authentication Middleware for Pebbling Server.
 
 This middleware handles JWT token verification for incoming requests,

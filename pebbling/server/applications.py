@@ -10,8 +10,10 @@ from starlette.responses import FileResponse, Response
 from starlette.routing import Route
 from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
 
-from pebbling.common.models import AgentManifest
+from pebbling.common.models import AgentManifest, AuthConfig
 from pebbling.common.protocol.types import AgentCard, agent_card_ta, pebble_request_ta, pebble_response_ta
+from pebbling.security.jwt import create_jwt_verifier
+from pebbling.server.middleware import AuthenticationMiddleware
 
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .storage.memory_storage import InMemoryStorage
@@ -32,6 +34,7 @@ class PebbleApplication(Starlette):
         version: str = "1.0.0",
         description: Optional[str] = None,
         debug: bool = False,
+        auth_config: Optional[AuthConfig] = None,
         lifespan: Optional[Lifespan] = None,
         routes: Optional[Sequence[Route]] = None,
         middleware: Optional[Sequence[Middleware]] = None,
@@ -48,6 +51,7 @@ class PebbleApplication(Starlette):
             version: Server version
             description: Server description
             debug: Enable debug mode
+            auth_config: Authentication configuration (optional)
             lifespan: Optional custom lifespan
             routes: Optional custom routes
             middleware: Optional middleware
@@ -57,10 +61,29 @@ class PebbleApplication(Starlette):
         if lifespan is None:
             lifespan = self._create_default_lifespan(storage, scheduler, manifest)
 
+        # Set up authentication middleware if configured
+        middleware_list = list(middleware) if middleware else []
+        if auth_config and auth_config.enabled:
+            jwt_verifier = create_jwt_verifier(
+                jwks_url=auth_config.jwks_url,
+                jwks_cache_ttl=auth_config.jwks_cache_ttl,
+            )
+            auth_middleware = Middleware(
+                AuthenticationMiddleware,
+                jwt_verifier=jwt_verifier,
+                issuer=auth_config.issuer,
+                audience=auth_config.audience,
+                algorithms=auth_config.algorithms,
+                secret=auth_config.secret,
+                verify_signature=auth_config.verify_signature,
+                allow_anonymous=auth_config.allow_anonymous,
+            )
+            middleware_list.insert(0, auth_middleware)
+
         super().__init__(
             debug=debug,
             routes=routes,
-            middleware=middleware,
+            middleware=middleware_list,
             exception_handlers=exception_handlers,
             lifespan=lifespan,
         )

@@ -30,7 +30,7 @@ from pydantic.types import SecretStr
 from urllib.parse import urlparse
 import uvicorn
 
-from pebbling.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
+from pebbling.common.models import AgentManifest, AuthConfig, DeploymentConfig, SchedulerConfig, StorageConfig
 from pebbling.common.protocol.types import (
     AgentCapabilities,
     AgentIdentity,
@@ -99,6 +99,7 @@ def pebblify(
     deployment_config: Optional[DeploymentConfig] = None,
     storage_config: Optional[StorageConfig] = None,
     scheduler_config: Optional[SchedulerConfig] = None,
+    auth_config: Optional[AuthConfig] = None,
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
 
@@ -123,6 +124,7 @@ def pebblify(
         deployment_config: Server deployment configuration
         storage_config: Storage backend configuration
         scheduler_config: Task scheduler configuration
+        auth_config: Authentication configuration (JWT verification)
         register_with_hibiscus: Whether to register agent with Hibiscus registry
         hibiscus_url: Hibiscus registry URL (default: http://localhost:19191)
         hibiscus_pat_token: Hibiscus Personal Access Token (required for registration, or set PEBBLE_HIBISCUS_PAT_TOKEN env var)
@@ -206,6 +208,7 @@ def pebblify(
             penguin_id=agent_id,
             manifest=_manifest,
             version=version,
+            auth_config=auth_config,
         )
 
         if telemetry:

@@ -250,7 +250,16 @@ class PebbleApplication(Starlette):
             jsonrpc_response = await self.task_manager.clear_context(pebble_request)
         elif pebble_request["method"] == "tasks/feedback":
             jsonrpc_response = await self.task_manager.task_feedback(pebble_request)
-
+        elif pebble_request["method"] == "tasks/pushNotification/set":
+            jsonrpc_response = await self.task_manager.set_task_push_notification(pebble_request)
+        elif pebble_request["method"] == "tasks/pushNotification/get":
+            jsonrpc_response = await self.task_manager.get_task_push_notification(pebble_request)
+        elif pebble_request["method"] == "tasks/pushNotificationConfig/list":
+            jsonrpc_response = await self.task_manager.list_task_push_notifications(pebble_request)
+        elif pebble_request["method"] == "tasks/pushNotificationConfig/delete":
+            jsonrpc_response = await self.task_manager.delete_task_push_notification(pebble_request)
+        elif pebble_request["method"] == "tasks/resubscribe":
+            jsonrpc_response = await self.task_manager.resubscribe_task(pebble_request)
         else:
             raise NotImplementedError(f"Method {pebble_request['method']} not implemented.")
         return Response(

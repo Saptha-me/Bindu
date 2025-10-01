@@ -21,6 +21,21 @@ class SecurityConfig:
 
 
 @dataclass
+class AuthConfig:
+    """Authentication configuration for JWT verification."""
+
+    enabled: bool = False
+    jwks_url: Optional[str] = None
+    issuer: Optional[str] = None
+    audience: Optional[str] = None
+    algorithms: Optional[List[str]] = None
+    secret: Optional[str] = None
+    verify_signature: bool = True
+    allow_anonymous: bool = True
+    jwks_cache_ttl: int = 3600
+
+
+@dataclass
 class AgentRegistrationConfig:
     """Organized agent registration information."""
 

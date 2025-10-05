@@ -1,5 +1,22 @@
-from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, NamedTuple, Optional
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
+
+"""Core data models for the Bindu agent framework.
+
+This module defines the foundational structures that shape an agent's identity,
+configuration, and runtime behavior.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Callable, Literal, NamedTuple, Optional
 from uuid import UUID
 
 from bindu.extensions.did import DIDAgentExtension
@@ -8,97 +25,107 @@ from .protocol.types import AgentCapabilities, AgentCard, AgentTrust, Skill
 
 
 class KeyPaths(NamedTuple):
+    """Cryptographic key file paths for agent identity.
+    
+    These paths point to the agent's digital fingerprint - the keys that prove
+    who they are in the decentralized constellation.
+    """
+    
     private_key_path: str
     public_key_path: str
 
 
-
-
-@dataclass
+@dataclass(frozen=True)
 class DeploymentConfig:
-    """Organized deployment configuration."""
+    """Configuration for agent deployment and network exposure.
+    
+    Defines how an agent presents itself to the world - its URL, protocol version,
+    and the gateways through which it communicates.
+    """
 
     url: str
     expose: bool
     protocol_version: str = "1.0.0"
-    proxy_urls: Optional[List[str]] = None
-    cors_origins: Optional[List[str]] = None
-    openapi_schema: Optional[str] = None
+    proxy_urls: list[str] | None = None
+    cors_origins: list[str] | None = None
+    openapi_schema: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class StorageConfig:
-    """Organized storage configuration."""
+    """Configuration for agent state persistence.
+    
+    Every agent needs memory - a place to store conversations, tasks, and context.
+    This defines where that memory lives.
+    """
 
     type: Literal["postgres", "qdrant", "memory"]
     connection_string: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class SchedulerConfig:
-    """Organized scheduler configuration."""
+    """Configuration for task scheduling and coordination.
+    
+    Agents need to orchestrate their work - this defines the mechanism for
+    managing asynchronous tasks and workflows.
+    """
 
     type: Literal["redis", "memory"]
 
 
+@dataclass
 class AgentManifest:
-    """Runtime agent manifest with all AgentCard properties and execution capability."""
+    """The living blueprint of an agent.
+    
+    This is more than configuration - it's the complete specification of an agent's
+    identity, capabilities, and purpose. The manifest bridges the gap between
+    static definition and dynamic execution, holding both the agent's metadata
+    and its runtime behavior.
+    
+    Think of it as the agent's soul - containing everything that makes it unique,
+    from its DID and skills to its execution logic.
+    """
 
-    def __init__(
-        self,
-        id: UUID,
-        name: str,
-        description: str,
-        url: str,
-        version: str,
-        protocol_version: str,
-        did_extension: DIDAgentExtension,
-        agent_trust: AgentTrust,
-        capabilities: AgentCapabilities,
-        skills: List[Skill],
-        kind: Literal["agent", "team", "workflow"],
-        num_history_sessions: int,
-        extra_data: Dict[str, Any],
-        debug_mode: bool,
-        debug_level: Literal[1, 2],
-        monitoring: bool,
-        telemetry: bool,
-        documentation_url: Optional[str] = None,
-    ):
-        """Initialize AgentManifest with all AgentCard properties."""
-        # Core identification
-        self.id = id
-        self.name = name
-        self.description = description
-        self.url = url
-        self.version = version
-        self.protocol_version = protocol_version
-        self.documentation_url = documentation_url
-
-        # Security and identity
-        self.agent_trust = agent_trust
-        self.did_extension = did_extension
-
-        # Capabilities and skills
-        self.capabilities = capabilities
-        self.skills = skills
-
-        # Type and configuration
-        self.kind = kind
-        self.num_history_sessions = num_history_sessions
-        self.extra_data = extra_data
-
-        # Debug and monitoring
-        self.debug_mode = debug_mode
-        self.debug_level = debug_level
-        self.monitoring = monitoring
-        self.telemetry = telemetry
-
-        # Runtime execution method (set by create_manifest)
-        self.run = None
+    # Core Identity
+    id: UUID
+    name: str
+    description: str
+    url: str
+    version: str
+    protocol_version: str
+    
+    # Security & Trust
+    did_extension: DIDAgentExtension
+    agent_trust: AgentTrust
+    
+    # Capabilities
+    capabilities: AgentCapabilities
+    skills: list[Skill]
+    
+    # Agent Type & Configuration
+    kind: Literal["agent", "team", "workflow"]
+    num_history_sessions: int
+    extra_data: dict[str, Any] = field(default_factory=dict)
+    
+    # Observability
+    debug_mode: bool = False
+    debug_level: Literal[1, 2] = 1
+    monitoring: bool = False
+    telemetry: bool = True
+    
+    # Optional Metadata
+    documentation_url: str | None = None
+    
+    # Runtime Execution (injected by framework)
+    run: Callable[..., Any] | None = field(default=None, init=False)
 
     def to_agent_card(self) -> AgentCard:
-        """Convert AgentManifest to AgentCard protocol format."""
+        """Transform the manifest into a protocol-compliant agent card.
+        
+        The agent card is the agent's public face - a standardized representation
+        that other agents and clients can understand and interact with.
+        """
         return AgentCard(
             id=self.id,
             name=self.name,
@@ -120,4 +147,8 @@ class AgentManifest:
         )
 
     def __repr__(self) -> str:
-        return f"AgentManifest(name='{self.name}', id='{self.id}', version='{self.version}')"
+        """Human-readable representation of the agent."""
+        return (
+            f"AgentManifest(name='{self.name}', id='{self.id}', "
+            f"version='{self.version}', kind='{self.kind}')"
+        )

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -104,6 +104,86 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d8/e4/0c4c39e18fd76d6a628d4dd8da40543d136ce2d1752bd6eeeab0791f4d6b/beautifulsoup4-4.13.4.tar.gz", hash = "sha256:dbb3c4e1ceae6aefebdaf2423247260cd062430a410e38c66f2baa50a8437195", size = 621067, upload-time = "2025-04-15T17:05:13.836Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/50/cd/30110dc0ffcf3b131156077b90e9f60ed75711223f306da4db08eff8403b/beautifulsoup4-4.13.4-py3-none-any.whl", hash = "sha256:9bbbb14bfde9d79f38b8cd5f8c7c85f4b8f2523190ebed90e950a8dea4cb1c4b", size = 187285, upload-time = "2025-04-15T17:05:12.221Z" },
+]
+
+[[package]]
+name = "bindu"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "aiofiles" },
+    { name = "base58" },
+    { name = "cryptography" },
+    { name = "didkit" },
+    { name = "loguru" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "opentelemetry-instrumentation-httpx" },
+    { name = "opentelemetry-sdk" },
+    { name = "orjson" },
+    { name = "pipreqs" },
+    { name = "psycopg2-binary" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "redis" },
+    { name = "rich" },
+    { name = "sqlalchemy" },
+    { name = "starlette" },
+    { name = "twine" },
+    { name = "ty" },
+    { name = "types-requests" },
+    { name = "uvicorn" },
+    { name = "uvx" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest-asyncio" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "bindu" },
+    { name = "ty" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiofiles", specifier = ">=24.1.0" },
+    { name = "base58", specifier = ">=2.1.1" },
+    { name = "cryptography", specifier = ">=44.0.2" },
+    { name = "didkit", specifier = ">=0.3.3" },
+    { name = "loguru", specifier = ">=0.7.3" },
+    { name = "opentelemetry-api", specifier = ">=1.35.0" },
+    { name = "opentelemetry-exporter-otlp", specifier = ">=1.35.0" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.35.0" },
+    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.56b0" },
+    { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.56b0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.35.0" },
+    { name = "orjson", specifier = ">=3.10.18" },
+    { name = "pipreqs", specifier = ">=0.5.0" },
+    { name = "psycopg2-binary", specifier = ">=2.9.10" },
+    { name = "pydantic", specifier = ">=1.8.2" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.26.0" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "redis", specifier = ">=6.4.0" },
+    { name = "rich", specifier = ">=13.0.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.43" },
+    { name = "starlette", specifier = ">=0.48.0" },
+    { name = "twine", specifier = ">=6.1.0" },
+    { name = "ty", specifier = ">=0.0.1a14" },
+    { name = "types-requests", specifier = ">=2.32.0.20250328" },
+    { name = "uvicorn", specifier = ">=0.15.0" },
+    { name = "uvx", specifier = "<2.0" },
+]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "bindu", editable = "." },
+    { name = "ty", specifier = ">=0.0.1a14" },
 ]
 
 [[package]]
@@ -1093,84 +1173,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/66/94/68e2e17afaa9169cf6412ab0f28623903be73d1b32e208d9e8e541bb086d/parso-0.8.4.tar.gz", hash = "sha256:eb3a7b58240fb99099a345571deecc0f9540ea5f4dd2fe14c2a99d6b281ab92d", size = 400609, upload-time = "2024-04-05T09:43:55.897Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c6/ac/dac4a63f978e4dcb3c6d3a78c4d8e0192a113d288502a1216950c41b1027/parso-0.8.4-py2.py3-none-any.whl", hash = "sha256:a418670a20291dacd2dddc80c377c5c3791378ee1e8d12bffc35420643d43f18", size = 103650, upload-time = "2024-04-05T09:43:53.299Z" },
-]
-
-[[package]]
-name = "bindu"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "aiofiles" },
-    { name = "base58" },
-    { name = "cryptography" },
-    { name = "didkit" },
-    { name = "loguru" },
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-exporter-otlp" },
-    { name = "opentelemetry-exporter-otlp-proto-http" },
-    { name = "opentelemetry-instrumentation-fastapi" },
-    { name = "opentelemetry-instrumentation-httpx" },
-    { name = "opentelemetry-sdk" },
-    { name = "orjson" },
-    { name = "pipreqs" },
-    { name = "psycopg2-binary" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "redis" },
-    { name = "rich" },
-    { name = "sqlalchemy" },
-    { name = "starlette" },
-    { name = "twine" },
-    { name = "types-requests" },
-    { name = "uvicorn" },
-    { name = "uvx" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest-asyncio" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "bindu" },
-    { name = "ty" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiofiles", specifier = ">=24.1.0" },
-    { name = "base58", specifier = ">=2.1.1" },
-    { name = "cryptography", specifier = ">=44.0.2" },
-    { name = "didkit", specifier = ">=0.3.3" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "opentelemetry-api", specifier = ">=1.35.0" },
-    { name = "opentelemetry-exporter-otlp", specifier = ">=1.35.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.35.0" },
-    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.56b0" },
-    { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.56b0" },
-    { name = "opentelemetry-sdk", specifier = ">=1.35.0" },
-    { name = "orjson", specifier = ">=3.10.18" },
-    { name = "pipreqs", specifier = ">=0.5.0" },
-    { name = "psycopg2-binary", specifier = ">=2.9.10" },
-    { name = "pydantic", specifier = ">=1.8.2" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.26.0" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "redis", specifier = ">=6.4.0" },
-    { name = "rich", specifier = ">=13.0.0" },
-    { name = "sqlalchemy", specifier = ">=2.0.43" },
-    { name = "starlette", specifier = ">=0.48.0" },
-    { name = "twine", specifier = ">=6.1.0" },
-    { name = "types-requests", specifier = ">=2.32.0.20250328" },
-    { name = "uvicorn", specifier = ">=0.15.0" },
-    { name = "uvx", specifier = "<2.0" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "bindu", editable = "." },
-    { name = "ty", specifier = ">=0.0.1a14" },
 ]
 
 [[package]]

@@ -24,22 +24,18 @@ import inspect
 import os
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional
-
-from pydantic.types import SecretStr
+from typing import Any, Callable, Dict, Optional
 from urllib.parse import urlparse
+
 import uvicorn
 
+import bindu.observability.openinference as OpenInferenceObservability
 from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
 from bindu.common.protocol.types import (
     AgentCapabilities,
-    AgentIdentity,
-    Skill,
-    AgentTrust,
 )
-from bindu.penguin.manifest import create_manifest, validate_agent_function
 from bindu.extensions.did import DIDAgentExtension
-import bindu.observability.openinference as OpenInferenceObservability
+from bindu.penguin.manifest import create_manifest, validate_agent_function
 
 # Import server components for deployment
 from bindu.server import (
@@ -51,7 +47,7 @@ from bindu.server import (
     # RedisScheduler,
 )
 from bindu.server.utils.display import prepare_server_display
-from bindu.utils.constants import CERTIFICATE_DIR, PKI_DIR
+from bindu.utils.constants import PKI_DIR
 
 # Import logging from bindu utils
 from bindu.utils.logging import get_logger
@@ -145,9 +141,18 @@ def pebblify(
     agent_id = validated_config.get("id", uuid.uuid4().hex)
     
     # Create config objects if dictionaries provided
-    deployment_config = DeploymentConfig(**validated_config["deployment"]) if validated_config.get("deployment") else None
-    storage_config = StorageConfig(**validated_config["storage"]) if validated_config.get("storage") else None
-    scheduler_config = SchedulerConfig(**validated_config["scheduler"]) if validated_config.get("scheduler") else None
+    deployment_config = (
+        DeploymentConfig(**validated_config["deployment"]) 
+        if validated_config.get("deployment") else None
+    )
+    storage_config = (
+        StorageConfig(**validated_config["storage"]) 
+        if validated_config.get("storage") else None
+    )
+    scheduler_config = (
+        SchedulerConfig(**validated_config["scheduler"]) 
+        if validated_config.get("scheduler") else None
+    )
     
     # Store the agent reference in the handler's closure (for potential future use)
     handler._pebble_agent = agent
@@ -192,7 +197,7 @@ def pebblify(
         documentation_url=validated_config.get("documentation_url"),
     )
 
-    logger.info(f"DID Extension setup complete", did=did_extension.did)
+    logger.info("DID Extension setup complete", did=did_extension.did)
     logger.info("📋 Creating agent manifest...")
 
     # Update capabilities to include DID extension
@@ -236,8 +241,10 @@ def pebblify(
 
     agent_did = did_extension.did
     logger.info(f"🚀 Agent '{agent_did}' successfully pebblified!")
+    skill_count = len(_manifest.skills) if _manifest.skills else 0
     logger.debug(
-        f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {len(_manifest.skills) if _manifest.skills else 0} skills | {_manifest.url}"
+        f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | "
+        f"{skill_count} skills | {_manifest.url}"
     )
 
     logger.info(f"🚀 Starting deployment for agent: {agent_id}")

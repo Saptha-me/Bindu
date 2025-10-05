@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, Response
 
 if TYPE_CHECKING:
-    from ..applications import PebbleApplication
+    pass
 
 
 async def docs_endpoint(request: Request) -> Response:

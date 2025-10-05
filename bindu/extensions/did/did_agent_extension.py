@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import os
-import logging
 import asyncio
+import logging
+import os
 import re
-from pathlib import Path
-from typing import Optional, Tuple, Dict, Any, List
-from functools import cached_property
 from datetime import datetime, timezone
+from functools import cached_property
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import base58
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
+
 from bindu.common.protocol.types import AgentExtension
 
 logger = logging.getLogger(__name__)
@@ -192,7 +193,7 @@ class DIDAgentExtension:
                 raise ValueError(
                     "Private key is encrypted but no password was provided. "
                     "Please provide the key password in the configuration."
-                )
+                ) from e
             raise
         
         if not isinstance(private_key, ed25519.Ed25519PrivateKey):

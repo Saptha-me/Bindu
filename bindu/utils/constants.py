@@ -57,6 +57,9 @@ DID_EXTENSION_DESCRIPTION = "DID-based identity management for bindu agents"
 DID_RESOLVER_ENDPOINT = "/did/resolve"
 DID_INFO_ENDPOINT = "/agent/info"
 
+# DID Key Directory
+PKI_DIR = ".pebbling"
+
 # DID Validation
 DID_PREFIX = "did:"
 DID_MIN_PARTS = 3
@@ -71,10 +74,10 @@ BASE58_ENCODING = "ascii"
 # 🌐 NETWORKING CONSTANTS
 # =============================================================================
 
-# Default Ports
-DEFAULT_AGENT_PORT = 3773
-DEFAULT_MCP_PORT = 8080
-DEFAULT_REGISTRY_PORT = 19191
+# Default Host and URL
+DEFAULT_HOST = "localhost"
+DEFAULT_PORT = 3773
+DEFAULT_URL = f"http://{DEFAULT_HOST}:{DEFAULT_PORT}"
 
 # Timeouts (seconds)
 DEFAULT_REQUEST_TIMEOUT = 30

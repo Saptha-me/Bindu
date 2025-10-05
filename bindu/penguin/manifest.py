@@ -2,7 +2,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -16,7 +16,7 @@ and validating protocol compliance for agents and workflows.
 """
 
 import inspect
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Literal
 from uuid import UUID
 
 from bindu.common.models import AgentManifest
@@ -24,18 +24,29 @@ from bindu.common.protocol.types import AgentCapabilities, AgentTrust, Skill
 from bindu.extensions.did import DIDAgentExtension
 
 
-def validate_agent_function(agent_function: Callable):
-    """Validate that the function has the correct signature for protocol compliance."""
+def validate_agent_function(agent_function: Callable) -> None:
+    """Validate that the function has the correct signature for protocol compliance.
+    
+    Args:
+        agent_function: The function to validate
+        
+    Raises:
+        ValueError: If function signature is invalid
+    """
     signature = inspect.signature(agent_function)
     params = list(signature.parameters.values())
+    param_count = len(params)
 
-    if len(params) < 1:
-        raise ValueError("Agent function must have at least 'messages' parameter of type list[binduMessage]")
+    if param_count < 1:
+        raise ValueError(
+            "Agent function must have at least 'messages' parameter of type list[binduMessage]"
+        )
 
-    if len(params) > 1:
-        raise ValueError("Agent function must have only 'messages' and optional 'context' parameters")
+    if param_count > 1:
+        raise ValueError(
+            "Agent function must have only 'messages' and optional 'context' parameters"
+        )
 
-    # Check parameter names
     if params[0].name != "messages":
         raise ValueError("First parameter must be named 'messages'")
 
@@ -43,12 +54,12 @@ def validate_agent_function(agent_function: Callable):
 def create_manifest(
     agent_function: Callable,
     id: UUID,
-    name: Optional[str],
+    name: str | None,
     did_extension: DIDAgentExtension,
-    description: Optional[str],
-    skills: Optional[List[Skill]],
-    capabilities: Optional[AgentCapabilities],
-    agent_trust: Optional[AgentTrust],
+    description: str | None,
+    skills: list[Skill] | None,
+    capabilities: AgentCapabilities | None,
+    agent_trust: AgentTrust | None,
     version: str,
     url: str,
     protocol_version: str = "1.0.0",
@@ -58,8 +69,8 @@ def create_manifest(
     monitoring: bool = False,
     telemetry: bool = True,
     num_history_sessions: int = 10,
-    documentation_url: Optional[str] = None,
-    extra_metadata: Optional[Dict[str, Any]] = None,
+    documentation_url: str | None = None,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> AgentManifest:
     """
     Create a protocol-compliant AgentManifest from any Python function.
@@ -181,15 +192,19 @@ def create_manifest(
         are not allowed in agent names in the bindu protocol.
     """
 
-    # Analyze function signature
+    # Analyze function signature for parameter detection
     sig = inspect.signature(agent_function)
     param_names = list(sig.parameters.keys())
     has_context_param = "context" in param_names
     has_execution_state = "execution_state" in param_names
 
-    # Prepare manifest data
+    # Prepare manifest metadata
     manifest_name = name or agent_function.__name__.replace("_", "-")
-    manifest_description = description or inspect.getdoc(agent_function) or f"Agent: {manifest_name}"
+    manifest_description = (
+        description 
+        or inspect.getdoc(agent_function) 
+        or f"Agent: {manifest_name}"
+    )
 
     # Create base manifest
     manifest = AgentManifest(
@@ -213,29 +228,35 @@ def create_manifest(
         documentation_url=documentation_url,
     )
 
-    # Add execution method based on function type
-    def create_run_method():
-        # Extract parameter resolution logic (DRY principle)
-        def resolve_params(input_msg: str, **kwargs):
+    # Create execution method based on function type
+    def _create_run_method():
+        """Factory function to create the appropriate run method based on function type."""
+        
+        def _resolve_params(input_msg: str, **kwargs) -> tuple:
             """Resolve function parameters based on signature analysis.
 
             Note: Context is managed at session level via context_id in the architecture.
             Each session IS a context, so no separate context parameter needed.
+            
+            Args:
+                input_msg: The input message to process
+                **kwargs: Additional keyword arguments
+                
+            Returns:
+                Tuple of parameters to pass to the agent function
             """
             if has_execution_state:
                 return (input_msg, kwargs.get("execution_state"))
             elif has_context_param:
-                # Context comes from session-level context_id, not parameter
                 session_context = kwargs.get("session_context", {})
                 return (input_msg, session_context)
             else:
                 return (input_msg,)
 
-        # Function type handlers following ACP pattern
+        # Async generator function (streaming)
         if inspect.isasyncgenfunction(agent_function):
-
             async def run(input_msg: str, **kwargs):
-                params = resolve_params(input_msg, **kwargs)
+                params = _resolve_params(input_msg, **kwargs)
                 try:
                     gen = agent_function(*params)
                     value = None
@@ -244,43 +265,40 @@ def create_manifest(
                 except StopAsyncIteration:
                     pass
 
+        # Coroutine function (async single/multi result)
         elif inspect.iscoroutinefunction(agent_function):
-
             async def run(input_msg: str, **kwargs):
-                params = resolve_params(input_msg, **kwargs)
+                params = _resolve_params(input_msg, **kwargs)
                 result = await agent_function(*params)
 
-                # Handle different result types from coroutine
+                # Handle different result types
                 if hasattr(result, "__aiter__"):
-                    # Result is async iterable (streaming)
                     async for chunk in result:
                         yield chunk
                 elif hasattr(result, "__iter__") and not isinstance(result, (str, bytes)):
-                    # Result is iterable but not string/bytes
                     for chunk in result:
                         yield chunk
                 else:
-                    # Single result - yield it (can't mix return and yield)
                     yield result
 
+        # Sync generator function
         elif inspect.isgeneratorfunction(agent_function):
-
             def run(input_msg: str, **kwargs):
-                params = resolve_params(input_msg, **kwargs)
+                params = _resolve_params(input_msg, **kwargs)
                 yield from agent_function(*params)
 
+        # Regular sync function
         else:
-
             def run(input_msg: str, **kwargs):
-                params = resolve_params(input_msg, **kwargs)
+                params = _resolve_params(input_msg, **kwargs)
                 return agent_function(*params)
 
         return run
 
     # Attach run method to manifest
-    manifest.run = create_run_method()
+    manifest.run = _create_run_method()
 
-    # Add extra metadata if provided
+    # Attach extra metadata attributes if provided
     if extra_metadata:
         for key, value in extra_metadata.items():
             setattr(manifest, key, value)

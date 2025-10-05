@@ -2,7 +2,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
 # |                                                         |
 # |---------------------------------------------------------|
 #

@@ -126,7 +126,7 @@ def create_manifest(
     Examples:
 
         # Async Generator Agent (Streaming Weather Forecast)
-        @pebblify(name="Weather Agent", version="1.0.0")
+        @bindufy(name="Weather Agent", version="1.0.0")
         async def weather_agent(input: str, context=None):
             '''Provides streaming weather updates.'''
             yield f"🌤️ Fetching weather for: {input}"
@@ -135,14 +135,14 @@ def create_manifest(
             yield f"📅 3-day forecast: Sunny, Cloudy, Rainy"
 
         # Coroutine Agent (Single Response)
-        @pebblify(name="Translator", version="1.0.0")
+        @bindufy(name="Translator", version="1.0.0")
         async def translator_agent(input: str):
             '''Translates text to different languages.'''
             await asyncio.sleep(0.5)  # Simulate translation API
             return f"Translated: {input} → Bonjour le monde"
 
         # Generator Agent (Batch Processing)
-        @pebblify(name="Data Processor", version="1.0.0")
+        @bindufy(name="Data Processor", version="1.0.0")
         def batch_processor(input: str):
             '''Processes data in batches.'''
             data_items = input.split(',')
@@ -150,7 +150,7 @@ def create_manifest(
                 yield f"Processed batch {i+1}: {item.strip()}"
 
         # Regular Function Agent (Simple Processing)
-        @pebblify(name="Echo Agent", version="1.0.0")
+        @bindufy(name="Echo Agent", version="1.0.0")
         def echo_agent(input: str):
             '''Simple echo agent.'''
             return f"Echo: {input.upper()}"

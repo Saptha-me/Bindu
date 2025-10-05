@@ -96,3 +96,39 @@ ENDPOINT_TYPE_SSE = "sse"
 # Docker Configuration
 DEFAULT_DOCKER_PORT = 8080
 DOCKER_HEALTHCHECK_PATH = "/healthz"
+
+# =============================================================================
+# 📊 OBSERVABILITY CONSTANTS
+# =============================================================================
+
+# OpenInference Instrumentor Mapping
+# Maps framework names to their instrumentor module paths and class names
+# Format: framework_name: (module_path, class_name)
+OPENINFERENCE_INSTRUMENTOR_MAP: dict[str, tuple[str, str]] = {
+    # Agent Frameworks
+    "agno": ("openinference.instrumentation.agno", "AgnoInstrumentor"),
+    "crewai": ("openinference.instrumentation.crewai", "CrewAIInstrumentor"),
+    "langchain": ("openinference.instrumentation.langchain", "LangChainInstrumentor"),
+    "llama-index": ("openinference.instrumentation.llama_index", "LlamaIndexInstrumentor"),
+    "dspy": ("openinference.instrumentation.dspy", "DSPyInstrumentor"),
+    "haystack": ("openinference.instrumentation.haystack", "HaystackInstrumentor"),
+    "instructor": ("openinference.instrumentation.instructor", "InstructorInstrumentor"),
+    "pydantic-ai": ("openinference.instrumentation.pydantic_ai", "PydanticAIInstrumentor"),
+    "autogen": ("openinference.instrumentation.autogen_agentchat", "AutogenAgentChatInstrumentor"),
+    "smolagents": ("openinference.instrumentation.smolagents", "SmolAgentsInstrumentor"),
+    # LLM Providers
+    "litellm": ("openinference.instrumentation.litellm", "LiteLLMInstrumentor"),
+    "openai": ("openinference.instrumentation.openai", "OpenAIInstrumentor"),
+    "anthropic": ("openinference.instrumentation.anthropic", "AnthropicInstrumentor"),
+    "mistralai": ("openinference.instrumentation.mistralai", "MistralAIInstrumentor"),
+    "groq": ("openinference.instrumentation.groq", "GroqInstrumentor"),
+    "bedrock": ("openinference.instrumentation.bedrock", "BedrockInstrumentor"),
+    "vertexai": ("openinference.instrumentation.vertexai", "VertexAIInstrumentor"),
+    "google-genai": ("openinference.instrumentation.google_genai", "GoogleGenAIInstrumentor"),
+}
+
+# OpenTelemetry Base Packages
+OPENTELEMETRY_BASE_PACKAGES = [
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp",
+]

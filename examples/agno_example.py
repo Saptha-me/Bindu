@@ -1,5 +1,5 @@
 """
-The pebblify function takes three arguments:
+The bindufy function takes three arguments:
 1. agent: The agent instance (created once, reused for all requests)
 2. config: Configuration dictionary
 3. handler: Function that processes messages using the agent
@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from bindu.penguin.pebblify import pebblify
+from bindu.penguin.bindufy import bindufy
 
 # Load configuration
 def load_config(config_path: str):
@@ -50,7 +50,7 @@ def simple_handler(messages: str) -> str:
     return result.to_dict()["content"]
 
 
-# Pebblify the simple agent
-pebblify(simple_agent, simple_config, simple_handler)
+# bindufy the simple agent
+bindufy(simple_agent, simple_config, simple_handler)
 
 

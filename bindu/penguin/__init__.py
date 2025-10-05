@@ -2,7 +2,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -16,10 +16,10 @@ Transform agents from any framework (Agno, CrewAI, LangChain) into production-re
 
 from .config_validator import ConfigValidator, load_and_validate_config
 from .manifest import create_manifest, validate_agent_function
-from .pebblify import pebblify
+from .bindufy import bindufy
 
 __all__ = [
-    "pebblify",
+    "bindufy",
     "validate_agent_function",
     "create_manifest",
     "ConfigValidator",

@@ -1,8 +1,5 @@
 """
-Example: Using the new pebblify API style
-=========================================
-
-The new pebblify function takes three arguments:
+The pebblify function takes three arguments:
 1. agent: The agent instance (created once, reused for all requests)
 2. config: Configuration dictionary
 3. handler: Function that processes messages using the agent
@@ -14,7 +11,6 @@ Benefits:
 - Can swap agents or configs without changing handler logic
 """
 
-from typing import Dict, Any, List
 import json
 import os
 import sys

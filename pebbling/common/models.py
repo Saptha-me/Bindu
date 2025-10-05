@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pebbling.extensions.did import DIDAgentExtension
 
-from .protocol.types import AgentCapabilities, AgentCard, AgentIdentity, Skill, AgentTrust
+from .protocol.types import AgentCapabilities, AgentCard, Skill, AgentTrust
 
 
 class KeyPaths(NamedTuple):
@@ -12,28 +12,6 @@ class KeyPaths(NamedTuple):
     public_key_path: str
 
 
-@dataclass
-class SecurityConfig:
-    recreate_keys: bool = True
-    did_required: bool = True
-    create_csr: bool = True
-    allow_anonymous: bool = False
-
-
-@dataclass
-class AgentRegistrationConfig:
-    """Organized agent registration information."""
-
-    url: str
-    type: str
-
-
-@dataclass
-class CAConfig:
-    """Organized CA configuration."""
-
-    url: str
-    type: str
 
 
 @dataclass

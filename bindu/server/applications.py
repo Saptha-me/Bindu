@@ -1,7 +1,5 @@
-import asyncio
-import logging
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, AsyncIterator, Literal, Optional, Sequence
+from typing import AsyncIterator, Optional, Sequence
 from uuid import UUID
 
 from starlette.applications import Starlette
@@ -9,9 +7,10 @@ from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route
-from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
+from starlette.types import Lifespan, Receive, Scope, Send
 
 from bindu.common.models import AgentManifest
+
 from .endpoints import (
     agent_card_endpoint,
     agent_info_endpoint,
@@ -93,7 +92,11 @@ class PebbleApplication(Starlette):
         self._agent_card_json_schema: bytes | None = None
         
         # Agent card and protocol endpoints
-        self.router.add_route("/.well-known/agent.json", self._wrap_agent_card_endpoint, methods=["HEAD", "GET", "OPTIONS"])
+        self.router.add_route(
+            "/.well-known/agent.json", 
+            self._wrap_agent_card_endpoint, 
+            methods=["HEAD", "GET", "OPTIONS"]
+        )
         self.router.add_route("/", self._wrap_agent_run_endpoint, methods=["POST"])
         
         # Static file endpoints

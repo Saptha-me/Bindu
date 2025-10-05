@@ -12,27 +12,6 @@ from bindu.server.workers.base import Worker
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
 
-SYSTEM_PROMPT = """
-IMPORTANT: When you need user input or authentication, you MUST respond with a structured JSON response in the following format:
-
-For requiring user input:
-{
-    "state": "input-required",
-    "prompt": "Your question or prompt for the user"
-}
-
-For requiring authentication:
-{
-    "state": "auth-required",
-    "prompt": "Description of what authentication is needed",
-    "auth_type": "api_key|oauth|credentials|token",  // optional, specify type of auth needed
-    "service": "service_name"  // optional, specify which service needs auth
-}
-
-For normal responses, just return your response as plain text.
-"""
-
-
 @dataclass
 class ManifestWorker(Worker):
     """A concrete worker implementation that uses an AgentManifest to execute tasks."""
@@ -61,16 +40,9 @@ class ManifestWorker(Worker):
             # Execute manifest with conversation context
             # Convert message history to single string for current manifest signature
             # Agent will see conversation and infer context
-            # Prepend system prompt to guide structured responses
-            formatted_history = []
-            if message_history:
-                formatted_history = [f"System: {SYSTEM_PROMPT}"] + [
-                    f"{msg['role']}: {msg['content']}" for msg in message_history
-                ]
-            else:
-                formatted_history = [f"System: {SYSTEM_PROMPT}"]
-                
-            conversation_context = "\n".join(formatted_history)
+            conversation_context = "\n".join(
+                f"{msg['role']}: {msg['content']}" for msg in message_history
+            ) if message_history else ""
             results = self.manifest.run(conversation_context)
 
             # Check if agent returned structured response

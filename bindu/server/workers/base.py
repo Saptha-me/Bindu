@@ -89,8 +89,8 @@ class Worker(ABC):
 
     async def _handle_pause(self, params: TaskIdParams) -> None:
         """Handle pause operation. Override in subclasses if pause is supported."""
-        pass
+        raise NotImplementedError("Pause operation not supported by this worker")
 
     async def _handle_resume(self, params: TaskIdParams) -> None:
         """Handle resume operation. Override in subclasses if resume is supported."""
-        pass
+        raise NotImplementedError("Resume operation not supported by this worker")

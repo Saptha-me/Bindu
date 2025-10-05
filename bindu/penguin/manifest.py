@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import UUID
 
 from bindu.common.models import AgentManifest
-from bindu.common.protocol.types import AgentCapabilities, Skill, AgentTrust
+from bindu.common.protocol.types import AgentCapabilities, AgentTrust, Skill
 from bindu.extensions.did import DIDAgentExtension
 
 
@@ -59,7 +59,7 @@ def create_manifest(
     telemetry: bool = True,
     num_history_sessions: int = 10,
     documentation_url: Optional[str] = None,
-    extra_metadata: Optional[Dict[str, Any]] = {},
+    extra_metadata: Optional[Dict[str, Any]] = None,
 ) -> AgentManifest:
     """
     Create a protocol-compliant AgentManifest from any Python function.
@@ -205,7 +205,7 @@ def create_manifest(
         skills=skills,
         kind=kind,
         num_history_sessions=num_history_sessions,
-        extra_data=extra_metadata,
+        extra_data=extra_metadata or {},
         debug_mode=debug_mode,
         debug_level=debug_level,
         monitoring=monitoring,

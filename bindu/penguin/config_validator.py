@@ -6,9 +6,9 @@ ensuring they meet the required schema and have proper defaults.
 """
 
 import os
-from typing import Dict, Any, List, Optional
-from bindu.common.models import DeploymentConfig, SchedulerConfig, StorageConfig
-from bindu.common.protocol.types import AgentCapabilities, Skill, AgentTrust
+from typing import Any, Dict
+
+from bindu.common.protocol.types import AgentCapabilities, AgentTrust, Skill
 
 
 class ConfigValidator:
@@ -170,7 +170,6 @@ def load_and_validate_config(config_path: str) -> Dict[str, Any]:
         ValueError: If configuration is invalid
     """
     import json
-    import os
     
     # Handle relative paths
     if not os.path.isabs(config_path):

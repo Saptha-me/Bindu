@@ -4,7 +4,7 @@ from uuid import UUID
 
 from bindu.extensions.did import DIDAgentExtension
 
-from .protocol.types import AgentCapabilities, AgentCard, Skill, AgentTrust
+from .protocol.types import AgentCapabilities, AgentCard, AgentTrust, Skill
 
 
 class KeyPaths(NamedTuple):

@@ -102,7 +102,7 @@ def setup() -> None:
     try:
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
         from opentelemetry.sdk import trace as trace_sdk
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor
+        from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 
         tracer_provider = trace_sdk.TracerProvider()
 

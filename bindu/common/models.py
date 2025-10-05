@@ -16,7 +16,7 @@ configuration, and runtime behavior.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, NamedTuple, Optional
+from typing import Any, Callable, Literal, Optional
 from uuid import UUID
 
 from bindu.extensions.did import DIDAgentExtension
@@ -24,21 +24,10 @@ from bindu.extensions.did import DIDAgentExtension
 from .protocol.types import AgentCapabilities, AgentCard, AgentTrust, Skill
 
 
-class KeyPaths(NamedTuple):
-    """Cryptographic key file paths for agent identity.
-    
-    These paths point to the agent's digital fingerprint - the keys that prove
-    who they are in the decentralized constellation.
-    """
-    
-    private_key_path: str
-    public_key_path: str
-
-
 @dataclass(frozen=True)
 class DeploymentConfig:
     """Configuration for agent deployment and network exposure.
-    
+
     Defines how an agent presents itself to the world - its URL, protocol version,
     and the gateways through which it communicates.
     """
@@ -54,7 +43,7 @@ class DeploymentConfig:
 @dataclass(frozen=True)
 class StorageConfig:
     """Configuration for agent state persistence.
-    
+
     Every agent needs memory - a place to store conversations, tasks, and context.
     This defines where that memory lives.
     """
@@ -66,7 +55,7 @@ class StorageConfig:
 @dataclass(frozen=True)
 class SchedulerConfig:
     """Configuration for task scheduling and coordination.
-    
+
     Agents need to orchestrate their work - this defines the mechanism for
     managing asynchronous tasks and workflows.
     """
@@ -77,10 +66,11 @@ class SchedulerConfig:
 @dataclass(frozen=True)
 class AgentFrameworkSpec:
     """Specification for an agent framework.
-    
+
     This class defines the properties of an agent framework, including its name,
     the instrumentation package required for it, and the minimum version supported.
     """
+
     framework: str
     instrumentation_package: str
     min_version: str
@@ -89,12 +79,12 @@ class AgentFrameworkSpec:
 @dataclass
 class AgentManifest:
     """The living blueprint of an agent.
-    
+
     This is more than configuration - it's the complete specification of an agent's
     identity, capabilities, and purpose. The manifest bridges the gap between
     static definition and dynamic execution, holding both the agent's metadata
     and its runtime behavior.
-    
+
     Think of it as the agent's soul - containing everything that makes it unique,
     from its DID and skills to its execution logic.
     """
@@ -106,35 +96,35 @@ class AgentManifest:
     url: str
     version: str
     protocol_version: str
-    
+
     # Security & Trust
     did_extension: DIDAgentExtension
     agent_trust: AgentTrust
-    
+
     # Capabilities
     capabilities: AgentCapabilities
     skills: list[Skill]
-    
+
     # Agent Type & Configuration
     kind: Literal["agent", "team", "workflow"]
     num_history_sessions: int
     extra_data: dict[str, Any] = field(default_factory=dict)
-    
+
     # Observability
     debug_mode: bool = False
     debug_level: Literal[1, 2] = 1
     monitoring: bool = False
     telemetry: bool = True
-    
+
     # Optional Metadata
     documentation_url: str | None = None
-    
+
     # Runtime Execution (injected by framework)
     run: Callable[..., Any] | None = field(default=None, init=False)
 
     def to_agent_card(self) -> AgentCard:
         """Transform the manifest into a protocol-compliant agent card.
-        
+
         The agent card is the agent's public face - a standardized representation
         that other agents and clients can understand and interact with.
         """

@@ -117,26 +117,26 @@ Your agent will start with full bindu capabilities:
 
 > 📂 **Template Repository**: [cookiecutter-bindu](https://github.com/bindu-ai/cookiecutter-bindu)
 
-### Manual Setup - Pebblify an Agent
+### Manual Setup - bindufy an Agent
 
 ```python
-from bindu import pebblify
+from bindu import bindufy
 
-@pebblify(name="My Agent", description="A simple agent", version="1.0.0")
+@bindufy(name="My Agent", description="A simple agent", version="1.0.0")
 def my_agent(message: str) -> str:
     return "Hello, Agent!"
 
 # You're now ready to communicate securely between agents!
 ```
 
-### Pebblify a [Agno](https://github.com/agno-ai/agno) Agent
+### bindufy a [Agno](https://github.com/agno-ai/agno) Agent
 
 ```python
-from bindu import pebblify
+from bindu import bindufy
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 
-@pebblify(name="Agno Agent", description="A helpful assistant", version="1.0.0")
+@bindufy(name="Agno Agent", description="A helpful assistant", version="1.0.0")
 def agno_agent(message: str) -> str:
     agent = Agent(
         model=OpenAIChat(id="gpt-4o"),

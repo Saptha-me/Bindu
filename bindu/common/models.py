@@ -74,6 +74,18 @@ class SchedulerConfig:
     type: Literal["redis", "memory"]
 
 
+@dataclass(frozen=True)
+class AgentFrameworkSpec:
+    """Specification for an agent framework.
+    
+    This class defines the properties of an agent framework, including its name,
+    the instrumentation package required for it, and the minimum version supported.
+    """
+    framework: str
+    instrumentation_package: str
+    min_version: str
+
+
 @dataclass
 class AgentManifest:
     """The living blueprint of an agent.

@@ -22,7 +22,6 @@
 # 2. STORAGE IMPLEMENTATIONS:
 #    - InMemoryStorage: Fast whiteboard system (development/testing)
 #    - PostgreSQLStorage: Enterprise database system (production)
-#    - QdrantStorage: AI-powered recommendation system (semantic search)
 #
 # 3. USAGE PATTERNS:
 #    - Import the base Storage class for type hints and interfaces
@@ -32,7 +31,6 @@
 # AVAILABLE STORAGE OPTIONS:
 # - InMemoryStorage: Lightning-fast temporary storage
 # - PostgreSQLStorage: ACID-compliant persistent storage with ORM
-# - QdrantStorage: Vector-based storage with semantic search capabilities
 #
 #  Thank you users! We ❤️ you! - 🐧
 
@@ -45,7 +43,6 @@ from .base import Storage
 from .memory_storage import InMemoryStorage
 
 # from .postgres_storage import PostgreSQLStorage
-# from .qdrant_storage import QdrantStorage
 
 __all__ = [
     # Base interface
@@ -53,5 +50,4 @@ __all__ = [
     # Storage implementations
     "InMemoryStorage",
     # "PostgreSQLStorage",
-    # "QdrantStorage",
 ]

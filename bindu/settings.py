@@ -71,7 +71,7 @@ class UISettings(BaseSettings):
     footer_description: str = (
         "bindu is a decentralized agent-to-agent communication protocol. "
         "<strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the "
-        "multi-orchestrator platform where you can pebblify your agent and be part of the agent economy."
+        "multi-orchestrator platform where you can bindufy your agent and be part of the agent economy."
     )
     footer_local_version_text: str = "This is the local version. For production deployment, please follow the"
     footer_copyright_year: str = "2025"

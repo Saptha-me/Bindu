@@ -1,40 +1,107 @@
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
+
+from __future__ import annotations
+
 import os
-import subprocess
 import sys
-from dataclasses import dataclass
 from importlib.metadata import distributions
-from pathlib import Path
 
 from packaging import version
 
 from bindu.utils.logging import get_logger
-
-
-@dataclass
-class AgentFrameworkSpec:
-    framework: str
-    instrumentation_package: str
-    min_version: str
+from bindu.common.models import AgentFrameworkSpec
+from bindu.utils.constants import OPENINFERENCE_INSTRUMENTOR_MAP, OPENTELEMETRY_BASE_PACKAGES
+from typing import Type, Any
 
 
 logger = get_logger("bindu.observability.openinference")
+
+
+def _get_package_manager() -> tuple[list[str], str]:
+    """Detect available package manager and return install command prefix."""
+    from pathlib import Path
+    
+    current_directory = Path.cwd()
+    use_uv = (current_directory / "uv.lock").exists() or (current_directory / "pyproject.toml").exists()
+    
+    if use_uv:
+        return ["uv", "add"], "uv"
+    return [sys.executable, "-m", "pip", "install"], "pip"
+
+
+def _instrument_framework(framework: str, tracer_provider: Any) -> None:
+    """Dynamically import and instrument a framework.
+    
+    Args:
+        framework: Name of the framework to instrument
+        tracer_provider: OpenTelemetry tracer provider instance
+    
+    Raises:
+        ImportError: If instrumentor module or class not found
+    """
+    if framework not in OPENINFERENCE_INSTRUMENTOR_MAP:
+        logger.warn(f"No instrumentor mapping found for framework: {framework}")
+        return
+    
+    module_path, class_name = OPENINFERENCE_INSTRUMENTOR_MAP[framework]
+    
+    try:
+        # Dynamic import of instrumentor module
+        import importlib
+        module = importlib.import_module(module_path)
+        instrumentor_class = getattr(module, class_name)
+        
+        # Instantiate and instrument
+        instrumentor_class().instrument(tracer_provider=tracer_provider)
+        logger.info(f"Successfully instrumented {framework} using {class_name}")
+    except (ImportError, AttributeError) as e:
+        logger.error(
+            f"Failed to instrument {framework}",
+            module=module_path,
+            class_name=class_name,
+            error=str(e)
+        )
 
 
 # The list works on a first-match basis. For example, users working with frameworks
 # like Agno may still have the OpenAI package installed, but we don't want to start
 # instrumentation for both packages. To avoid this, agent frameworks are given higher
 # priority than LLM provider packages.
+# https://github.com/Arize-ai/openinference?tab=readme-ov-file#python
+
+# Priority order matters: agent frameworks before LLM providers
+# to avoid double instrumentation (e.g., Agno uses OpenAI internally)
 SUPPORTED_FRAMEWORKS = [
+    # Agent Frameworks (Higher Priority)
     AgentFrameworkSpec("agno", "openinference-instrumentation-agno", "1.5.2"),
     AgentFrameworkSpec("crewai", "openinference-instrumentation-crewai", "0.41.1"),
+    AgentFrameworkSpec("langchain", "openinference-instrumentation-langchain", "0.1.0"),
+    AgentFrameworkSpec("llama-index", "openinference-instrumentation-llama-index", "0.1.0"),
+    AgentFrameworkSpec("dspy", "openinference-instrumentation-dspy", "2.0.0"),
+    AgentFrameworkSpec("haystack", "openinference-instrumentation-haystack", "2.0.0"),
+    AgentFrameworkSpec("instructor", "openinference-instrumentation-instructor", "1.0.0"),
+    AgentFrameworkSpec("pydantic-ai", "openinference-instrumentation-pydantic-ai", "0.1.0"),
+    AgentFrameworkSpec("autogen", "openinference-instrumentation-autogen-agentchat", "0.4.0"),
+    AgentFrameworkSpec("smolagents", "openinference-instrumentation-smolagents", "1.0.0"),
+    
+    # LLM Providers (Lower Priority)
     AgentFrameworkSpec("litellm", "openinference-instrumentation-litellm", "1.43.0"),
     AgentFrameworkSpec("openai", "openinference-instrumentation-openai", "1.69.0"),
+    AgentFrameworkSpec("anthropic", "openinference-instrumentation-anthropic", "0.1.0"),
+    AgentFrameworkSpec("mistralai", "openinference-instrumentation-mistralai", "1.0.0"),
+    AgentFrameworkSpec("groq", "openinference-instrumentation-groq", "0.1.0"),
+    AgentFrameworkSpec("bedrock", "openinference-instrumentation-bedrock", "0.1.0"),
+    AgentFrameworkSpec("vertexai", "openinference-instrumentation-vertexai", "1.0.0"),
+    AgentFrameworkSpec("google-genai", "openinference-instrumentation-google-genai", "0.1.0"),
 ]
 
-BASE_PACKAGES = [
-    "opentelemetry-sdk",
-    "opentelemetry-exporter-otlp",
-]
 
 
 def setup() -> None:
@@ -67,33 +134,36 @@ def setup() -> None:
         version=installed_version,
     )
 
-    required_packages = BASE_PACKAGES + [framework_spec.instrumentation_package]
+    required_packages = OPENTELEMETRY_BASE_PACKAGES + [framework_spec.instrumentation_package]
     missing_packages = [package for package in required_packages if package not in installed_distributions]
 
     if missing_packages:
-        logger.info("Installing the following packages", packages=", ".join(missing_packages))
-        # Currently we only try to search if user has uv installed or not
-        # In case uv is present use it to install the packages, if not
-        # fallback to use the environment's pip
-        current_directory = Path.cwd()
-        use_uv = (current_directory / "uv.lock").exists() or (current_directory / "pyproject.toml").exists()
-
-        if use_uv:
-            cmd = ["uv", "add"] + missing_packages
-            package_manager = "uv"
-        else:
-            cmd = [sys.executable, "-m", "pip", "install"] + missing_packages
-            package_manager = "pip"
-
-        try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=300)
-            logger.info("Successfully installed the packages", package_manager=package_manager)
-        except subprocess.CalledProcessError as exc:
-            logger.error("Failed to install the packages", package_manager=package_manager, error=str(exc))
-            return
-        except subprocess.TimeoutExpired:
-            logger.error("Package installation timed out", package_manager=package_manager)
-            return
+        cmd_prefix, package_manager = _get_package_manager()
+        cmd = cmd_prefix + missing_packages
+        
+        logger.warn(
+            "Missing OpenInference packages detected",
+            packages=", ".join(missing_packages),
+            install_command=" ".join(cmd),
+        )
+        logger.warn(
+            "Auto-installation disabled for safety. Please install manually:",
+            command=" ".join(cmd)
+        )
+        return
+        
+        # OPTIONAL: Enable auto-install with environment variable
+        # if os.getenv("BINDU_AUTO_INSTALL_OBSERVABILITY") == "true":
+        #     logger.info("Auto-installing packages", packages=", ".join(missing_packages))
+        #     try:
+        #         subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=300)
+        #         logger.info("Successfully installed packages", package_manager=package_manager)
+        #     except subprocess.CalledProcessError as exc:
+        #         logger.error("Failed to install packages", package_manager=package_manager, error=str(exc))
+        #         return
+        #     except subprocess.TimeoutExpired:
+        #         logger.error("Package installation timed out", package_manager=package_manager)
+        #         return
     else:
         logger.info("All required packages are installed")
 
@@ -114,23 +184,7 @@ def setup() -> None:
             tracer_provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
             logger.info("Using console exporter - no OTLP endpoint configured")
 
-        match framework_spec.framework:
-            case "agno":
-                from openinference.instrumentation.agno import AgnoInstrumentor
-
-                AgnoInstrumentor().instrument(tracer_provider=tracer_provider)
-            case "crewai":
-                from openinference.instrumentation.crewai import CrewAIInstrumentor
-
-                CrewAIInstrumentor().instrument(tracer_provider=tracer_provider)
-            case "openai":
-                from openinference.instrumentation.openai import OpenAIInstrumentor
-
-                OpenAIInstrumentor().instrument(tracer_provider=tracer_provider)
-            case "litellm":
-                from openinference.instrumentation.litellm import LiteLLMInstrumentor
-
-                LiteLLMInstrumentor().instrument(tracer_provider=tracer_provider)
+        _instrument_framework(framework_spec.framework, tracer_provider)
 
         logger.info("OpenInference setup completed successfully", framework=framework_spec.framework)
     except ImportError as e:

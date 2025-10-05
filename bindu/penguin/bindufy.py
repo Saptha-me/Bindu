@@ -9,7 +9,7 @@
 #  Thank you users! We ❤️ you! - 🐧
 
 """
-Pebblify decorator for transforming regular agents into secure, networked Pebble agents.
+bindufy decorator for transforming regular agents into secure, networked Pebble agents.
 
 This module provides the core decorator that handles:
 1. Protocol-compliant function wrapping with AgentAdapter
@@ -43,7 +43,6 @@ from bindu.server import (
     InMemoryStorage,
     PebbleApplication,
     # PostgreSQLStorage,
-    # QdrantStorage,
     # RedisScheduler,
 )
 from bindu.server.utils.display import prepare_server_display
@@ -53,7 +52,7 @@ from bindu.utils.constants import PKI_DIR
 from bindu.utils.logging import get_logger
 
 # Configure logging for the module
-logger = get_logger("bindu.penguin.pebblify")
+logger = get_logger("bindu.penguin.bindufy")
 
 
 def _create_storage_instance(storage_config: Optional[StorageConfig]) -> Any:
@@ -62,8 +61,6 @@ def _create_storage_instance(storage_config: Optional[StorageConfig]) -> Any:
         return InMemoryStorage()
 
     if storage_config.type == "postgres":
-        return InMemoryStorage()
-    elif storage_config.type == "qdrant":
         return InMemoryStorage()
     else:
         return InMemoryStorage()
@@ -74,7 +71,7 @@ def _create_scheduler_instance(scheduler_config: Optional[SchedulerConfig]) -> A
     return InMemoryScheduler()
 
 
-def pebblify(
+def bindufy(
     agent: Any,
     config: Dict[str, Any],
     handler: Callable[[str], str]
@@ -130,7 +127,7 @@ def pebblify(
             "scheduler": {"type": "memory"}
         }
         
-        manifest = pebblify(agent, config, my_handler)
+        manifest = bindufy(agent, config, my_handler)
     """
 
     # Validate and process configuration

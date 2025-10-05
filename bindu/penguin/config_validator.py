@@ -127,24 +127,24 @@ class ConfigValidator:
             raise ValueError("Field 'kind' must be one of: agent, team, workflow")
     
     @classmethod
-    def create_pebblify_config(cls, raw_config: Dict[str, Any]) -> Dict[str, Any]:
+    def create_bindufy_config(cls, raw_config: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Create a configuration dict ready for pebblify function.
+        Create a configuration dict ready for bindufy function.
         
         This is a convenience method that validates, processes, and ensures
-        the config is in the right format for the pebblify function.
+        the config is in the right format for the bindufy function.
         
         Args:
             raw_config: Raw configuration (e.g., from JSON file)
             
         Returns:
-            Configuration dictionary ready for pebblify
+            Configuration dictionary ready for bindufy
         """
         # Validate and process
         config = cls.validate_and_process(raw_config)
         
         # Ensure nested configs are dictionaries (not model instances)
-        # for compatibility with pebblify
+        # for compatibility with bindufy
         if "deployment" not in config:
             config["deployment"] = {}
         if "storage" not in config:
@@ -181,4 +181,4 @@ def load_and_validate_config(config_path: str) -> Dict[str, Any]:
         raw_config = json.load(f)
     
     # Validate and return
-    return ConfigValidator.create_pebblify_config(raw_config)
+    return ConfigValidator.create_bindufy_config(raw_config)

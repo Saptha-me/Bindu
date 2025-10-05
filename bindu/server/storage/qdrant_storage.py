@@ -1,13 +1,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 # QDRANT VECTOR STORAGE IMPLEMENTATION:
 #
-# This is the Qdrant vector database implementation of the Storage interface for the Pebbling framework.
+# This is the Qdrant vector database implementation of the Storage interface for the bindu framework.
 # It provides semantic search, vector similarity, and AI-powered task/context retrieval capabilities.
 #
 # BURGER STORE ANALOGY:
@@ -67,7 +67,7 @@ from qdrant_client.models import (
 )
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from bindu.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
 
 from .base import Storage
 
@@ -112,8 +112,8 @@ class QdrantStorage(Storage[ContextT]):
         self.embedding_function = embedding_function or self._default_embedding
 
         self.client: Optional[AsyncQdrantClient] = None
-        self.tasks_collection = "pebbling_tasks"
-        self.contexts_collection = "pebbling_contexts"
+        self.tasks_collection = "bindu_tasks"
+        self.contexts_collection = "bindu_contexts"
 
     async def initialize(self) -> None:
         """Initialize Qdrant client and create collections."""

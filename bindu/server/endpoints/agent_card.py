@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from starlette.requests import Request
 from starlette.responses import Response
 
-from pebbling.common.protocol.types import AgentCard, agent_card_ta
+from bindu.common.protocol.types import AgentCard, agent_card_ta
 
 if TYPE_CHECKING:
     from ..applications import PebbleApplication
@@ -31,7 +31,7 @@ async def agent_card_endpoint(app: "PebbleApplication", request: Request) -> Res
             capabilities=app.manifest.capabilities,
             kind=app.manifest.kind,
             num_history_sessions=app.manifest.num_history_sessions,
-            extra_data=app.manifest.extra_data or {"created": int(time()), "server_info": "Pebbling Agent Server"},
+            extra_data=app.manifest.extra_data or {"created": int(time()), "server_info": "bindu Agent Server"},
             debug_mode=app.manifest.debug_mode,
             debug_level=app.manifest.debug_level,
             monitoring=app.manifest.monitoring,

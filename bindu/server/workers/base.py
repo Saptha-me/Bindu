@@ -10,9 +10,9 @@ from typing import Any, AsyncIterator
 import anyio
 from opentelemetry.trace import get_tracer, use_span
 
-from pebbling.common.protocol.types import Artifact, Message, TaskIdParams, TaskSendParams
-from pebbling.server.scheduler.base import Scheduler
-from pebbling.server.storage.base import Storage
+from bindu.common.protocol.types import Artifact, Message, TaskIdParams, TaskSendParams
+from bindu.server.scheduler.base import Scheduler
+from bindu.server.storage.base import Storage
 
 tracer = get_tracer(__name__)
 

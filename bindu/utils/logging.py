@@ -2,13 +2,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 #  Thank you users! We ❤️ you! - 🐧
 
-"""Simple but beautiful logging configuration for Pebbling using Rich."""
+"""Simple but beautiful logging configuration for bindu using Rich."""
 
 import os
 import sys
@@ -22,21 +22,21 @@ from rich.theme import Theme
 from rich.traceback import install as install_rich_traceback
 
 # Set up Rich console with custom theme
-PEBBLING_THEME = Theme(
+bindu_THEME = Theme(
     {
         "info": "bold cyan",
         "warning": "bold yellow",
         "error": "bold red",
         "critical": "bold white on red",
         "debug": "dim blue",
-        "pebbling.did": "bold green",
-        "pebbling.security": "bold magenta",
-        "pebbling.agent": "bold blue",
+        "bindu.did": "bold green",
+        "bindu.security": "bold magenta",
+        "bindu.agent": "bold blue",
     }
 )
 
 # Create console with our theme
-console = Console(theme=PEBBLING_THEME, highlight=True)
+console = Console(theme=bindu_THEME, highlight=True)
 
 # Install Rich traceback handler for prettier exceptions
 install_rich_traceback(console=console, show_locals=True)
@@ -64,7 +64,7 @@ def configure_logger(docker_mode: bool = False) -> None:
     if not docker_mode:
         os.makedirs("logs", exist_ok=True)
         logger.add(
-            "logs/pebbling_server.log",
+            "logs/bindu_server.log",
             rotation="10 MB",
             retention="1 week",
             level="INFO",
@@ -83,7 +83,7 @@ def configure_logger(docker_mode: bool = False) -> None:
 
     # Show a startup banner (not in Docker)
     if not docker_mode:
-        console.print(Panel.fit("[bold cyan]Pebbling 🐧 [/bold cyan]", border_style="cyan"))
+        console.print(Panel.fit("[bold cyan]bindu 🐧 [/bold cyan]", border_style="cyan"))
 
     _is_logging_configured = True
 
@@ -110,4 +110,4 @@ def get_logger(name: Optional[str] = None) -> logger.__class__:
 
 
 # Export commonly used objects
-log = get_logger("pebbling 🐧")  # Quick access to logger
+log = get_logger("bindu 🐧")  # Quick access to logger

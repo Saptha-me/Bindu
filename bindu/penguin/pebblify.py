@@ -2,7 +2,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -30,19 +30,19 @@ from pydantic.types import SecretStr
 from urllib.parse import urlparse
 import uvicorn
 
-from pebbling.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
-from pebbling.common.protocol.types import (
+from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
+from bindu.common.protocol.types import (
     AgentCapabilities,
     AgentIdentity,
     Skill,
     AgentTrust,
 )
-from pebbling.penguin.manifest import create_manifest, validate_agent_function
-from pebbling.extensions.did import DIDAgentExtension
-import pebbling.observability.openinference as OpenInferenceObservability
+from bindu.penguin.manifest import create_manifest, validate_agent_function
+from bindu.extensions.did import DIDAgentExtension
+import bindu.observability.openinference as OpenInferenceObservability
 
 # Import server components for deployment
-from pebbling.server import (
+from bindu.server import (
     InMemoryScheduler,
     InMemoryStorage,
     PebbleApplication,
@@ -50,14 +50,14 @@ from pebbling.server import (
     # QdrantStorage,
     # RedisScheduler,
 )
-from pebbling.server.utils.display import prepare_server_display
-from pebbling.utils.constants import CERTIFICATE_DIR, PKI_DIR
+from bindu.server.utils.display import prepare_server_display
+from bindu.utils.constants import CERTIFICATE_DIR, PKI_DIR
 
-# Import logging from pebbling utils
-from pebbling.utils.logging import get_logger
+# Import logging from bindu utils
+from bindu.utils.logging import get_logger
 
 # Configure logging for the module
-logger = get_logger("pebbling.penguin.pebblify")
+logger = get_logger("bindu.penguin.pebblify")
 
 
 def _create_storage_instance(storage_config: Optional[StorageConfig]) -> Any:
@@ -83,7 +83,7 @@ def pebblify(
     config: Dict[str, Any],
     handler: Callable[[str], str]
 ) -> AgentManifest:
-    """Transform an agent instance and handler into a Pebbling-compatible agent.
+    """Transform an agent instance and handler into a bindu-compatible agent.
 
     Args:
         agent: The agent instance (e.g., from agno.agent.Agent)

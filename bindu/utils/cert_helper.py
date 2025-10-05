@@ -8,10 +8,10 @@ file I/O operations, directory handling, and path resolution.
 import os
 from typing import Optional
 
-from pebbling.utils.constants import CERTIFICATE_DIR
-from pebbling.utils.logging import get_logger
+from bindu.utils.constants import CERTIFICATE_DIR
+from bindu.utils.logging import get_logger
 
-logger = get_logger("pebbling.security.common.cert_utils")
+logger = get_logger("bindu.security.common.cert_utils")
 
 
 def save_certificate_to_file(cert_content: str, file_path: str) -> bool:

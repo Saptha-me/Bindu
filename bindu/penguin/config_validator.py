@@ -1,5 +1,5 @@
 """
-Configuration validation and processing for Pebbling agents.
+Configuration validation and processing for bindu agents.
 
 This module provides utilities to validate and process agent configurations,
 ensuring they meet the required schema and have proper defaults.
@@ -7,8 +7,8 @@ ensuring they meet the required schema and have proper defaults.
 
 import os
 from typing import Dict, Any, List, Optional
-from pebbling.common.models import DeploymentConfig, SchedulerConfig, StorageConfig
-from pebbling.common.protocol.types import AgentCapabilities, Skill, AgentTrust
+from bindu.common.models import DeploymentConfig, SchedulerConfig, StorageConfig
+from bindu.common.protocol.types import AgentCapabilities, Skill, AgentTrust
 
 
 class ConfigValidator:
@@ -93,7 +93,7 @@ class ConfigValidator:
         
         # Process key password - support environment variable and prompt
         if config.get("key_password"):
-            from pebbling.utils.security import get_key_password
+            from bindu.utils.security import get_key_password
             config["key_password"] = get_key_password(config)
         
         return config

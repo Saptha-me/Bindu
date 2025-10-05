@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, NamedTuple, Optional
 from uuid import UUID
 
-from pebbling.extensions.did import DIDAgentExtension
+from bindu.extensions.did import DIDAgentExtension
 
 from .protocol.types import AgentCapabilities, AgentCard, Skill, AgentTrust
 

@@ -1,13 +1,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 # POSTGRESQL STORAGE IMPLEMENTATION WITH ORM:
 #
-# This is the PostgreSQL implementation of the Storage interface for the Pebbling framework.
+# This is the PostgreSQL implementation of the Storage interface for the bindu framework.
 # It provides persistent, scalable storage for tasks and contexts with ACID compliance using SQLAlchemy ORM.
 #
 # BURGER STORE ANALOGY:
@@ -64,7 +64,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
+from bindu.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
 
 from .base import Storage
 

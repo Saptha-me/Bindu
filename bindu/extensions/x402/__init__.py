@@ -1,5 +1,5 @@
 """
-DID (Decentralized Identifier) Extension for Pebbling Agents.
+DID (Decentralized Identifier) Extension for bindu Agents.
 
 This module provides DID-based identity management for agents, including:
 - Key generation and management (Ed25519)
@@ -11,11 +11,11 @@ This module provides DID-based identity management for agents, including:
 
 from __future__ import annotations
 
-from pebbling.extensions.did.did_agent_extension import (
+from bindu.extensions.did.did_agent_extension import (
     DIDAgentExtension,
     DIDAgentExtensionMetadata,
 )
-from pebbling.extensions.did.validation import DIDValidation
+from bindu.extensions.did.validation import DIDValidation
 
 __all__ = [
     "DIDAgentExtension",

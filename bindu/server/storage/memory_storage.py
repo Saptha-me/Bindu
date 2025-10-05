@@ -1,13 +1,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 # IN-MEMORY STORAGE IMPLEMENTATION:
 #
-# This is the in-memory implementation of the Storage interface for the Pebbling framework.
+# This is the in-memory implementation of the Storage interface for the bindu framework.
 # It provides fast, temporary storage for tasks and contexts during agent execution.
 #
 # BURGER STORE ANALOGY:
@@ -55,7 +55,7 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
+from bindu.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
 
 from .base import Storage
 

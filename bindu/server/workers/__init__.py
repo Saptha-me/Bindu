@@ -2,16 +2,16 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 #  Thank you users! We ❤️ you! - 🐧
 
 """
-Pebbling Server Workers.
+bindu Server Workers.
 
-Worker classes for task execution in the Pebbling framework.
+Worker classes for task execution in the bindu framework.
 Workers are responsible for executing tasks received from schedulers.
 
 This module provides:

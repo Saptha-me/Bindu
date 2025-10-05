@@ -7,7 +7,7 @@ from pathlib import Path
 
 from packaging import version
 
-from pebbling.utils.logging import get_logger
+from bindu.utils.logging import get_logger
 
 
 @dataclass
@@ -17,7 +17,7 @@ class AgentFrameworkSpec:
     min_version: str
 
 
-logger = get_logger("pebbling.observability.openinference")
+logger = get_logger("bindu.observability.openinference")
 
 
 # The list works on a first-match basis. For example, users working with frameworks

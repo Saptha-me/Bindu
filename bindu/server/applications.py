@@ -11,7 +11,7 @@ from starlette.responses import Response
 from starlette.routing import Route
 from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
 
-from pebbling.common.models import AgentManifest
+from bindu.common.models import AgentManifest
 from .endpoints import (
     agent_card_endpoint,
     agent_info_endpoint,

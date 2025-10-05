@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any, Optional
 from uuid import uuid4
 
-from pebbling.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
-from pebbling.extensions.did import DIDAgentExtension, DIDAgentExtensionMetadata
+from bindu.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
+from bindu.extensions.did import DIDAgentExtension, DIDAgentExtensionMetadata
 
 
 class MessageConverter:

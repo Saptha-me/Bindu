@@ -1096,7 +1096,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pebbling"
+name = "bindu"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -1133,7 +1133,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "pebbling" },
+    { name = "bindu" },
     { name = "ty" },
 ]
 
@@ -1169,7 +1169,7 @@ provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pebbling", editable = "." },
+    { name = "bindu", editable = "." },
     { name = "ty", specifier = ">=0.0.1a14" },
 ]
 

@@ -1,7 +1,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -62,7 +62,7 @@ from typing import Any
 import redis.asyncio as redis
 from opentelemetry.trace import get_current_span
 
-from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
+from bindu.common.protocol.types import TaskIdParams, TaskSendParams
 
 from .base import (
     Scheduler,
@@ -80,7 +80,7 @@ class RedisScheduler(Scheduler):
     def __init__(
         self,
         redis_url: str,
-        queue_name: str = "pebbling:tasks",
+        queue_name: str = "bindu:tasks",
         max_connections: int = 10,
         retry_on_timeout: bool = True,
     ):

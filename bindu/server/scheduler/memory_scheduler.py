@@ -1,7 +1,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -57,8 +57,8 @@ from typing import Any
 import anyio
 from opentelemetry.trace import get_current_span
 
-from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
-from pebbling.server.scheduler.base import (
+from bindu.common.protocol.types import TaskIdParams, TaskSendParams
+from bindu.server.scheduler.base import (
     Scheduler,
     TaskOperation,
     _CancelTask,

@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 async def did_resolve_endpoint(app: "PebbleApplication", request: Request) -> Response:
     """Resolve DID and return full DID document.
     
-    GET /did/resolve?did=did:pebbling:user:agent
-    POST /did/resolve with JSON body {"did": "did:pebbling:user:agent"}
+    GET /did/resolve?did=did:bindu:user:agent
+    POST /did/resolve with JSON body {"did": "did:bindu:user:agent"}
     """
     # Get DID from query param or body
     did = None

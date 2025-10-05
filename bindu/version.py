@@ -1,6 +1,6 @@
-"""Version information for the Pebbling framework.
+"""Version information for the bindu framework.
 
-This module provides the version information of the Pebbling package
+This module provides the version information of the bindu package
 by accessing the installed package metadata.
 """
 
@@ -8,7 +8,7 @@ by accessing the installed package metadata.
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #

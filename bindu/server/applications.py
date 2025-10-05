@@ -31,7 +31,7 @@ from .storage.memory_storage import InMemoryStorage
 from .task_manager import TaskManager
 
 
-class PebbleApplication(Starlette):
+class BinduApplication(Starlette):
     """Pebble application class for creating Pebble-compatible servers."""
 
     def __init__(

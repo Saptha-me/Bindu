@@ -26,7 +26,7 @@ from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
-from bindu.server import InMemoryScheduler, InMemoryStorage, PebbleApplication
+from bindu.server import InMemoryScheduler, InMemoryStorage, BinduApplication
 from bindu.server.utils.display import prepare_server_display
 from bindu.utils.constants import DEFAULT_HOST, DEFAULT_PORT, DEFAULT_URL, PKI_DIR
 from bindu.utils.logging import get_logger
@@ -282,7 +282,7 @@ def bindufy(
     scheduler_instance = _create_scheduler_instance(scheduler_config)
 
     # Create the Pebble application
-    pebble_app = PebbleApplication(
+    pebble_app = BinduApplication(
         storage=storage_instance,
         scheduler=scheduler_instance,
         penguin_id=agent_id,

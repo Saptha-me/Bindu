@@ -41,6 +41,8 @@ dependencies = [
     "starlette>=0.48.0",
     "base58>=2.1.1",
     "ty>=0.0.1a14",
+    "agno>=2.1.1",
+    "openai>=2.1.0",
 ]
 
 [project.optional-dependencies]

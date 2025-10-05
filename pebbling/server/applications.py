@@ -1,14 +1,14 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, AsyncIterator, Literal, Optional, Sequence
 from uuid import UUID
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.routing import BaseRoute
+from starlette.routing import Route
 from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
 
 from pebbling.common.models import AgentManifest
@@ -48,8 +48,7 @@ class PebbleApplication(Starlette):
         debug: bool = False,
         lifespan: Optional[Lifespan] = None,
         routes: Optional[Sequence[Route]] = None,
-        middleware: Optional[Sequence[Middleware]] = None,
-        exception_handlers: Optional[dict[Any, ExceptionHandler]] = None,
+        middleware: Optional[Sequence[Middleware]] = None
     ):
         """Initialize Pebble application.
 
@@ -65,7 +64,6 @@ class PebbleApplication(Starlette):
             lifespan: Optional custom lifespan
             routes: Optional custom routes
             middleware: Optional middleware
-            exception_handlers: Optional exception handlers
         """
         # Create default lifespan if none provided
         if lifespan is None:
@@ -75,7 +73,6 @@ class PebbleApplication(Starlette):
             debug=debug,
             routes=routes,
             middleware=middleware,
-            exception_handlers=exception_handlers,
             lifespan=lifespan,
         )
 

@@ -6,7 +6,8 @@ from typing import Any, Optional
 from uuid import uuid4
 
 from bindu.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
-from bindu.extensions.did import DIDAgentExtension, DIDAgentExtensionMetadata
+from bindu.extensions.did import DIDAgentExtension
+from bindu.utils.constants import DID_AGENT_EXTENSION_METADATA
 
 
 class MessageConverter:
@@ -155,7 +156,7 @@ class ArtifactBuilder:
             for part in parts:
                 if part.get("kind") == "text" and "text" in part:
                     signature = did_extension.sign_text(part["text"])
-                    part.setdefault("metadata", {})[DIDAgentExtensionMetadata.SIGNATURE_KEY] = signature
+                    part.setdefault("metadata", {})[DID_AGENT_EXTENSION_METADATA] = signature
 
         return [Artifact(artifact_id=artifact_id, name=artifact_name, parts=parts)]
 

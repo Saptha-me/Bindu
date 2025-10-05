@@ -1,20 +1,75 @@
+"""DID validation utilities for format and document validation."""
+
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
+from bindu.utils.constants import (
+    DID_BINDU_PARTS,
+    DID_METHOD_BINDU,
+    DID_MIN_PARTS,
+    DID_PREFIX,
+)
 
 
 class DIDValidation:
-    """Validation utilities for DID formats and documents."""
+    """Validation utilities for DID formats and documents.
     
-    # Regex patterns for DID validation
-    DID_PATTERN = re.compile(r'^did:[a-z0-9]+:.+$', re.IGNORECASE)
-    bindu_DID_PATTERN = re.compile(r'^did:bindu:[^:]+:[^:]+$', re.IGNORECASE)
+    Provides methods to validate DID strings according to W3C specifications
+    and validate DID document structure for compliance.
+    """
+    
+    # Regex patterns for DID validation (compiled once for performance)
+    _DID_PATTERN = re.compile(r'^did:[a-z0-9]+:.+$', re.IGNORECASE)
+    _BINDU_DID_PATTERN = re.compile(r'^did:bindu:[^:]+:[^:]+$', re.IGNORECASE)
     
     @staticmethod
-    def validate_did_format(did: str) -> Tuple[bool, Optional[str]]:
-        """
-        Validate DID format according to W3C spec.
+    def _validate_empty(did: str) -> tuple[bool, str | None]:
+        """Check if DID is empty."""
+        if not did:
+            return False, "DID cannot be empty"
+        return True, None
+    
+    @staticmethod
+    def _validate_prefix(did: str) -> tuple[bool, str | None]:
+        """Check if DID has correct prefix."""
+        if not did.startswith(DID_PREFIX):
+            return False, f"DID must start with '{DID_PREFIX}'"
+        return True, None
+    
+    @staticmethod
+    def _validate_pattern(did: str) -> tuple[bool, str | None]:
+        """Check if DID matches basic pattern."""
+        if not DIDValidation._DID_PATTERN.match(did):
+            return False, "DID format is invalid"
+        return True, None
+    
+    @staticmethod
+    def _validate_parts(did: str) -> tuple[bool, str | None, list[str]]:
+        """Split and validate DID parts."""
+        parts = did.split(":", DID_BINDU_PARTS - 1)  # Max 4 parts for bindu DIDs
+        
+        if len(parts) < DID_MIN_PARTS:
+            return False, f"DID must have at least {DID_MIN_PARTS} parts separated by ':'", []
+        
+        return True, None, parts
+    
+    @staticmethod
+    def _validate_bindu_did(did: str, parts: list[str]) -> tuple[bool, str | None]:
+        """Validate Bindu-specific DID format."""
+        if not DIDValidation._BINDU_DID_PATTERN.match(did):
+            return False, f"bindu DID must have format did:{DID_METHOD_BINDU}:author:agent_name"
+        
+        # Validate non-empty components
+        if len(parts) != DID_BINDU_PARTS or not parts[2] or not parts[3]:
+            return False, "Author and agent name cannot be empty in bindu DID"
+        
+        return True, None
+    
+    @staticmethod
+    def validate_did_format(did: str) -> tuple[bool, str | None]:
+        """Validate DID format according to W3C spec.
         
         Args:
             did: The DID string to validate
@@ -22,40 +77,71 @@ class DIDValidation:
         Returns:
             Tuple of (is_valid, error_message)
         """
-        if not did:
-            return False, "DID cannot be empty"
+        # Chain of validation checks
+        for validator in [
+            DIDValidation._validate_empty,
+            DIDValidation._validate_prefix,
+            DIDValidation._validate_pattern,
+        ]:
+            valid, error = validator(did)
+            if not valid:
+                return valid, error
         
-        # Quick prefix check before splitting
-        if not did.startswith("did:"):
-            return False, "DID must start with 'did:'"
+        # Validate parts
+        valid, error, parts = DIDValidation._validate_parts(did)
+        if not valid:
+            return valid, error
         
-        # Basic pattern validation
-        if not DIDValidation.DID_PATTERN.match(did):
-            return False, "DID format is invalid"
-        
-        # Extract method efficiently (only split once, limit splits)
-        parts = did.split(":", 3)  # Split into max 4 parts: ['did', 'method', 'id', ...]
-        
-        if len(parts) < 3:
-            return False, "DID must have at least 3 parts separated by ':'"
-        
+        # Method-specific validation
         method = parts[1]
-        
-        # For bindu DIDs, validate specific format
-        if method == "bindu":
-            if not DIDValidation.bindu_DID_PATTERN.match(did):
-                return False, "bindu DID must have format did:bindu:author:agent_name"
-            
-            # Validate non-empty components
-            if len(parts) != 4 or not parts[2] or not parts[3]:
-                return False, "Author and agent name cannot be empty in bindu DID"
+        if method == DID_METHOD_BINDU:
+            return DIDValidation._validate_bindu_did(did, parts)
         
         return True, None
     
     @staticmethod
-    def validate_did_document(did_doc: Dict[str, Any]) -> Tuple[bool, List[str]]:
-        """
-        Validate a DID document structure.
+    def _validate_required_field(did_doc: dict[str, Any], field: str, errors: list[str]) -> None:
+        """Validate a required field exists."""
+        if field not in did_doc:
+            errors.append(f"Missing {field} field")
+    
+    @staticmethod
+    def _validate_did_field(did_doc: dict[str, Any], errors: list[str]) -> None:
+        """Validate the id field contains a valid DID."""
+        if "id" in did_doc:
+            valid, error = DIDValidation.validate_did_format(did_doc["id"])
+            if not valid:
+                errors.append(f"Invalid DID in id field: {error}")
+    
+    @staticmethod
+    def _validate_authentication_item(auth: Any, index: int, errors: list[str]) -> None:
+        """Validate a single authentication item."""
+        if not isinstance(auth, dict):
+            errors.append(f"Authentication[{index}] must be an object")
+            return
+        
+        required_fields = ["type", "controller"]
+        for field in required_fields:
+            if field not in auth:
+                errors.append(f"Authentication[{index}] missing {field}")
+    
+    @staticmethod
+    def _validate_authentication(did_doc: dict[str, Any], errors: list[str]) -> None:
+        """Validate authentication array if present."""
+        if "authentication" not in did_doc:
+            return
+        
+        auth_list = did_doc["authentication"]
+        if not isinstance(auth_list, list):
+            errors.append("Authentication must be an array")
+            return
+        
+        for i, auth in enumerate(auth_list):
+            DIDValidation._validate_authentication_item(auth, i, errors)
+    
+    @staticmethod
+    def validate_did_document(did_doc: dict[str, Any]) -> tuple[bool, list[str]]:
+        """Validate a DID document structure.
         
         Args:
             did_doc: The DID document dictionary
@@ -63,34 +149,16 @@ class DIDValidation:
         Returns:
             Tuple of (is_valid, list_of_errors)
         """
-        errors = []
+        errors: list[str] = []
         
-        # Required fields validation
-        if "@context" not in did_doc:
-            errors.append("Missing @context field")
+        # Validate required fields
+        DIDValidation._validate_required_field(did_doc, "@context", errors)
+        DIDValidation._validate_required_field(did_doc, "id", errors)
         
-        if "id" not in did_doc:
-            errors.append("Missing id field")
-        else:
-            valid, error = DIDValidation.validate_did_format(did_doc["id"])
-            if not valid:
-                errors.append(f"Invalid DID in id field: {error}")
+        # Validate DID format in id field
+        DIDValidation._validate_did_field(did_doc, errors)
         
         # Validate authentication if present
-        if "authentication" in did_doc:
-            auth_list = did_doc["authentication"]
-            if not isinstance(auth_list, list):
-                errors.append("Authentication must be an array")
-            else:
-                # Use list comprehension for more efficient validation
-                for i, auth in enumerate(auth_list):
-                    if not isinstance(auth, dict):
-                        errors.append(f"Authentication[{i}] must be an object")
-                        continue
-                    
-                    if "type" not in auth:
-                        errors.append(f"Authentication[{i}] missing type")
-                    if "controller" not in auth:
-                        errors.append(f"Authentication[{i}] missing controller")
+        DIDValidation._validate_authentication(did_doc, errors)
         
         return len(errors) == 0, errors

@@ -1,7 +1,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/bindu/issues/new/choose     |
 # |                                                         |
 # |---------------------------------------------------------|
 #

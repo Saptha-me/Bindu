@@ -15,12 +15,12 @@ import json
 import os
 import sys
 
-# Add parent directory to path so we can import pebbling
+# Add parent directory to path so we can import bindu
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from pebbling.penguin.pebblify import pebblify
+from bindu.penguin.pebblify import pebblify
 
 # Load configuration
 def load_config(config_path: str):

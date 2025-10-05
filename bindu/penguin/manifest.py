@@ -2,7 +2,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -19,9 +19,9 @@ import inspect
 from typing import Any, Callable, Dict, List, Literal, Optional
 from uuid import UUID
 
-from pebbling.common.models import AgentManifest
-from pebbling.common.protocol.types import AgentCapabilities, Skill, AgentTrust
-from pebbling.extensions.did import DIDAgentExtension
+from bindu.common.models import AgentManifest
+from bindu.common.protocol.types import AgentCapabilities, Skill, AgentTrust
+from bindu.extensions.did import DIDAgentExtension
 
 
 def validate_agent_function(agent_function: Callable):
@@ -30,7 +30,7 @@ def validate_agent_function(agent_function: Callable):
     params = list(signature.parameters.values())
 
     if len(params) < 1:
-        raise ValueError("Agent function must have at least 'messages' parameter of type list[PebblingMessage]")
+        raise ValueError("Agent function must have at least 'messages' parameter of type list[binduMessage]")
 
     if len(params) > 1:
         raise ValueError("Agent function must have only 'messages' and optional 'context' parameters")
@@ -64,9 +64,9 @@ def create_manifest(
     """
     Create a protocol-compliant AgentManifest from any Python function.
 
-    This function is the core of the Pebbling framework's agent creation system. It analyzes
+    This function is the core of the bindu framework's agent creation system. It analyzes
     user-defined functions and transforms them into fully-featured agents that can be deployed,
-    discovered, and communicated with in the Pebbling distributed agent network.
+    discovered, and communicated with in the bindu distributed agent network.
 
     The function automatically detects the type of user function (async generator, coroutine,
     generator, or regular function) and creates appropriate wrapper classes that maintain
@@ -84,7 +84,7 @@ def create_manifest(
         agent_trust: AgentTrust configuration for security and trust management.
         version: Agent version string (e.g., "1.0.0").
         url: Agent URL where the agent is hosted.
-        protocol_version: Pebbling protocol version (default: "1.0.0").
+        protocol_version: bindu protocol version (default: "1.0.0").
         kind: Agent type - 'agent', 'team', or 'workflow' (default: 'agent').
         debug_mode: Enable debug mode for detailed logging (default: False).
         debug_level: Debug verbosity level - 1 or 2 (default: 1).
@@ -178,7 +178,7 @@ def create_manifest(
 
     Note:
         Agent names automatically convert underscores to hyphens since underscores
-        are not allowed in agent names in the Pebbling protocol.
+        are not allowed in agent names in the bindu protocol.
     """
 
     # Analyze function signature

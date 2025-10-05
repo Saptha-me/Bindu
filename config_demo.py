@@ -10,8 +10,8 @@ import json
 import os
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from pebbling.penguin import pebblify
-from pebbling.penguin.config_validator import ConfigValidator, load_and_validate_config
+from bindu.penguin import pebblify
+from bindu.penguin.config_validator import ConfigValidator, load_and_validate_config
 
 # Option 1: Load and validate in one step
 config_dict = load_and_validate_config("simple_agent_config.json")

@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pebbling"
+name = "bindu"
 version = "0.1.0"
 description = "A protocol framework for agent-to-agent communication"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
-authors = [{ name = "Rahul Dutta", email = "raahul@pebbling.ai" }]
+authors = [{ name = "Rahul Dutta", email = "raahul@bindu.ai" }]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -46,23 +46,23 @@ dependencies = [
 dev = ["pytest-asyncio>=0.26.0"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["pebbling"]  # Changed from src/pebbling to reflect actual directory structure
+packages = ["bindu"]  # Changed from src/bindu to reflect actual directory structure
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "pebbling",  # Changed from /src to pebbling
+    "bindu",  # Changed from /src to bindu
     "protocol_config.json",
     "README.md"
 ]
 
 [tool.uv.workspace]
-members = ["pebbling-template/my_project", "pebbling-template/project1"]
+members = ["bindu-template/my_project", "bindu-template/project1"]
 
 [tool.uv.sources]
-pebbling = { workspace = true }
+bindu = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "pebbling",
+    "bindu",
     "ty>=0.0.1a14",
 ]

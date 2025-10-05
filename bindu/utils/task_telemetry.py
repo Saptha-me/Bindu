@@ -13,25 +13,25 @@ from uuid import UUID
 from opentelemetry import metrics, trace
 from opentelemetry.trace import Status, StatusCode
 
-from pebbling.utils.logging import get_logger
+from bindu.utils.logging import get_logger
 
 # Get tracer and meter for TaskManager operations
-tracer = trace.get_tracer("pebbling.server.task_manager")
-meter = metrics.get_meter("pebbling.server.task_manager")
+tracer = trace.get_tracer("bindu.server.task_manager")
+meter = metrics.get_meter("bindu.server.task_manager")
 
 # Metrics
-task_counter = meter.create_counter("pebbling_tasks_total", description="Total number of tasks processed", unit="1")
+task_counter = meter.create_counter("bindu_tasks_total", description="Total number of tasks processed", unit="1")
 
 task_duration = meter.create_histogram(
-    "pebbling_task_duration_seconds", description="Task processing duration", unit="s"
+    "bindu_task_duration_seconds", description="Task processing duration", unit="s"
 )
 
 active_tasks = meter.create_up_down_counter(
-    "pebbling_active_tasks", description="Number of currently active tasks", unit="1"
+    "bindu_active_tasks", description="Number of currently active tasks", unit="1"
 )
 
 context_counter = meter.create_counter(
-    "pebbling_contexts_total", description="Total number of contexts managed", unit="1"
+    "bindu_contexts_total", description="Total number of contexts managed", unit="1"
 )
 
 logger = get_logger()
@@ -64,25 +64,25 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
                 # Set basic span attributes
                 span.set_attributes(
                     {
-                        "pebbling.operation": operation_name,
-                        "pebbling.request_id": request_id,
-                        "pebbling.component": "task_manager",
+                        "bindu.operation": operation_name,
+                        "bindu.request_id": request_id,
+                        "bindu.component": "task_manager",
                     }
                 )
 
                 # Add operation-specific attributes
                 if include_params:
                     if "task_id" in params:
-                        span.set_attribute("pebbling.task_id", str(params["task_id"]))
+                        span.set_attribute("bindu.task_id", str(params["task_id"]))
                     if "context_id" in params:
-                        span.set_attribute("pebbling.context_id", str(params["context_id"]))
+                        span.set_attribute("bindu.context_id", str(params["context_id"]))
                     if "message" in params:
                         # Add message metadata without sensitive content
                         message = params["message"]
                         if isinstance(message, dict):
-                            span.set_attribute("pebbling.message_type", message.get("type", "unknown"))
+                            span.set_attribute("bindu.message_type", message.get("type", "unknown"))
                             if "parts" in message:
-                                span.set_attribute("pebbling.message_parts_count", len(message["parts"]))
+                                span.set_attribute("bindu.message_parts_count", len(message["parts"]))
 
                 try:
                     # Execute the operation
@@ -96,16 +96,16 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
 
                     # Set success status
                     span.set_status(Status(StatusCode.OK))
-                    span.set_attribute("pebbling.success", True)
+                    span.set_attribute("bindu.success", True)
 
                     # Add result metadata
                     if hasattr(result, "get") and "result" in result:
                         result_data = result["result"]
                         if isinstance(result_data, dict):
                             if "task_id" in result_data:
-                                span.set_attribute("pebbling.result_task_id", str(result_data["task_id"]))
+                                span.set_attribute("bindu.result_task_id", str(result_data["task_id"]))
                             if "status" in result_data:
-                                span.set_attribute("pebbling.task_status", result_data["status"])
+                                span.set_attribute("bindu.task_status", result_data["status"])
 
                     logger.info(
                         f"TaskManager.{operation_name} completed successfully",
@@ -127,9 +127,9 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.set_attributes(
                         {
-                            "pebbling.success": False,
-                            "pebbling.error_type": type(e).__name__,
-                            "pebbling.error_message": str(e),
+                            "bindu.success": False,
+                            "bindu.error_type": type(e).__name__,
+                            "bindu.error_message": str(e),
                         }
                     )
 
@@ -192,14 +192,14 @@ def trace_context_operation(operation_name: str):
             with tracer.start_as_current_span(f"context_manager.{operation_name}") as span:
                 span.set_attributes(
                     {
-                        "pebbling.operation": operation_name,
-                        "pebbling.request_id": request_id,
-                        "pebbling.component": "context_manager",
+                        "bindu.operation": operation_name,
+                        "bindu.request_id": request_id,
+                        "bindu.component": "context_manager",
                     }
                 )
 
                 if "context_id" in params:
-                    span.set_attribute("pebbling.context_id", str(params["context_id"]))
+                    span.set_attribute("bindu.context_id", str(params["context_id"]))
 
                 try:
                     result = await func(self, request, *args, **kwargs)
@@ -216,7 +216,7 @@ def trace_context_operation(operation_name: str):
                     )
 
                     span.set_status(Status(StatusCode.ERROR, str(e)))
-                    span.set_attribute("pebbling.error_type", type(e).__name__)
+                    span.set_attribute("bindu.error_type", type(e).__name__)
                     raise
 
         return cast(F, wrapper)
@@ -229,11 +229,11 @@ def create_task_span(task_id: UUID, operation: str, context_id: UUID | None = No
     """Create a task-specific span with standard attributes."""
     span = tracer.start_span(f"task.{operation}")
     span.set_attributes(
-        {"pebbling.task_id": str(task_id), "pebbling.operation": operation, "pebbling.component": "task"}
+        {"bindu.task_id": str(task_id), "bindu.operation": operation, "bindu.component": "task"}
     )
 
     if context_id:
-        span.set_attribute("pebbling.context_id", str(context_id))
+        span.set_attribute("bindu.context_id", str(context_id))
 
     return span
 

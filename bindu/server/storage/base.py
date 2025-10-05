@@ -1,13 +1,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 # STORAGE OVERVIEW:
 #
-# The Storage is the order tracking system in the Pebbling framework.
+# The Storage is the order tracking system in the bindu framework.
 # It stores and retrieves tasks, contexts, and maintains the complete order history
 # for the burger restaurant (agent execution system).
 #
@@ -59,7 +59,7 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from pebbling.common.protocol.types import Artifact, Message, Task, TaskState
+from bindu.common.protocol.types import Artifact, Message, Task, TaskState
 
 ContextT = TypeVar("ContextT", default=Any)
 

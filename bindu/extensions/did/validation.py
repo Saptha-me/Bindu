@@ -8,7 +8,7 @@ class DIDValidation:
     
     # Regex patterns for DID validation
     DID_PATTERN = re.compile(r'^did:[a-z0-9]+:.+$', re.IGNORECASE)
-    PEBBLING_DID_PATTERN = re.compile(r'^did:pebbling:[^:]+:[^:]+$', re.IGNORECASE)
+    bindu_DID_PATTERN = re.compile(r'^did:bindu:[^:]+:[^:]+$', re.IGNORECASE)
     
     @staticmethod
     def validate_did_format(did: str) -> Tuple[bool, Optional[str]]:
@@ -40,14 +40,14 @@ class DIDValidation:
         
         method = parts[1]
         
-        # For pebbling DIDs, validate specific format
-        if method == "pebbling":
-            if not DIDValidation.PEBBLING_DID_PATTERN.match(did):
-                return False, "Pebbling DID must have format did:pebbling:author:agent_name"
+        # For bindu DIDs, validate specific format
+        if method == "bindu":
+            if not DIDValidation.bindu_DID_PATTERN.match(did):
+                return False, "bindu DID must have format did:bindu:author:agent_name"
             
             # Validate non-empty components
             if len(parts) != 4 or not parts[2] or not parts[3]:
-                return False, "Author and agent name cannot be empty in Pebbling DID"
+                return False, "Author and agent name cannot be empty in bindu DID"
         
         return True, None
     

@@ -1,13 +1,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 # SCHEDULER OVERVIEW:
 #
-# The Scheduler is the task queue manager in the Pebbling framework.
+# The Scheduler is the task queue manager in the bindu framework.
 # It receives tasks from the TaskManager and coordinates their execution
 # by workers, handling task lifecycle operations like run, cancel, pause, resume.
 #
@@ -60,7 +60,7 @@ from opentelemetry.trace import Span, get_tracer
 from pydantic import Discriminator
 from typing_extensions import Self, TypedDict
 
-from pebbling.common.protocol.types import TaskIdParams, TaskSendParams
+from bindu.common.protocol.types import TaskIdParams, TaskSendParams
 
 tracer = get_tracer(__name__)
 

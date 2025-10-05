@@ -1,13 +1,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 # SCHEDULER MODULE EXPORTS:
 #
-# This module provides the scheduler layer for the Pebbling framework.
+# This module provides the scheduler layer for the bindu framework.
 # It exposes different scheduler implementations for task queue management.
 #
 # BURGER STORE ANALOGY:

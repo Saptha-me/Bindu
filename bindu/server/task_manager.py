@@ -2,11 +2,11 @@
 |---------------------------------------------------------|
 |                                                         |
 |                 Give Feedback / Get Help                |
-| https://github.com/Pebbling-ai/pebble/issues/new/choose |
+| https://github.com/bindu-ai/pebble/issues/new/choose |
 |                                                         |
 |---------------------------------------------------------|
 
-🍔 **The Pebbling Task Manager: A Burger Restaurant Architecture**
+🍔 **The bindu Task Manager: A Burger Restaurant Architecture**
 
 This module defines the TaskManager - the **Restaurant Manager** of our AI agent ecosystem.
 Think of it like running a high-end burger restaurant where customers place orders,
@@ -95,7 +95,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from pebbling.common.protocol.types import (
+from bindu.common.protocol.types import (
     CancelTaskRequest,
     CancelTaskResponse,
     ClearContextsRequest,

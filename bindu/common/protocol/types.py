@@ -209,7 +209,7 @@ class Artifact(TypedDict):
 class Message(TypedDict):
     """Communication content exchanged between agents, users, and systems.
 
-    Messages represent all non-result communication in the Pebbling protocol.
+    Messages represent all non-result communication in the bindu protocol.
     Unlike Artifacts (which contain task outputs), Messages carry operational
     content like instructions, status updates, context, and metadata.
 
@@ -413,7 +413,7 @@ class TaskStatus(TypedDict):
 class Task(TypedDict):
     """Stateful execution unit that coordinates client-agent interaction to achieve a goal.
 
-    Tasks serve as the primary coordination mechanism in the Pebbling protocol,
+    Tasks serve as the primary coordination mechanism in the bindu protocol,
     managing the complete lifecycle from request to completion. They maintain
     conversation history, track execution state, and collect generated artifacts.
 
@@ -653,7 +653,7 @@ class DeleteTaskPushNotificationConfigParams(TypedDict):
 class Context(TypedDict):
     """Conversation session that groups related tasks and maintains interaction history.
 
-    Contexts serve as conversation containers in the Pebbling protocol, managing
+    Contexts serve as conversation containers in the bindu protocol, managing
     the complete interaction lifecycle between clients and agents. They maintain
     conversation continuity, preserve context across multiple tasks, and provide
     session-level organization.
@@ -1617,7 +1617,7 @@ class AgentCapabilities(TypedDict):
 
 @pydantic.with_config({"alias_generator": to_camel})
 class AgentCard(TypedDict):
-    """The card that describes an agent - following Pebbling pattern."""
+    """The card that describes an agent - following bindu pattern."""
 
     id: Required[UUID]
     """Unique identifier for the agent."""

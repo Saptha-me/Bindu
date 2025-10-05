@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from starlette.requests import Request
 from starlette.responses import Response
 
-from pebbling.common.protocol.types import a2a_request_ta, a2a_response_ta
+from bindu.common.protocol.types import a2a_request_ta, a2a_response_ta
 
 if TYPE_CHECKING:
     from ..applications import PebbleApplication

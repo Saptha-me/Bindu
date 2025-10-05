@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import base58
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
-from pebbling.common.protocol.types import AgentExtension
+from bindu.common.protocol.types import AgentExtension
 
 logger = logging.getLogger(__name__)
 
@@ -268,17 +268,17 @@ class DIDAgentExtension:
 
     @cached_property
     def did(self) -> str:
-        """Create custom Pebbling DID format.
+        """Create custom bindu DID format.
 
         Returns:
-            DID string in format did:pebbling:{author}:{agent_name}
+            DID string in format did:bindu:{author}:{agent_name}
             Falls back to did:key format if author or agent_name not provided
         """
-        # Use custom Pebbling format if author and agent_name provided
+        # Use custom bindu format if author and agent_name provided
         if self.author and self.agent_name:
             sanitized_author = self._sanitize_did_component(self.author)
             sanitized_agent_name = self._sanitize_did_component(self.agent_name)
-            return f"did:pebbling:{sanitized_author}:{sanitized_agent_name}"
+            return f"did:bindu:{sanitized_author}:{sanitized_agent_name}"
         
         # Fallback to did:key format - use cached public_key property
         raw_bytes = self.public_key.public_bytes(
@@ -339,7 +339,7 @@ class DIDAgentExtension:
             Dictionary containing the full DID document with agent metadata
         """
         did_doc = {
-            "@context": ["https://www.w3.org/ns/did/v1", "https://pebbling.ai/ns/v1"],
+            "@context": ["https://www.w3.org/ns/did/v1", "https://bindu.ai/ns/v1"],
             "id": self.did,
             "created": self._created_at,
             
@@ -351,8 +351,8 @@ class DIDAgentExtension:
                 "publicKeyBase58": self.public_key_base58
             }],
             
-            # Pebbling-specific metadata
-            "pebbling": {
+            # bindu-specific metadata
+            "bindu": {
                 "agentName": self.agent_name,
                 "author": self.author,
                 **self.metadata  # Include all metadata
@@ -363,7 +363,7 @@ class DIDAgentExtension:
         if "url" in self.metadata:
             did_doc["service"] = [{
                 "id": f"{self.did}#agent-service",
-                "type": "PebblingAgentService",
+                "type": "binduAgentService",
                 "serviceEndpoint": self.metadata["url"]
             }]
         
@@ -392,7 +392,7 @@ class DIDAgentExtension:
     def agent_extension(self):
         return AgentExtension(
             uri="https://github.com/Saptha-me/septha",
-            description="DID-based identity management for Pebbling agents",
+            description="DID-based identity management for bindu agents",
             required=False,
             params={
                 "did": self.did,

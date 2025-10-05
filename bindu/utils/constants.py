@@ -2,7 +2,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -11,7 +11,7 @@
 """🔧 Global Constants: The Foundation Stones
 
 Central repository for all constants, configuration values, and type definitions
-used throughout the Pebbling framework. Like carefully selected pebbles,
+used throughout the bindu framework. Like carefully selected pebbles,
 each constant serves a specific purpose in the greater architecture.
 
 🏗️ Categories:

@@ -1,31 +1,31 @@
 <p align="center">
-  <img src="assets/pebbling-logo.svg" alt="Pebbling Logo" width="200">
+  <img src="assets/bindu-logo.svg" alt="bindu Logo" width="200">
 </p>
 
-<h1 align="center">Pebbling: Agent-to-Agent Communication </h1>
+<h1 align="center">bindu: Agent-to-Agent Communication </h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Hits](https://hits.sh/github.com/Pebbling-ai/pebble.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/Pebbling-ai/pebble/)
+[![Hits](https://hits.sh/github.com/bindu-ai/pebble.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/bindu-ai/pebble/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml/badge.svg)](https://github.com/Pebbling-ai/pebble/actions/workflows/release.yml)
-[![Coverage Status](https://coveralls.io/repos/github/Pebbling-ai/pebble/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Pebbling-ai/pebble?branch=v0.1.0.5)
-[![PyPI version](https://badge.fury.io/py/pebbling.svg)](https://badge.fury.io/py/pebbling)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/pebbling)](https://pypi.org/project/pebbling/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Pebbling-ai/pebble/pulls)
+[![Tests](https://github.com/bindu-ai/pebble/actions/workflows/release.yml/badge.svg)](https://github.com/bindu-ai/pebble/actions/workflows/release.yml)
+[![Coverage Status](https://coveralls.io/repos/github/bindu-ai/pebble/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/bindu-ai/pebble?branch=v0.1.0.5)
+[![PyPI version](https://badge.fury.io/py/bindu.svg)](https://badge.fury.io/py/bindu)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/bindu)](https://pypi.org/project/bindu/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/bindu-ai/pebble/pulls)
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/Fr6rcRJa)
-[![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.pebbling.ai)
-[![GitHub stars](https://img.shields.io/github/stars/Pebbling-ai/pebble)](https://github.com/Pebbling-ai/pebble/stargazers)
+[![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.bindu.ai)
+[![GitHub stars](https://img.shields.io/github/stars/bindu-ai/pebble)](https://github.com/bindu-ai/pebble/stargazers)
 
 ✨ Imagine a world where AI agents collaborate effortlessly and securely—no passport 🚫, no boundaries 🌐.
 
-That’s Pebbling 🐧.An open source, secured protocol for agent-to-agent communication.
+That’s bindu 🐧.An open source, secured protocol for agent-to-agent communication.
 
-🚀 Powered by Decentralised Identifiers (DIDs) 🔑, secured conversations with mutual TLS (mTLS) 🔒, and a lightweight yet powerful communication protocol built on JSON-RPC 2.0 ⚡️—Pebbling is paving the way for the next generation of collaborative AI systems. 🌟🤖
+🚀 Powered by Decentralised Identifiers (DIDs) 🔑, secured conversations with mutual TLS (mTLS) 🔒, and a lightweight yet powerful communication protocol built on JSON-RPC 2.0 ⚡️—bindu is paving the way for the next generation of collaborative AI systems. 🌟🤖
 
 
 ## 🌟 Features
 
-Pebbling helps your AI agents talk to each other seamlessly:
+bindu helps your AI agents talk to each other seamlessly:
 
 🔒 **Super Secure** - Your agents exchange secrets safely (with built-in mTLS)
 
@@ -42,28 +42,28 @@ Pebbling helps your AI agents talk to each other seamlessly:
 
 ```bash
 # Using pip
-pip install pebbling
+pip install bindu
 
 # Using uv (recommended)
-uv add pebbling
+uv add bindu
 ```
 
 ## 🚀 Quick Start
 
 ### 🍪 Quick Start with Cookiecutter Template
 
-The fastest way to get started with Pebbling is using our cookiecutter template:
+The fastest way to get started with bindu is using our cookiecutter template:
 
 ```bash
-# Create a new Pebbling project
-uv tool run cookiecutter cookiecutter-pebbling/
+# Create a new bindu project
+uv tool run cookiecutter cookiecutter-bindu/
 ```
 
 Follow the interactive prompts:
 ```
 [1/4] name (pebble_project): my_weather_agent
 [2/4] description (): A weather forecasting agent
-[3/4] pebbling_email (): your.email@example.com
+[3/4] bindu_email (): your.email@example.com
 [4/4] Select agent_framework
   1 - none
   2 - agno
@@ -76,7 +76,7 @@ After project creation:
 ```bash
 🎉 Project created successfully!
 
-🐧 Welcome to Pebbling — powered by the Pebble CLI.
+🐧 Welcome to bindu — powered by the Pebble CLI.
 Next steps:
   1️⃣  cd 'my_weather_agent'
   2️⃣  Set it up using uv: 📦
@@ -108,19 +108,19 @@ uv sync
 uv run src/pebble_agent.py
 ```
 
-Your agent will start with full Pebbling capabilities:
+Your agent will start with full bindu capabilities:
 - ✅ Automatic DID identity generation
 - ✅ Security setup with mTLS certificates
 - ✅ Agent manifest creation
 - ✅ Local server running on http://localhost:8030
 - ✅ OpenInference observability integration
 
-> 📂 **Template Repository**: [cookiecutter-pebbling](https://github.com/Pebbling-ai/cookiecutter-pebbling)
+> 📂 **Template Repository**: [cookiecutter-bindu](https://github.com/bindu-ai/cookiecutter-bindu)
 
 ### Manual Setup - Pebblify an Agent
 
 ```python
-from pebbling import pebblify
+from bindu import pebblify
 
 @pebblify(name="My Agent", description="A simple agent", version="1.0.0")
 def my_agent(message: str) -> str:
@@ -132,7 +132,7 @@ def my_agent(message: str) -> str:
 ### Pebblify a [Agno](https://github.com/agno-ai/agno) Agent
 
 ```python
-from pebbling import pebblify
+from bindu import pebblify
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 
@@ -176,7 +176,7 @@ Open the interactive version of this orchestration diagram in MermaidChart
 
 ## 🛠️ Supported Agent Frameworks
 
-Pebbling is tested and integrated with popular agent frameworks:
+bindu is tested and integrated with popular agent frameworks:
 
 - ✅ [Agno](https://github.com/agno-ai/agno)
 - 🔜 CrewAI (Coming soon)
@@ -188,11 +188,11 @@ Want integration with your favorite framework? Let us know on [Discord](https://
 
 ## 📖 Documentation
 
-For comprehensive documentation, visit [docs.pebbling.ai](https://docs.pebbling.ai)
+For comprehensive documentation, visit [docs.bindu.ai](https://docs.bindu.ai)
 
 ## 🧪 Testing
 
-Pebbling is thoroughly tested with a test coverage of over 83%:
+bindu is thoroughly tested with a test coverage of over 83%:
 
 ```bash
 # Run tests with coverage
@@ -206,7 +206,7 @@ We welcome contributions! Here's how to get started:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Pebbling-ai/pebble.git
+git clone https://github.com/bindu-ai/pebble.git
 cd pebble
 
 # Install development dependencies
@@ -227,11 +227,11 @@ For more details about maintainership, including how to become a maintainer, see
 
 ## 📜 License
 
-Pebbling is proudly open-source and licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
+bindu is proudly open-source and licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
 
 ## 💻 Example Use Cases
 
-Pebbling is ideal for:
+bindu is ideal for:
 
 - **Multi-Agent Collaboration**: Enable efficient, secure teamwork between LLM-driven agents.
 - **Decentralized Autonomous Systems**: Build reliable decentralized AI networks.
@@ -240,17 +240,17 @@ Pebbling is ideal for:
 
 ## 🎉 Community
 
-We 💛 contributions! Whether you're fixing bugs, improving documentation, or building demos — your contributions make Pebbling better.
+We 💛 contributions! Whether you're fixing bugs, improving documentation, or building demos — your contributions make bindu better.
 
 - Join our [Discord](https://discord.gg/Fr6rcRJa) for discussions and support
 - Star the repository if you find it useful!
 
 ## 🚧 Roadmap
 
-Here's what's next for pebbling:
+Here's what's next for bindu:
 
 - [ ] GRPC transport support
-- [ ] Integration with [Hibiscus](https://github.com/Pebbling-ai/hibiscus) (DiD - Decentralized Identifiers, mTLS)
+- [ ] Integration with [Hibiscus](https://github.com/bindu-ai/hibiscus) (DiD - Decentralized Identifiers, mTLS)
 - [ ] Detailed tutorials and guides
 - [ ] Expanded multi-framework support
 
@@ -269,13 +269,13 @@ Pebble's minimal dependencies and protocol simplicity ensure scalability across 
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Pebbling-ai/pebble&type=Date)](https://star-history.com/#Pebbling-ai/pebble&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=bindu-ai/pebble&type=Date)](https://star-history.com/#bindu-ai/pebble&Date)
 
 
-Built with ❤️ by the Pebbling team from Amsterdam 🌷.
+Built with ❤️ by the bindu team from Amsterdam 🌷.
 
 We’re excited to see what you’ll build with Pebble! Our dream is a world where agents across the internet communicate securely, openly, and effortlessly.
 
 Have questions, ideas, or just want to chat? Join our Discord community— we’d love to hear from you! Together, let’s lay the foundation for the next generation of AI agent collaboration.
 
-Happy Pebbling! 🐧🚀✨
+Happy bindu! 🐧🚀✨

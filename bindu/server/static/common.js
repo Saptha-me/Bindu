@@ -1,4 +1,4 @@
-// Essential JavaScript functions for Pebbling UI
+// Essential JavaScript functions for bindu UI
 
 // Generate UUID v4
 function generateId() {

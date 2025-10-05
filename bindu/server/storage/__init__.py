@@ -1,13 +1,13 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Pebbling-ai/pebble/issues/new/choose |
+# | https://github.com/bindu-ai/pebble/issues/new/choose |
 # |                                                         |
 # |---------------------------------------------------------|
 #
 # STORAGE MODULE EXPORTS:
 #
-# This module provides the storage layer for the Pebbling framework.
+# This module provides the storage layer for the bindu framework.
 # It exposes different storage implementations for tasks and contexts.
 #
 # BURGER STORE ANALOGY:

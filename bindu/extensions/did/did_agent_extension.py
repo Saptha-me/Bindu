@@ -31,13 +31,12 @@ import os
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, NamedTuple
 
 import base58
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from bindu.common.models import KeyPaths
 from bindu.common.protocol.types import AgentExtension
 from bindu.utils.constants import (
     BASE58_ENCODING,
@@ -154,18 +153,18 @@ class DIDAgentExtension:
         
         return private_pem, public_pem
 
-    def _get_key_paths(self) -> KeyPaths:
+    def _get_key_paths(self) -> dict[str, str]:
         """Get KeyPaths object from current paths."""
-        return KeyPaths(
-            private_key_path=str(self.private_key_path),
-            public_key_path=str(self.public_key_path)
-        )
+        return {
+            "private_key_path": str(self.private_key_path),
+            "public_key_path": str(self.public_key_path)
+        }
 
-    def generate_and_save_key_pair(self) -> KeyPaths:
+    def generate_and_save_key_pair(self) -> dict[str, str]:
         """Generate and save key pair to files if they don't exist.
 
         Returns:
-            KeyPaths containing the private and public key file paths
+            Dict containing the private and public key file paths
 
         Raises:
             OSError: If unable to write key files

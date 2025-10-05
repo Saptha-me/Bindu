@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import uuid4
 
 from bindu.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
-from bindu.extensions.did import DIDAgentExtension
 from bindu.utils.constants import DID_AGENT_EXTENSION_METADATA
+
+if TYPE_CHECKING:
+    from bindu.extensions.did import DIDAgentExtension
 
 
 class MessageConverter:
@@ -127,7 +129,7 @@ class ArtifactBuilder:
 
     @staticmethod
     def from_result(
-        results: Any, artifact_name: str = "result", did_extension: Optional[DIDAgentExtension] = None
+        results: Any, artifact_name: str = "result", did_extension: Optional["DIDAgentExtension"] = None
     ) -> list[Artifact]:
         """Convert manifest execution result to pebble protocol artifacts.
 

@@ -39,6 +39,7 @@ from pebbling.common.protocol.types import (
 )
 from pebbling.penguin.manifest import create_manifest, validate_agent_function
 from pebbling.extensions.did import DIDAgentExtension
+from pebbling.extensions.x402 import build_payment_manager_from_settings
 import pebbling.observability.openinference as OpenInferenceObservability
 
 # Import server components for deployment
@@ -55,6 +56,7 @@ from pebbling.utils.constants import CERTIFICATE_DIR, PKI_DIR
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
+from pebbling.settings import app_settings
 
 # Configure logging for the module
 logger = get_logger("pebbling.penguin.pebblify")
@@ -165,6 +167,10 @@ def pebblify(
         else:
             capabilities = AgentCapabilities(extensions=[did_extension.agent_extension])
 
+        x402_manager = build_payment_manager_from_settings(app_settings)
+        if x402_manager:
+            capabilities["extensions"].append(x402_manager.agent_extension)
+
         _manifest = create_manifest(
             agent_function=agent_function,
             id=agent_id,
@@ -206,6 +212,7 @@ def pebblify(
             penguin_id=agent_id,
             manifest=_manifest,
             version=version,
+            payment_manager=x402_manager,
         )
 
         if telemetry:

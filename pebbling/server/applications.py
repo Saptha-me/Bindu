@@ -1,21 +1,34 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator, Optional, Sequence, Union
+from typing import Any, AsyncIterator, Mapping, Optional, Sequence, Union
 from uuid import UUID
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import FileResponse, Response
+from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 from starlette.types import ExceptionHandler, Lifespan, Receive, Scope, Send
 
 from pebbling.common.models import AgentManifest
 from pebbling.common.protocol.types import AgentCard, agent_card_ta, pebble_request_ta, pebble_response_ta
+from pebbling.extensions.x402 import (
+    PaymentEvaluationResult,
+    PaymentSettlementError,
+    PaymentVerificationError,
+    X402PaymentManager,
+    X_A2A_EXTENSIONS_HEADER,
+    build_payment_manager_from_settings,
+    ensure_extension_header,
+)
+from pebbling.settings import app_settings
+from pebbling.utils.logging import get_logger
 
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .storage.memory_storage import InMemoryStorage
 from .task_manager import TaskManager
+
+logger = get_logger("pebbling.server.applications")
 
 
 class PebbleApplication(Starlette):
@@ -36,6 +49,7 @@ class PebbleApplication(Starlette):
         routes: Optional[Sequence[Route]] = None,
         middleware: Optional[Sequence[Middleware]] = None,
         exception_handlers: Optional[dict[Any, ExceptionHandler]] = None,
+        payment_manager: Optional[X402PaymentManager] = None,
     ):
         """Initialize Pebble application.
 
@@ -72,6 +86,7 @@ class PebbleApplication(Starlette):
         self.manifest = manifest
         self.default_input_modes = ["application/json"]
         self.default_output_modes = ["application/json"]
+        self._payment_manager = payment_manager or build_payment_manager_from_settings(app_settings)
 
         # TaskManager will be initialized in lifespan
         self.task_manager: Optional[TaskManager] = None
@@ -234,7 +249,23 @@ class PebbleApplication(Starlette):
         data = await request.body()
         pebble_request = pebble_request_ta.validate_json(data)
 
+        settlement_header: Optional[str] = None
+
         if pebble_request["method"] == "message/send":
+            if self._payment_manager:
+                try:
+                    evaluation = self._payment_manager.evaluate_request(request.headers)
+                except PaymentVerificationError as exc:
+                    return self._payment_error_response(str(exc), status_code=402, request_headers=request.headers)
+                except PaymentSettlementError as exc:
+                    return self._payment_error_response(str(exc), status_code=402, request_headers=request.headers)
+
+                if evaluation.requires_challenge:
+                    return self._payment_challenge_response(evaluation, request.headers)
+
+                if evaluation.has_settlement:
+                    settlement_header = evaluation.settlement.settlement_header
+
             jsonrpc_response = await self.task_manager.send_message(pebble_request)
         elif pebble_request["method"] == "message/stream":
             return await self.task_manager.stream_message(pebble_request)
@@ -262,7 +293,58 @@ class PebbleApplication(Starlette):
             jsonrpc_response = await self.task_manager.resubscribe_task(pebble_request)
         else:
             raise NotImplementedError(f"Method {pebble_request['method']} not implemented.")
+        response_headers: dict[str, str] = {}
+        if self._payment_manager:
+            response_headers[X_A2A_EXTENSIONS_HEADER] = ensure_extension_header(
+                response_headers.get(X_A2A_EXTENSIONS_HEADER),
+                self._payment_manager.extension_config.extension_uri,
+            )
+        if settlement_header:
+            response_headers["X-PAYMENT-RESPONSE"] = settlement_header
+
         return Response(
             content=pebble_response_ta.dump_json(jsonrpc_response, by_alias=True, serialize_as_any=True),
             media_type="application/json",
+            headers=response_headers or None,
+        )
+
+    def _payment_error_response(
+        self,
+        message: str,
+        *,
+        status_code: int,
+        request_headers: Mapping[str, str],
+    ) -> JSONResponse:
+        logger.warning("x402 payment error", error=message)
+        if self._payment_manager:
+            extension_header = ensure_extension_header(
+                request_headers.get(X_A2A_EXTENSIONS_HEADER),
+                self._payment_manager.extension_config.extension_uri,
+            )
+        else:
+            extension_header = request_headers.get(X_A2A_EXTENSIONS_HEADER, "")
+
+        return JSONResponse(
+            {"error": {"code": "payment_failed", "message": message}},
+            status_code=status_code,
+            headers={X_A2A_EXTENSIONS_HEADER: extension_header} if extension_header else None,
+        )
+
+    def _payment_challenge_response(
+        self,
+        evaluation: PaymentEvaluationResult,
+        request_headers: Mapping[str, str],
+    ) -> JSONResponse:
+        if not evaluation.challenge_payload:
+            return JSONResponse({"error": {"code": "payment_required", "message": "Payment required"}}, status_code=402)
+
+        extension_header = ensure_extension_header(
+            request_headers.get(X_A2A_EXTENSIONS_HEADER),
+            self._payment_manager.extension_config.extension_uri if self._payment_manager else "",
+        )
+
+        return JSONResponse(
+            evaluation.challenge_payload,
+            status_code=402,
+            headers={X_A2A_EXTENSIONS_HEADER: extension_header} if extension_header else None,
         )

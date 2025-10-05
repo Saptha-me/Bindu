@@ -15,14 +15,14 @@ Unified server supporting JSON-RPC
 protocols with shared task management and session contexts.
 """
 
-from .applications import PebbleApplication
+from .applications import BinduApplication
 from .scheduler import InMemoryScheduler
 from .storage import InMemoryStorage
 from .task_manager import TaskManager
 from .workers import ManifestWorker
 
 __all__ = [
-    "PebbleApplication",
+    "BinduApplication",
     "InMemoryStorage",
     # "PostgreSQLStorage",
     # "QdrantStorage",

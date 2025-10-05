@@ -8,10 +8,10 @@ from starlette.responses import Response
 from bindu.common.protocol.types import a2a_request_ta, a2a_response_ta
 
 if TYPE_CHECKING:
-    from ..applications import PebbleApplication
+    from ..applications import BinduApplication
 
 
-async def agent_run_endpoint(app: "PebbleApplication", request: Request) -> Response:
+async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Response:
     """Main endpoint for the Pebble server A2A protocol.
 
     Although the specification allows freedom of choice and implementation, I'm pretty sure about some decisions.

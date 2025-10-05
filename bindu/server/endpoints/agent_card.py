@@ -8,10 +8,10 @@ from starlette.responses import Response
 from bindu.common.protocol.types import AgentCard, agent_card_ta
 
 if TYPE_CHECKING:
-    from ..applications import PebbleApplication
+    from ..applications import BinduApplication
 
 
-async def agent_card_endpoint(app: "PebbleApplication", request: Request) -> Response:
+async def agent_card_endpoint(app: "BinduApplication", request: Request) -> Response:
     """Serve the agent card JSON schema.
     
     This endpoint provides W3C-compliant agent discovery information.

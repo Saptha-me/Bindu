@@ -7,10 +7,10 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 if TYPE_CHECKING:
-    from ..applications import PebbleApplication
+    from ..applications import BinduApplication
 
 
-async def did_resolve_endpoint(app: "PebbleApplication", request: Request) -> Response:
+async def did_resolve_endpoint(app: "BinduApplication", request: Request) -> Response:
     """Resolve DID and return full DID document.
     
     GET /did/resolve?did=did:bindu:user:agent
@@ -47,7 +47,7 @@ async def did_resolve_endpoint(app: "PebbleApplication", request: Request) -> Re
     )
 
 
-async def agent_info_endpoint(app: "PebbleApplication", request: Request) -> Response:
+async def agent_info_endpoint(app: "BinduApplication", request: Request) -> Response:
     """Get simplified agent information.
     
     GET /agent/info

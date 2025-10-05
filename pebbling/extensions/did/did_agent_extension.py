@@ -1,21 +1,35 @@
+from __future__ import annotations
+
+import os
 import logging
+import asyncio
+import re
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List
 from functools import cached_property
+from datetime import datetime, timezone
 
+import base58
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ed25519
 from pebbling.common.protocol.types import AgentExtension
-from .key_manager import KeyManager
-from .crypto_operations import CryptoOperations
-from .did_document import DIDDocument
-from .async_operations import AsyncOperations
 
 logger = logging.getLogger(__name__)
+
+# Optional async file I/O support
+try:
+    import aiofiles
+    AIOFILES_AVAILABLE = True
+except ImportError:
+    AIOFILES_AVAILABLE = False
+    logger.warning("aiofiles not installed. Async file operations will fall back to sync.")
 
 
 class DIDAgentExtensionMetadata:
     """Constants for DID-related metadata keys."""
 
     SIGNATURE_KEY = "did.message.signature"
+
 
 
 class DIDAgentExtension:
@@ -31,15 +45,46 @@ class DIDAgentExtension:
         # Store key paths directly instead of key_dir
         self.private_key_path = str(key_dir / "private.pem")
         self.public_key_path = str(key_dir / "public.pem")
+        self._key_dir = os.path.dirname(self.private_key_path)  # Cache directory path
         self.recreate_keys = recreate_keys
         self.author = author  # The author/owner of the agent
         self.agent_name = agent_name
         self.key_password = key_password.encode() if key_password else None
+        self._created_at = datetime.now(timezone.utc).isoformat()  # Cache creation timestamp
         
         # Store additional metadata that will be included in DID document
         self.metadata: Dict[str, Any] = {}
 
-    def generate_and_save_key_pair(self):
+    def _generate_key_pair_data(self) -> Tuple[bytes, bytes]:
+        """Generate key pair and return PEM data.
+        
+        Returns:
+            Tuple of (private_pem, public_pem)
+        """
+        private_key = ed25519.Ed25519PrivateKey.generate()
+        public_key = private_key.public_key()
+
+        # Use password protection if provided
+        encryption_algorithm = (
+            serialization.BestAvailableEncryption(self.key_password)
+            if self.key_password
+            else serialization.NoEncryption()
+        )
+        
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=encryption_algorithm,
+        )
+
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        
+        return private_pem, public_pem
+
+    def generate_and_save_key_pair(self) -> Tuple[str, str]:
         """
         Generate and save key pair to files if they don't exist.
 
@@ -50,7 +95,7 @@ class DIDAgentExtension:
             OSError: If unable to write key files
         """
         # Ensure directory exists for the key files
-        os.makedirs(os.path.dirname(self.private_key_path), exist_ok=True)
+        os.makedirs(self._key_dir, exist_ok=True)
 
         # We need to create the keys in the following scenarios
         # 1. Either private or public key is missing
@@ -58,24 +103,7 @@ class DIDAgentExtension:
         if os.path.exists(self.private_key_path) and os.path.exists(self.public_key_path) and not self.recreate_keys:
             return self.private_key_path, self.public_key_path
 
-        private_key = ed25519.Ed25519PrivateKey.generate()
-        public_key = private_key.public_key()
-
-        # Use password protection if provided
-        if self.key_password:
-            encryption_algorithm = serialization.BestAvailableEncryption(self.key_password)
-        else:
-            encryption_algorithm = serialization.NoEncryption()
-        
-        private_pem = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=encryption_algorithm,
-        )
-
-        public_pem = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
+        private_pem, public_pem = self._generate_key_pair_data()
 
         with open(self.private_key_path, "wb") as f:
             f.write(private_pem)
@@ -89,7 +117,7 @@ class DIDAgentExtension:
         
         return self.private_key_path, self.public_key_path
     
-    async def generate_and_save_key_pair_async(self):
+    async def generate_and_save_key_pair_async(self) -> Tuple[str, str]:
         """
         Async version - Generate and save key pair to files if they don't exist.
 
@@ -107,7 +135,7 @@ class DIDAgentExtension:
             )
         
         # Ensure directory exists for the key files
-        os.makedirs(os.path.dirname(self.private_key_path), exist_ok=True)
+        os.makedirs(self._key_dir, exist_ok=True)
 
         # We need to create the keys in the following scenarios
         # 1. Either private or public key is missing
@@ -116,26 +144,8 @@ class DIDAgentExtension:
             return self.private_key_path, self.public_key_path
 
         # Key generation is CPU-bound, so run in executor
-        private_key = await asyncio.get_event_loop().run_in_executor(
-            None, ed25519.Ed25519PrivateKey.generate
-        )
-        public_key = private_key.public_key()
-
-        # Use password protection if provided
-        if self.key_password:
-            encryption_algorithm = serialization.BestAvailableEncryption(self.key_password)
-        else:
-            encryption_algorithm = serialization.NoEncryption()
-        
-        private_pem = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=encryption_algorithm,
-        )
-
-        public_pem = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM, 
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        private_pem, public_pem = await asyncio.get_event_loop().run_in_executor(
+            None, self._generate_key_pair_data
         )
 
         # Async file write
@@ -152,6 +162,8 @@ class DIDAgentExtension:
         await asyncio.get_event_loop().run_in_executor(
             None, os.chmod, self.public_key_path, 0o644
         )
+        
+        return self.private_key_path, self.public_key_path
 
     @cached_property
     def private_key(self) -> ed25519.Ed25519PrivateKey:
@@ -247,6 +259,13 @@ class DIDAgentExtension:
         except Exception:
             return False
 
+    @staticmethod
+    def _sanitize_did_component(component: str) -> str:
+        """Sanitize a component for use in DID."""
+        # Use regex for efficient multi-character replacement
+        return re.sub(r'[@.]', lambda m: '_at_' if m.group() == '@' else '_', 
+                     component.lower().replace(' ', '_'))
+
     @cached_property
     def did(self) -> str:
         """Create custom Pebbling DID format.
@@ -257,17 +276,15 @@ class DIDAgentExtension:
         """
         # Use custom Pebbling format if author and agent_name provided
         if self.author and self.agent_name:
-            # Sanitize the components to ensure valid DID format
-            sanitized_author = self.author.lower().replace(' ', '_').replace('@', '_at_').replace('.', '_')
-            sanitized_agent_name = self.agent_name.lower().replace(' ', '_')
+            sanitized_author = self._sanitize_did_component(self.author)
+            sanitized_agent_name = self._sanitize_did_component(self.agent_name)
             return f"did:pebbling:{sanitized_author}:{sanitized_agent_name}"
         
-        # Fallback to did:key format for backward compatibility
-        with open(self.public_key_path, "rb") as f:
-            public_key_pem = f.read()
-
-        public_key = serialization.load_pem_public_key(public_key_pem)
-        raw_bytes = public_key.public_bytes(encoding=serialization.Encoding.Raw, format=serialization.PublicFormat.Raw)
+        # Fallback to did:key format - use cached public_key property
+        raw_bytes = self.public_key.public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw
+        )
 
         # Encode in base58btc with 'z' prefix (multibase convention for ed25519)
         multibase_encoded = "z" + base58.b58encode(raw_bytes).decode("ascii")
@@ -305,37 +322,39 @@ class DIDAgentExtension:
         # Add any extra metadata
         self.metadata.update(extra_metadata)
     
+    @cached_property
+    def public_key_base58(self) -> str:
+        """Get base58-encoded public key (cached)."""
+        return base58.b58encode(
+            self.public_key.public_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PublicFormat.Raw
+            )
+        ).decode("ascii")
+
     def get_did_document(self) -> Dict[str, Any]:
         """Generate a complete DID document with all agent information.
         
         Returns:
             Dictionary containing the full DID document with agent metadata
         """
-        # Get public key for verification
-        public_key_b58 = base58.b58encode(
-            self.public_key.public_bytes(
-                encoding=serialization.Encoding.Raw, 
-                format=serialization.PublicFormat.Raw
-            )
-        ).decode("ascii")
-        
         did_doc = {
             "@context": ["https://www.w3.org/ns/did/v1", "https://pebbling.ai/ns/v1"],
             "id": self.did,
-            "created": datetime.now(timezone.utc).isoformat() + "Z",
+            "created": self._created_at,
             
             # Authentication method
             "authentication": [{
                 "id": f"{self.did}#key-1",
                 "type": "Ed25519VerificationKey2020",
                 "controller": self.did,
-                "publicKeyBase58": public_key_b58
+                "publicKeyBase58": self.public_key_base58
             }],
             
             # Pebbling-specific metadata
             "pebbling": {
                 "agentName": self.agent_name,
-                "author": self.author,  # Using author instead of userId
+                "author": self.author,
                 **self.metadata  # Include all metadata
             }
         }
@@ -359,14 +378,9 @@ class DIDAgentExtension:
         info = {
             "did": self.did,
             "agentName": self.agent_name,
-            "author": self.author,  # Using author instead of userId
-            "publicKey": base58.b58encode(
-                self.public_key.public_bytes(
-                    encoding=serialization.Encoding.Raw, 
-                    format=serialization.PublicFormat.Raw
-                )
-            ).decode("ascii"),
-            "created": datetime.now(timezone.utc).isoformat(),
+            "author": self.author,
+            "publicKey": self.public_key_base58,
+            "created": self._created_at,
         }
         
         # Add all metadata fields

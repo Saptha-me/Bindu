@@ -1,25 +1,15 @@
-import os
 import logging
-import asyncio
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List
 from functools import cached_property
-from datetime import datetime, timezone
 
-import base58
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ed25519
 from pebbling.common.protocol.types import AgentExtension
+from .key_manager import KeyManager
+from .crypto_operations import CryptoOperations
+from .did_document import DIDDocument
+from .async_operations import AsyncOperations
 
 logger = logging.getLogger(__name__)
-
-# Optional async file I/O support
-try:
-    import aiofiles
-    AIOFILES_AVAILABLE = True
-except ImportError:
-    AIOFILES_AVAILABLE = False
-    logger.warning("aiofiles not installed. Async file operations will fall back to sync.")
 
 
 class DIDAgentExtensionMetadata:

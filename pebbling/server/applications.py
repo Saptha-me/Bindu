@@ -18,10 +18,8 @@ from pebbling.extensions.x402 import (
     PaymentVerificationError,
     X402PaymentManager,
     X_A2A_EXTENSIONS_HEADER,
-    build_payment_manager_from_settings,
     ensure_extension_header,
 )
-from pebbling.settings import app_settings
 from pebbling.utils.logging import get_logger
 
 from .scheduler.memory_scheduler import InMemoryScheduler
@@ -86,7 +84,7 @@ class PebbleApplication(Starlette):
         self.manifest = manifest
         self.default_input_modes = ["application/json"]
         self.default_output_modes = ["application/json"]
-        self._payment_manager = payment_manager or build_payment_manager_from_settings(app_settings)
+        self._payment_manager = payment_manager
 
         # TaskManager will be initialized in lifespan
         self.task_manager: Optional[TaskManager] = None

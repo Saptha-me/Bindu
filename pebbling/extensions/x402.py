@@ -6,9 +6,12 @@ import base64
 import json
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, Mapping, Optional
+from decimal import Decimal, InvalidOperation
+from typing import Any, Mapping, Optional, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from pebbling.common.protocol.types import AgentExtension
 from x402.common import process_price_to_atomic_amount
@@ -38,6 +41,69 @@ class PaymentVerificationError(X402Error):
 
 class PaymentSettlementError(X402Error):
     """Raised when settlement fails after a successful verification."""
+
+
+class AgentCostEntry(BaseModel):
+    """Single priced work offering exposed via x402 extension."""
+
+    name: str = Field(..., min_length=1)
+    description: str = Field(..., min_length=1)
+    currency: str = Field(..., min_length=3, max_length=3)
+    price: str = Field(..., min_length=1)
+    unit: str = Field(..., min_length=1)
+
+    @field_validator("name", "description", "unit", mode="before")
+    @classmethod
+    def _strip_strings(cls, value: str) -> str:
+        if isinstance(value, str):
+            value = value.strip()
+        if not value:
+            raise ValueError("Value must be a non-empty string")
+        return value
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def _normalize_currency(cls, value: str) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Currency must be a string")
+        value = value.strip().upper()
+        if len(value) != 3:
+            raise ValueError("Currency must be a 3-letter code")
+        return value
+
+    @field_validator("price", mode="before")
+    @classmethod
+    def _validate_price(cls, value: str) -> str:
+        if isinstance(value, (int, float, Decimal)):
+            decimal_value = Decimal(str(value))
+            if decimal_value < 0:
+                raise ValueError("Price must be non-negative")
+            return format(decimal_value.normalize(), "f")
+        elif isinstance(value, str):
+            value = value.strip()
+            try:
+                decimal_value = Decimal(value)
+            except InvalidOperation as exc:
+                raise ValueError("Price must be a numeric string") from exc
+            if decimal_value < 0:
+                raise ValueError("Price must be non-negative")
+            return value
+        else:
+            raise ValueError("Price must be a numeric value")
+
+
+class AgentCostCard(BaseModel):
+    """Collection of cost entries attached to x402 extension."""
+
+    version: str = "1.0"
+    entries: list[AgentCostEntry]
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _ensure_entries(self) -> "AgentCostCard":
+        if not self.entries:
+            raise ValueError("cost card entries must not be empty")
+        return self
 
 
 @dataclass
@@ -101,6 +167,11 @@ class X402PaymentManager:
     required: bool = True
     enabled: bool = False
     http_timeout: float = 10.0
+    cost_card: Optional[AgentCostCard] = None
+
+    def __post_init__(self) -> None:
+        if self.cost_card and not isinstance(self.cost_card, AgentCostCard):
+            self.cost_card = AgentCostCard.model_validate(self.cost_card)
 
     def evaluate_request(self, headers: Mapping[str, str]) -> PaymentEvaluationResult:
         """Evaluate incoming request headers and determine next step."""
@@ -131,6 +202,8 @@ class X402PaymentManager:
         }
         if self.server_config.asset_address:
             params["asset"] = self.server_config.asset_address
+        if self.cost_card:
+            params["cost_card"] = self.cost_card.model_dump(exclude_none=True)
 
         return AgentExtension(
             uri=self.extension_config.extension_uri,
@@ -235,43 +308,60 @@ class X402PaymentManager:
             raise PaymentSettlementError("Invalid JSON from facilitator") from exc
 
 
-def build_payment_manager_from_settings(settings: Any) -> Optional[X402PaymentManager]:
-    """Create a payment manager instance from application settings."""
+def build_cost_card(entries: Sequence[Mapping[str, Any]], notes: Optional[str] = None) -> AgentCostCard:
+    """Construct an AgentCostCard from raw configuration values."""
 
-    payments_cfg = getattr(settings, "payments", None)
-    if payments_cfg is None:
-        return None
+    try:
+        cost_entries = [AgentCostEntry.model_validate(entry) for entry in entries]
+        return AgentCostCard(entries=cost_entries, notes=notes)
+    except ValidationError as exc:  # pragma: no cover - validation error surface
+        raise ValueError(f"Invalid x402 cost card configuration: {exc}") from exc
 
-    x402_cfg = getattr(payments_cfg, "x402", None)
-    if x402_cfg is None or not getattr(x402_cfg, "enabled", False):
-        return None
+
+def build_payment_manager(config: Mapping[str, Any] | Any) -> X402PaymentManager:
+    """Create an x402 payment manager from a mapping or config object."""
+
+    def _get(key: str, default: Any = None, required: bool = False) -> Any:
+        if isinstance(config, Mapping):
+            value = config.get(key, default)
+        else:
+            value = getattr(config, key, default)
+        if required and value is None:
+            raise ValueError(f"x402 configuration missing required field '{key}'")
+        return value
 
     extension = x402ExtensionConfig(
-        extension_uri=getattr(x402_cfg, "extension_uri", X402_EXTENSION_URI),
-        version=getattr(x402_cfg, "version", "0.1"),
-        x402_version=getattr(x402_cfg, "x402_version", 1),
-        required=getattr(x402_cfg, "required", True),
-        description=getattr(x402_cfg, "extension_description", "Supports x402 payments"),
+        extension_uri=_get("extension_uri", X402_EXTENSION_URI) or X402_EXTENSION_URI,
+        version=_get("version", "0.1"),
+        x402_version=_get("x402_version", 1),
+        required=_get("required", True),
+        description=_get("extension_description", "Supports x402 payments") or "Supports x402 payments",
     )
 
     server = x402ServerConfig(
-        price=getattr(x402_cfg, "price"),
-        pay_to_address=getattr(x402_cfg, "pay_to_address"),
-        network=getattr(x402_cfg, "network", "base"),
-        description=getattr(x402_cfg, "description", "Payment required"),
-        mime_type=getattr(x402_cfg, "mime_type", "application/json"),
-        max_timeout_seconds=getattr(x402_cfg, "max_timeout_seconds", 600),
-        resource=getattr(x402_cfg, "resource", None),
-        asset_address=getattr(x402_cfg, "asset_address", None),
+        price=_get("price", required=True),
+        pay_to_address=_get("pay_to_address", required=True),
+        network=_get("network", "base"),
+        description=_get("description", "Payment required"),
+        mime_type=_get("mime_type", "application/json"),
+        max_timeout_seconds=_get("max_timeout_seconds", 600),
+        resource=_get("resource", None),
+        asset_address=_get("asset_address", None),
     )
+
+    cost_entries = _get("cost_entries")
+    cost_card = None
+    if cost_entries:
+        cost_card = build_cost_card(cost_entries, _get("cost_notes"))
 
     return X402PaymentManager(
         extension_config=extension,
         server_config=server,
-        facilitator_url=getattr(x402_cfg, "facilitator_url", DEFAULT_FACILITATOR_URL),
-        required=getattr(x402_cfg, "required", True),
-        enabled=getattr(x402_cfg, "enabled", False),
-        http_timeout=getattr(x402_cfg, "timeout_seconds", 10.0),
+        facilitator_url=_get("facilitator_url", DEFAULT_FACILITATOR_URL),
+        required=_get("required", True),
+        enabled=_get("enabled", True),
+        http_timeout=_get("timeout_seconds", 10.0),
+        cost_card=cost_card,
     )
 
 

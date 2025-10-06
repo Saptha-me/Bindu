@@ -24,7 +24,7 @@ import inspect
 import os
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional
+from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Union
 
 from pydantic.types import SecretStr
 from urllib.parse import urlparse
@@ -39,7 +39,7 @@ from pebbling.common.protocol.types import (
 )
 from pebbling.penguin.manifest import create_manifest, validate_agent_function
 from pebbling.extensions.did import DIDAgentExtension
-from pebbling.extensions.x402 import build_payment_manager_from_settings
+from pebbling.extensions.x402 import X402PaymentManager, build_payment_manager
 import pebbling.observability.openinference as OpenInferenceObservability
 
 # Import server components for deployment
@@ -56,7 +56,6 @@ from pebbling.utils.constants import CERTIFICATE_DIR, PKI_DIR
 
 # Import logging from pebbling utils
 from pebbling.utils.logging import get_logger
-from pebbling.settings import app_settings
 
 # Configure logging for the module
 logger = get_logger("pebbling.penguin.pebblify")
@@ -101,6 +100,7 @@ def pebblify(
     deployment_config: Optional[DeploymentConfig] = None,
     storage_config: Optional[StorageConfig] = None,
     scheduler_config: Optional[SchedulerConfig] = None,
+    x402: Optional[Union[X402PaymentManager, Mapping[str, Any]]] = None,
 ) -> Callable:
     """Transform a protocol-compliant function into a Pebbling-compatible agent.
 
@@ -125,6 +125,7 @@ def pebblify(
         deployment_config: Server deployment configuration
         storage_config: Storage backend configuration
         scheduler_config: Task scheduler configuration
+        x402: Optional mapping or X402PaymentManager to advertise payments via extension
         register_with_hibiscus: Whether to register agent with Hibiscus registry
         hibiscus_url: Hibiscus registry URL (default: http://localhost:19191)
         hibiscus_pat_token: Hibiscus Personal Access Token (required for registration, or set PEBBLE_HIBISCUS_PAT_TOKEN env var)
@@ -167,7 +168,11 @@ def pebblify(
         else:
             capabilities = AgentCapabilities(extensions=[did_extension.agent_extension])
 
-        x402_manager = build_payment_manager_from_settings(app_settings)
+        x402_manager: Optional[X402PaymentManager] = None
+        if isinstance(x402, X402PaymentManager):
+            x402_manager = x402
+        elif x402 is not None:
+            x402_manager = build_payment_manager(x402)
         if x402_manager:
             capabilities["extensions"].append(x402_manager.agent_extension)
 

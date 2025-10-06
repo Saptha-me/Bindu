@@ -3,6 +3,8 @@
 This module defines the configuration settings for the application using pydantic models.
 """
 
+from typing import Any, Optional
+
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -109,6 +111,10 @@ class X402Settings(BaseSettings):
     x402_version: int = 1
     version: str = "0.1"
     timeout_seconds: float = 10.0
+    extension_description: str | None = None
+    extension_uri: str | None = None
+    cost_entries: Optional[list[dict[str, Any]]] = None
+    cost_notes: Optional[str] = None
 
 
 class PaymentsSettings(BaseSettings):

@@ -3,6 +3,8 @@
 This module defines the configuration settings for the application using pydantic models.
 """
 
+from typing import Any, Optional
+
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -86,6 +88,47 @@ class UISettings(BaseSettings):
         }
 
 
+class X402Settings(BaseSettings):
+    """Configuration for x402 payment extension."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="X402__",
+        extra="allow",
+    )
+
+    enabled: bool = False
+    required: bool = True
+    price: str = "$0.01"
+    pay_to_address: str = ""
+    network: str = "base-sepolia"
+    description: str = "Payment required to continue"
+    mime_type: str = "application/json"
+    max_timeout_seconds: int = 600
+    resource: str | None = None
+    asset_address: str | None = None
+    facilitator_url: str = "https://x402.org/facilitator"
+    x402_version: int = 1
+    version: str = "0.1"
+    timeout_seconds: float = 10.0
+    extension_description: str | None = None
+    extension_uri: str | None = None
+    cost_entries: Optional[list[dict[str, Any]]] = None
+    cost_notes: Optional[str] = None
+
+
+class PaymentsSettings(BaseSettings):
+    """Payment-related configuration."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="PAYMENTS__",
+        extra="allow",
+    )
+
+    x402: X402Settings = X402Settings()
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -97,6 +140,7 @@ class Settings(BaseSettings):
 
     project: ProjectSettings = ProjectSettings()
     ui: UISettings = UISettings()
+    payments: PaymentsSettings = PaymentsSettings()
 
 
 app_settings = Settings()

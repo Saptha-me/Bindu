@@ -1,17 +1,24 @@
 // Storage page logic
 // Handles displaying contexts and tasks from storage
 
+// Constants
+const CONFIG = {
+    MAX_ITEMS: 100,
+    TRUNCATE_LENGTH: 100,
+    REFRESH_DELAY: 100
+};
+
 let tasks = [];
 let contexts = [];
 let currentView = 'contexts';
 
 // Helper functions specific to storage page
 
-function createTaskCard(task) {
+function createTaskCard(task, isCompact = false) {
     const statusColor = utils.getStatusColor(task.status?.state);
     const statusIcon = utils.getStatusIcon(task.status?.state);
     const latestMessage = task.history?.[task.history.length - 1]?.parts?.[0]?.text || 'No content';
-    const truncatedMessage = latestMessage.substring(0, 100) + (latestMessage.length > 100 ? '...' : '');
+    const truncatedMessage = utils.truncateText(latestMessage, CONFIG.TRUNCATE_LENGTH);
     
     return `
         <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
@@ -39,9 +46,9 @@ function createTaskCard(task) {
                 </div>
                 
                 <div class="flex-shrink-0 ml-4">
-                    <button onclick="viewTask('${task.task_id}')" 
+                    <button data-action="view-task" data-task-id="${task.task_id}" 
                             class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        View Details
+                        ${isCompact ? 'View' : 'View Details'}
                     </button>
                 </div>
             </div>
@@ -77,11 +84,11 @@ function createContextCard(contextData) {
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="toggleContext('${contextId}')" 
+                        <button data-action="toggle-context" data-context-id="${contextId}" 
                                 class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                             <span id="toggle-${contextId}">Show Tasks</span>
                         </button>
-                        <button onclick="clearContextById('${contextId}')" 
+                        <button data-action="clear-context" data-context-id="${contextId}" 
                                 class="text-red-600 hover:text-red-800 text-sm font-medium">
                             Clear
                         </button>
@@ -101,7 +108,7 @@ function createContextCard(contextData) {
 // API functions
 async function loadTasks() {
     try {
-        const rawData = await api.listTasks(null, 100);
+        const rawData = await api.listTasks(null, CONFIG.MAX_ITEMS);
         tasks = [];
         
         rawData.forEach(messageArray => {
@@ -140,7 +147,7 @@ async function loadTasks() {
 
 async function loadContexts() {
     try {
-        const rawData = await api.listContexts(100);
+        const rawData = await api.listContexts(CONFIG.MAX_ITEMS);
         const contextMap = {};
         
         rawData.forEach(messageArray => {
@@ -185,10 +192,16 @@ async function loadContexts() {
 function updateStats() {
     const totalContexts = contexts.length;
     const totalTasks = tasks.length;
-    const activeTasks = tasks.filter(t => t.status?.state === 'running' || t.status?.state === 'pending').length;
-    const completedTasks = tasks.filter(t => t.status?.state === 'completed').length;
-    const failedTasks = tasks.filter(t => t.status?.state === 'failed').length;
-    const canceledTasks = tasks.filter(t => t.status?.state === 'canceled').length;
+    
+    // Single pass through tasks array for better performance
+    const stats = tasks.reduce((acc, task) => {
+        const state = task.status?.state;
+        if (state === 'running' || state === 'pending') acc.active++;
+        else if (state === 'completed') acc.completed++;
+        else if (state === 'failed') acc.failed++;
+        else if (state === 'canceled') acc.canceled++;
+        return acc;
+    }, { active: 0, completed: 0, failed: 0, canceled: 0 });
     
     const storageStats = document.getElementById('storage-stats');
     if (storageStats) {
@@ -196,13 +209,10 @@ function updateStats() {
             <div class="space-y-3">
                 ${utils.createStatRow('Total Contexts', totalContexts)}
                 ${utils.createStatRow('Total Tasks', totalTasks)}
-                ${utils.createStatRow('Active Tasks', activeTasks, 'text-blue-600')}
-                ${utils.createStatRow('Completed', completedTasks, 'text-green-600')}
-                ${utils.createStatRow('Failed', failedTasks, 'text-red-600')}
-                <div class="flex justify-between items-center py-2">
-                    <span class="text-sm font-medium text-gray-600">Canceled</span>
-                    <span class="text-sm font-semibold text-gray-600">${canceledTasks}</span>
-                </div>
+                ${utils.createStatRow('Active Tasks', stats.active, 'text-blue-600')}
+                ${utils.createStatRow('Completed', stats.completed, 'text-green-600')}
+                ${utils.createStatRow('Failed', stats.failed, 'text-red-600')}
+                ${utils.createStatRow('Canceled', stats.canceled, 'text-gray-600')}
             </div>
         `;
     }
@@ -265,51 +275,10 @@ function toggleContext(contextId) {
         // Load and display tasks for this context
         const contextTasks = tasks.filter(t => t.context_id === contextId);
         if (contextTasks.length > 0) {
-            tasksDiv.innerHTML = contextTasks.map(task => {
-                const statusColor = utils.getStatusColor(task.status?.state);
-                const statusIcon = utils.getStatusIcon(task.status?.state);
-                const latestMessage = task.history?.[task.history.length - 1]?.parts?.[0]?.text || 'No content';
-                const truncatedMessage = latestMessage.substring(0, 100) + (latestMessage.length > 100 ? '...' : '');
-                
-                return `
-                    <div class="p-4 border-b border-gray-100 last:border-b-0">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span class="text-lg">${statusIcon}</span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
-                                        ${task.status?.state || 'unknown'}
-                                    </span>
-                                    <span class="text-xs text-gray-500 font-mono">
-                                        ${task.task_id?.substring(0, 8)}...
-                                    </span>
-                                </div>
-                                
-                                ${task.history?.length > 0 ? `
-                                    <div class="text-sm text-gray-900">
-                                        <strong>Messages (${task.history.length}):</strong> ${truncatedMessage}
-                                    </div>
-                                ` : ''}
-                            </div>
-                            
-                            <div class="flex-shrink-0 ml-4">
-                                <button onclick="viewTask('${task.task_id}')" 
-                                        class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                                    View
-                                </button>
-                            </div>
-                        </div>
-                        
-                        ${task.status?.error ? `
-                            <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p class="text-sm text-red-800">
-                                    <strong>Error:</strong> ${task.status.error}
-                                </p>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
+            // Reuse createTaskCard with compact mode
+            tasksDiv.innerHTML = contextTasks.map(task => 
+                `<div class="border-b border-gray-100 last:border-b-0">${createTaskCard(task, true)}</div>`
+            ).join('');
         } else {
             tasksDiv.innerHTML = '<div class="p-4 text-center text-gray-500">No tasks in this context</div>';
         }
@@ -364,9 +333,17 @@ async function clearContextById(contextId) {
 
 function viewTask(taskId) {
     const task = tasks.find(t => t.task_id === taskId);
-    if (task) {
-        alert(`Task Details:\n\nID: ${task.task_id}\nStatus: ${task.status?.state}\nContext: ${task.context_id}\n\nHistory: ${task.history?.length || 0} messages`);
-    }
+    if (!task) return;
+    
+    // TODO: Replace with proper modal component
+    const details = [
+        `ID: ${task.task_id}`,
+        `Status: ${task.status?.state || 'unknown'}`,
+        `Context: ${task.context_id}`,
+        `History: ${task.history?.length || 0} messages`
+    ].join('\n');
+    
+    alert(`Task Details:\n\n${details}`);
 }
 
 function refreshData() {
@@ -421,5 +398,35 @@ document.addEventListener('DOMContentLoaded', () => {
     loadContexts();
     setTimeout(() => {
         switchView('contexts');
-    }, 100);
+    }, CONFIG.REFRESH_DELAY);
+    
+    // Event delegation for better performance
+    document.addEventListener('click', handleGlobalClick);
+});
+
+// Event delegation handler
+function handleGlobalClick(e) {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    
+    const action = target.dataset.action;
+    const taskId = target.dataset.taskId;
+    const contextId = target.dataset.contextId;
+    
+    switch(action) {
+        case 'view-task':
+            if (taskId) viewTask(taskId);
+            break;
+        case 'toggle-context':
+            if (contextId) toggleContext(contextId);
+            break;
+        case 'clear-context':
+            if (contextId) clearContextById(contextId);
+            break;
+    }
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    document.removeEventListener('click', handleGlobalClick);
 });

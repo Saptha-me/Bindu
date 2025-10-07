@@ -1,60 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Interface - bindu</title>
-    <link rel="icon" type="image/x-icon" href="https://pydantic.dev/favicon/favicon-32x32.png">
+    <title>Chat - Bindu</title>
     <meta name="description" content="Chat interface">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
-    <link rel="stylesheet" href="common.css">
-
+    <!-- Common Head Content -->
+    <script src="js/head-loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body class="font-sans antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
-    <div id="chat-tab" class="min-h-screen bg-white dark:bg-gray-950 flex flex-col">
-        <div class="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-            <div class="flex items-center justify-between p-4">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
-            <img src="https://orvsccdc47.ufs.sh/f/Slhdc2MbjygMbusHsQBGIu7ZmbJta6NLkf1hT4cjBFQSEOnl" alt="Logo" class="w-8 h-8 object-cover" />
-          </div>
-          <div>
-            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Chat Interface</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Powered by bindu AI Agent</p>
-          </div>
-        </div>
-        <div class="flex-1 flex items-center justify-center">
-          <div class="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            <a href="chat.html" class="px-4 py-2 bg-primary-green text-white rounded-md text-sm font-medium transition-colors">Chat</a>
-            <a href="agent.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Agent Info</a>
-            <a href="storage.html" class="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-md text-sm font-medium transition-colors">Storage</a>
-          </div>
-        </div>
-        <div class="flex items-center gap-4">
-          <div class="px-3 py-1 bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 rounded-full text-sm font-medium">
-            Online
-          </div>
-          <a href="https://github.com/bindu-ai/pebble/" target="_blank" rel="noopener noreferrer" class="ml-2">
-            <svg class="w-6 h-6 text-gray-700 dark:text-gray-300 hover:text-gray-900 transition-colors" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.186 6.839 9.525.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.157-1.11-1.465-1.11-1.465-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.847-2.337 4.695-4.566 4.944.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .267.18.578.688.48C19.138 20.204 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/>
-            </svg>
-          </a>
-        </div>
-            </div>
-        </div>
+<body class="font-geist antialiased bg-white text-gray-900">
+    <!-- Header (loaded dynamically) -->
+    <div id="header-placeholder"></div>
 
-        <div class="flex flex-1 overflow-hidden">
-            <div id="sidebar" class="sidebar border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-all duration-300 flex flex-col" style="width: 320px;">
-                <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+    <!-- Main Content -->
+    <div id="chat-tab" class="min-h-screen bg-white flex flex-col">
+
+        <main class="flex flex-1 overflow-hidden">
+            <div id="sidebar" class="sidebar border-r border-gray-200 bg-white transition-all duration-300 flex flex-col" style="width: 320px;">
+                <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <button id="toggle-sidebar" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
+                        <button id="toggle-sidebar" class="p-2 hover:bg-gray-100 rounded-md transition-colors">
+                            <span id="toggle-icon"></span>
                         </button>
                     </div>
                 </div>
@@ -62,11 +28,9 @@
                 <div class="flex-1 p-4 space-y-4 sidebar-content" style="transition: opacity 0.3s ease, visibility 0.3s ease;">
                     <div>
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-medium text-gray-900 dark:text-white">Contexts</h3>
-                            <button id="new-context" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
+                            <h3 class="font-medium text-gray-900">Contexts</h3>
+                            <button id="new-context" class="p-2 hover:bg-gray-100 rounded-md transition-colors">
+                                <span id="new-context-icon"></span>
                             </button>
                         </div>
 
@@ -75,520 +39,43 @@
                     </div>
 
                     <div class="space-y-2">
-                        <button id="clear-chat" class="w-full justify-start hover:bg-gray-100 dark:hover:bg-gray-800 p-3 rounded-lg transition-colors flex items-center gap-2 text-left">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                            </svg>
+                        <button id="clear-chat" class="w-full justify-start hover:bg-gray-100 p-3 rounded-lg transition-colors flex items-center gap-2 text-left">
+                            <span id="clear-icon"></span>
                             Clear Chat
                         </button>
-                        <button class="w-full justify-start hover:bg-gray-100 dark:hover:bg-gray-800 p-3 rounded-lg transition-colors flex items-center gap-2 text-left">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
+                        <button class="w-full justify-start hover:bg-gray-100 p-3 rounded-lg transition-colors flex items-center gap-2 text-left">
+                            <span id="settings-icon"></span>
                             Settings
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="flex-1 flex flex-col bg-white dark:bg-gray-950">
+            <div class="flex-1 flex flex-col bg-white">
                 <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-4">
                 </div>
 
-                <div class="p-6 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+                <div class="p-6 border-t border-gray-200 bg-white">
                     <div class="flex gap-3">
-                        <input id="message-input" type="text" placeholder="Type your message here..." class="flex-1 h-12 px-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-primary-green dark:focus:border-primary-green bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" />
+                        <input id="message-input" type="text" placeholder="Type your message here..." class="flex-1 h-12 px-4 border border-gray-300 rounded-lg focus:border-primary-green bg-white text-gray-900 placeholder-gray-500" />
                         <button id="send-btn" class="h-12 px-6 bg-primary-green hover:bg-primary-green-hover text-white rounded-lg font-medium transition-colors flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                            </svg>
+                            <span id="send-icon"></span>
                             Send
                         </button>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+                    <p class="text-xs text-gray-500 text-center mt-3">
                         AI can make mistakes. Consider checking important information.
                     </p>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
-    <script src="common.js"></script>
-    <script>
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
+    <!-- Footer (loaded dynamically) -->
+    <div id="footer-placeholder"></div>
 
-        function generateId() {
-            return generateUUID();
-        }
-
-        let contextId = generateUUID();
-        let currentTaskId = null;
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('message-input');
-            const message = input.value.trim();
-
-            if (!message) return;
-
-            input.value = '';
-            const sendButton = document.getElementById('send-btn');
-            sendButton.disabled = true;
-
-      try {
-        const messageId = generateId();
-        const taskId = generateId();
-        if (!contextId) {
-          contextId = generateId();
-        }
-
-        const payload = {
-          "jsonrpc": "2.0",
-          "method": "message/send",
-          "params": {
-            "message": {
-              "role": "user",
-              "parts": [{
-                "kind": "text",
-                "text": message
-              }],
-              "kind": "message",
-              "messageId": messageId,
-              "contextId": contextId,
-              "taskId": taskId
-            },
-            "configuration": {
-              "acceptedOutputModes": ["application/json"]
-            }
-          },
-          "id": generateId()
-        };
-
-        const response = await fetch('/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        console.log('Backend response:', result);
-
-        if (result.error) {
-          throw new Error(result.error.message || 'Unknown error');
-        }
-
-        // Store task ID from the result
-        currentTaskId = result.result.task_id;
-
-        if (result.result.context_id) {
-          contextId = result.result.context_id;
-        }
-
-        addMessage(message, 'user', currentTaskId);
-
-        // Try to display agent message from possible fields
-        if (result.result) {
-          if (result.result.reply) {
-            addMessage(result.result.reply, 'agent', currentTaskId);
-            currentTaskId = null;
-          } else if (result.result.content) {
-            addMessage(result.result.content, 'agent', currentTaskId);
-            currentTaskId = null;
-          } else if (result.result.messages && result.result.messages.length > 0) {
-            const agentMsg = result.result.messages.find(m => m.role === 'assistant' || m.role === 'agent');
-            if (agentMsg && agentMsg.content) {
-              addMessage(agentMsg.content, 'agent', currentTaskId);
-              currentTaskId = null;
-            }
-          }
-        }
-        if (currentTaskId) {
-          // Add processing indicator and start polling for task completion
-          addProcessingMessage();
-          pollTaskStatus();
-        }
-
-      } catch (error) {
-        console.error('Error sending message:', error);
-        addMessage('Error: ' + error.message, 'status');
-      } finally {
-        sendButton.disabled = false;
-      }
-        }
-
-        async function pollTaskStatus() {
-            if (!currentTaskId) return;
-
-            try {
-                // Create JSON-RPC request for task status
-                const payload = {
-                    "jsonrpc": "2.0",
-                    "method": "tasks/get",
-                    "params": {
-                        "taskId": currentTaskId
-                    },
-                    "id": generateId()
-                };
-
-                const response = await fetch('/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.error) {
-                    throw new Error(result.error.message || 'Unknown error');
-                }
-
-                const task = result.result;
-
-                // Remove processing message
-                removeProcessingMessage();
-
-                if (task.status.state === 'completed') {
-          // Extract the agent's response from the latest message in history
-          if (task.history && task.history.length > 0) {
-            // Find the last message with role 'agent' or 'assistant'
-            const lastAgentMessage = [...task.history].reverse().find(msg => msg.role === 'agent' || msg.role === 'assistant');
-            if (lastAgentMessage && lastAgentMessage.parts && lastAgentMessage.parts.length > 0) {
-              const textPart = lastAgentMessage.parts.find(part => part.kind === 'text');
-              if (textPart) {
-                addMessage(textPart.text, 'agent', task.task_id);
-              }
-            }
-          }
-          currentTaskId = null;
-                } else if (task.status.state === 'failed') {
-                    addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
-                    currentTaskId = null;
-                } else if (task.status.state === 'canceled') {
-                    addMessage('Task was canceled', 'status');
-                    currentTaskId = null;
-                } else {
-                    // Still processing, add processing message back and poll again
-                    addProcessingMessage();
-                    setTimeout(pollTaskStatus, 1000);
-                }
-
-            } catch (error) {
-                console.error('Error polling task status:', error);
-                removeProcessingMessage();
-                addMessage('Error getting task status: ' + error.message, 'status');
-                currentTaskId = null;
-            }
-        }
-
-        function addMessage(content, sender, taskId = null) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            
-        if (sender === 'user') {
-        messageDiv.className = 'flex justify-end';
-        messageDiv.innerHTML = `
-          <div class="max-w-2xl px-4 py-2 bg-primary-green text-white rounded-full ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
-            <div class="flex items-center">
-              <p class="text-lg m-0">${content}</p>
-            </div>
-          </div>
-        `;
-      } else if (sender === 'agent') {
-        messageDiv.className = 'flex justify-start';
-        const parsedContent = marked.parse(content);
-        const messageId = generateId();
-          messageDiv.innerHTML = `
-            <div class="group max-w-2xl px-4 py-3 text-gray-900 dark:text-white ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
-              <div class="text-lg prose dark:prose-invert max-w-none message-content" data-message-id="${messageId}">${parsedContent}</div>
-              <div class="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 message-actions" data-message-id="${messageId}">
-                <button class="copy-btn p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 transform hover:scale-110" title="Copy message" data-message-id="${messageId}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                  </svg>
-                </button>
-                <button class="like-btn p-2 rounded-md hover:bg-green-100 dark:hover:bg-green-900 transition-all duration-200 transform hover:scale-110" title="Like" data-message-id="${messageId}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                  </svg>
-                </button>
-                <button class="dislike-btn p-2 rounded-md hover:bg-red-100 dark:hover:bg-red-900 transition-all duration-200 transform hover:scale-110" title="Dislike" data-message-id="${messageId}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          `;
-      } else if (sender === 'status') {
-        messageDiv.className = 'flex justify-center';
-        messageDiv.innerHTML = `
-          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-2 max-w-md text-center">
-            <p class="text-base text-yellow-800 dark:text-yellow-200 italic">${content}</p>
-          </div>
-        `;
-      }
-
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function addProcessingMessage() {
-            removeProcessingMessage();
-            
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'flex justify-start';
-            messageDiv.id = 'processing-message';
-      messageDiv.innerHTML = `
-        <div class="max-w-2xl px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full border border-gray-200 dark:border-gray-700 inline-flex items-center gap-3" role="status" aria-live="polite">
-          <div class="flex items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-300">Agent is thinking...</span>
-          </div>
-        </div>
-      `;
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function removeProcessingMessage() {
-            const processingMessage = document.getElementById('processing-message');
-            if (processingMessage) {
-                processingMessage.remove();
-            }
-        }
-
-        // Copy message functionality
-        async function copyMessage(messageId) {
-            const messageContent = document.querySelector(`.message-content[data-message-id="${messageId}"]`);
-            if (messageContent) {
-                const text = messageContent.textContent || messageContent.innerText;
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showCopyFeedback(messageId);
-                } catch (err) {
-                    console.error('Failed to copy text: ', err);
-                    // Fallback for older browsers
-                    const textArea = document.createElement('textarea');
-                    textArea.value = text;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    showCopyFeedback(messageId);
-                }
-            }
-        }
-
-        // Show copy feedback animation
-        function showCopyFeedback(messageId) {
-            const copyBtn = document.querySelector(`.copy-btn[data-message-id="${messageId}"]`);
-            if (copyBtn) {
-                const originalIcon = copyBtn.innerHTML;
-                copyBtn.innerHTML = `
-                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                `;
-                copyBtn.classList.add('animate-pulse');
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalIcon;
-                    copyBtn.classList.remove('animate-pulse');
-                }, 1000);
-            }
-        }
-
-        // Like message functionality
-        function likeMessage(messageId) {
-            const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
-            const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
-            
-            if (likeBtn && dislikeBtn) {
-                if (likeBtn.classList.contains('liked')) {
-                    // Unlike
-                    likeBtn.classList.remove('liked', 'text-green-500');
-                    likeBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                        </svg>
-                    `;
-                } else {
-                    // Like
-                    likeBtn.classList.add('liked', 'text-green-500');
-                    likeBtn.innerHTML = `
-                        <svg class="w-4 h-4 text-green-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                        </svg>
-                    `;
-                    // Remove dislike if present
-                    dislikeBtn.classList.remove('disliked', 'text-red-500');
-                    dislikeBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                        </svg>
-                    `;
-                }
-            }
-        }
-
-        // Dislike message functionality
-        function dislikeMessage(messageId) {
-            const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
-            const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
-            
-            if (dislikeBtn && likeBtn) {
-                if (dislikeBtn.classList.contains('disliked')) {
-                    // Undislike
-                    dislikeBtn.classList.remove('disliked', 'text-red-500');
-                    dislikeBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                        </svg>
-                    `;
-                } else {
-                    // Dislike
-                    dislikeBtn.classList.add('disliked', 'text-red-500');
-                    dislikeBtn.innerHTML = `
-                        <svg class="w-4 h-4 text-red-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                        </svg>
-                    `;
-                    // Remove like if present
-                    likeBtn.classList.remove('liked', 'text-green-500');
-                    likeBtn.innerHTML = `
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                        </svg>
-                    `;
-                }
-            }
-        }
-
-        function clearChat() {
-            const messagesDiv = document.getElementById('messages');
-            messagesDiv.innerHTML = '';
-            addMessage('Chat cleared. Start a new conversation!', 'status');
-        }
-
-        function newContext() {
-            contextId = generateId();
-            addMessage('New context started', 'status');
-            renderContexts(); // Update the UI to show the new context
-        }
-
-        // Initialize contexts list
-        function renderContexts() {
-            const contextsList = document.getElementById('contexts-list');
-            contextsList.innerHTML = `
-                <div class="w-full text-left p-3 rounded-lg border bg-primary-green text-white border-primary-green">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full bg-white"></div>
-                        <span class="text-sm font-medium">Context: ${contextId.substring(0, 8)}...</span>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Sidebar toggle
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const toggleBtn = document.getElementById('toggle-sidebar');
-            const icon = toggleBtn.querySelector('svg path');
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            
-            if (isCollapsed) {
-                sidebar.classList.remove('collapsed');
-                sidebar.style.width = '320px';
-                // Change to right-pointing chevron (expand)
-                icon.setAttribute('d', 'M9 5l7 7-7 7');
-            } else {
-                sidebar.classList.add('collapsed');
-                sidebar.style.width = '64px';
-                // Change to left-pointing chevron (collapse)
-                icon.setAttribute('d', 'M15 19l-7-7 7-7');
-            }
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            renderContexts();
-            
-            // Set up event listeners
-            document.getElementById('send-btn').addEventListener('click', sendMessage);
-            document.getElementById('message-input').addEventListener('keypress', handleKeyPress);
-            document.getElementById('clear-chat').addEventListener('click', clearChat);
-            document.getElementById('new-context').addEventListener('click', newContext);
-            document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
-            
-            // Event delegation for message action buttons
-            document.getElementById('messages').addEventListener('click', function(event) {
-                const target = event.target.closest('button');
-                if (!target) return;
-                
-                const messageId = target.getAttribute('data-message-id');
-                if (!messageId) return;
-                
-                if (target.classList.contains('copy-btn')) {
-                    copyMessage(messageId);
-                } else if (target.classList.contains('like-btn')) {
-                    likeMessage(messageId);
-                } else if (target.classList.contains('dislike-btn')) {
-                    dislikeMessage(messageId);
-                }
-            });
-        });
-    </script>
+    <!-- Scripts -->
+    <script src="js/common.js"></script>
+    <script src="js/chat.js"></script>
 </body>
-<footer class="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 mt-auto">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="text-center">
-      <div class="flex items-center justify-center space-x-2 mb-4">
-        <span class="text-2xl">🌻</span>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">bindu Protocol</h3>
-      </div>
-      <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-4">
-        bindu is a decentralized agent-to-agent communication protocol. 
-        <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform 
-        where you can bindufy your agent and be part of the agent economy.
-      </p>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        This is the local version. For production deployment, please follow the 
-        <a href="https://docs.bindu.ai" 
-           target="_blank" 
-           rel="noopener noreferrer"
-           class="text-gray-900 dark:text-gray-900 hover:text-gray-700 dark:hover:text-gray-700 underline transition-colors duration-200">
-          documentation
-        </a>.
-      </p>
-      <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          © 2025 bindu AI. Built with ❤️ from Amsterdam.
-        </p>
-      </div>
-    </div>
-  </div>
-</footer>
 </html>

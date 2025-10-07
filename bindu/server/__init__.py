@@ -1,8 +1,7 @@
-#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -24,10 +23,7 @@ from .workers import ManifestWorker
 __all__ = [
     "BinduApplication",
     "InMemoryStorage",
-    # "PostgreSQLStorage",
-    # "QdrantStorage",
     "InMemoryScheduler",
-    # "RedisScheduler",
     "ManifestWorker",
     "TaskManager",
 ]

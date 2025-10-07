@@ -93,7 +93,7 @@ import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from bindu.common.protocol.types import (
     CancelTaskRequest,
@@ -135,18 +135,17 @@ class TaskManager:
 
     scheduler: Scheduler
     storage: Storage[Any]
-    manifest: Optional[Any] = None  # AgentManifest for creating workers
+    manifest: Any | None = None  # AgentManifest for creating workers
 
-    _aexit_stack: Optional[AsyncExitStack] = field(default=None, init=False)
+    _aexit_stack: AsyncExitStack | None = field(default=None, init=False)
     _workers: list[ManifestWorker] = field(default_factory=list, init=False)
 
-    async def __aenter__(self) -> "TaskManager":
+    async def __aenter__(self) -> TaskManager:
         """Initialize the task manager and start all components."""
         self._aexit_stack = AsyncExitStack()
         await self._aexit_stack.__aenter__()
         await self._aexit_stack.enter_async_context(self.scheduler)
 
-        # Create and start workers if manifest is provided
         if self.manifest:
             worker = ManifestWorker(scheduler=self.scheduler, storage=self.storage, manifest=self.manifest)
             self._workers.append(worker)
@@ -184,36 +183,39 @@ class TaskManager:
     @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
         """Send a message using the Pebble protocol."""
-        request_id = str(request["id"])
         message = request["params"]["message"]
         context_id = self._parse_context_id(message.get("context_id"))
-        
-        # A2A Protocol: Extract referenceTaskIds if present
-        reference_task_ids = message.get("reference_task_ids", [])
-
         task: Task = await self.storage.submit_task(context_id, message)
 
-        scheduler_params: TaskSendParams = {"task_id": task["task_id"], "context_id": context_id, "message": message}
+        scheduler_params = self._build_scheduler_params(task, context_id, message, request["params"])
+        await self.scheduler.run_task(scheduler_params)
+        
+        return SendMessageResponse(jsonrpc="2.0", id=str(request["id"]), result=task)
 
-        # Add optional configuration parameters
-        config = request["params"].get("configuration", {})
+    def _build_scheduler_params(self, task: Task, context_id: uuid.UUID, message: dict, params: dict) -> TaskSendParams:
+        """Build scheduler parameters from request data."""
+        scheduler_params: TaskSendParams = {
+            "task_id": task["task_id"],
+            "context_id": context_id,
+            "message": message,
+        }
+
+        config = params.get("configuration", {})
         if history_length := config.get("history_length"):
             scheduler_params["history_length"] = history_length
-            
-        # Pass referenceTaskIds to scheduler for ManifestWorker to use
-        if reference_task_ids:
+
+        if reference_task_ids := message.get("reference_task_ids"):
             scheduler_params["reference_task_ids"] = reference_task_ids
 
-        await self.scheduler.run_task(scheduler_params)
-        return SendMessageResponse(jsonrpc="2.0", id=request_id, result=task)
+        return scheduler_params
 
     @trace_task_operation("get_task")
     async def get_task(self, request: GetTaskRequest) -> GetTaskResponse:
         """Get a task and return it to the client."""
         task_id = request["params"]["task_id"]
         history_length = request["params"].get("history_length")
-
         task = await self.storage.load_task(task_id, history_length)
+        
         if task is None:
             return self._create_error_response(GetTaskResponse, request["id"], TaskNotFoundError, "Task not found")
 
@@ -224,7 +226,6 @@ class TaskManager:
     async def cancel_task(self, request: CancelTaskRequest) -> CancelTaskResponse:
         """Cancel a running task."""
         task_id = request["params"]["task_id"]
-
         await self.scheduler.cancel_task(request["params"])
         task = await self.storage.load_task(task_id)
 
@@ -252,8 +253,7 @@ class TaskManager:
     @trace_task_operation("list_tasks", include_params=False)
     async def list_tasks(self, request: ListTasksRequest) -> ListTasksResponse:
         """List all tasks in storage."""
-        length = request["params"].get("length")
-        tasks = await self.storage.list_tasks(length)
+        tasks = await self.storage.list_tasks(request["params"].get("length"))
 
         if tasks is None:
             return self._create_error_response(ListTasksResponse, request["id"], TaskNotFoundError, "No tasks found")
@@ -263,8 +263,7 @@ class TaskManager:
     @trace_context_operation("list_contexts")
     async def list_contexts(self, request: ListContextsRequest) -> ListContextsResponse:
         """List all contexts in storage."""
-        length = request["params"].get("length")
-        contexts = await self.storage.list_contexts(length)
+        contexts = await self.storage.list_contexts(request["params"].get("length"))
 
         if contexts is None:
             return self._create_error_response(
@@ -287,13 +286,11 @@ class TaskManager:
     async def task_feedback(self, request: TaskFeedbackRequest) -> TaskFeedbackResponse:
         """Submit feedback for a completed task."""
         task_id = request["params"]["task_id"]
-
-        # Verify task exists
         task = await self.storage.load_task(task_id)
+        
         if task is None:
             return self._create_error_response(TaskFeedbackResponse, request["id"], TaskNotFoundError, "Task not found")
 
-        # Prepare feedback data
         feedback_data = {
             "task_id": task_id,
             "feedback": request["params"]["feedback"],
@@ -302,7 +299,6 @@ class TaskManager:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-        # Store feedback if storage supports it
         if hasattr(self.storage, "store_task_feedback"):
             await self.storage.store_task_feedback(task_id, feedback_data)
 

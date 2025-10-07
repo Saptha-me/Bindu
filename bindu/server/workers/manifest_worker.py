@@ -28,10 +28,12 @@ Hybrid Agent Architecture (A2A Protocol):
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
+from uuid import UUID
 
-from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams
+from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams, TaskState
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
@@ -39,88 +41,89 @@ from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStat
 
 @dataclass
 class ManifestWorker(Worker):
-    """A concrete worker implementation that uses an AgentManifest to execute tasks."""
+    """Concrete worker implementation using AgentManifest for task execution.
+
+    This worker wraps an AgentManifest and implements the hybrid agent pattern,
+    handling state transitions, message generation, and artifact creation.
+
+    Hybrid Pattern Implementation:
+    - Detects agent response type (input-required, auth-required, or complete)
+    - Returns Messages for interaction (task stays open)
+    - Returns Artifacts for completion (task becomes immutable)
+
+    Structured Response Support:
+    - Parses JSON responses: {"state": "input-required", "prompt": "..."}
+    - Falls back to heuristic detection for backward compatibility
+    - Extracts metadata (auth_type, service) when available
+
+    A2A Protocol Compliance:
+    - Uses referenceTaskIds for conversation history
+    - Maintains context continuity across tasks
+    - Ensures task immutability after terminal states
+    """
 
     manifest: AgentManifest
+    """The agent manifest containing execution logic and DID identity."""
+
+    # -------------------------------------------------------------------------
+    # Task Execution (Hybrid Pattern)
+    # -------------------------------------------------------------------------
 
     async def run_task(self, params: TaskSendParams) -> None:
-        """Execute a task using the wrapped AgentManifest.
+        """Execute a task using the AgentManifest.
+
+        Hybrid Pattern Flow:
+        1. Load task and validate state
+        2. Build conversation history (using referenceTaskIds or context)
+        3. Execute manifest with conversation context
+        4. Detect response type:
+           - input-required → Message only, task stays open
+           - auth-required → Message only, task stays open
+           - normal → Message + Artifact, task completes
+        5. Update storage with appropriate state and content
 
         Args:
-            params: Task execution parameters containing task ID, context ID, and message
+            params: Task execution parameters containing task_id, context_id, message
+
+        Raises:
+            ValueError: If task not found
+            Exception: Re-raised after marking task as failed
         """
+        # Step 1: Load and validate task
         task = await self.storage.load_task(params["task_id"])
         if task is None:
             raise ValueError(f"Task {params['task_id']} not found")
 
-        # Validate task state
         await TaskStateManager.validate_task_state(task)
-
         await self.storage.update_task(task["task_id"], state="working")
 
-        # Build complete message history
+        # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
 
         try:
-            # Execute manifest with conversation context
-            # Convert message history to single string for current manifest signature
-            # Agent will see conversation and infer context
+            # Step 3: Execute manifest
             conversation_context = "\n".join(
                 f"{msg['role']}: {msg['content']}" for msg in message_history
             ) if message_history else ""
             results = self.manifest.run(conversation_context)
 
-            # Check if agent returned structured response
+            # Step 4: Parse response and detect state
             structured_response = self._parse_structured_response(results)
             
-            if self._is_input_required(results):
-                # Hybrid Pattern: Return Message, keep task open (input-required state)
-                # No artifacts generated - task is not complete
-                prompt = results
-                if structured_response and "prompt" in structured_response:
-                    prompt = structured_response["prompt"]
-                    
-                await self.storage.update_task(
-                    task["task_id"], 
-                    state="input-required",
-                    metadata={"prompt": prompt}
-                )
-                # Build response message - use prompt instead of full results if structured
-                message_content = prompt if structured_response else results
-                agent_messages = MessageConverter.to_protocol_messages(
-                    message_content, task["task_id"], task["context_id"]
-                )
-                await self.storage.append_to_contexts(task["context_id"], agent_messages)
-            elif self._is_auth_required(results):
-                # Hybrid Pattern: Return Message, keep task open (auth-required state)
-                # No artifacts generated - task is not complete
-                metadata = {"auth_prompt": results}
-                
-                # Extract additional metadata from structured response
-                if structured_response:
-                    metadata["auth_prompt"] = structured_response.get("prompt", results)
-                    if "auth_type" in structured_response:
-                        metadata["auth_type"] = structured_response["auth_type"]
-                    if "service" in structured_response:
-                        metadata["service"] = structured_response["service"]
-                        
-                await self.storage.update_task(
-                    task["task_id"], 
-                    state="auth-required",
-                    metadata=metadata
-                )
-                # Build response message - use prompt instead of full results if structured
-                message_content = metadata["auth_prompt"]
-                agent_messages = MessageConverter.to_protocol_messages(
-                    message_content, task["task_id"], task["context_id"]
-                )
-                await self.storage.append_to_contexts(task["context_id"], agent_messages)
+            # Determine task state based on response
+            state, metadata, message_content = self._determine_task_state(
+                results, structured_response
+            )
+            
+            if state in ("input-required", "auth-required"):
+                # Hybrid Pattern: Return Message, keep task open
+                await self._handle_intermediate_state(task, state, metadata, message_content)
             else:
-                # Hybrid Pattern: Task complete - generate Artifacts and mark as completed
-                # This is the terminal state - task becomes immutable
+                # Hybrid Pattern: Task complete - generate Artifacts
                 await self._process_and_save_results(task, results)
 
-        except Exception:
+        except Exception as e:
+            # Mark task as failed and re-raise
             await self.storage.update_task(task["task_id"], state="failed")
             raise
 
@@ -128,159 +131,244 @@ class ManifestWorker(Worker):
         """Cancel a running task.
 
         Args:
-            params: Task identification parameters
+            params: Task identification parameters containing task_id
         """
         await self.storage.update_task(params["task_id"], state="canceled")
 
+    # -------------------------------------------------------------------------
+    # Protocol Conversion
+    # -------------------------------------------------------------------------
+
     def build_message_history(self, history: list[Message]) -> list[dict[str, str]]:
-        """Convert pebble protocol messages to format suitable for manifest execution."""
+        """Convert A2A protocol messages to chat format for manifest execution.
+
+        Args:
+            history: List of A2A protocol Message objects
+
+        Returns:
+            List of dicts with 'role' and 'content' keys for LLM consumption
+        """
         return MessageConverter.to_chat_format(history)
 
     def build_artifacts(self, result: Any) -> list[Artifact]:
-        """Convert manifest execution result to pebble protocol artifacts."""
+        """Convert manifest execution result to A2A protocol artifacts.
+
+        Args:
+            result: Agent execution result (any format)
+
+        Returns:
+            List of Artifact objects with DID signature
+
+        Note:
+            Only called when task completes (hybrid pattern)
+        """
         did_extension = self.manifest.did_extension
         return ArtifactBuilder.from_result(result, did_extension=did_extension)
 
+    # -------------------------------------------------------------------------
+    # A2A Protocol - Conversation History
+    # -------------------------------------------------------------------------
+
     async def _build_complete_message_history(self, task: Task) -> list[dict[str, str]]:
-        """Build complete message history following A2A Protocol.
+        """Build complete conversation history following A2A Protocol.
         
-        A2A Protocol: Use referenceTaskIds to understand conversation flow.
-        If present, prioritize referenced tasks. Otherwise, use context.
+        A2A Protocol Strategy:
+        1. If referenceTaskIds present: Build from referenced tasks (explicit)
+        2. Otherwise: Build from all tasks in context (implicit)
+
+        This enables:
+        - Task refinements with explicit references
+        - Parallel task execution within same context
+        - Conversation continuity across multiple tasks
+
+        Args:
+            task: Current task being executed
+
+        Returns:
+            List of chat-formatted messages for agent execution
         """
-        # Check if this task has referenceTaskIds (A2A Protocol)
+        # Extract referenceTaskIds from current task message
         current_message = task.get("history", [])[0] if task.get("history") else None
-        reference_task_ids = []
+        reference_task_ids: list = []
         
         if current_message and "reference_task_ids" in current_message:
             reference_task_ids = current_message["reference_task_ids"]
         
         if reference_task_ids:
-            # A2A Protocol: Build history from referenced tasks
-            referenced_messages = []
+            # Strategy 1: Explicit references (A2A refinement pattern)
+            referenced_messages: list[Message] = []
             for task_id in reference_task_ids:
                 ref_task = await self.storage.load_task(task_id)
                 if ref_task and ref_task.get("history"):
                     referenced_messages.extend(ref_task["history"])
             
-            # Add current task messages
             current_messages = task.get("history", [])
             all_messages = referenced_messages + current_messages
             
         else:
-            # Fallback: Use context-based history (all tasks in context)
+            # Strategy 2: Context-based history (implicit continuation)
             tasks_by_context = await self.storage.list_tasks_by_context(task["context_id"])
-            
-            # Filter out the current task to avoid duplication
             previous_tasks = [t for t in tasks_by_context if t["task_id"] != task["task_id"]]
             
-            # Build history from all previous tasks
-            all_previous_messages = []
+            all_previous_messages: list[Message] = []
             for prev_task in previous_tasks:
                 history = prev_task.get("history", [])
                 if history:
                     all_previous_messages.extend(history)
             
-            # Get current task messages
             current_messages = task.get("history", [])
             all_messages = all_previous_messages + current_messages
         
         return self.build_message_history(all_messages) if all_messages else []
 
-    def _normalize_message_order(self, message: dict) -> dict:
-        """Normalize message field order for consistency."""
-        return {
-            "context_id": message.get("context_id"),
-            "task_id": message.get("task_id"),
-            "message_id": message.get("message_id"),
-            "kind": message.get("kind"),
-            "parts": message.get("parts"),
-            "role": message.get("role"),
-        }
+    # -------------------------------------------------------------------------
+    # Message Normalization
+    # -------------------------------------------------------------------------
 
-    def _normalize_messages(self, messages: list) -> list:
-        """Normalize a list of messages to have consistent field ordering."""
-        return [self._normalize_message_order(msg) for msg in messages]
+    async def _handle_intermediate_state(
+        self, 
+        task: dict[str, Any], 
+        state: TaskState, 
+        metadata: dict[str, Any],
+        message_content: str
+    ) -> None:
+        """Handle intermediate task states (input-required, auth-required).
 
-    async def _process_and_save_results(self, task: dict, results: Any) -> None:
-        """Process results and save to storage.
+        Args:
+            task: Current task
+            state: Task state to set
+            metadata: Metadata to store with task
+            message_content: Content for agent message
+        """
+        await self.storage.update_task(task["task_id"], state=state, metadata=metadata)
+        
+        agent_messages = MessageConverter.to_protocol_messages(
+            message_content, task["task_id"], task["context_id"]
+        )
+        await self.storage.append_to_contexts(task["context_id"], agent_messages)
+
+    # -------------------------------------------------------------------------
+    # Task Completion
+    # -------------------------------------------------------------------------
+
+    async def _process_and_save_results(self, task: dict[str, Any], results: Any) -> None:
+        """Process results and complete task.
         
         Hybrid Pattern - Task Completion:
         1. Convert agent response to Message
         2. Generate Artifacts (final deliverable)
         3. Update task to 'completed' state (terminal/immutable)
+
+        Args:
+            task: Task dict being completed
+            results: Agent execution results
         """
         # Convert agent response to message format
         agent_messages = MessageConverter.to_protocol_messages(results, task["task_id"], task["context_id"])
 
-        # Normalize messages for consistency
-        normalized_agent_messages = self._normalize_messages(agent_messages)
-
-        # Update context with new agent messages only (task history already in context)
-        await self.storage.append_to_contexts(task["context_id"], normalized_agent_messages)
+        # Update context with new agent messages
+        await self.storage.append_to_contexts(task["context_id"], agent_messages)
 
         # Build artifacts from results (final deliverable)
         artifacts = self.build_artifacts(results)
 
         # Update task with completion (terminal state - task becomes immutable)
         await self.storage.update_task(
-            task["task_id"], state="completed", new_artifacts=artifacts, new_messages=normalized_agent_messages
+            task["task_id"], state="completed", new_artifacts=artifacts, new_messages=agent_messages
         )
     
+    # -------------------------------------------------------------------------
+    # Response Detection (Structured + Heuristic)
+    # -------------------------------------------------------------------------
+
     def _parse_structured_response(self, result: Any) -> Optional[Dict[str, Any]]:
         """Parse agent response for structured state transitions.
         
+        Attempts to extract JSON with format:
+        {"state": "input-required|auth-required", "prompt": "...", ...}
+
+        Strategy:
+        1. Try parsing entire response as JSON
+        2. Fall back to regex extraction of JSON blocks
+        3. Return None if no structured response found
+
+        Args:
+            result: Agent execution result
+
         Returns:
             Dict with state info if structured response found, None otherwise
         """
         if not isinstance(result, str):
             return None
-            
-        # Try to parse as JSON
+
+        # Strategy 1: Parse entire response as JSON
         try:
-            # First check if the entire response is valid JSON
             parsed = json.loads(result)
             if isinstance(parsed, dict) and "state" in parsed:
                 return parsed
         except (json.JSONDecodeError, ValueError):
-            # Try to extract JSON from the response
-            # Look for JSON-like structures in the text
-            import re
-            json_pattern = r'\{[^{}]*"state"[^{}]*\}'
-            matches = re.findall(json_pattern, result, re.DOTALL)
-            
-            for match in matches:
-                try:
-                    parsed = json.loads(match)
-                    if isinstance(parsed, dict) and "state" in parsed:
-                        return parsed
-                except (json.JSONDecodeError, ValueError):
-                    continue
-                    
+            pass
+
+        # Strategy 2: Extract JSON from text using regex
+        json_pattern = r'\{[^{}]*"state"[^{}]*\}'
+        matches = re.findall(json_pattern, result, re.DOTALL)
+        
+        for match in matches:
+            try:
+                parsed = json.loads(match)
+                if isinstance(parsed, dict) and "state" in parsed:
+                    return parsed
+            except (json.JSONDecodeError, ValueError):
+                continue
+        
         return None
     
-    def _is_input_required(self, result: Any) -> bool:
-        """Detect if agent response indicates need for user input."""
-        structured = self._parse_structured_response(result)
-        if structured and structured.get("state") == "input-required":
-            return True
-            
-        # Fallback to simple heuristics for backward compatibility
+    def _determine_task_state(
+        self, 
+        result: Any, 
+        structured: Optional[dict[str, Any]]
+    ) -> tuple[TaskState, dict[str, Any], str]:
+        """Determine task state from agent response.
+
+        Args:
+            result: Agent execution result
+            structured: Parsed structured response if available
+
+        Returns:
+            Tuple of (state, metadata, message_content)
+        """
+        # Check structured response first (preferred)
+        if structured:
+            state = structured.get("state")
+            if state == "input-required":
+                return (
+                    "input-required",
+                    {"prompt": structured.get("prompt", result)},
+                    structured.get("prompt", result)
+                )
+            elif state == "auth-required":
+                metadata = {
+                    "auth_prompt": structured.get("prompt", result),
+                    "auth_type": structured.get("auth_type"),
+                    "service": structured.get("service")
+                }
+                # Remove None values
+                metadata = {k: v for k, v in metadata.items() if v is not None}
+                return ("auth-required", metadata, metadata["auth_prompt"])
+        
+        # Heuristic detection (backward compatibility)
         if isinstance(result, str):
-            # Simple heuristic: questions often contain these patterns
-            input_indicators = ["?", "please specify", "could you", "would you like"]
             result_lower = result.lower()
-            return any(indicator in result_lower for indicator in input_indicators)
-        return False
-    
-    def _is_auth_required(self, result: Any) -> bool:
-        """Detect if agent response indicates authentication is required."""
-        structured = self._parse_structured_response(result)
-        if structured and structured.get("state") == "auth-required":
-            return True
             
-        # Fallback to simple heuristics for backward compatibility
-        if isinstance(result, str):
+            # Check for auth indicators
             auth_indicators = ["authentication required", "unauthorized", "api key required"]
-            result_lower = result.lower()
-            return any(indicator in result_lower for indicator in auth_indicators)
-        return False
+            if any(indicator in result_lower for indicator in auth_indicators):
+                return ("auth-required", {"auth_prompt": result}, result)
+            
+            # Check for input indicators
+            input_indicators = ["?", "please specify", "could you", "would you like"]
+            if any(indicator in result_lower for indicator in input_indicators):
+                return ("input-required", {"prompt": result}, result)
+        
+        # Default: task completion
+        return ("completed", {}, result)

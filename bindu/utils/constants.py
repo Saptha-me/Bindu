@@ -1,142 +1,96 @@
-#
-# |---------------------------------------------------------|
-# |                                                         |
-# |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
-# |                                                         |
-# |---------------------------------------------------------|
-#
-#  Thank you users! We ❤️ you! - 🌻
+"""
+Constants module - Re-exports settings as constants for backward compatibility.
 
-"""🔧 Global Constants: The Foundation Stones
-
-Central repository for all constants, configuration values, and type definitions
-used throughout the bindu framework. Like carefully selected pebbles,
-each constant serves a specific purpose in the greater architecture.
-
-🏗️ Categories:
-   • Security: Cryptographic keys, file names, algorithms
-   • Networking: Ports, timeouts, protocols
-   • Registry: Default URLs, authentication
-   • Deployment: Docker, Fly.io configurations
+All constants have been moved to the settings module for better configuration management.
+This module provides backward-compatible access to those settings.
 """
 
-
+from bindu.settings import app_settings
 
 # =============================================================================
-# 🔐 SECURITY CONSTANTS
+# 🔐 SECURITY CONSTANTS (DID Settings)
 # =============================================================================
 
 # DID Configuration
-DID_CONFIG_FILENAME = "did.json"
-DID_METHOD = "key"
-DID_AGENT_EXTENSION_METADATA = "did.message.signature"
+DID_CONFIG_FILENAME = app_settings.did.config_filename
+DID_METHOD = app_settings.did.method
+DID_AGENT_EXTENSION_METADATA = app_settings.did.agent_extension_metadata
 
 # DID File Names
-DID_PRIVATE_KEY_FILENAME = "private.pem"
-DID_PUBLIC_KEY_FILENAME = "public.pem"
+DID_PRIVATE_KEY_FILENAME = app_settings.did.private_key_filename
+DID_PUBLIC_KEY_FILENAME = app_settings.did.public_key_filename
 
 # DID Document Constants
-DID_W3C_CONTEXT = "https://www.w3.org/ns/did/v1"
-DID_BINDU_CONTEXT = "https://bindu.ai/ns/v1"
-DID_VERIFICATION_KEY_TYPE = "Ed25519VerificationKey2020"
-DID_KEY_FRAGMENT = "key-1"
-DID_SERVICE_FRAGMENT = "agent-service"
-DID_SERVICE_TYPE = "binduAgentService"
+DID_W3C_CONTEXT = app_settings.did.w3c_context
+DID_BINDU_CONTEXT = app_settings.did.bindu_context
+DID_VERIFICATION_KEY_TYPE = app_settings.did.verification_key_type
+DID_KEY_FRAGMENT = app_settings.did.key_fragment
+DID_SERVICE_FRAGMENT = app_settings.did.service_fragment
+DID_SERVICE_TYPE = app_settings.did.service_type
 
 # DID Method Prefixes
-DID_METHOD_BINDU = "bindu"
-DID_METHOD_KEY = "key"
-DID_MULTIBASE_PREFIX = "z"  # Base58btc prefix for ed25519
+DID_METHOD_BINDU = app_settings.did.method_bindu
+DID_METHOD_KEY = app_settings.did.method_key
+DID_MULTIBASE_PREFIX = app_settings.did.multibase_prefix
 
 # DID Extension
-DID_EXTENSION_URI = "https://github.com/Saptha-me/saptha_me"
-DID_EXTENSION_DESCRIPTION = "DID-based identity management for bindu agents"
-DID_RESOLVER_ENDPOINT = "/did/resolve"
-DID_INFO_ENDPOINT = "/agent/info"
+DID_EXTENSION_URI = app_settings.did.extension_uri
+DID_EXTENSION_DESCRIPTION = app_settings.did.extension_description
+DID_RESOLVER_ENDPOINT = app_settings.did.resolver_endpoint
+DID_INFO_ENDPOINT = app_settings.did.info_endpoint
 
 # DID Key Directory
-PKI_DIR = ".pebbling"
+PKI_DIR = app_settings.did.pki_dir
 
 # DID Validation
-DID_PREFIX = "did:"
-DID_MIN_PARTS = 3
-DID_BINDU_PARTS = 4
+DID_PREFIX = app_settings.did.prefix
+DID_MIN_PARTS = app_settings.did.min_parts
+DID_BINDU_PARTS = app_settings.did.bindu_parts
 
 # Text Encoding
-TEXT_ENCODING = "utf-8"
-BASE58_ENCODING = "ascii"
+TEXT_ENCODING = app_settings.did.text_encoding
+BASE58_ENCODING = app_settings.did.base58_encoding
 
 
 # =============================================================================
-# 🌐 NETWORKING CONSTANTS
+# 🌐 NETWORKING CONSTANTS (Network Settings)
 # =============================================================================
 
 # Default Host and URL
-DEFAULT_HOST = "localhost"
-DEFAULT_PORT = 3773
-DEFAULT_URL = f"http://{DEFAULT_HOST}:{DEFAULT_PORT}"
+DEFAULT_HOST = app_settings.network.default_host
+DEFAULT_PORT = app_settings.network.default_port
+DEFAULT_URL = app_settings.network.default_url
 
 # Timeouts (seconds)
-DEFAULT_REQUEST_TIMEOUT = 30
-DEFAULT_CONNECTION_TIMEOUT = 10
+DEFAULT_REQUEST_TIMEOUT = app_settings.network.request_timeout
+DEFAULT_CONNECTION_TIMEOUT = app_settings.network.connection_timeout
 
 # Media Types for Static Files
-MEDIA_TYPES = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".css": "text/css",
-}
+MEDIA_TYPES = app_settings.network.media_types
 
 # =============================================================================
-# 🚀 DEPLOYMENT CONSTANTS
+# 🚀 DEPLOYMENT CONSTANTS (Deployment Settings)
 # =============================================================================
 
 # Server Types
-SERVER_TYPE_AGENT = "agent"
-SERVER_TYPE_MCP = "mcp"
+SERVER_TYPE_AGENT = app_settings.deployment.server_type_agent
+SERVER_TYPE_MCP = app_settings.deployment.server_type_mcp
 
 # Endpoint Types
-ENDPOINT_TYPE_JSON_RPC = "json-rpc"
-ENDPOINT_TYPE_HTTP = "http"
-ENDPOINT_TYPE_SSE = "sse"
+ENDPOINT_TYPE_JSON_RPC = app_settings.deployment.endpoint_type_json_rpc
+ENDPOINT_TYPE_HTTP = app_settings.deployment.endpoint_type_http
+ENDPOINT_TYPE_SSE = app_settings.deployment.endpoint_type_sse
 
 # Docker Configuration
-DEFAULT_DOCKER_PORT = 8080
-DOCKER_HEALTHCHECK_PATH = "/healthz"
+DEFAULT_DOCKER_PORT = app_settings.deployment.docker_port
+DOCKER_HEALTHCHECK_PATH = app_settings.deployment.docker_healthcheck_path
 
 # =============================================================================
-# 📊 OBSERVABILITY CONSTANTS
+# 📊 OBSERVABILITY CONSTANTS (Observability Settings)
 # =============================================================================
 
 # OpenInference Instrumentor Mapping
-# Maps framework names to their instrumentor module paths and class names
-# Format: framework_name: (module_path, class_name)
-OPENINFERENCE_INSTRUMENTOR_MAP: dict[str, tuple[str, str]] = {
-    # Agent Frameworks
-    "agno": ("openinference.instrumentation.agno", "AgnoInstrumentor"),
-    "crewai": ("openinference.instrumentation.crewai", "CrewAIInstrumentor"),
-    "langchain": ("openinference.instrumentation.langchain", "LangChainInstrumentor"),
-    "llama-index": ("openinference.instrumentation.llama_index", "LlamaIndexInstrumentor"),
-    "dspy": ("openinference.instrumentation.dspy", "DSPyInstrumentor"),
-    "haystack": ("openinference.instrumentation.haystack", "HaystackInstrumentor"),
-    "instructor": ("openinference.instrumentation.instructor", "InstructorInstrumentor"),
-    "pydantic-ai": ("openinference.instrumentation.pydantic_ai", "PydanticAIInstrumentor"),
-    "autogen": ("openinference.instrumentation.autogen_agentchat", "AutogenAgentChatInstrumentor"),
-    "smolagents": ("openinference.instrumentation.smolagents", "SmolAgentsInstrumentor"),
-    # LLM Providers
-    "litellm": ("openinference.instrumentation.litellm", "LiteLLMInstrumentor"),
-    "openai": ("openinference.instrumentation.openai", "OpenAIInstrumentor"),
-    "anthropic": ("openinference.instrumentation.anthropic", "AnthropicInstrumentor"),
-    "mistralai": ("openinference.instrumentation.mistralai", "MistralAIInstrumentor"),
-    "groq": ("openinference.instrumentation.groq", "GroqInstrumentor"),
-    "bedrock": ("openinference.instrumentation.bedrock", "BedrockInstrumentor"),
-    "vertexai": ("openinference.instrumentation.vertexai", "VertexAIInstrumentor"),
-    "google-genai": ("openinference.instrumentation.google_genai", "GoogleGenAIInstrumentor"),
-}
+OPENINFERENCE_INSTRUMENTOR_MAP = app_settings.observability.instrumentor_map
 
 # OpenTelemetry Base Packages
-OPENTELEMETRY_BASE_PACKAGES = [
-    "opentelemetry-sdk",
-    "opentelemetry-exporter-otlp",
-]
+OPENTELEMETRY_BASE_PACKAGES = app_settings.observability.base_packages

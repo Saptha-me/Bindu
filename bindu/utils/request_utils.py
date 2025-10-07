@@ -1,5 +1,7 @@
 """Common request utilities for endpoint handlers."""
 
+from __future__ import annotations
+
 from starlette.requests import Request
 
 

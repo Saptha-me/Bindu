@@ -1,14 +1,6 @@
-#
-# |---------------------------------------------------------|
-# |                                                         |
-# |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
-# |                                                         |
-# |---------------------------------------------------------|
-#
-#  Thank you users! We ❤️ you! - 🌻
-
 """Display utilities for the bindu server."""
+
+from __future__ import annotations
 
 from rich import box
 from rich.console import Console

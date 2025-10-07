@@ -38,56 +38,150 @@ class ProjectSettings(BaseSettings):
         return self.environment == "testing"
 
 
-class UISettings(BaseSettings):
-    """Consolidated UI, branding, links, and footer configuration."""
+class DIDSettings(BaseSettings):
+    """DID (Decentralized Identity) configuration settings."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
-        env_prefix="UI__",
+        env_prefix="DID__",
         extra="allow",
     )
 
-    # Branding settings
-    logo_emoji: str = "🌻"
-    default_agent_name: str = "bindu Agent"
-    protocol_name: str = "bindu Protocol"
-    protocol_url: str = "https://bindu.ai"
-    powered_by_text: str = "Fueled by"
+    # DID Configuration
+    config_filename: str = "did.json"
+    method: str = "key"
+    agent_extension_metadata: str = "did.message.signature"
 
-    # Status and interface text
-    status_online_text: str = "Online"
-    status_active_text: str = "Active"
-    agent_subtitle_default: str = "Agent Information & Capabilities"
+    # DID File Names
+    private_key_filename: str = "private.pem"
+    public_key_filename: str = "public.pem"
 
-    # External links
-    docs_url: str = "https://docs.bindu.ai"
-    docs_text: str = "Documentation"
-    github_url: str = "https://github.com/bindu-ai/pebble"
-    github_text: str = "GitHub"
-    github_issues_url: str = "https://github.com/bindu-ai/pebble/issues"
-    github_issues_text: str = "Report Issue"
+    # DID Document Constants
+    w3c_context: str = "https://www.w3.org/ns/did/v1"
+    bindu_context: str = "https://bindu.ai/ns/v1"
+    verification_key_type: str = "Ed25519VerificationKey2020"
+    key_fragment: str = "key-1"
+    service_fragment: str = "agent-service"
+    service_type: str = "binduAgentService"
 
-    # Footer content
-    footer_description: str = (
-        "bindu is a decentralized agent-to-agent communication protocol. "
-        "<strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the "
-        "multi-orchestrator platform where you can bindufy your agent and be part of the agent economy."
+    # DID Method Prefixes
+    method_bindu: str = "bindu"
+    method_key: str = "key"
+    multibase_prefix: str = "z"  # Base58btc prefix for ed25519
+
+    # DID Extension
+    extension_uri: str = "https://github.com/Saptha-me/saptha_me"
+    extension_description: str = "DID-based identity management for bindu agents"
+    resolver_endpoint: str = "/did/resolve"
+    info_endpoint: str = "/agent/info"
+
+    # DID Key Directory
+    pki_dir: str = ".pebbling"
+
+    # DID Validation
+    prefix: str = "did:"
+    min_parts: int = 3
+    bindu_parts: int = 4
+
+    # Text Encoding
+    text_encoding: str = "utf-8"
+    base58_encoding: str = "ascii"
+
+
+class NetworkSettings(BaseSettings):
+    """Network and connectivity configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="NETWORK__",
+        extra="allow",
     )
-    footer_local_version_text: str = "This is the local version. For production deployment, please follow the"
-    footer_copyright_year: str = "2025"
-    footer_company: str = "bindu AI"
-    footer_location: str = "Amsterdam"
+
+    # Default Host and URL
+    default_host: str = Field(default="localhost", env="HOST")
+    default_port: int = Field(default=3773, env="PORT")
+
+    # Timeouts (seconds)
+    request_timeout: int = 30
+    connection_timeout: int = 10
+
+    # Media Types for Static Files
+    media_types: dict[str, str] = {
+        ".html": "text/html",
+        ".js": "application/javascript",
+        ".css": "text/css",
+    }
 
     @computed_field
     @property
-    def page_subtitles(self) -> dict[str, str]:
-        """Page subtitle mappings."""
-        return {
-            "agent": "Agent Information & Capabilities",
-            "chat": "Interactive Chat Interface",
-            "storage": "Task History & Storage Management",
-            "docs": "API Documentation & Examples",
-        }
+    def default_url(self) -> str:
+        """Compute default URL from host and port."""
+        return f"http://{self.default_host}:{self.default_port}"
+
+
+class DeploymentSettings(BaseSettings):
+    """Deployment and server configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="DEPLOYMENT__",
+        extra="allow",
+    )
+
+    # Server Types
+    server_type_agent: str = "agent"
+    server_type_mcp: str = "mcp"
+
+    # Endpoint Types
+    endpoint_type_json_rpc: str = "json-rpc"
+    endpoint_type_http: str = "http"
+    endpoint_type_sse: str = "sse"
+
+    # Docker Configuration
+    docker_port: int = 8080
+    docker_healthcheck_path: str = "/healthz"
+
+
+class ObservabilitySettings(BaseSettings):
+    """Observability and instrumentation configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="OBSERVABILITY__",
+        extra="allow",
+    )
+
+    # OpenInference Instrumentor Mapping
+    # Maps framework names to their instrumentor module paths and class names
+    # Format: framework_name: (module_path, class_name)
+    instrumentor_map: dict[str, tuple[str, str]] = {
+        # Agent Frameworks
+        "agno": ("openinference.instrumentation.agno", "AgnoInstrumentor"),
+        "crewai": ("openinference.instrumentation.crewai", "CrewAIInstrumentor"),
+        "langchain": ("openinference.instrumentation.langchain", "LangChainInstrumentor"),
+        "llama-index": ("openinference.instrumentation.llama_index", "LlamaIndexInstrumentor"),
+        "dspy": ("openinference.instrumentation.dspy", "DSPyInstrumentor"),
+        "haystack": ("openinference.instrumentation.haystack", "HaystackInstrumentor"),
+        "instructor": ("openinference.instrumentation.instructor", "InstructorInstrumentor"),
+        "pydantic-ai": ("openinference.instrumentation.pydantic_ai", "PydanticAIInstrumentor"),
+        "autogen": ("openinference.instrumentation.autogen_agentchat", "AutogenAgentChatInstrumentor"),
+        "smolagents": ("openinference.instrumentation.smolagents", "SmolAgentsInstrumentor"),
+        # LLM Providers
+        "litellm": ("openinference.instrumentation.litellm", "LiteLLMInstrumentor"),
+        "openai": ("openinference.instrumentation.openai", "OpenAIInstrumentor"),
+        "anthropic": ("openinference.instrumentation.anthropic", "AnthropicInstrumentor"),
+        "mistralai": ("openinference.instrumentation.mistralai", "MistralAIInstrumentor"),
+        "groq": ("openinference.instrumentation.groq", "GroqInstrumentor"),
+        "bedrock": ("openinference.instrumentation.bedrock", "BedrockInstrumentor"),
+        "vertexai": ("openinference.instrumentation.vertexai", "VertexAIInstrumentor"),
+        "google-genai": ("openinference.instrumentation.google_genai", "GoogleGenAIInstrumentor"),
+    }
+
+    # OpenTelemetry Base Packages
+    base_packages: list[str] = [
+        "opentelemetry-sdk",
+        "opentelemetry-exporter-otlp",
+    ]
 
 
 class Settings(BaseSettings):
@@ -100,7 +194,10 @@ class Settings(BaseSettings):
     )
 
     project: ProjectSettings = ProjectSettings()
-    ui: UISettings = UISettings()
+    did: DIDSettings = DIDSettings()
+    network: NetworkSettings = NetworkSettings()
+    deployment: DeploymentSettings = DeploymentSettings()
+    observability: ObservabilitySettings = ObservabilitySettings()
 
 
 app_settings = Settings()

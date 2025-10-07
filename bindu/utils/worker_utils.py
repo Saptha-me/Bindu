@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from uuid import uuid4
 
 from bindu.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
-from bindu.utils.constants import DID_AGENT_EXTENSION_METADATA
+from bindu.settings import app_settings
 
 if TYPE_CHECKING:
     from bindu.extensions.did import DIDAgentExtension
@@ -158,7 +158,7 @@ class ArtifactBuilder:
             for part in parts:
                 if part.get("kind") == "text" and "text" in part:
                     signature = did_extension.sign_text(part["text"])
-                    part.setdefault("metadata", {})[DID_AGENT_EXTENSION_METADATA] = signature
+                    part.setdefault("metadata", {})[app_settings.did.agent_extension_metadata] = signature
 
         return [Artifact(artifact_id=artifact_id, name=artifact_name, parts=parts)]
 

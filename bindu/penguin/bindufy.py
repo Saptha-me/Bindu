@@ -28,7 +28,7 @@ from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
 from bindu.server import BinduApplication, InMemoryScheduler, InMemoryStorage
 from bindu.server.utils.display import prepare_server_display
-from bindu.utils.constants import DEFAULT_HOST, DEFAULT_PORT, DEFAULT_URL, PKI_DIR
+from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
 # Configure logging for the module
@@ -75,11 +75,11 @@ def _parse_deployment_url(deployment_config: DeploymentConfig | None) -> tuple[s
         Tuple of (host, port)
     """
     if not deployment_config:
-        return DEFAULT_HOST, DEFAULT_PORT
+        return app_settings.network.default_host, app_settings.network.default_port
     
     parsed_url = urlparse(deployment_config.url)
-    host = parsed_url.hostname or DEFAULT_HOST
-    port = parsed_url.port or DEFAULT_PORT
+    host = parsed_url.hostname or app_settings.network.default_host
+    port = parsed_url.port or app_settings.network.default_port
     
     return host, port
 
@@ -205,7 +205,7 @@ def bindufy(
     try:
         did_extension = DIDAgentExtension(
             recreate_keys=validated_config["recreate_keys"],
-            key_dir=caller_dir / PKI_DIR,
+            key_dir=caller_dir / app_settings.did.pki_dir,
             author=validated_config.get("author"),
             agent_name=validated_config.get("name"),
             key_password=validated_config.get("key_password")
@@ -216,7 +216,7 @@ def bindufy(
         raise
     
     # Set agent metadata for DID document
-    agent_url = deployment_config.url if deployment_config else DEFAULT_URL
+    agent_url = deployment_config.url if deployment_config else app_settings.network.default_url
     skills_data = [
         skill.dict() if hasattr(skill, 'dict') else skill 
         for skill in (validated_config.get("skills") or [])

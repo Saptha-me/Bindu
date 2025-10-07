@@ -6,7 +6,7 @@ from typing import Callable, Optional
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 
-from bindu.utils.constants import MEDIA_TYPES
+from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.server.endpoints.static_files")
@@ -64,35 +64,35 @@ def _create_static_endpoint(relative_path: str, media_type: str) -> Callable:
 
 
 # Create all static file endpoints using the factory
-docs_endpoint = _create_static_endpoint("docs.html", MEDIA_TYPES[".html"])
+docs_endpoint = _create_static_endpoint("docs.html", app_settings.network.media_types[".html"])
 docs_endpoint.__doc__ = "Serve the documentation interface."
 
-agent_page_endpoint = _create_static_endpoint("agent.html", MEDIA_TYPES[".html"])
+agent_page_endpoint = _create_static_endpoint("agent.html", app_settings.network.media_types[".html"])
 agent_page_endpoint.__doc__ = "Serve the agent information page."
 
-chat_page_endpoint = _create_static_endpoint("chat.html", MEDIA_TYPES[".html"])
+chat_page_endpoint = _create_static_endpoint("chat.html", app_settings.network.media_types[".html"])
 chat_page_endpoint.__doc__ = "Serve the chat interface page."
 
-storage_page_endpoint = _create_static_endpoint("storage.html", MEDIA_TYPES[".html"])
+storage_page_endpoint = _create_static_endpoint("storage.html", app_settings.network.media_types[".html"])
 storage_page_endpoint.__doc__ = "Serve the storage management page."
 
-common_js_endpoint = _create_static_endpoint("js/common.js", MEDIA_TYPES[".js"])
+common_js_endpoint = _create_static_endpoint("js/common.js", app_settings.network.media_types[".js"])
 common_js_endpoint.__doc__ = "Serve the common JavaScript file."
 
-api_js_endpoint = _create_static_endpoint("js/api.js", MEDIA_TYPES[".js"])
+api_js_endpoint = _create_static_endpoint("js/api.js", app_settings.network.media_types[".js"])
 api_js_endpoint.__doc__ = "Serve the API JavaScript file."
 
-agent_js_endpoint = _create_static_endpoint("js/agent.js", MEDIA_TYPES[".js"])
+agent_js_endpoint = _create_static_endpoint("js/agent.js", app_settings.network.media_types[".js"])
 agent_js_endpoint.__doc__ = "Serve the agent page JavaScript file."
 
-custom_css_endpoint = _create_static_endpoint("css/custom.css", MEDIA_TYPES[".css"])
+custom_css_endpoint = _create_static_endpoint("css/custom.css", app_settings.network.media_types[".css"])
 custom_css_endpoint.__doc__ = "Serve the custom CSS file."
 
-layout_js_endpoint = _create_static_endpoint("components/layout.js", MEDIA_TYPES[".js"])
+layout_js_endpoint = _create_static_endpoint("components/layout.js", app_settings.network.media_types[".js"])
 layout_js_endpoint.__doc__ = "Serve the layout JavaScript file."
 
-header_component_endpoint = _create_static_endpoint("components/header.html", MEDIA_TYPES[".html"])
+header_component_endpoint = _create_static_endpoint("components/header.html", app_settings.network.media_types[".html"])
 header_component_endpoint.__doc__ = "Serve the header component."
 
-footer_component_endpoint = _create_static_endpoint("components/footer.html", MEDIA_TYPES[".html"])
+footer_component_endpoint = _create_static_endpoint("components/footer.html", app_settings.network.media_types[".html"])
 footer_component_endpoint.__doc__ = "Serve the footer component."

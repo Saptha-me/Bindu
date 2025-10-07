@@ -37,25 +37,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
 from bindu.common.protocol.types import AgentExtension
-from bindu.utils.constants import (
-    BASE58_ENCODING,
-    DID_BINDU_CONTEXT,
-    DID_EXTENSION_DESCRIPTION,
-    DID_EXTENSION_URI,
-    DID_INFO_ENDPOINT,
-    DID_KEY_FRAGMENT,
-    DID_METHOD_BINDU,
-    DID_METHOD_KEY,
-    DID_MULTIBASE_PREFIX,
-    DID_PRIVATE_KEY_FILENAME,
-    DID_PUBLIC_KEY_FILENAME,
-    DID_RESOLVER_ENDPOINT,
-    DID_SERVICE_FRAGMENT,
-    DID_SERVICE_TYPE,
-    DID_VERIFICATION_KEY_TYPE,
-    DID_W3C_CONTEXT,
-    TEXT_ENCODING,
-)
+from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.did_extension")
@@ -112,8 +94,8 @@ class DIDAgentExtension:
         """
         # Store key directory and paths
         self._key_dir = key_dir
-        self.private_key_path = key_dir / DID_PRIVATE_KEY_FILENAME
-        self.public_key_path = key_dir / DID_PUBLIC_KEY_FILENAME
+        self.private_key_path = key_dir / app_settings.did.private_key_filename
+        self.public_key_path = key_dir / app_settings.did.public_key_filename
         self.recreate_keys = recreate_keys
         self.author = author  # The author/owner of the agent
         self.agent_name = agent_name
@@ -258,7 +240,7 @@ class DIDAgentExtension:
     @staticmethod
     def _encode_text(text: str) -> bytes:
         """Encode text to UTF-8 bytes."""
-        return text.encode(TEXT_ENCODING)
+        return text.encode(app_settings.did.text_encoding)
 
     def sign_text(self, text: str) -> str:
         """Sign the given text using the private key.
@@ -274,7 +256,7 @@ class DIDAgentExtension:
             ValueError: If signing fails
         """
         signature = self.private_key.sign(self._encode_text(text))
-        return base58.b58encode(signature).decode(BASE58_ENCODING)
+        return base58.b58encode(signature).decode(app_settings.did.base58_encoding)
 
     def verify_text(self, text: str, signature: str) -> bool:
         """Verify the signature for the given text using the public key.
@@ -315,12 +297,12 @@ class DIDAgentExtension:
         if self.author and self.agent_name:
             sanitized_author = self._sanitize_did_component(self.author)
             sanitized_agent_name = self._sanitize_did_component(self.agent_name)
-            return f"did:{DID_METHOD_BINDU}:{sanitized_author}:{sanitized_agent_name}"
+            return f"did:{app_settings.did.method_bindu}:{sanitized_author}:{sanitized_agent_name}"
         
         # Fallback to did:key format with multibase encoding
         public_key_bytes = self._get_public_key_raw_bytes()
-        multibase_encoded = DID_MULTIBASE_PREFIX + base58.b58encode(public_key_bytes).decode(BASE58_ENCODING)
-        return f"did:{DID_METHOD_KEY}:{multibase_encoded}"
+        multibase_encoded = app_settings.did.multibase_prefix + base58.b58encode(public_key_bytes).decode(app_settings.did.base58_encoding)
+        return f"did:{app_settings.did.method_key}:{multibase_encoded}"
 
     def set_agent_metadata(self, 
                           skills: Optional[List[Any]] = None,
@@ -360,7 +342,7 @@ class DIDAgentExtension:
     @cached_property
     def public_key_base58(self) -> str:
         """Get base58-encoded public key (cached)."""
-        return base58.b58encode(self._get_public_key_raw_bytes()).decode(BASE58_ENCODING)
+        return base58.b58encode(self._get_public_key_raw_bytes()).decode(app_settings.did.base58_encoding)
 
     def get_did_document(self) -> Dict[str, Any]:
         """Generate a complete DID document with all agent information.
@@ -369,14 +351,14 @@ class DIDAgentExtension:
             Dictionary containing the full DID document with agent metadata
         """
         did_doc = {
-            "@context": [DID_W3C_CONTEXT, DID_BINDU_CONTEXT],
+            "@context": [app_settings.did.w3c_context, app_settings.did.bindu_context],
             "id": self.did,
             "created": self._created_at,
             
             # Authentication method
             "authentication": [{
-                "id": f"{self.did}#{DID_KEY_FRAGMENT}",
-                "type": DID_VERIFICATION_KEY_TYPE,
+                "id": f"{self.did}#{app_settings.did.key_fragment}",
+                "type": app_settings.did.verification_key_type,
                 "controller": self.did,
                 "publicKeyBase58": self.public_key_base58
             }],
@@ -392,8 +374,8 @@ class DIDAgentExtension:
         # Add service endpoints if URL is available
         if "url" in self.metadata:
             did_doc["service"] = [{
-                "id": f"{self.did}#{DID_SERVICE_FRAGMENT}",
-                "type": DID_SERVICE_TYPE,
+                "id": f"{self.did}#{app_settings.did.service_fragment}",
+                "type": app_settings.did.service_type,
                 "serviceEndpoint": self.metadata["url"]
             }]
         
@@ -421,12 +403,12 @@ class DIDAgentExtension:
     @cached_property
     def agent_extension(self) -> AgentExtension:
         return AgentExtension(
-            uri=DID_EXTENSION_URI,
-            description=DID_EXTENSION_DESCRIPTION,
+            uri=app_settings.did.extension_uri,
+            description=app_settings.did.extension_description,
             required=False,
             params={
                 "did": self.did,
-                "resolver_endpoint": DID_RESOLVER_ENDPOINT,
-                "info_endpoint": DID_INFO_ENDPOINT
+                "resolver_endpoint": app_settings.did.resolver_endpoint,
+                "info_endpoint": app_settings.did.info_endpoint
             },
         )

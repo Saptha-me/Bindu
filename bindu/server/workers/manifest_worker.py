@@ -1,4 +1,29 @@
-"""ManifestWorker implementation for executing tasks using AgentManifest."""
+"""ManifestWorker implementation for executing tasks using AgentManifest.
+
+Hybrid Agent Architecture (A2A Protocol):
+    This worker implements a hybrid agent pattern where:
+    
+    1. Messages for Interaction (Task Open):
+       - Agent responds with Messages during task execution
+       - Task remains in 'working', 'input-required', or 'auth-required' state
+       - No artifacts generated yet
+       
+    2. Artifacts for Completion (Task Terminal):
+       - Agent responds with Artifacts when task completes
+       - Task moves to 'completed' state (terminal)
+       - Final deliverable is stored as artifact
+       
+    Example Flow:
+        Context1
+          └─ Task1 (state: working)
+              ├─ Input1 → LLM → Output1 (Message, state: input-required)
+              ├─ Input2 → LLM → Output2 (Message + Artifact, state: completed)
+              
+    A2A Protocol Compliance:
+    - Tasks are immutable once terminal (completed/failed/canceled)
+    - Refinements create NEW tasks with same contextId
+    - referenceTaskIds link related tasks
+"""
 
 from __future__ import annotations
 
@@ -49,7 +74,8 @@ class ManifestWorker(Worker):
             structured_response = self._parse_structured_response(results)
             
             if self._is_input_required(results):
-                # A2A Protocol: Task completes with input-required state
+                # Hybrid Pattern: Return Message, keep task open (input-required state)
+                # No artifacts generated - task is not complete
                 prompt = results
                 if structured_response and "prompt" in structured_response:
                     prompt = structured_response["prompt"]
@@ -66,7 +92,8 @@ class ManifestWorker(Worker):
                 )
                 await self.storage.append_to_contexts(task["context_id"], agent_messages)
             elif self._is_auth_required(results):
-                # A2A Protocol: Task requires authentication
+                # Hybrid Pattern: Return Message, keep task open (auth-required state)
+                # No artifacts generated - task is not complete
                 metadata = {"auth_prompt": results}
                 
                 # Extract additional metadata from structured response
@@ -89,7 +116,8 @@ class ManifestWorker(Worker):
                 )
                 await self.storage.append_to_contexts(task["context_id"], agent_messages)
             else:
-                # Normal completion
+                # Hybrid Pattern: Task complete - generate Artifacts and mark as completed
+                # This is the terminal state - task becomes immutable
                 await self._process_and_save_results(task, results)
 
         except Exception:
@@ -174,7 +202,13 @@ class ManifestWorker(Worker):
         return [self._normalize_message_order(msg) for msg in messages]
 
     async def _process_and_save_results(self, task: dict, results: Any) -> None:
-        """Process results and save to storage."""
+        """Process results and save to storage.
+        
+        Hybrid Pattern - Task Completion:
+        1. Convert agent response to Message
+        2. Generate Artifacts (final deliverable)
+        3. Update task to 'completed' state (terminal/immutable)
+        """
         # Convert agent response to message format
         agent_messages = MessageConverter.to_protocol_messages(results, task["task_id"], task["context_id"])
 
@@ -184,10 +218,10 @@ class ManifestWorker(Worker):
         # Update context with new agent messages only (task history already in context)
         await self.storage.append_to_contexts(task["context_id"], normalized_agent_messages)
 
-        # Build artifacts from results
+        # Build artifacts from results (final deliverable)
         artifacts = self.build_artifacts(results)
 
-        # Update task with completion
+        # Update task with completion (terminal state - task becomes immutable)
         await self.storage.update_task(
             task["task_id"], state="completed", new_artifacts=artifacts, new_messages=normalized_agent_messages
         )

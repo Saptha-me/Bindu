@@ -5,12 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from bindu.utils.constants import (
-    DID_BINDU_PARTS,
-    DID_METHOD_BINDU,
-    DID_MIN_PARTS,
-    DID_PREFIX,
-)
+from bindu.settings import app_settings
 
 
 class DIDValidation:
@@ -34,8 +29,8 @@ class DIDValidation:
     @staticmethod
     def _validate_prefix(did: str) -> tuple[bool, str | None]:
         """Check if DID has correct prefix."""
-        if not did.startswith(DID_PREFIX):
-            return False, f"DID must start with '{DID_PREFIX}'"
+        if not did.startswith(app_settings.did.prefix):
+            return False, f"DID must start with '{app_settings.did.prefix}'"
         return True, None
     
     @staticmethod
@@ -48,10 +43,10 @@ class DIDValidation:
     @staticmethod
     def _validate_parts(did: str) -> tuple[bool, str | None, list[str]]:
         """Split and validate DID parts."""
-        parts = did.split(":", DID_BINDU_PARTS - 1)  # Max 4 parts for bindu DIDs
+        parts = did.split(":", app_settings.did.bindu_parts - 1)  # Max 4 parts for bindu DIDs
         
-        if len(parts) < DID_MIN_PARTS:
-            return False, f"DID must have at least {DID_MIN_PARTS} parts separated by ':'", []
+        if len(parts) < app_settings.did.min_parts:
+            return False, f"DID must have at least {app_settings.did.min_parts} parts separated by ':'", []
         
         return True, None, parts
     
@@ -59,10 +54,10 @@ class DIDValidation:
     def _validate_bindu_did(did: str, parts: list[str]) -> tuple[bool, str | None]:
         """Validate Bindu-specific DID format."""
         if not DIDValidation._BINDU_DID_PATTERN.match(did):
-            return False, f"bindu DID must have format did:{DID_METHOD_BINDU}:author:agent_name"
+            return False, f"bindu DID must have format did:{app_settings.did.method_bindu}:author:agent_name"
         
         # Validate non-empty components
-        if len(parts) != DID_BINDU_PARTS or not parts[2] or not parts[3]:
+        if len(parts) != app_settings.did.bindu_parts or not parts[2] or not parts[3]:
             return False, "Author and agent name cannot be empty in bindu DID"
         
         return True, None
@@ -94,7 +89,7 @@ class DIDValidation:
         
         # Method-specific validation
         method = parts[1]
-        if method == DID_METHOD_BINDU:
+        if method == app_settings.did.method_bindu:
             return DIDValidation._validate_bindu_did(did, parts)
         
         return True, None

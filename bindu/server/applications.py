@@ -1,3 +1,22 @@
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🌻
+
+"""
+Bindu Application Server Module.
+
+This module provides the core BinduApplication class - a Starlette-based ASGI application
+that serves AI agents following the A2A (Agent-to-Agent) protocol.
+
+"""
+
+from __future__ import annotations as _annotations
+
 from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path

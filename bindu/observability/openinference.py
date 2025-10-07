@@ -28,10 +28,7 @@ from typing import Any
 from packaging import version
 
 from bindu.common.models import AgentFrameworkSpec
-from bindu.utils.constants import (
-    OPENINFERENCE_INSTRUMENTOR_MAP,
-    OPENTELEMETRY_BASE_PACKAGES,
-)
+from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.observability.openinference")
@@ -84,11 +81,11 @@ def _instrument_framework(framework: str, tracer_provider: Any) -> None:
         framework: Name of the framework to instrument
         tracer_provider: OpenTelemetry tracer provider instance
     """
-    if framework not in OPENINFERENCE_INSTRUMENTOR_MAP:
+    if framework not in app_settings.observability.instrumentor_map:
         logger.warn(f"No instrumentor mapping found for framework: {framework}")
         return
     
-    module_path, class_name = OPENINFERENCE_INSTRUMENTOR_MAP[framework]
+    module_path, class_name = app_settings.observability.instrumentor_map[framework]
     
     try:
         module = importlib.import_module(module_path)
@@ -142,7 +139,7 @@ def _check_missing_packages(framework_spec: AgentFrameworkSpec, installed_dists:
     Returns:
         List of missing package names
     """
-    required_packages = OPENTELEMETRY_BASE_PACKAGES + [framework_spec.instrumentation_package]
+    required_packages = app_settings.observability.base_packages + [framework_spec.instrumentation_package]
     return [pkg for pkg in required_packages if pkg not in installed_dists]
 
 

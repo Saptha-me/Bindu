@@ -1,14 +1,6 @@
-#
-# |---------------------------------------------------------|
-# |                                                         |
-# |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
-# |                                                         |
-# |---------------------------------------------------------|
-#
-#  Thank you users! We ❤️ you! - 🌻
-
 """Simple but beautiful logging configuration for bindu using Rich."""
+
+from __future__ import annotations
 
 import os
 import sys

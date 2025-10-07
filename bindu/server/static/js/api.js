@@ -71,8 +71,8 @@ async function createContext() {
 }
 
 // List all contexts
-async function listContexts() {
-    return await makeApiRequest('contexts/list', {});
+async function listContexts(length = 100) {
+    return await makeApiRequest('contexts/list', { length });
 }
 
 // Get context by ID
@@ -82,16 +82,18 @@ async function getContext(contextId) {
     });
 }
 
-// Clear a context
-async function clearContext(contextId) {
-    return await makeApiRequest('contexts/clear', {
-        context_id: contextId
-    });
+// Clear a context or all contexts
+async function clearContext(contextId = null) {
+    const params = contextId ? { context_id: contextId } : {};
+    return await makeApiRequest('contexts/clear', params);
 }
 
 // List tasks
-async function listTasks(contextId = null) {
-    const params = contextId ? { context_id: contextId } : {};
+async function listTasks(contextId = null, length = 100) {
+    const params = { length };
+    if (contextId) {
+        params.context_id = contextId;
+    }
     return await makeApiRequest('tasks/list', params);
 }
 
@@ -109,6 +111,11 @@ async function cancelTask(taskId) {
     });
 }
 
+// Clear all storage (contexts and tasks)
+async function clearAllStorage() {
+    return await clearContext(null);
+}
+
 // Make functions globally available
 window.api = {
     generateId,
@@ -119,6 +126,7 @@ window.api = {
     listContexts,
     getContext,
     clearContext,
+    clearAllStorage,
     listTasks,
     getTask,
     cancelTask

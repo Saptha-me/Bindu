@@ -16,67 +16,7 @@ const TRUST_BADGE_TYPES = {
     high: 'success'
 };
 
-// Helper functions
-const yesNo = (value) => value ? 'Yes' : 'No';
-
-// Component helper functions
-function createStatCard(icon, label, value) {
-    return `
-        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <div class="flex items-center gap-2 mb-2">
-                ${utils.createIcon(icon, 'w-4 h-4 text-gray-500')}
-                <span class="text-sm font-medium text-gray-500">${label}</span>
-            </div>
-            <div class="font-mono text-lg font-semibold text-gray-900">${value}</div>
-        </div>
-    `;
-}
-
-function createSettingRow(label, value, isEnabled = null) {
-    const badgeType = isEnabled === null ? 'neutral' : (isEnabled ? 'success' : 'error');
-    const badgeClass = utils.getBadgeClass(badgeType);
-    
-    return `
-        <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
-            <span class="font-medium text-gray-900">${label}</span>
-            <div class="px-3 py-1 ${badgeClass} border rounded-full text-sm font-medium">
-                ${value}
-            </div>
-        </div>
-    `;
-}
-
-function createEmptyState(message, iconSize = 'w-12 h-12') {
-    return `
-        <div class="text-center py-8 text-gray-500">
-            ${utils.createIcon('puzzle-piece', `${iconSize} mx-auto mb-3 text-gray-300`)}
-            <div class="text-sm">${message}</div>
-        </div>
-    `;
-}
-
-function createDropdown(id, title, isAvailable, content) {
-    const badgeType = isAvailable ? 'success' : 'error';
-    const statusBadge = utils.getBadgeClass(badgeType);
-    const statusText = isAvailable ? 'Available' : 'Not available';
-    
-    return `
-        <div class="border border-gray-200 rounded-lg overflow-hidden">
-            <div class="p-3 bg-gray-50 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition-colors" onclick="utils.toggleDropdown('${id}')">
-                <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-gray-700">${title}</span>
-                    <div class="px-2 py-1 ${statusBadge} border rounded text-xs">
-                        ${statusText}
-                    </div>
-                </div>
-                ${utils.createIcon('chevron-down', 'dropdown-icon w-4 h-4 text-gray-400')}
-            </div>
-            <div id="${id}" class="dropdown-content bg-white">
-                ${content}
-            </div>
-        </div>
-    `;
-}
+// Component helper functions specific to agent page
 
 function createSkillCard(skill) {
     return `
@@ -122,10 +62,10 @@ function displayAgentCard() {
     // Display stats
     const statsDiv = document.getElementById('agent-stats');
     statsDiv.innerHTML = [
-        createStatCard('tag', 'Version', agentCard.version),
-        createStatCard('globe-alt', 'Protocol', `v${agentCard.protocolVersion}`),
-        createStatCard('chart-bar', 'Kind', agentCard.kind || 'Agent'),
-        createStatCard('clock', 'Sessions', agentCard.numHistorySessions || 0)
+        utils.createStatCard('tag', 'Version', agentCard.version),
+        utils.createStatCard('globe-alt', 'Protocol', `v${agentCard.protocolVersion}`),
+        utils.createStatCard('chart-bar', 'Kind', agentCard.kind || 'Agent'),
+        utils.createStatCard('clock', 'Sessions', agentCard.numHistorySessions || 0)
     ].join('');
 
     // Display settings
@@ -136,14 +76,14 @@ function displayAgentCard() {
     
     settingsDiv.innerHTML = `
         <div class="space-y-3">
-            ${createSettingRow('Debug', debugValue)}
-            ${createSettingRow('Monitoring', monitoringValue, agentCard.monitoring)}
-            ${createSettingRow('Telemetry', telemetryValue, agentCard.telemetry)}
+            ${utils.createSettingRow('Debug', debugValue)}
+            ${utils.createSettingRow('Monitoring', monitoringValue, agentCard.monitoring)}
+            ${utils.createSettingRow('Telemetry', telemetryValue, agentCard.telemetry)}
         </div>
         <div class="space-y-3">
-            ${createSettingRow('Trust Level', `<span class="capitalize">${agentCard.agentTrust || 'Unknown'}</span>`)}
-            ${createSettingRow('Identity Provider', 'Pebble Protocol')}
-            ${createSettingRow('Agent ID', `<span class="font-mono text-xs">${agentCard.id || 'Unknown'}</span>`)}
+            ${utils.createSettingRow('Trust Level', `<span class="capitalize">${agentCard.agentTrust || 'Unknown'}</span>`)}
+            ${utils.createSettingRow('Identity Provider', 'Pebble Protocol')}
+            ${utils.createSettingRow('Agent ID', `<span class="font-mono text-xs">${agentCard.id || 'Unknown'}</span>`)}
         </div>
     `;
 }
@@ -181,16 +121,16 @@ function displayCapabilities() {
     const capabilitiesDiv = document.getElementById('capabilities-list');
 
     capabilitiesDiv.innerHTML = [
-        createSettingRow('Streaming', yesNo(capabilities.streaming), capabilities.streaming),
-        createSettingRow('Push Notifications', yesNo(capabilities.pushNotifications), capabilities.pushNotifications),
-        createSettingRow('State History', yesNo(capabilities.stateTransitionHistory), capabilities.stateTransitionHistory)
+        utils.createSettingRow('Streaming', utils.yesNo(capabilities.streaming), capabilities.streaming),
+        utils.createSettingRow('Push Notifications', utils.yesNo(capabilities.pushNotifications), capabilities.pushNotifications),
+        utils.createSettingRow('State History', utils.yesNo(capabilities.stateTransitionHistory), capabilities.stateTransitionHistory)
     ].join('');
 }
 
 // Display skills
 function displaySkills() {
     if (!agentCard || !agentCard.skills || agentCard.skills.length === 0) {
-        document.getElementById('skills-list').innerHTML = createEmptyState('No skills defined', 'w-8 h-8');
+        document.getElementById('skills-list').innerHTML = utils.createEmptyState('No skills defined', 'puzzle-piece', 'w-8 h-8');
         return;
     }
 
@@ -203,7 +143,7 @@ function displayIdentityTrust() {
     const identityTrustDiv = document.getElementById('identity-trust-list');
     
     if (!agentCard || !agentCard.identity) {
-        identityTrustDiv.innerHTML = createEmptyState('No identity information available', 'w-8 h-8');
+        identityTrustDiv.innerHTML = utils.createEmptyState('No identity information available', 'shield-check', 'w-8 h-8');
         return;
     }
 
@@ -246,8 +186,8 @@ function displayIdentityTrust() {
 
     identityTrustDiv.innerHTML = `
         <div class="space-y-3">
-            ${createDropdown('public-key-dropdown', 'Public Key', !!publicKeyPem, publicKeyContent)}
-            ${createDropdown('csr-dropdown', 'CSR Path', !!identity.csr, csrContent)}
+            ${utils.createDropdown('public-key-dropdown', 'Public Key', !!publicKeyPem, publicKeyContent)}
+            ${utils.createDropdown('csr-dropdown', 'CSR Path', !!identity.csr, csrContent)}
             
             <div class="p-3 border border-gray-200 rounded-lg">
                 <div class="text-sm font-medium text-gray-500 mb-1">Trust Level</div>
@@ -270,7 +210,7 @@ function displayIdentityTrust() {
 // Display extensions
 function displayExtensions() {
     const extensionsDiv = document.getElementById('extensions-list');
-    extensionsDiv.innerHTML = createEmptyState('No extensions available');
+    extensionsDiv.innerHTML = utils.createEmptyState('No extensions available');
 }
 
 // Add icons to section headers

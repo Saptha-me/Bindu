@@ -4,41 +4,33 @@
  * @module chat
  */
 
-// State management
-let contextId = null;
-let currentTaskId = null;
-let pollingInterval = 1000; // Start with 1 second
-const MAX_POLLING_INTERVAL = 5000; // Max 5 seconds
-
-// DOM element cache
-let cachedElements = {};
-
-function getCachedElement(id) {
-    if (!cachedElements[id]) {
-        cachedElements[id] = document.getElementById(id);
-    }
-    return cachedElements[id];
-}
+// ============================================================================
+// STATE MANAGEMENT
+// ============================================================================
 
 /**
- * Create a message action icon using common icon utilities
- * @param {string} iconName - Icon name (copy, check, like, dislike)
- * @param {string} [className='w-4 h-4'] - CSS classes for the icon
- * @returns {string} HTML string for the icon
+ * Chat state
+ * @type {Object}
  */
-function createMessageIcon(iconName, className = 'w-4 h-4') {
-    const iconMap = {
-        copy: 'clipboard',
-        copySuccess: 'check',
-        like: 'thumb-up',
-        dislike: 'thumb-down'
-    };
-    return utils.createIcon(iconMap[iconName] || iconName, className);
-}
+const chatState = {
+    contextId: null,
+    currentTaskId: null
+};
+
+/**
+ * DOM element cache for performance optimization
+ * Uses centralized caching utility from common.js
+ */
+const domCache = utils.createDOMCache();
+
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
 
 /**
  * Handle key press events in the message input
  * Debounced to prevent multiple rapid submissions
+ * @param {KeyboardEvent} event - Keyboard event
  */
 const handleKeyPress = utils.debounce(function(event) {
     if (event.key === 'Enter') {
@@ -46,64 +38,58 @@ const handleKeyPress = utils.debounce(function(event) {
     }
 }, 300);
 
+// ============================================================================
+// MESSAGING FUNCTIONS
+// ============================================================================
+
 /**
  * Send a message to the agent
  * Handles message creation, API call, and UI updates
  * @async
  */
 async function sendMessage() {
-    const input = getCachedElement('message-input');
+    const input = domCache.get('message-input');
     const message = input.value.trim();
 
     if (!message) return;
 
     input.value = '';
-    const sendButton = getCachedElement('send-btn');
+    const sendButton = domCache.get('send-btn');
     sendButton.disabled = true;
-    
-    // Reset polling interval for new message
-    pollingInterval = 1000;
 
     try {
         const messageId = api.generateId();
         const taskId = api.generateId();
-        if (!contextId) {
-            contextId = api.generateId();
+        
+        // Initialize context if needed
+        if (!chatState.contextId) {
+            chatState.contextId = api.generateId();
         }
 
-        // Use API method to send chat message
-        const result = await api.sendChatMessage(contextId, message, messageId, taskId);
+        // Send message via API
+        const result = await api.sendChatMessage(chatState.contextId, message, messageId, taskId);
         console.log('Backend response:', result);
 
-        // Store task ID from the result
-        currentTaskId = result.task_id;
-
+        // Update state with response
+        chatState.currentTaskId = result.task_id;
         if (result.context_id) {
-            contextId = result.context_id;
+            chatState.contextId = result.context_id;
         }
 
-        addMessage(message, 'user', currentTaskId);
+        // Display user message
+        addMessage(message, 'user', chatState.currentTaskId);
 
-        // Try to display agent message from possible fields
-        if (result) {
-            if (result.reply) {
-                addMessage(result.reply, 'agent', currentTaskId);
-                currentTaskId = null;
-            } else if (result.content) {
-                addMessage(result.content, 'agent', currentTaskId);
-                currentTaskId = null;
-            } else if (result.messages && result.messages.length > 0) {
-                const agentMsg = result.messages.find(m => m.role === 'assistant' || m.role === 'agent');
-                if (agentMsg && agentMsg.content) {
-                    addMessage(agentMsg.content, 'agent', currentTaskId);
-                    currentTaskId = null;
-                }
-            }
+        // Try to extract and display agent response
+        const agentResponse = utils.extractAgentResponse(result);
+        if (agentResponse) {
+            addMessage(agentResponse, 'agent', chatState.currentTaskId);
+            chatState.currentTaskId = null;
         }
-        if (currentTaskId) {
-            // Add processing indicator and start polling for task completion
+        
+        // Start polling if task is still active
+        if (chatState.currentTaskId) {
             addProcessingMessage();
-            pollTaskStatus();
+            startTaskPolling();
         }
 
     } catch (error) {
@@ -116,54 +102,65 @@ async function sendMessage() {
 }
 
 /**
- * Poll task status until completion
- * Uses exponential backoff for polling interval
+ * Start task polling with exponential backoff
+ * Uses centralized polling utility from api.js
  * @async
  */
-async function pollTaskStatus() {
-    if (!currentTaskId) return;
+function startTaskPolling() {
+    if (!chatState.currentTaskId) return;
 
-    try {
-        // Use API method to get task status
-        const task = await api.getTaskStatus(currentTaskId);
+    api.pollTaskWithBackoff(
+        chatState.currentTaskId,
+        handleTaskUpdate,
+        handleTaskError
+    );
+}
 
-        // Remove processing message
-        removeProcessingMessage();
+/**
+ * Handle task status updates during polling
+ * @param {Object} task - Task object with status and history
+ * @param {boolean} isTerminal - Whether task is in terminal state
+ */
+function handleTaskUpdate(task, isTerminal) {
+    removeProcessingMessage();
 
-        if (task.status.state === 'completed') {
-            // Extract the agent's response from the latest message in history
-            if (task.history && task.history.length > 0) {
-                // Find the last message with role 'agent' or 'assistant'
-                const lastAgentMessage = [...task.history].reverse().find(msg => msg.role === 'agent' || msg.role === 'assistant');
-                if (lastAgentMessage && lastAgentMessage.parts && lastAgentMessage.parts.length > 0) {
-                    const textPart = lastAgentMessage.parts.find(part => part.kind === 'text');
-                    if (textPart) {
-                        addMessage(textPart.text, 'agent', task.task_id);
-                    }
-                }
-            }
-            currentTaskId = null;
-        } else if (task.status.state === 'failed') {
-            addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
-            currentTaskId = null;
-        } else if (task.status.state === 'canceled') {
-            addMessage('Task was canceled', 'status');
-            currentTaskId = null;
-        } else {
-            // Still processing, add processing message back and poll again with backoff
-            addProcessingMessage();
-            pollingInterval = Math.min(pollingInterval * 1.5, MAX_POLLING_INTERVAL);
-            setTimeout(pollTaskStatus, pollingInterval);
+    if (task.status.state === 'completed') {
+        // Extract and display agent response
+        const responseText = utils.extractTaskResponse(task);
+        if (responseText) {
+            addMessage(responseText, 'agent', task.task_id);
         }
-
-    } catch (error) {
-        console.error('Error polling task status:', error);
-        removeProcessingMessage();
-        utils.showToast('Error getting task status: ' + error.message, 'error');
-        addMessage('Error getting task status: ' + error.message, 'status');
-        currentTaskId = null;
+        chatState.currentTaskId = null;
+        
+    } else if (task.status.state === 'failed') {
+        addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
+        chatState.currentTaskId = null;
+        
+    } else if (task.status.state === 'canceled') {
+        addMessage('Task was canceled', 'status');
+        chatState.currentTaskId = null;
+        
+    } else {
+        // Still processing, show indicator
+        addProcessingMessage();
     }
 }
+
+/**
+ * Handle task polling errors
+ * @param {Error} error - Error object
+ */
+function handleTaskError(error) {
+    console.error('Error polling task status:', error);
+    removeProcessingMessage();
+    utils.showToast('Error getting task status: ' + error.message, 'error');
+    addMessage('Error getting task status: ' + error.message, 'status');
+    chatState.currentTaskId = null;
+}
+
+// ============================================================================
+// UI RENDERING FUNCTIONS
+// ============================================================================
 
 /**
  * Add a message to the chat interface
@@ -193,13 +190,13 @@ function addMessage(content, sender, taskId = null) {
               <div class="text-lg prose max-w-none message-content" data-message-id="${messageId}">${parsedContent}</div>
               <div class="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 message-actions" data-message-id="${messageId}">
                 <button class="copy-btn p-2 rounded-md hover:bg-gray-200 transition-colors duration-200 transform hover:scale-110" title="Copy message" data-message-id="${messageId}">
-                  ${createMessageIcon('copy')}
+                  ${utils.createMessageIcon('copy')}
                 </button>
                 <button class="like-btn p-2 rounded-md hover:bg-green-100 transition-all duration-200 transform hover:scale-110" title="Like" data-message-id="${messageId}">
-                  ${createMessageIcon('like')}
+                  ${utils.createMessageIcon('like')}
                 </button>
                 <button class="dislike-btn p-2 rounded-md hover:bg-red-100 transition-all duration-200 transform hover:scale-110" title="Dislike" data-message-id="${messageId}">
-                  ${createMessageIcon('dislike')}
+                  ${utils.createMessageIcon('dislike')}
                 </button>
               </div>
             </div>
@@ -219,11 +216,12 @@ function addMessage(content, sender, taskId = null) {
 
 /**
  * Add a processing indicator message
+ * Shows visual feedback while agent is processing
  */
 function addProcessingMessage() {
     removeProcessingMessage();
     
-    const messagesDiv = getCachedElement('messages');
+    const messagesDiv = domCache.get('messages');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'flex justify-start';
     messageDiv.id = 'processing-message';

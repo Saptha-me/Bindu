@@ -15,11 +15,61 @@ const CONFIG = {
 };
 
 /**
+ * Icon configuration for UI elements
+ * @const
+ */
+const ICON_CONFIG = {
+    buttons: [
+        { id: 'contexts-icon', icon: 'archive-box', size: 'w-4 h-4' },
+        { id: 'tasks-icon', icon: 'document-text', size: 'w-4 h-4' },
+        { id: 'refresh-icon', icon: 'arrow-path', size: 'w-4 h-4' },
+        { id: 'clear-icon', icon: 'trash', size: 'w-4 h-4' }
+    ],
+    headers: [
+        { id: 'contexts-header', icon: 'archive-box', size: 'w-5 h-5 text-yellow-600' },
+        { id: 'tasks-header', icon: 'document-text', size: 'w-5 h-5 text-yellow-600' },
+        { id: 'stats-header', icon: 'chart-bar', size: 'w-5 h-5 text-yellow-600' }
+    ]
+};
+
+/**
+ * DOM element cache for performance optimization
+ * @type {Object}
+ */
+const elements = {};
+
+/**
+ * Get cached DOM element
+ * @param {string} id - Element ID
+ * @returns {HTMLElement|null} Cached element or null
+ */
+function getElement(id) {
+    if (!elements[id]) {
+        elements[id] = document.getElementById(id);
+    }
+    return elements[id];
+}
+
+/**
  * State management
  */
 let tasks = [];
 let contexts = [];
 let currentView = 'contexts';
+
+/**
+ * Handle API errors with consistent error display
+ * @param {Error} error - Error object
+ * @param {string} elementId - Element ID to display error in
+ * @param {string} context - Context for error logging
+ */
+function handleError(error, elementId, context) {
+    console.error(`Error ${context}:`, error);
+    const element = getElement(elementId);
+    if (element) {
+        element.innerHTML = utils.createErrorState(error.message, context);
+    }
+}
 
 /**
  * Load tasks from API and update UI
@@ -34,11 +84,7 @@ async function loadTasks() {
             displayTasks();
         }
     } catch (error) {
-        console.error('Error loading tasks:', error);
-        const taskList = document.getElementById('task-list');
-        if (taskList) {
-            taskList.innerHTML = utils.createErrorState(error.message, 'loadTasks()');
-        }
+        handleError(error, 'task-list', 'loading tasks');
     }
 }
 
@@ -55,11 +101,7 @@ async function loadContexts() {
             displayContexts();
         }
     } catch (error) {
-        console.error('Error loading contexts:', error);
-        const contextsList = document.getElementById('contexts-list');
-        if (contextsList) {
-            contextsList.innerHTML = utils.createErrorState(error.message, 'loadContexts()');
-        }
+        handleError(error, 'contexts-list', 'loading contexts');
     }
 }
 
@@ -85,7 +127,7 @@ function updateStats() {
         return acc;
     }, { active: 0, completed: 0, failed: 0, canceled: 0 });
     
-    const storageStats = document.getElementById('storage-stats');
+    const storageStats = getElement('storage-stats');
     if (storageStats) {
         storageStats.innerHTML = `
             <div class="space-y-3">
@@ -101,18 +143,37 @@ function updateStats() {
 }
 
 /**
+ * Render content to a container element
+ * @param {string} elementId - Element ID to render into
+ * @param {Array} items - Items to render
+ * @param {Function} renderFn - Function to render each item
+ * @param {string} emptyMessage - Message to show when no items
+ * @param {string} emptyIcon - Icon to show when no items
+ */
+function renderList(elementId, items, renderFn, emptyMessage, emptyIcon) {
+    const element = getElement(elementId);
+    if (!element) return;
+    
+    if (items.length === 0) {
+        element.innerHTML = utils.createEmptyState(emptyMessage, emptyIcon, 'w-16 h-16');
+        return;
+    }
+    
+    element.innerHTML = items.map(renderFn).join('');
+}
+
+/**
  * Display tasks in the task list
  * Uses centralized task card component from utils
  */
 function displayTasks() {
-    const taskList = document.getElementById('task-list');
-    
-    if (tasks.length === 0) {
-        taskList.innerHTML = utils.createEmptyState('Start a conversation in the chat to see task history here', 'document-text', 'w-16 h-16');
-        return;
-    }
-
-    taskList.innerHTML = tasks.map(task => utils.createTaskCard(task, false, CONFIG.TRUNCATE_LENGTH)).join('');
+    renderList(
+        'task-list',
+        tasks,
+        task => utils.createTaskCard(task, false, CONFIG.TRUNCATE_LENGTH),
+        'Start a conversation in the chat to see task history here',
+        'document-text'
+    );
 }
 
 /**
@@ -120,14 +181,13 @@ function displayTasks() {
  * Uses centralized context card component from utils
  */
 function displayContexts() {
-    const contextsList = document.getElementById('contexts-list');
-    
-    if (contexts.length === 0) {
-        contextsList.innerHTML = utils.createEmptyState('Start a conversation to create contexts with tasks', 'archive-box', 'w-16 h-16');
-        return;
-    }
-
-    contextsList.innerHTML = contexts.map(context => utils.createContextCard(context)).join('');
+    renderList(
+        'contexts-list',
+        contexts,
+        context => utils.createContextCard(context),
+        'Start a conversation to create contexts with tasks',
+        'archive-box'
+    );
 }
 
 /**
@@ -135,33 +195,42 @@ function displayContexts() {
  */
 
 /**
+ * Toggle button active state
+ * @param {HTMLElement} activeBtn - Button to activate
+ * @param {HTMLElement} inactiveBtn - Button to deactivate
+ */
+function toggleButtonState(activeBtn, inactiveBtn) {
+    activeBtn.classList.add('bg-yellow-500', 'text-white');
+    activeBtn.classList.remove('text-gray-600');
+    inactiveBtn.classList.remove('bg-yellow-500', 'text-white');
+    inactiveBtn.classList.add('text-gray-600');
+}
+
+/**
  * Switch between contexts and tasks view
  * @param {string} view - View to switch to ('contexts' or 'tasks')
  */
 function switchView(view) {
     currentView = view;
-    const contextsContainer = document.getElementById('contexts-container');
-    const tasksContainer = document.getElementById('tasks-container');
-    const contextsBtn = document.getElementById('contexts-view-btn');
-    const tasksBtn = document.getElementById('tasks-view-btn');
+    const contextsContainer = getElement('contexts-container');
+    const tasksContainer = getElement('tasks-container');
+    const contextsBtn = getElement('contexts-view-btn');
+    const tasksBtn = getElement('tasks-view-btn');
 
-    if (view === 'contexts') {
-        contextsContainer.classList.remove('hidden');
-        tasksContainer.classList.add('hidden');
-        contextsBtn.classList.add('bg-yellow-500', 'text-white');
-        contextsBtn.classList.remove('text-gray-600');
-        tasksBtn.classList.remove('bg-yellow-500', 'text-white');
-        tasksBtn.classList.add('text-gray-600');
-        displayContexts();
-    } else {
-        contextsContainer.classList.add('hidden');
-        tasksContainer.classList.remove('hidden');
-        tasksBtn.classList.add('bg-yellow-500', 'text-white');
-        tasksBtn.classList.remove('text-gray-600');
-        contextsBtn.classList.remove('bg-yellow-500', 'text-white');
-        contextsBtn.classList.add('text-gray-600');
-        displayTasks();
-    }
+    const isContextsView = view === 'contexts';
+    
+    // Toggle container visibility
+    contextsContainer.classList.toggle('hidden', !isContextsView);
+    tasksContainer.classList.toggle('hidden', isContextsView);
+    
+    // Toggle button states
+    toggleButtonState(
+        isContextsView ? contextsBtn : tasksBtn,
+        isContextsView ? tasksBtn : contextsBtn
+    );
+    
+    // Display appropriate content
+    isContextsView ? displayContexts() : displayTasks();
 }
 
 /**
@@ -193,7 +262,15 @@ function toggleContext(contextId) {
     }
 }
 
-// Action functions
+/**
+ * Action functions
+ */
+
+/**
+ * Clear all storage (tasks and contexts)
+ * Prompts user for confirmation before clearing
+ * @async
+ */
 async function clearStorage() {
     if (!confirm('Are you sure you want to clear all task history? This action cannot be undone.')) {
         return;
@@ -218,6 +295,12 @@ async function clearStorage() {
     }
 }
 
+/**
+ * Clear a specific context by ID
+ * Prompts user for confirmation before clearing
+ * @param {string} contextId - Context ID to clear
+ * @async
+ */
 async function clearContextById(contextId) {
     if (!confirm('Are you sure you want to clear this context and all its tasks?')) {
         return;
@@ -233,11 +316,15 @@ async function clearContextById(contextId) {
     }
 }
 
+/**
+ * View task details
+ * TODO: Replace with proper modal component
+ * @param {string} taskId - Task ID to view
+ */
 function viewTask(taskId) {
     const task = tasks.find(t => t.task_id === taskId);
     if (!task) return;
     
-    // TODO: Replace with proper modal component
     const details = [
         `ID: ${task.task_id}`,
         `Status: ${task.status?.state || 'unknown'}`,
@@ -248,65 +335,46 @@ function viewTask(taskId) {
     alert(`Task Details:\n\n${details}`);
 }
 
+/**
+ * Refresh all data from API
+ * Reloads both tasks and contexts
+ */
 function refreshData() {
     loadTasks();
     loadContexts();
 }
 
-// Add icons to headers and buttons
+/**
+ * UI initialization functions
+ */
+
+/**
+ * Initialize icons in headers and buttons
+ * Uses centralized icon creation from utils and configuration
+ */
 function initializeIcons() {
-    // Button icons
-    const contextsIcon = document.getElementById('contexts-icon');
-    if (contextsIcon) {
-        contextsIcon.innerHTML = utils.createIcon('archive-box', 'w-4 h-4');
-    }
+    // Initialize button icons
+    ICON_CONFIG.buttons.forEach(({ id, icon, size }) => {
+        const element = getElement(id);
+        if (element) {
+            element.innerHTML = utils.createIcon(icon, size);
+        }
+    });
     
-    const tasksIcon = document.getElementById('tasks-icon');
-    if (tasksIcon) {
-        tasksIcon.innerHTML = utils.createIcon('document-text', 'w-4 h-4');
-    }
-    
-    const refreshIcon = document.getElementById('refresh-icon');
-    if (refreshIcon) {
-        refreshIcon.innerHTML = utils.createIcon('arrow-path', 'w-4 h-4');
-    }
-    
-    const clearIcon = document.getElementById('clear-icon');
-    if (clearIcon) {
-        clearIcon.innerHTML = utils.createIcon('trash', 'w-4 h-4');
-    }
-    
-    // Section header icons
-    const contextsHeader = document.getElementById('contexts-header');
-    if (contextsHeader) {
-        contextsHeader.insertAdjacentHTML('afterbegin', utils.createIcon('archive-box', 'w-5 h-5 text-yellow-600'));
-    }
-    
-    const tasksHeader = document.getElementById('tasks-header');
-    if (tasksHeader) {
-        tasksHeader.insertAdjacentHTML('afterbegin', utils.createIcon('document-text', 'w-5 h-5 text-yellow-600'));
-    }
-    
-    const statsHeader = document.getElementById('stats-header');
-    if (statsHeader) {
-        statsHeader.insertAdjacentHTML('afterbegin', utils.createIcon('chart-bar', 'w-5 h-5 text-yellow-600'));
-    }
+    // Initialize header icons
+    ICON_CONFIG.headers.forEach(({ id, icon, size }) => {
+        const element = getElement(id);
+        if (element) {
+            element.insertAdjacentHTML('afterbegin', utils.createIcon(icon, size));
+        }
+    });
 }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-    initializeIcons();
-    loadTasks();
-    loadContexts();
-    setTimeout(() => {
-        switchView('contexts');
-    }, CONFIG.REFRESH_DELAY);
-    
-    // Event delegation for better performance
-    document.addEventListener('click', handleGlobalClick);
-});
-
-// Event delegation handler
+/**
+ * Event delegation handler for global click events
+ * Handles all button actions using data attributes
+ * @param {Event} e - Click event
+ */
 function handleGlobalClick(e) {
     const target = e.target.closest('[data-action]');
     if (!target) return;
@@ -328,7 +396,26 @@ function handleGlobalClick(e) {
     }
 }
 
-// Cleanup on page unload
+/**
+ * Initialize the storage page on DOM ready
+ * Sets up icons, loads data, and attaches event listeners
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    initializeIcons();
+    loadTasks();
+    loadContexts();
+    setTimeout(() => {
+        switchView('contexts');
+    }, CONFIG.REFRESH_DELAY);
+    
+    // Event delegation for better performance
+    document.addEventListener('click', handleGlobalClick);
+});
+
+/**
+ * Cleanup on page unload
+ * Removes event listeners to prevent memory leaks
+ */
 window.addEventListener('beforeunload', () => {
     document.removeEventListener('click', handleGlobalClick);
 });

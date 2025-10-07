@@ -24,7 +24,6 @@ Think of this as the restaurant's order management system catalog:
 
 2. STORAGE IMPLEMENTATIONS:
    - InMemoryStorage: Fast whiteboard system (development/testing)
-   - PostgreSQLStorage: Enterprise database system (production)
 
 3. USAGE PATTERNS:
    - Import the base Storage class for type hints and interfaces
@@ -33,7 +32,6 @@ Think of this as the restaurant's order management system catalog:
 
 AVAILABLE STORAGE OPTIONS:
 - InMemoryStorage: Lightning-fast temporary storage
-- PostgreSQLStorage: ACID-compliant persistent storage with ORM # TODO: Add PostgreSQLStorage
 """
 
 from __future__ import annotations as _annotations
@@ -44,12 +42,9 @@ from .base import Storage
 # Export all storage implementations
 from .memory_storage import InMemoryStorage
 
-# from .postgres_storage import PostgreSQLStorage
-
 __all__ = [
     # Base interface
     "Storage",
     # Storage implementations
     "InMemoryStorage",
-    # "PostgreSQLStorage", # TODO: Add PostgreSQLStorage
 ]

@@ -13,11 +13,31 @@ function generateId() {
     if (typeof utils !== 'undefined' && utils.generateUUID) {
         return utils.generateUUID();
     }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+    // Optimized UUID v4 generation without regex
+    const hex = '0123456789abcdef';
+    let uuid = '';
+    for (let i = 0; i < 36; i++) {
+        if (i === 8 || i === 13 || i === 18 || i === 23) {
+            uuid += '-';
+        } else if (i === 14) {
+            uuid += '4';
+        } else if (i === 19) {
+            uuid += hex[(Math.random() * 4 | 0) + 8];
+        } else {
+            uuid += hex[Math.random() * 16 | 0];
+        }
+    }
+    return uuid;
 }
+
+/**
+ * Shared headers object for all requests
+ * @const
+ * @private
+ */
+const JSON_HEADERS = {
+    'Content-Type': 'application/json'
+};
 
 /**
  * Make a JSON-RPC 2.0 API request to the agent server
@@ -29,9 +49,7 @@ function generateId() {
 async function makeApiRequest(method, params) {
     const response = await fetch('/', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: JSON_HEADERS,
         body: JSON.stringify({
             jsonrpc: '2.0',
             method: method,
@@ -54,17 +72,30 @@ async function makeApiRequest(method, params) {
 }
 
 /**
+ * Agent card cache
+ * @private
+ */
+let agentCardCache = null;
+
+/**
  * Load agent card information from the well-known endpoint
+ * Uses caching to avoid repeated requests
+ * @param {boolean} [forceRefresh=false] - Force refresh the cache
  * @returns {Promise<Object>} Agent card data including name, version, capabilities, etc.
  * @throws {Error} If the agent card cannot be loaded
  */
-async function loadAgentCard() {
+async function loadAgentCard(forceRefresh = false) {
+    if (agentCardCache && !forceRefresh) {
+        return agentCardCache;
+    }
+    
     try {
         const response = await fetch('/.well-known/agent.json');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return await response.json();
+        agentCardCache = await response.json();
+        return agentCardCache;
     } catch (error) {
         console.error('Error loading agent card:', error);
         throw error;
@@ -79,7 +110,7 @@ async function loadAgentCard() {
  * @returns {Promise<Object>} Response from the agent
  */
 async function sendMessage(contextId, content, role = 'user') {
-    return await makeApiRequest('message/send', {
+    return makeApiRequest('message/send', {
         context_id: contextId,
         message: {
             role: role,
@@ -96,7 +127,7 @@ async function sendMessage(contextId, content, role = 'user') {
  * @returns {Promise<Object>} Created context object with context_id
  */
 async function createContext() {
-    return await makeApiRequest('contexts/create', {});
+    return makeApiRequest('contexts/create', {});
 }
 
 /**
@@ -105,7 +136,7 @@ async function createContext() {
  * @returns {Promise<Array>} Array of context objects
  */
 async function listContexts(length = 100) {
-    return await makeApiRequest('contexts/list', { length });
+    return makeApiRequest('contexts/list', { length });
 }
 
 /**
@@ -114,7 +145,7 @@ async function listContexts(length = 100) {
  * @returns {Promise<Object>} Context object with tasks and messages
  */
 async function getContext(contextId) {
-    return await makeApiRequest('contexts/get', {
+    return makeApiRequest('contexts/get', {
         context_id: contextId
     });
 }
@@ -126,7 +157,7 @@ async function getContext(contextId) {
  */
 async function clearContext(contextId = null) {
     const params = contextId ? { context_id: contextId } : {};
-    return await makeApiRequest('contexts/clear', params);
+    return makeApiRequest('contexts/clear', params);
 }
 
 /**
@@ -140,7 +171,7 @@ async function listTasks(contextId = null, length = 100) {
     if (contextId) {
         params.context_id = contextId;
     }
-    return await makeApiRequest('tasks/list', params);
+    return makeApiRequest('tasks/list', params);
 }
 
 /**
@@ -149,7 +180,7 @@ async function listTasks(contextId = null, length = 100) {
  * @returns {Promise<Object>} Task object with status, history, and artifacts
  */
 async function getTask(taskId) {
-    return await makeApiRequest('tasks/get', {
+    return makeApiRequest('tasks/get', {
         task_id: taskId
     });
 }
@@ -160,7 +191,7 @@ async function getTask(taskId) {
  * @returns {Promise<Object>} Response confirming the cancellation
  */
 async function cancelTask(taskId) {
-    return await makeApiRequest('tasks/cancel', {
+    return makeApiRequest('tasks/cancel', {
         task_id: taskId
     });
 }
@@ -170,7 +201,7 @@ async function cancelTask(taskId) {
  * @returns {Promise<Object>} Response confirming the clear operation
  */
 async function clearAllStorage() {
-    return await clearContext(null);
+    return clearContext(null);
 }
 
 /**
@@ -182,29 +213,27 @@ async function clearAllStorage() {
  */
 async function getTasksGrouped(contextId = null, length = 100) {
     const rawData = await listTasks(contextId, length);
-    const tasks = [];
+    const taskGroups = {};
     
-    rawData.forEach(messageArray => {
-        if (Array.isArray(messageArray) && messageArray.length > 0) {
-            const taskGroups = {};
-            messageArray.forEach(msg => {
-                const taskId = msg.task_id;
-                if (!taskGroups[taskId]) {
-                    taskGroups[taskId] = {
-                        task_id: taskId,
-                        context_id: msg.context_id,
-                        history: [],
-                        status: { state: 'completed' }
-                    };
-                }
-                taskGroups[taskId].history.push(msg);
-            });
-            
-            Object.values(taskGroups).forEach(task => tasks.push(task));
+    // Single pass through all messages
+    for (const messageArray of rawData) {
+        if (!Array.isArray(messageArray) || messageArray.length === 0) continue;
+        
+        for (const msg of messageArray) {
+            const taskId = msg.task_id;
+            if (!taskGroups[taskId]) {
+                taskGroups[taskId] = {
+                    task_id: taskId,
+                    context_id: msg.context_id,
+                    history: [],
+                    status: { state: 'completed' }
+                };
+            }
+            taskGroups[taskId].history.push(msg);
         }
-    });
+    }
     
-    return tasks;
+    return Object.values(taskGroups);
 }
 
 /**
@@ -217,29 +246,34 @@ async function getContextsGrouped(length = 100) {
     const rawData = await listContexts(length);
     const contextMap = {};
     
-    rawData.forEach(messageArray => {
-        if (Array.isArray(messageArray) && messageArray.length > 0) {
-            messageArray.forEach(msg => {
-                const contextId = msg.context_id;
-                if (!contextMap[contextId]) {
-                    contextMap[contextId] = {
-                        context_id: contextId,
-                        id: contextId,
-                        task_count: 0,
-                        task_ids: new Set()
-                    };
-                }
-                contextMap[contextId].task_ids.add(msg.task_id);
-            });
+    // Single pass through all messages
+    for (const messageArray of rawData) {
+        if (!Array.isArray(messageArray) || messageArray.length === 0) continue;
+        
+        for (const msg of messageArray) {
+            const contextId = msg.context_id;
+            if (!contextMap[contextId]) {
+                contextMap[contextId] = {
+                    context_id: contextId,
+                    id: contextId,
+                    task_ids: new Set()
+                };
+            }
+            contextMap[contextId].task_ids.add(msg.task_id);
         }
-    });
+    }
     
-    // Convert to array and calculate task counts
-    return Object.values(contextMap).map(context => ({
-        ...context,
-        task_count: context.task_ids.size,
-        task_ids: undefined
-    }));
+    // Convert to array with task counts (avoid object spread)
+    const contexts = [];
+    for (const contextId in contextMap) {
+        const context = contextMap[contextId];
+        contexts.push({
+            context_id: context.context_id,
+            id: context.id,
+            task_count: context.task_ids.size
+        });
+    }
+    return contexts;
 }
 
 /**
@@ -252,50 +286,22 @@ async function getContextsGrouped(length = 100) {
  * @returns {Promise<Object>} Response with task_id, context_id, and optional reply
  */
 async function sendChatMessage(contextId, message, messageId = null, taskId = null) {
-    messageId = messageId || generateId();
-    taskId = taskId || generateId();
-    
-    const payload = {
-        "jsonrpc": "2.0",
-        "method": "message/send",
-        "params": {
-            "message": {
-                "role": "user",
-                "parts": [{
-                    "kind": "text",
-                    "text": message
-                }],
-                "kind": "message",
-                "messageId": messageId,
-                "contextId": contextId,
-                "taskId": taskId
-            },
-            "configuration": {
-                "acceptedOutputModes": ["application/json"]
-            }
+    return makeApiRequest('message/send', {
+        message: {
+            role: 'user',
+            parts: [{
+                kind: 'text',
+                text: message
+            }],
+            kind: 'message',
+            messageId: messageId || generateId(),
+            contextId: contextId,
+            taskId: taskId || generateId()
         },
-        "id": generateId()
-    };
-
-    const response = await fetch('/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+        configuration: {
+            acceptedOutputModes: ['application/json']
+        }
     });
-
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    
-    if (result.error) {
-        throw new Error(result.error.message || 'Unknown error');
-    }
-
-    return result.result;
 }
 
 /**
@@ -305,34 +311,9 @@ async function sendChatMessage(contextId, message, messageId = null, taskId = nu
  * @returns {Promise<Object>} Task object with current status and history
  */
 async function getTaskStatus(taskId) {
-    const payload = {
-        "jsonrpc": "2.0",
-        "method": "tasks/get",
-        "params": {
-            "taskId": taskId
-        },
-        "id": generateId()
-    };
-
-    const response = await fetch('/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+    return makeApiRequest('tasks/get', {
+        taskId: taskId
     });
-
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    
-    if (result.error) {
-        throw new Error(result.error.message || 'Unknown error');
-    }
-
-    return result.result;
 }
 
 /**
@@ -346,38 +327,65 @@ const POLLING_CONFIG = {
 };
 
 /**
+ * Terminal task states (cached to avoid array allocation)
+ * @const
+ * @private
+ */
+const TERMINAL_STATES = ['completed', 'failed', 'canceled'];
+
+/**
  * Poll task status with exponential backoff
  * Automatically handles polling until task reaches terminal state
  * @param {string} taskId - Task ID to poll
  * @param {Function} onUpdate - Callback for status updates (task, isComplete)
  * @param {Function} onError - Callback for errors
- * @param {number} [interval=1000] - Current polling interval (internal use)
- * @returns {Promise<void>}
+ * @returns {Object} Object with cancel() method to stop polling
  */
-async function pollTaskWithBackoff(taskId, onUpdate, onError, interval = POLLING_CONFIG.INITIAL_INTERVAL) {
-    try {
-        const task = await getTaskStatus(taskId);
-        const state = task.status?.state;
+function pollTaskWithBackoff(taskId, onUpdate, onError) {
+    let timeoutId = null;
+    let cancelled = false;
+    
+    async function poll(interval = POLLING_CONFIG.INITIAL_INTERVAL) {
+        if (cancelled) return;
         
-        // Check if task is in terminal state
-        const isTerminal = ['completed', 'failed', 'canceled'].includes(state);
-        
-        // Call update callback
-        onUpdate(task, isTerminal);
-        
-        // Continue polling if not terminal
-        if (!isTerminal) {
-            const nextInterval = Math.min(
-                interval * POLLING_CONFIG.BACKOFF_MULTIPLIER,
-                POLLING_CONFIG.MAX_INTERVAL
-            );
-            setTimeout(() => {
-                pollTaskWithBackoff(taskId, onUpdate, onError, nextInterval);
-            }, interval);
+        try {
+            const task = await getTaskStatus(taskId);
+            const state = task.status?.state;
+            
+            // Check if task is in terminal state
+            const isTerminal = TERMINAL_STATES.includes(state);
+            
+            // Call update callback
+            onUpdate(task, isTerminal);
+            
+            // Continue polling if not terminal and not cancelled
+            if (!isTerminal && !cancelled) {
+                const nextInterval = Math.min(
+                    interval * POLLING_CONFIG.BACKOFF_MULTIPLIER,
+                    POLLING_CONFIG.MAX_INTERVAL
+                );
+                timeoutId = setTimeout(() => poll(nextInterval), interval);
+            }
+        } catch (error) {
+            if (!cancelled) {
+                onError(error);
+            }
         }
-    } catch (error) {
-        onError(error);
     }
+    
+    // Start polling
+    poll();
+    
+    // Return cancellation control
+    return {
+        cancel: () => {
+            cancelled = true;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+        }
+    };
 }
 
 /**

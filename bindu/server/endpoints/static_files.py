@@ -76,11 +76,17 @@ chat_page_endpoint.__doc__ = "Serve the chat interface page."
 storage_page_endpoint = _create_static_endpoint("storage.html", MEDIA_TYPES[".html"])
 storage_page_endpoint.__doc__ = "Serve the storage management page."
 
-common_js_endpoint = _create_static_endpoint("common.js", MEDIA_TYPES[".js"])
+common_js_endpoint = _create_static_endpoint("js/common.js", MEDIA_TYPES[".js"])
 common_js_endpoint.__doc__ = "Serve the common JavaScript file."
 
-common_css_endpoint = _create_static_endpoint("common.css", MEDIA_TYPES[".css"])
-common_css_endpoint.__doc__ = "Serve the common CSS file."
+api_js_endpoint = _create_static_endpoint("js/api.js", MEDIA_TYPES[".js"])
+api_js_endpoint.__doc__ = "Serve the API JavaScript file."
+
+agent_js_endpoint = _create_static_endpoint("js/agent.js", MEDIA_TYPES[".js"])
+agent_js_endpoint.__doc__ = "Serve the agent page JavaScript file."
+
+custom_css_endpoint = _create_static_endpoint("css/custom.css", MEDIA_TYPES[".css"])
+custom_css_endpoint.__doc__ = "Serve the custom CSS file."
 
 layout_js_endpoint = _create_static_endpoint("components/layout.js", MEDIA_TYPES[".js"])
 layout_js_endpoint.__doc__ = "Serve the layout JavaScript file."

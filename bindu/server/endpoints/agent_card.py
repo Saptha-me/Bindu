@@ -1,6 +1,5 @@
 """Agent card endpoint for W3C-compliant agent discovery."""
 
-import logging
 from time import time
 from typing import TYPE_CHECKING
 
@@ -9,11 +8,12 @@ from starlette.responses import JSONResponse, Response
 
 from bindu.common.protocol.types import AgentCard, agent_card_ta
 from bindu.server.utils.request_utils import get_client_ip
+from bindu.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from ..applications import BinduApplication
 
-logger = logging.getLogger("bindu.server.endpoints.agent_card")
+logger = get_logger("bindu.server.endpoints.agent_card")
 
 
 def _create_agent_card(app: "BinduApplication") -> AgentCard:

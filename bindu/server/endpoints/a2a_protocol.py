@@ -1,6 +1,5 @@
 """A2A protocol endpoint for agent-to-agent communication."""
 
-import logging
 from typing import TYPE_CHECKING
 
 from starlette.requests import Request
@@ -8,11 +7,12 @@ from starlette.responses import JSONResponse, Response
 
 from bindu.common.protocol.types import a2a_request_ta, a2a_response_ta
 from bindu.server.utils.request_utils import get_client_ip
+from bindu.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from ..applications import BinduApplication
 
-logger = logging.getLogger("bindu.server.endpoints.a2a_protocol")
+logger = get_logger("bindu.server.endpoints.a2a_protocol")
 
 # Method dispatcher mapping JSON-RPC methods to task_manager handlers
 METHOD_HANDLERS = {

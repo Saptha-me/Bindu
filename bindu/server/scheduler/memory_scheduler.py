@@ -1,52 +1,4 @@
-# |---------------------------------------------------------|
-# |                                                         |
-# |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
-# |                                                         |
-# |---------------------------------------------------------|
-#
-# IN-MEMORY SCHEDULER IMPLEMENTATION:
-#
-# This is a concrete implementation of the Scheduler that keeps all task
-# operations in memory using async streams. Perfect for development,
-# testing, and single-process deployments.
-#
-# BURGER STORE ANALOGY - MEMORY IMPLEMENTATION:
-#
-# Think of a small burger joint with a simple order board:
-#
-# 1. ORDER BOARD (Memory Streams):
-#    - Simple whiteboard where orders are written down
-#    - Orders flow from "incoming" side to "kitchen" side
-#    - No external database - everything stays on the board
-#
-# 2. ORDER FLOW:
-#    - Customer order comes in → Written on board (write_stream)
-#    - Kitchen staff reads from board → Takes order (read_stream)
-#    - Special requests: pause, cancel, resume orders
-#
-# 3. ADVANTAGES:
-#    - Fast: No network calls or disk writes
-#    - Simple: Easy to understand and debug
-#    - Reliable: No external dependencies
-#
-# 4. LIMITATIONS:
-#    - Single process only (one restaurant location)
-#    - Lost on restart (board gets erased)
-#    - No persistence (orders don't survive power outage)
-#
-# WHEN TO USE:
-# - Development and testing environments
-# - Single-agent deployments
-# - Proof of concepts and demos
-# - When you need fast, simple task scheduling
-#
-# FOR PRODUCTION:
-# - Consider RedisScheduler for multi-process deployments
-# - Consider DatabaseScheduler for persistence requirements
-# - Consider CloudScheduler for distributed systems
-#
-#  Thank you users! We ❤️ you! - 🐧
+"""In-memory scheduler implementation."""
 
 from __future__ import annotations as _annotations
 
@@ -66,6 +18,9 @@ from bindu.server.scheduler.base import (
     _ResumeTask,
     _RunTask,
 )
+from bindu.utils.logging import get_logger
+
+logger = get_logger("bindu.server.scheduler.memory_scheduler")
 
 
 class InMemoryScheduler(Scheduler):
@@ -85,15 +40,19 @@ class InMemoryScheduler(Scheduler):
         await self.aexit_stack.__aexit__(exc_type, exc_value, traceback)
 
     async def run_task(self, params: TaskSendParams) -> None:
+        logger.debug(f"Running task: {params}")
         await self._write_stream.send(_RunTask(operation="run", params=params, _current_span=get_current_span()))
 
     async def cancel_task(self, params: TaskIdParams) -> None:
+        logger.debug(f"Canceling task: {params}")
         await self._write_stream.send(_CancelTask(operation="cancel", params=params, _current_span=get_current_span()))
 
     async def pause_task(self, params: TaskIdParams) -> None:
+        logger.debug(f"Pausing task: {params}")
         await self._write_stream.send(_PauseTask(operation="pause", params=params, _current_span=get_current_span()))
 
     async def resume_task(self, params: TaskIdParams) -> None:
+        logger.debug(f"Resuming task: {params}")
         await self._write_stream.send(_ResumeTask(operation="resume", params=params, _current_span=get_current_span()))
 
     async def receive_task_operations(self) -> AsyncIterator[TaskOperation]:

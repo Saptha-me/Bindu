@@ -1,57 +1,4 @@
-# |---------------------------------------------------------|
-# |                                                         |
-# |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
-# |                                                         |
-# |---------------------------------------------------------|
-#
-# REDIS SCHEDULER IMPLEMENTATION:
-#
-# This is a Redis-based implementation of the Scheduler using Upstash Redis
-# for distributed task operations. Perfect for production deployments,
-# multi-process systems, and cloud environments.
-#
-# BURGER STORE ANALOGY - REDIS IMPLEMENTATION:
-#
-# Think of a burger chain with multiple restaurant locations:
-#
-# 1. CENTRAL ORDER SYSTEM (Redis):
-#    - Cloud-based order management system (Upstash Redis)
-#    - All restaurants connect to the same order queue
-#    - Orders persist even if individual restaurants go offline
-#    - Real-time synchronization across all locations
-#
-# 2. ORDER FLOW:
-#    - Customer order comes in → Sent to central system (Redis queue)
-#    - Any kitchen staff at any location → Can pick up orders
-#    - Special requests: pause, cancel, resume orders across locations
-#    - Order history preserved in central database
-#
-# 3. ADVANTAGES:
-#    - Distributed: Multiple processes can share the same queue
-#    - Persistent: Orders survive restaurant restarts
-#    - Scalable: Add more locations without changing the system
-#    - Reliable: Cloud-hosted with automatic backups
-#
-# 4. FEATURES:
-#    - Multi-process support (multiple restaurant locations)
-#    - Persistence across restarts (orders don't get lost)
-#    - Load balancing (distribute orders fairly)
-#    - Real-time updates (instant order synchronization)
-#
-# WHEN TO USE:
-# - Production deployments with multiple workers
-# - Distributed agent systems
-# - Cloud environments (Docker, Kubernetes)
-# - When you need persistence and reliability
-#
-# UPSTASH REDIS:
-# - Serverless Redis with automatic scaling
-# - No infrastructure management required
-# - Pay-per-request pricing model
-# - Global edge locations for low latency
-#
-#  Thank you users! We ❤️ you! - 🐧
+"""Redis scheduler implementation."""
 
 from __future__ import annotations as _annotations
 
@@ -63,6 +10,9 @@ import redis.asyncio as redis
 from opentelemetry.trace import get_current_span
 
 from bindu.common.protocol.types import TaskIdParams, TaskSendParams
+from bindu.utils.logging import get_logger
+
+logger = get_logger("bindu.server.scheduler.redis_scheduler")
 
 from .base import (
     Scheduler,

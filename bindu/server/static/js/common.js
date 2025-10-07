@@ -613,6 +613,115 @@ function createTechnicalDetail(label, value, isMonospace = false) {
     `;
 }
 
+/**
+ * Create a task card component for displaying task information
+ * @param {Object} task - Task object with status, history, and metadata
+ * @param {string} task.task_id - Unique task identifier
+ * @param {string} task.context_id - Context identifier
+ * @param {Object} task.status - Task status object with state
+ * @param {Array} task.history - Array of message objects
+ * @param {boolean} [isCompact=false] - Whether to use compact layout
+ * @param {number} [truncateLength=100] - Maximum length for message text
+ * @returns {string} HTML string for the task card
+ */
+function createTaskCard(task, isCompact = false, truncateLength = 100) {
+    const statusColor = getStatusColor(task.status?.state);
+    const statusIcon = getStatusIcon(task.status?.state);
+    const latestMessage = task.history?.[task.history.length - 1]?.parts?.[0]?.text || 'No content';
+    const truncatedMessage = truncateText(latestMessage, truncateLength);
+    
+    return `
+        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
+            <div class="flex items-start justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-lg">${statusIcon}</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
+                            ${task.status?.state || 'unknown'}
+                        </span>
+                        <span class="text-xs text-gray-500 font-mono">
+                            ${task.task_id?.substring(0, 8)}...
+                        </span>
+                    </div>
+                    
+                    <div class="text-sm text-gray-600 mb-2">
+                        <strong>Context:</strong> ${task.context_id?.substring(0, 8)}...
+                    </div>
+                    
+                    ${task.history?.length > 0 ? `
+                        <div class="text-sm text-gray-900">
+                            <strong>Latest Message:</strong> ${truncatedMessage}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="flex-shrink-0 ml-4">
+                    <button data-action="view-task" data-task-id="${task.task_id}" 
+                            class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        ${isCompact ? 'View' : 'View Details'}
+                    </button>
+                </div>
+            </div>
+            
+            ${task.status?.error ? `
+                <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-sm text-red-800">
+                        <strong>Error:</strong> ${task.status.error}
+                    </p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Create a context card component for displaying context information
+ * @param {Object} contextData - Context object with metadata
+ * @param {string} contextData.context_id - Unique context identifier
+ * @param {number} [contextData.task_count=0] - Number of tasks in context
+ * @returns {string} HTML string for the context card
+ */
+function createContextCard(contextData) {
+    const contextId = contextData.context_id;
+    const taskCount = contextData.task_count || 0;
+    
+    return `
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="bg-gray-50 p-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg">🗂️</span>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Context ${contextId?.substring(0, 8)}...
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                                ${taskCount} task${taskCount !== 1 ? 's' : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button data-action="toggle-context" data-context-id="${contextId}" 
+                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            <span id="toggle-${contextId}">Show Tasks</span>
+                        </button>
+                        <button data-action="clear-context" data-context-id="${contextId}" 
+                                class="text-red-600 hover:text-red-800 text-sm font-medium">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="context-tasks-${contextId}" class="hidden">
+                <div class="p-4 text-center text-gray-500">
+                    Loading tasks...
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 // Make functions globally available
 window.utils = {
     // Formatting utilities
@@ -647,6 +756,8 @@ window.utils = {
     createDropdown,
     createSkillCard,
     createTechnicalDetail,
+    createTaskCard,
+    createContextCard,
     
     // Badge and status utilities
     getBadgeClass,

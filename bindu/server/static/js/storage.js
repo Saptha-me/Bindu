@@ -1,141 +1,38 @@
-// Storage page logic
-// Handles displaying contexts and tasks from storage
+/**
+ * Storage page logic
+ * Handles displaying contexts and tasks from storage
+ * @module storage
+ */
 
-// Constants
+/**
+ * Configuration constants for storage page
+ * @const
+ */
 const CONFIG = {
     MAX_ITEMS: 100,
     TRUNCATE_LENGTH: 100,
     REFRESH_DELAY: 100
 };
 
+/**
+ * State management
+ */
 let tasks = [];
 let contexts = [];
 let currentView = 'contexts';
 
-// Helper functions specific to storage page
-
-function createTaskCard(task, isCompact = false) {
-    const statusColor = utils.getStatusColor(task.status?.state);
-    const statusIcon = utils.getStatusIcon(task.status?.state);
-    const latestMessage = task.history?.[task.history.length - 1]?.parts?.[0]?.text || 'No content';
-    const truncatedMessage = utils.truncateText(latestMessage, CONFIG.TRUNCATE_LENGTH);
-    
-    return `
-        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
-            <div class="flex items-start justify-between">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="text-lg">${statusIcon}</span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">
-                            ${task.status?.state || 'unknown'}
-                        </span>
-                        <span class="text-xs text-gray-500 font-mono">
-                            ${task.task_id?.substring(0, 8)}...
-                        </span>
-                    </div>
-                    
-                    <div class="text-sm text-gray-600 mb-2">
-                        <strong>Context:</strong> ${task.context_id?.substring(0, 8)}...
-                    </div>
-                    
-                    ${task.history?.length > 0 ? `
-                        <div class="text-sm text-gray-900">
-                            <strong>Latest Message:</strong> ${truncatedMessage}
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="flex-shrink-0 ml-4">
-                    <button data-action="view-task" data-task-id="${task.task_id}" 
-                            class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        ${isCompact ? 'View' : 'View Details'}
-                    </button>
-                </div>
-            </div>
-            
-            ${task.status?.error ? `
-                <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p class="text-sm text-red-800">
-                        <strong>Error:</strong> ${task.status.error}
-                    </p>
-                </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-function createContextCard(contextData) {
-    const contextId = contextData.context_id;
-    const taskCount = contextData.task_count || 0;
-    
-    return `
-        <div class="border border-gray-200 rounded-lg overflow-hidden">
-            <div class="bg-gray-50 p-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="text-lg">🗂️</span>
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900">
-                                Context ${contextId?.substring(0, 8)}...
-                            </h3>
-                            <p class="text-sm text-gray-500">
-                                ${taskCount} task${taskCount !== 1 ? 's' : ''}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button data-action="toggle-context" data-context-id="${contextId}" 
-                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            <span id="toggle-${contextId}">Show Tasks</span>
-                        </button>
-                        <button data-action="clear-context" data-context-id="${contextId}" 
-                                class="text-red-600 hover:text-red-800 text-sm font-medium">
-                            Clear
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="context-tasks-${contextId}" class="hidden">
-                <div class="p-4 text-center text-gray-500">
-                    Loading tasks...
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// API functions
+/**
+ * Load tasks from API and update UI
+ * Uses centralized API method for data processing
+ * @async
+ */
 async function loadTasks() {
     try {
-        const rawData = await api.listTasks(null, CONFIG.MAX_ITEMS);
-        tasks = [];
-        
-        rawData.forEach(messageArray => {
-            if (Array.isArray(messageArray) && messageArray.length > 0) {
-                const taskGroups = {};
-                messageArray.forEach(msg => {
-                    const taskId = msg.task_id;
-                    if (!taskGroups[taskId]) {
-                        taskGroups[taskId] = {
-                            task_id: taskId,
-                            context_id: msg.context_id,
-                            history: [],
-                            status: { state: 'completed' }
-                        };
-                    }
-                    taskGroups[taskId].history.push(msg);
-                });
-                
-                Object.values(taskGroups).forEach(task => tasks.push(task));
-            }
-        });
-        
+        tasks = await api.getTasksGrouped(null, CONFIG.MAX_ITEMS);
         updateStats();
         if (currentView === 'tasks') {
             displayTasks();
         }
-        
     } catch (error) {
         console.error('Error loading tasks:', error);
         const taskList = document.getElementById('task-list');
@@ -145,40 +42,18 @@ async function loadTasks() {
     }
 }
 
+/**
+ * Load contexts from API and update UI
+ * Uses centralized API method for data processing
+ * @async
+ */
 async function loadContexts() {
     try {
-        const rawData = await api.listContexts(CONFIG.MAX_ITEMS);
-        const contextMap = {};
-        
-        rawData.forEach(messageArray => {
-            if (Array.isArray(messageArray) && messageArray.length > 0) {
-                messageArray.forEach(msg => {
-                    const contextId = msg.context_id;
-                    if (!contextMap[contextId]) {
-                        contextMap[contextId] = {
-                            context_id: contextId,
-                            id: contextId,
-                            task_count: 0,
-                            task_ids: new Set()
-                        };
-                    }
-                    contextMap[contextId].task_ids.add(msg.task_id);
-                });
-            }
-        });
-        
-        // Convert to array and calculate task counts
-        contexts = Object.values(contextMap).map(context => ({
-            ...context,
-            task_count: context.task_ids.size,
-            task_ids: undefined
-        }));
-        
+        contexts = await api.getContextsGrouped(CONFIG.MAX_ITEMS);
         updateStats();
         if (currentView === 'contexts') {
             displayContexts();
         }
-        
     } catch (error) {
         console.error('Error loading contexts:', error);
         const contextsList = document.getElementById('contexts-list');
@@ -188,7 +63,14 @@ async function loadContexts() {
     }
 }
 
-// Display functions
+/**
+ * Display functions
+ */
+
+/**
+ * Update statistics display with current task and context counts
+ * Calculates stats in a single pass for optimal performance
+ */
 function updateStats() {
     const totalContexts = contexts.length;
     const totalTasks = tasks.length;
@@ -218,6 +100,10 @@ function updateStats() {
     }
 }
 
+/**
+ * Display tasks in the task list
+ * Uses centralized task card component from utils
+ */
 function displayTasks() {
     const taskList = document.getElementById('task-list');
     
@@ -226,9 +112,13 @@ function displayTasks() {
         return;
     }
 
-    taskList.innerHTML = tasks.map(task => createTaskCard(task)).join('');
+    taskList.innerHTML = tasks.map(task => utils.createTaskCard(task, false, CONFIG.TRUNCATE_LENGTH)).join('');
 }
 
+/**
+ * Display contexts in the contexts list
+ * Uses centralized context card component from utils
+ */
 function displayContexts() {
     const contextsList = document.getElementById('contexts-list');
     
@@ -237,10 +127,17 @@ function displayContexts() {
         return;
     }
 
-    contextsList.innerHTML = contexts.map(context => createContextCard(context)).join('');
+    contextsList.innerHTML = contexts.map(context => utils.createContextCard(context)).join('');
 }
 
-// View management
+/**
+ * View management functions
+ */
+
+/**
+ * Switch between contexts and tasks view
+ * @param {string} view - View to switch to ('contexts' or 'tasks')
+ */
 function switchView(view) {
     currentView = view;
     const contextsContainer = document.getElementById('contexts-container');
@@ -267,6 +164,11 @@ function switchView(view) {
     }
 }
 
+/**
+ * Toggle context tasks visibility
+ * Loads and displays tasks for a specific context
+ * @param {string} contextId - Context ID to toggle
+ */
 function toggleContext(contextId) {
     const tasksDiv = document.getElementById(`context-tasks-${contextId}`);
     const toggleSpan = document.getElementById(`toggle-${contextId}`);
@@ -275,9 +177,9 @@ function toggleContext(contextId) {
         // Load and display tasks for this context
         const contextTasks = tasks.filter(t => t.context_id === contextId);
         if (contextTasks.length > 0) {
-            // Reuse createTaskCard with compact mode
+            // Use centralized task card component with compact mode
             tasksDiv.innerHTML = contextTasks.map(task => 
-                `<div class="border-b border-gray-100 last:border-b-0">${createTaskCard(task, true)}</div>`
+                `<div class="border-b border-gray-100 last:border-b-0">${utils.createTaskCard(task, true, CONFIG.TRUNCATE_LENGTH)}</div>`
             ).join('');
         } else {
             tasksDiv.innerHTML = '<div class="p-4 text-center text-gray-500">No tasks in this context</div>';

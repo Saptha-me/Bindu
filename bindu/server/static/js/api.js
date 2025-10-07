@@ -174,6 +174,75 @@ async function clearAllStorage() {
 }
 
 /**
+ * Get tasks grouped by task_id with full history
+ * Processes raw task data into structured task objects
+ * @param {string|null} [contextId=null] - Context ID to filter tasks, or null for all tasks
+ * @param {number} [length=100] - Maximum number of tasks to retrieve
+ * @returns {Promise<Array>} Array of task objects with grouped history
+ */
+async function getTasksGrouped(contextId = null, length = 100) {
+    const rawData = await listTasks(contextId, length);
+    const tasks = [];
+    
+    rawData.forEach(messageArray => {
+        if (Array.isArray(messageArray) && messageArray.length > 0) {
+            const taskGroups = {};
+            messageArray.forEach(msg => {
+                const taskId = msg.task_id;
+                if (!taskGroups[taskId]) {
+                    taskGroups[taskId] = {
+                        task_id: taskId,
+                        context_id: msg.context_id,
+                        history: [],
+                        status: { state: 'completed' }
+                    };
+                }
+                taskGroups[taskId].history.push(msg);
+            });
+            
+            Object.values(taskGroups).forEach(task => tasks.push(task));
+        }
+    });
+    
+    return tasks;
+}
+
+/**
+ * Get contexts with task counts
+ * Processes raw context data and calculates task counts per context
+ * @param {number} [length=100] - Maximum number of contexts to retrieve
+ * @returns {Promise<Array>} Array of context objects with task counts
+ */
+async function getContextsGrouped(length = 100) {
+    const rawData = await listContexts(length);
+    const contextMap = {};
+    
+    rawData.forEach(messageArray => {
+        if (Array.isArray(messageArray) && messageArray.length > 0) {
+            messageArray.forEach(msg => {
+                const contextId = msg.context_id;
+                if (!contextMap[contextId]) {
+                    contextMap[contextId] = {
+                        context_id: contextId,
+                        id: contextId,
+                        task_count: 0,
+                        task_ids: new Set()
+                    };
+                }
+                contextMap[contextId].task_ids.add(msg.task_id);
+            });
+        }
+    });
+    
+    // Convert to array and calculate task counts
+    return Object.values(contextMap).map(context => ({
+        ...context,
+        task_count: context.task_ids.size,
+        task_ids: undefined
+    }));
+}
+
+/**
  * Send a chat message with full configuration
  * Used by the chat interface for complete message handling
  * @param {string} contextId - Context ID for the conversation
@@ -289,10 +358,12 @@ window.api = {
     getContext,
     clearContext,
     clearAllStorage,
+    getContextsGrouped,
     
     // Task management
     listTasks,
     getTask,
     getTaskStatus,
-    cancelTask
+    cancelTask,
+    getTasksGrouped
 };

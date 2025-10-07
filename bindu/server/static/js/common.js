@@ -204,11 +204,17 @@ function toggleDropdown(dropdownId) {
     const content = domCache.get(dropdownId);
     if (!content) return;
     
-    const header = content.previousElementSibling;
-    const icon = header?.querySelector('.dropdown-icon');
-    
     const isExpanded = content.classList.contains('expanded');
     content.classList.toggle('expanded', !isExpanded);
+    
+    // Cache icon query
+    const iconCacheKey = `dropdown-icon-${dropdownId}`;
+    let icon = domCache.query(iconCacheKey);
+    if (!icon) {
+        const header = content.previousElementSibling;
+        icon = header?.querySelector('.dropdown-icon');
+        if (icon) domCache.query(iconCacheKey); // Store for next time
+    }
     icon?.classList.toggle('expanded', !isExpanded);
 }
 
@@ -509,18 +515,18 @@ async function loadHeader() {
     });
 }
 
-// Highlight active page in navigation (optimized)
+// Highlight active page in navigation (optimized with early exit)
 function highlightActivePage() {
     const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'chat';
     const navLinks = domCache.queryAll('nav a[data-page]');
     
-    navLinks.forEach(link => {
-        const page = link.getAttribute('data-page');
-        if (page === currentPage) {
+    for (const link of navLinks) {
+        if (link.getAttribute('data-page') === currentPage) {
             link.classList.remove('text-gray-600', 'hover:text-gray-900');
             link.classList.add('bg-yellow-500', 'text-white');
+            break; // Early exit once found
         }
-    });
+    }
 }
 
 // Build footer HTML
@@ -611,7 +617,9 @@ const ICON_MAP = {
     'like': 'heroicons:hand-thumb-up-20-solid',
     'dislike': 'heroicons:hand-thumb-down-20-solid',
     // Brand icons
-    'github': 'mdi:github'
+    'github': 'mdi:github',
+    // State icons
+    'exclamation-triangle': 'heroicons:exclamation-triangle-20-solid'
 };
 
 /**
@@ -938,17 +946,18 @@ const createMessageIcon = memoize(function(iconName, className = 'w-4 h-4') {
 function extractAgentResponse(result) {
     if (!result) return null;
     
-    // Try different response formats
+    // Try different response formats (ordered by most common)
     if (result.reply) return result.reply;
     if (result.content) return result.content;
     
-    // Check messages array
-    if (result.messages && result.messages.length > 0) {
-        const agentMsg = result.messages.find(m => 
-            m.role === 'assistant' || m.role === 'agent'
-        );
-        if (agentMsg && agentMsg.content) {
-            return agentMsg.content;
+    // Check messages array (use findLast for better performance - get latest message)
+    if (result.messages?.length > 0) {
+        // Use reverse iteration for better performance (latest message first)
+        for (let i = result.messages.length - 1; i >= 0; i--) {
+            const m = result.messages[i];
+            if ((m.role === 'assistant' || m.role === 'agent') && m.content) {
+                return m.content;
+            }
         }
     }
     
@@ -962,19 +971,16 @@ function extractAgentResponse(result) {
  * @returns {string|null} Extracted text or null
  */
 function extractTaskResponse(task) {
-    if (!task || !task.history || task.history.length === 0) {
-        return null;
-    }
+    if (!task?.history?.length) return null;
     
-    // Find the last message with role 'agent' or 'assistant'
-    const lastAgentMessage = [...task.history].reverse().find(
-        msg => msg.role === 'agent' || msg.role === 'assistant'
-    );
-    
-    if (lastAgentMessage && lastAgentMessage.parts && lastAgentMessage.parts.length > 0) {
-        const textPart = lastAgentMessage.parts.find(part => part.kind === 'text');
-        if (textPart) {
-            return textPart.text;
+    // Reverse iterate without creating new array (more efficient)
+    for (let i = task.history.length - 1; i >= 0; i--) {
+        const msg = task.history[i];
+        if (msg.role === 'agent' || msg.role === 'assistant') {
+            if (msg.parts?.length > 0) {
+                const textPart = msg.parts.find(part => part.kind === 'text');
+                if (textPart?.text) return textPart.text;
+            }
         }
     }
     
@@ -999,9 +1005,6 @@ function scrollToBottom(element) {
  */
 function toggleReaction(messageId, type) {
     const isLike = type === 'like';
-    const cacheKey = `${type}-btn-${messageId}`;
-    const oppositeCacheKey = `${isLike ? 'dislike' : 'like'}-btn-${messageId}`;
-    
     const primaryBtn = domCache.query(`.${type}-btn[data-message-id="${messageId}"]`);
     const oppositeBtn = domCache.query(`.${isLike ? 'dislike' : 'like'}-btn[data-message-id="${messageId}"]`);
     
@@ -1009,16 +1012,15 @@ function toggleReaction(messageId, type) {
     
     const activeClass = `${type}d`;
     const colorClass = isLike ? 'text-green-500' : 'text-red-500';
-    const iconName = type;
     
     if (primaryBtn.classList.contains(activeClass)) {
         // Remove reaction
         primaryBtn.classList.remove(activeClass, colorClass);
-        primaryBtn.innerHTML = createMessageIcon(iconName);
+        primaryBtn.innerHTML = createMessageIcon(type);
     } else {
         // Add reaction
         primaryBtn.classList.add(activeClass, colorClass);
-        primaryBtn.innerHTML = createMessageIcon(iconName, `w-4 h-4 ${colorClass}`);
+        primaryBtn.innerHTML = createMessageIcon(type, `w-4 h-4 ${colorClass}`);
         // Remove opposite reaction
         const oppositeActiveClass = isLike ? 'disliked' : 'liked';
         const oppositeColorClass = isLike ? 'text-red-500' : 'text-green-500';
@@ -1042,9 +1044,7 @@ function createErrorState(message, onRetry) {
     return `
         <div class="text-center py-12">
             <div class="text-gray-400 mb-4">
-                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
+                ${createIcon('exclamation-triangle', 'w-16 h-16 mx-auto')}
             </div>
             <p class="text-gray-600 text-lg font-medium">Error Loading Data</p>
             <p class="text-gray-500 mt-1">${message}</p>

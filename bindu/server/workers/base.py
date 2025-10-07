@@ -87,10 +87,10 @@ class Worker(ABC):
         """Convert execution result to pebble protocol artifacts."""
         ...
 
-    async def _handle_pause(self, params: TaskIdParams) -> None:
-        """Handle pause operation. Override in subclasses if pause is supported."""
-        raise NotImplementedError("Pause operation not supported by this worker")
+    # async def _handle_pause(self, params: TaskIdParams) -> None: # TODO: Implement pause
+    #     """Handle pause operation. Override in subclasses if pause is supported."""
+    #     raise NotImplementedError("Pause operation not supported by this worker")
 
-    async def _handle_resume(self, params: TaskIdParams) -> None:
-        """Handle resume operation. Override in subclasses if resume is supported."""
-        raise NotImplementedError("Resume operation not supported by this worker")
+    # async def _handle_resume(self, params: TaskIdParams) -> None: # TODO: Implement resume
+    #     """Handle resume operation. Override in subclasses if resume is supported."""
+    #     raise NotImplementedError("Resume operation not supported by this worker")

@@ -1,27 +1,17 @@
 """DID resolution and agent information endpoints."""
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+
+from bindu.server.utils.request_utils import get_client_ip
 
 if TYPE_CHECKING:
     from ..applications import BinduApplication
 
 logger = logging.getLogger("bindu.server.endpoints.did_endpoints")
-
-
-def _get_client_ip(request: Request) -> str:
-    """Extract client IP from request.
-    
-    Args:
-        request: Starlette request object
-        
-    Returns:
-        Client IP address or "unknown"
-    """
-    return request.client.host if request.client else "unknown"
 
 
 def _get_did_extension(app: "BinduApplication") -> Optional[object]:
@@ -42,7 +32,7 @@ async def did_resolve_endpoint(app: "BinduApplication", request: Request) -> Res
     GET /did/resolve?did=did:bindu:user:agent
     POST /did/resolve with JSON body {"did": "did:bindu:user:agent"}
     """
-    client_ip = _get_client_ip(request)
+    client_ip = get_client_ip(request)
     
     try:
         # Get DID from query param or body
@@ -100,7 +90,7 @@ async def agent_info_endpoint(app: "BinduApplication", request: Request) -> Resp
     
     GET /agent/info
     """
-    client_ip = _get_client_ip(request)
+    client_ip = get_client_ip(request)
     
     try:
         did_extension = _get_did_extension(app)

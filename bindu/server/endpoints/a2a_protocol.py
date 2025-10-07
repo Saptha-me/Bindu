@@ -1,21 +1,49 @@
 """A2A protocol endpoint for agent-to-agent communication."""
 
+import logging
 from typing import TYPE_CHECKING
 
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from bindu.common.protocol.types import a2a_request_ta, a2a_response_ta
+from bindu.server.utils.request_utils import get_client_ip
 
 if TYPE_CHECKING:
     from ..applications import BinduApplication
 
+logger = logging.getLogger("bindu.server.endpoints.a2a_protocol")
+
+# Method dispatcher mapping JSON-RPC methods to task_manager handlers
+METHOD_HANDLERS = {
+    "message/send": "send_message",
+    "tasks/get": "get_task",
+    "tasks/cancel": "cancel_task",
+    "tasks/list": "list_tasks",
+    "contexts/list": "list_contexts",
+    "tasks/clear": "clear_tasks",
+    "tasks/feedback": "task_feedback",
+}
+
+
+def _jsonrpc_error(
+    code: int, message: str, data: str | None = None, request_id: str | None = None, status: int = 400
+) -> JSONResponse:
+    """Create a JSON-RPC error response."""
+    return JSONResponse(
+        content={
+            "jsonrpc": "2.0",
+            "error": {"code": code, "message": message, "data": data},
+            "id": request_id,
+        },
+        status_code=status,
+    )
+
 
 async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Response:
-    """Main endpoint for the Pebble server A2A protocol.
+    """Handle A2A protocol requests for agent-to-agent communication.
 
-    Although the specification allows freedom of choice and implementation, I'm pretty sure about some decisions.
-
+    Protocol Behavior:
     1. The server will always either send a "submitted" or a "failed" on `tasks/send`.
         Never a "completed" on the first message.
     2. There are three possible ends for the task:
@@ -24,27 +52,38 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
         2.3. The task "failed".
     3. The server will send a "working" on the first chunk on `tasks/pushNotification/get`.
     """
-    data = await request.body()
-    a2a_request = a2a_request_ta.validate_json(data)
-
-    if a2a_request["method"] == "message/send":
-        jsonrpc_response = await app.task_manager.send_message(a2a_request)
-    elif a2a_request["method"] == "tasks/get":
-        jsonrpc_response = await app.task_manager.get_task(a2a_request)
-    elif a2a_request["method"] == "tasks/cancel":
-        jsonrpc_response = await app.task_manager.cancel_task(a2a_request)
-    elif a2a_request["method"] == "tasks/list":
-        jsonrpc_response = await app.task_manager.list_tasks(a2a_request)
-    elif a2a_request["method"] == "contexts/list":
-        jsonrpc_response = await app.task_manager.list_contexts(a2a_request)
-    elif a2a_request["method"] == "tasks/clear":
-        jsonrpc_response = await app.task_manager.clear_tasks(a2a_request)
-    elif a2a_request["method"] == "tasks/feedback":
-        jsonrpc_response = await app.task_manager.task_feedback(a2a_request)
-    else:
-        raise NotImplementedError(f"Method {a2a_request['method']} not implemented.")
+    client_ip = get_client_ip(request)
+    request_id = None
     
-    return Response(
-        content=a2a_response_ta.dump_json(jsonrpc_response, by_alias=True, serialize_as_any=True),
-        media_type="application/json",
-    )
+    try:
+        data = await request.body()
+        
+        try:
+            a2a_request = a2a_request_ta.validate_json(data)
+        except Exception as e:
+            logger.warning(f"Invalid A2A request from {client_ip}: {e}")
+            return _jsonrpc_error(-32700, "Parse error", str(e))
+        
+        method = a2a_request.get("method")
+        request_id = a2a_request.get("id")
+        
+        logger.debug(f"A2A request from {client_ip}: method={method}, id={request_id}")
+        
+        handler_name = METHOD_HANDLERS.get(method)
+        if handler_name is None:
+            logger.warning(f"Unsupported A2A method '{method}' from {client_ip}")
+            return _jsonrpc_error(-32601, "Method not found", f"Method '{method}' is not implemented", request_id, 404)
+        
+        handler = getattr(app.task_manager, handler_name)
+        jsonrpc_response = await handler(a2a_request)
+        
+        logger.debug(f"A2A response to {client_ip}: method={method}, id={request_id}")
+        
+        return Response(
+            content=a2a_response_ta.dump_json(jsonrpc_response, by_alias=True, serialize_as_any=True),
+            media_type="application/json",
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing A2A request from {client_ip}: {e}", exc_info=True)
+        return _jsonrpc_error(-32603, "Internal error", str(e), request_id, 500)

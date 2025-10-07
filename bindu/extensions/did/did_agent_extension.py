@@ -27,11 +27,10 @@ DID documents, enabling agents to establish trust in a decentralized network.
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Optional, NamedTuple
+from typing import Any, Dict, List, Optional
 
 import base58
 from cryptography.hazmat.primitives import serialization
@@ -319,7 +318,8 @@ class DIDAgentExtension:
             return f"did:{DID_METHOD_BINDU}:{sanitized_author}:{sanitized_agent_name}"
         
         # Fallback to did:key format with multibase encoding
-        multibase_encoded = DID_MULTIBASE_PREFIX + base58.b58encode(self._get_public_key_raw_bytes()).decode(BASE58_ENCODING)
+        public_key_bytes = self._get_public_key_raw_bytes()
+        multibase_encoded = DID_MULTIBASE_PREFIX + base58.b58encode(public_key_bytes).decode(BASE58_ENCODING)
         return f"did:{DID_METHOD_KEY}:{multibase_encoded}"
 
     def set_agent_metadata(self, 

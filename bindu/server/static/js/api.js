@@ -1,7 +1,14 @@
-// API module for Bindu Agent
-// Handles all API communication and JSON-RPC calls
+/**
+ * API module for Bindu Agent
+ * Handles all API communication and JSON-RPC calls
+ * @module api
+ */
 
-// Generate UUID v4 (use utils.generateUUID when available)
+/**
+ * Generate a UUID v4 identifier
+ * Uses utils.generateUUID when available, otherwise falls back to local implementation
+ * @returns {string} UUID v4 string
+ */
 function generateId() {
     if (typeof utils !== 'undefined' && utils.generateUUID) {
         return utils.generateUUID();
@@ -12,7 +19,13 @@ function generateId() {
     });
 }
 
-// Make JSON-RPC API request
+/**
+ * Make a JSON-RPC 2.0 API request to the agent server
+ * @param {string} method - JSON-RPC method name (e.g., 'message/send', 'tasks/get')
+ * @param {Object} params - Parameters for the method
+ * @returns {Promise<any>} The result from the API response
+ * @throws {Error} If the request fails or returns an error
+ */
 async function makeApiRequest(method, params) {
     const response = await fetch('/', {
         method: 'POST',
@@ -40,7 +53,11 @@ async function makeApiRequest(method, params) {
     return result.result;
 }
 
-// Load agent card from well-known endpoint
+/**
+ * Load agent card information from the well-known endpoint
+ * @returns {Promise<Object>} Agent card data including name, version, capabilities, etc.
+ * @throws {Error} If the agent card cannot be loaded
+ */
 async function loadAgentCard() {
     try {
         const response = await fetch('/.well-known/agent.json');
@@ -54,7 +71,13 @@ async function loadAgentCard() {
     }
 }
 
-// Send a message
+/**
+ * Send a simple message to the agent
+ * @param {string} contextId - Context ID for the conversation
+ * @param {string} content - Message content text
+ * @param {string} [role='user'] - Role of the message sender
+ * @returns {Promise<Object>} Response from the agent
+ */
 async function sendMessage(contextId, content, role = 'user') {
     return await makeApiRequest('message/send', {
         context_id: contextId,
@@ -68,30 +91,50 @@ async function sendMessage(contextId, content, role = 'user') {
     });
 }
 
-// Create a new context
+/**
+ * Create a new conversation context
+ * @returns {Promise<Object>} Created context object with context_id
+ */
 async function createContext() {
     return await makeApiRequest('contexts/create', {});
 }
 
-// List all contexts
+/**
+ * List all conversation contexts
+ * @param {number} [length=100] - Maximum number of contexts to retrieve
+ * @returns {Promise<Array>} Array of context objects
+ */
 async function listContexts(length = 100) {
     return await makeApiRequest('contexts/list', { length });
 }
 
-// Get context by ID
+/**
+ * Get a specific context by ID
+ * @param {string} contextId - Context ID to retrieve
+ * @returns {Promise<Object>} Context object with tasks and messages
+ */
 async function getContext(contextId) {
     return await makeApiRequest('contexts/get', {
         context_id: contextId
     });
 }
 
-// Clear a context or all contexts
+/**
+ * Clear a specific context or all contexts
+ * @param {string|null} [contextId=null] - Context ID to clear, or null to clear all
+ * @returns {Promise<Object>} Response confirming the clear operation
+ */
 async function clearContext(contextId = null) {
     const params = contextId ? { context_id: contextId } : {};
     return await makeApiRequest('contexts/clear', params);
 }
 
-// List tasks
+/**
+ * List tasks, optionally filtered by context
+ * @param {string|null} [contextId=null] - Context ID to filter tasks, or null for all tasks
+ * @param {number} [length=100] - Maximum number of tasks to retrieve
+ * @returns {Promise<Array>} Array of task objects
+ */
 async function listTasks(contextId = null, length = 100) {
     const params = { length };
     if (contextId) {
@@ -100,26 +143,45 @@ async function listTasks(contextId = null, length = 100) {
     return await makeApiRequest('tasks/list', params);
 }
 
-// Get task by ID
+/**
+ * Get a specific task by ID
+ * @param {string} taskId - Task ID to retrieve
+ * @returns {Promise<Object>} Task object with status, history, and artifacts
+ */
 async function getTask(taskId) {
     return await makeApiRequest('tasks/get', {
         task_id: taskId
     });
 }
 
-// Cancel a task
+/**
+ * Cancel a running task
+ * @param {string} taskId - Task ID to cancel
+ * @returns {Promise<Object>} Response confirming the cancellation
+ */
 async function cancelTask(taskId) {
     return await makeApiRequest('tasks/cancel', {
         task_id: taskId
     });
 }
 
-// Clear all storage (contexts and tasks)
+/**
+ * Clear all storage including contexts and tasks
+ * @returns {Promise<Object>} Response confirming the clear operation
+ */
 async function clearAllStorage() {
     return await clearContext(null);
 }
 
-// Send chat message with full configuration (for chat interface)
+/**
+ * Send a chat message with full configuration
+ * Used by the chat interface for complete message handling
+ * @param {string} contextId - Context ID for the conversation
+ * @param {string} message - Message text content
+ * @param {string|null} [messageId=null] - Optional message ID, auto-generated if not provided
+ * @param {string|null} [taskId=null] - Optional task ID, auto-generated if not provided
+ * @returns {Promise<Object>} Response with task_id, context_id, and optional reply
+ */
 async function sendChatMessage(contextId, message, messageId = null, taskId = null) {
     messageId = messageId || generateId();
     taskId = taskId || generateId();
@@ -167,7 +229,12 @@ async function sendChatMessage(contextId, message, messageId = null, taskId = nu
     return result.result;
 }
 
-// Get task status (for polling)
+/**
+ * Get task status for polling
+ * Used to check task completion and retrieve results
+ * @param {string} taskId - Task ID to check status for
+ * @returns {Promise<Object>} Task object with current status and history
+ */
 async function getTaskStatus(taskId) {
     const payload = {
         "jsonrpc": "2.0",
@@ -199,18 +266,31 @@ async function getTaskStatus(taskId) {
     return result.result;
 }
 
-// Make functions globally available
+/**
+ * Global API namespace
+ * All API functions are exposed through window.api
+ * @namespace api
+ */
 window.api = {
+    // Core utilities
     generateId,
     makeApiRequest,
+    
+    // Agent information
     loadAgentCard,
+    
+    // Messaging
     sendMessage,
     sendChatMessage,
+    
+    // Context management
     createContext,
     listContexts,
     getContext,
     clearContext,
     clearAllStorage,
+    
+    // Task management
     listTasks,
     getTask,
     getTaskStatus,

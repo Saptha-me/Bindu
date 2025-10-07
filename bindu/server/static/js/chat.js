@@ -1,25 +1,68 @@
-// Utility functions (using common.js and api.js utilities)
+/**
+ * Chat page logic
+ * Handles chat interface, messaging, and task polling
+ * @module chat
+ */
 
 // State management
 let contextId = null;
 let currentTaskId = null;
+let pollingInterval = 1000; // Start with 1 second
+const MAX_POLLING_INTERVAL = 5000; // Max 5 seconds
 
-// Event handlers
-function handleKeyPress(event) {
+// DOM element cache
+let cachedElements = {};
+
+function getCachedElement(id) {
+    if (!cachedElements[id]) {
+        cachedElements[id] = document.getElementById(id);
+    }
+    return cachedElements[id];
+}
+
+/**
+ * Create a message action icon using common icon utilities
+ * @param {string} iconName - Icon name (copy, check, like, dislike)
+ * @param {string} [className='w-4 h-4'] - CSS classes for the icon
+ * @returns {string} HTML string for the icon
+ */
+function createMessageIcon(iconName, className = 'w-4 h-4') {
+    const iconMap = {
+        copy: 'clipboard',
+        copySuccess: 'check',
+        like: 'thumb-up',
+        dislike: 'thumb-down'
+    };
+    return utils.createIcon(iconMap[iconName] || iconName, className);
+}
+
+/**
+ * Handle key press events in the message input
+ * Debounced to prevent multiple rapid submissions
+ */
+const handleKeyPress = utils.debounce(function(event) {
     if (event.key === 'Enter') {
         sendMessage();
     }
-}
+}, 300);
 
+/**
+ * Send a message to the agent
+ * Handles message creation, API call, and UI updates
+ * @async
+ */
 async function sendMessage() {
-    const input = document.getElementById('message-input');
+    const input = getCachedElement('message-input');
     const message = input.value.trim();
 
     if (!message) return;
 
     input.value = '';
-    const sendButton = document.getElementById('send-btn');
+    const sendButton = getCachedElement('send-btn');
     sendButton.disabled = true;
+    
+    // Reset polling interval for new message
+    pollingInterval = 1000;
 
     try {
         const messageId = api.generateId();
@@ -72,6 +115,11 @@ async function sendMessage() {
     }
 }
 
+/**
+ * Poll task status until completion
+ * Uses exponential backoff for polling interval
+ * @async
+ */
 async function pollTaskStatus() {
     if (!currentTaskId) return;
 
@@ -102,9 +150,10 @@ async function pollTaskStatus() {
             addMessage('Task was canceled', 'status');
             currentTaskId = null;
         } else {
-            // Still processing, add processing message back and poll again
+            // Still processing, add processing message back and poll again with backoff
             addProcessingMessage();
-            setTimeout(pollTaskStatus, 1000);
+            pollingInterval = Math.min(pollingInterval * 1.5, MAX_POLLING_INTERVAL);
+            setTimeout(pollTaskStatus, pollingInterval);
         }
 
     } catch (error) {
@@ -116,7 +165,12 @@ async function pollTaskStatus() {
     }
 }
 
-// Message rendering
+/**
+ * Add a message to the chat interface
+ * @param {string} content - Message content
+ * @param {string} sender - Message sender ('user', 'agent', or 'status')
+ * @param {string|null} [taskId=null] - Optional task ID for the message
+ */
 function addMessage(content, sender, taskId = null) {
     const messagesDiv = document.getElementById('messages');
     const messageDiv = document.createElement('div');
@@ -133,25 +187,19 @@ function addMessage(content, sender, taskId = null) {
     } else if (sender === 'agent') {
         messageDiv.className = 'flex justify-start';
         const parsedContent = marked.parse(content);
-        const messageId = generateId();
+        const messageId = api.generateId();
         messageDiv.innerHTML = `
             <div class="group max-w-2xl px-4 py-3 text-gray-900 ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
               <div class="text-lg prose max-w-none message-content" data-message-id="${messageId}">${parsedContent}</div>
               <div class="flex items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 message-actions" data-message-id="${messageId}">
                 <button class="copy-btn p-2 rounded-md hover:bg-gray-200 transition-colors duration-200 transform hover:scale-110" title="Copy message" data-message-id="${messageId}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                  </svg>
+                  ${createMessageIcon('copy')}
                 </button>
                 <button class="like-btn p-2 rounded-md hover:bg-green-100 transition-all duration-200 transform hover:scale-110" title="Like" data-message-id="${messageId}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                  </svg>
+                  ${createMessageIcon('like')}
                 </button>
                 <button class="dislike-btn p-2 rounded-md hover:bg-red-100 transition-all duration-200 transform hover:scale-110" title="Dislike" data-message-id="${messageId}">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                  </svg>
+                  ${createMessageIcon('dislike')}
                 </button>
               </div>
             </div>
@@ -169,10 +217,13 @@ function addMessage(content, sender, taskId = null) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+/**
+ * Add a processing indicator message
+ */
 function addProcessingMessage() {
     removeProcessingMessage();
     
-    const messagesDiv = document.getElementById('messages');
+    const messagesDiv = getCachedElement('messages');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'flex justify-start';
     messageDiv.id = 'processing-message';
@@ -188,6 +239,9 @@ function addProcessingMessage() {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+/**
+ * Remove the processing indicator message
+ */
 function removeProcessingMessage() {
     const processingMessage = document.getElementById('processing-message');
     if (processingMessage) {
@@ -195,7 +249,11 @@ function removeProcessingMessage() {
     }
 }
 
-// Message actions
+/**
+ * Copy a message to clipboard
+ * @param {string} messageId - ID of the message to copy
+ * @async
+ */
 async function copyMessage(messageId) {
     const messageContent = document.querySelector(`.message-content[data-message-id="${messageId}"]`);
     if (messageContent) {
@@ -210,15 +268,15 @@ async function copyMessage(messageId) {
     }
 }
 
+/**
+ * Show visual feedback when a message is copied
+ * @param {string} messageId - ID of the copied message
+ */
 function showCopyFeedback(messageId) {
     const copyBtn = document.querySelector(`.copy-btn[data-message-id="${messageId}"]`);
     if (copyBtn) {
         const originalIcon = copyBtn.innerHTML;
-        copyBtn.innerHTML = `
-            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-        `;
+        copyBtn.innerHTML = createMessageIcon('copySuccess', 'w-4 h-4 text-green-500');
         copyBtn.classList.add('animate-pulse');
         setTimeout(() => {
             copyBtn.innerHTML = originalIcon;
@@ -227,6 +285,10 @@ function showCopyFeedback(messageId) {
     }
 }
 
+/**
+ * Toggle like status for a message
+ * @param {string} messageId - ID of the message to like
+ */
 function likeMessage(messageId) {
     const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
     const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
@@ -235,30 +297,22 @@ function likeMessage(messageId) {
         if (likeBtn.classList.contains('liked')) {
             // Unlike
             likeBtn.classList.remove('liked', 'text-green-500');
-            likeBtn.innerHTML = `
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                </svg>
-            `;
+            likeBtn.innerHTML = createMessageIcon('like');
         } else {
             // Like
             likeBtn.classList.add('liked', 'text-green-500');
-            likeBtn.innerHTML = `
-                <svg class="w-4 h-4 text-green-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                </svg>
-            `;
+            likeBtn.innerHTML = createMessageIcon('like', 'w-4 h-4 text-green-500');
             // Remove dislike if present
             dislikeBtn.classList.remove('disliked', 'text-red-500');
-            dislikeBtn.innerHTML = `
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                </svg>
-            `;
+            dislikeBtn.innerHTML = createMessageIcon('dislike');
         }
     }
 }
 
+/**
+ * Toggle dislike status for a message
+ * @param {string} messageId - ID of the message to dislike
+ */
 function dislikeMessage(messageId) {
     const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
     const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
@@ -267,45 +321,41 @@ function dislikeMessage(messageId) {
         if (dislikeBtn.classList.contains('disliked')) {
             // Undislike
             dislikeBtn.classList.remove('disliked', 'text-red-500');
-            dislikeBtn.innerHTML = `
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                </svg>
-            `;
+            dislikeBtn.innerHTML = createMessageIcon('dislike');
         } else {
             // Dislike
             dislikeBtn.classList.add('disliked', 'text-red-500');
-            dislikeBtn.innerHTML = `
-                <svg class="w-4 h-4 text-red-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m6-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
-                </svg>
-            `;
+            dislikeBtn.innerHTML = createMessageIcon('dislike', 'w-4 h-4 text-red-500');
             // Remove like if present
             likeBtn.classList.remove('liked', 'text-green-500');
-            likeBtn.innerHTML = `
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
-                </svg>
-            `;
+            likeBtn.innerHTML = createMessageIcon('like');
         }
     }
 }
 
-// UI functions
+/**
+ * Clear all messages from the chat
+ */
 function clearChat() {
-    const messagesDiv = document.getElementById('messages');
+    const messagesDiv = getCachedElement('messages');
     messagesDiv.innerHTML = '';
     addMessage('Chat cleared. Start a new conversation!', 'status');
 }
 
+/**
+ * Create a new conversation context
+ */
 function newContext() {
     contextId = api.generateId();
     addMessage('New context started', 'status');
     renderContexts();
 }
 
+/**
+ * Render the current context in the sidebar
+ */
 function renderContexts() {
-    const contextsList = document.getElementById('contexts-list');
+    const contextsList = getCachedElement('contexts-list');
     contextsList.innerHTML = `
         <div class="w-full text-left p-3 rounded-lg border bg-primary-green text-white border-primary-green">
             <div class="flex items-center gap-2">
@@ -316,9 +366,12 @@ function renderContexts() {
     `;
 }
 
+/**
+ * Toggle the sidebar collapsed/expanded state
+ */
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const toggleIcon = document.getElementById('toggle-icon');
+    const sidebar = getCachedElement('sidebar');
+    const toggleIcon = getCachedElement('toggle-icon');
     const isCollapsed = sidebar.classList.contains('collapsed');
     
     if (isCollapsed) {
@@ -334,31 +387,31 @@ function toggleSidebar() {
     }
 }
 
-// Icon mappings (extending common icons)
-const CHAT_ICON_MAP = {
-    'chevron-right': 'heroicons:chevron-right-20-solid',
-    'chevron-left': 'heroicons:chevron-left-20-solid',
-    'plus': 'heroicons:plus-20-solid',
-    'trash': 'heroicons:trash-20-solid',
-    'cog': 'heroicons:cog-6-tooth-20-solid',
-    'paper-airplane': 'heroicons:paper-airplane-20-solid'
-};
-
+/**
+ * Create a chat UI icon using common utilities
+ * @param {string} iconName - Icon name from common ICON_MAP
+ * @param {string} [className='w-4 h-4'] - CSS classes for the icon
+ * @returns {string} HTML string for the icon
+ */
 function createChatIcon(iconName, className = 'w-4 h-4') {
-    const iconId = CHAT_ICON_MAP[iconName] || CHAT_ICON_MAP['plus'];
-    return `<iconify-icon icon="${iconId}" class="${className}"></iconify-icon>`;
+    return utils.createIcon(iconName, className);
 }
 
+/**
+ * Initialize all icons in the chat interface
+ */
 function initializeIcons() {
     // Initialize sidebar icons
-    document.getElementById('toggle-icon').innerHTML = createChatIcon('chevron-right', 'w-4 h-4');
-    document.getElementById('new-context-icon').innerHTML = createChatIcon('plus', 'w-4 h-4');
-    document.getElementById('clear-icon').innerHTML = createChatIcon('trash', 'w-4 h-4');
-    document.getElementById('settings-icon').innerHTML = createChatIcon('cog', 'w-4 h-4');
-    document.getElementById('send-icon').innerHTML = createChatIcon('paper-airplane', 'w-4 h-4');
+    getCachedElement('toggle-icon').innerHTML = createChatIcon('chevron-right', 'w-4 h-4');
+    getCachedElement('new-context-icon').innerHTML = createChatIcon('plus', 'w-4 h-4');
+    getCachedElement('clear-icon').innerHTML = createChatIcon('trash', 'w-4 h-4');
+    getCachedElement('settings-icon').innerHTML = createChatIcon('cog', 'w-4 h-4');
+    getCachedElement('send-icon').innerHTML = createChatIcon('paper-airplane', 'w-4 h-4');
 }
 
-// Initialize
+/**
+ * Initialize the chat page on DOM ready
+ */
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize context ID
     contextId = utils.generateUUID();
@@ -368,14 +421,14 @@ document.addEventListener('DOMContentLoaded', function() {
     renderContexts();
     
     // Set up event listeners
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
-    document.getElementById('message-input').addEventListener('keypress', handleKeyPress);
-    document.getElementById('clear-chat').addEventListener('click', clearChat);
-    document.getElementById('new-context').addEventListener('click', newContext);
-    document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
+    getCachedElement('send-btn').addEventListener('click', sendMessage);
+    getCachedElement('message-input').addEventListener('keypress', handleKeyPress);
+    getCachedElement('clear-chat').addEventListener('click', clearChat);
+    getCachedElement('new-context').addEventListener('click', newContext);
+    getCachedElement('toggle-sidebar').addEventListener('click', toggleSidebar);
     
     // Event delegation for message action buttons
-    document.getElementById('messages').addEventListener('click', function(event) {
+    getCachedElement('messages').addEventListener('click', function(event) {
         const target = event.target.closest('button');
         if (!target) return;
         

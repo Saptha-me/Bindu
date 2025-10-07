@@ -1,38 +1,20 @@
-// Agent page logic
-// Handles displaying agent information and capabilities
+/**
+ * Agent page logic
+ * Handles displaying agent information and capabilities
+ * @module agent
+ */
 
+/**
+ * Cached agent card data
+ * @type {Object|null}
+ */
 let agentCard = null;
 
-// Constants
-const TRUST_LABELS = {
-    low: 'Low Trust',
-    medium: 'Medium Trust',
-    high: 'High Trust'
-};
-
-const TRUST_BADGE_TYPES = {
-    low: 'error',
-    medium: 'warning',
-    high: 'success'
-};
-
-// Component helper functions specific to agent page
-
-function createSkillCard(skill) {
-    return `
-        <div class="p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
-            <div class="flex items-start gap-3">
-                <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                    <div class="font-semibold text-yellow-700 mb-1">${skill.name}</div>
-                    <div class="text-sm text-gray-600">${skill.description || 'Ability to answer basic questions'}</div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Load and display agent information
+/**
+ * Load and display all agent information
+ * Main entry point for rendering the agent page
+ * @async
+ */
 async function loadAndDisplayAgent() {
     try {
         agentCard = await api.loadAgentCard();
@@ -51,7 +33,9 @@ async function loadAndDisplayAgent() {
     }
 }
 
-// Display main agent card information
+/**
+ * Display main agent card information in the header and stats sections
+ */
 function displayAgentCard() {
     if (!agentCard) return;
 
@@ -88,28 +72,22 @@ function displayAgentCard() {
     `;
 }
 
-// Display technical details
+/**
+ * Display technical details (URL and DID)
+ */
 function displayTechnicalDetails() {
     if (!agentCard) return;
 
     const technicalDiv = document.getElementById('technical-details');
     technicalDiv.innerHTML = `
-        <div>
-            <div class="text-sm font-medium text-gray-500 mb-2">URL</div>
-            <div class="font-mono text-sm bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
-                ${agentCard.url}
-            </div>
-        </div>
-        <div>
-            <div class="text-sm font-medium text-gray-500 mb-2">DID</div>
-            <div class="font-mono text-xs bg-gray-50 rounded-lg px-3 py-2 border border-gray-200 break-all text-gray-600">
-                ${agentCard.identity?.did || 'did:pebble:c94a3e7aa41540a5b25ee342f0908ad'}
-            </div>
-        </div>
+        ${utils.createTechnicalDetail('URL', agentCard.url, true)}
+        ${utils.createTechnicalDetail('DID', agentCard.identity?.did || 'did:pebble:c94a3e7aa41540a5b25ee342f0908ad')}
     `;
 }
 
-// Display capabilities
+/**
+ * Display agent capabilities (streaming, push notifications, etc.)
+ */
 function displayCapabilities() {
     if (!agentCard || !agentCard.capabilities || Object.keys(agentCard.capabilities).length === 0) {
         document.getElementById('capabilities-section').style.display = 'none';
@@ -127,7 +105,9 @@ function displayCapabilities() {
     ].join('');
 }
 
-// Display skills
+/**
+ * Display agent skills
+ */
 function displaySkills() {
     if (!agentCard || !agentCard.skills || agentCard.skills.length === 0) {
         document.getElementById('skills-list').innerHTML = utils.createEmptyState('No skills defined', 'puzzle-piece', 'w-8 h-8');
@@ -135,10 +115,12 @@ function displaySkills() {
     }
 
     const skillsDiv = document.getElementById('skills-list');
-    skillsDiv.innerHTML = agentCard.skills.map(skill => createSkillCard(skill)).join('');
+    skillsDiv.innerHTML = agentCard.skills.map(skill => utils.createSkillCard(skill)).join('');
 }
 
-// Display identity and trust information
+/**
+ * Display identity and trust information
+ */
 function displayIdentityTrust() {
     const identityTrustDiv = document.getElementById('identity-trust-list');
     
@@ -148,7 +130,7 @@ function displayIdentityTrust() {
     }
 
     const identity = agentCard.identity;
-    const agentTrust = agentCard.agentTrust || 'Unknown';
+    const agentTrust = agentCard.agentTrust || 'unknown';
     
     // Get public key from DID document
     let publicKeyPem = null;
@@ -179,10 +161,10 @@ function displayIdentityTrust() {
         </div>
     ` : '<div class="text-sm text-gray-500">No CSR path available</div>';
 
-    // Trust level badge
-    const trustBadgeType = TRUST_BADGE_TYPES[agentTrust] || 'neutral';
+    // Trust level badge using common utilities
+    const trustBadgeType = utils.getTrustBadgeType(agentTrust);
     const trustBadgeClass = utils.getBadgeClass(trustBadgeType);
-    const trustLabel = TRUST_LABELS[agentTrust] || 'Unknown';
+    const trustLabel = utils.getTrustLabel(agentTrust);
 
     identityTrustDiv.innerHTML = `
         <div class="space-y-3">
@@ -207,40 +189,37 @@ function displayIdentityTrust() {
     `;
 }
 
-// Display extensions
+/**
+ * Display agent extensions
+ */
 function displayExtensions() {
     const extensionsDiv = document.getElementById('extensions-list');
     extensionsDiv.innerHTML = utils.createEmptyState('No extensions available');
 }
 
-// Add icons to section headers
+/**
+ * Initialize section header icons
+ * Adds visual icons to each section header
+ */
 function initializeSectionIcons() {
-    // Add icon to Capabilities header
-    const capabilitiesHeader = document.getElementById('capabilities-header');
-    if (capabilitiesHeader) {
-        capabilitiesHeader.insertAdjacentHTML('afterbegin', utils.createIcon('chart-bar', 'w-5 h-5 text-yellow-600'));
-    }
+    const sections = [
+        { id: 'capabilities-header', icon: 'chart-bar' },
+        { id: 'skills-header', icon: 'computer-desktop' },
+        { id: 'identity-header', icon: 'shield-check' },
+        { id: 'extensions-header', icon: 'puzzle-piece' }
+    ];
     
-    // Add icon to Skills header
-    const skillsHeader = document.getElementById('skills-header');
-    if (skillsHeader) {
-        skillsHeader.insertAdjacentHTML('afterbegin', utils.createIcon('computer-desktop', 'w-5 h-5 text-yellow-600'));
-    }
-    
-    // Add icon to Identity header
-    const identityHeader = document.getElementById('identity-header');
-    if (identityHeader) {
-        identityHeader.insertAdjacentHTML('afterbegin', utils.createIcon('shield-check', 'w-5 h-5 text-yellow-600'));
-    }
-    
-    // Add icon to Extensions header
-    const extensionsHeader = document.getElementById('extensions-header');
-    if (extensionsHeader) {
-        extensionsHeader.insertAdjacentHTML('afterbegin', utils.createIcon('puzzle-piece', 'w-5 h-5 text-yellow-600'));
-    }
+    sections.forEach(({ id, icon }) => {
+        const header = document.getElementById(id);
+        if (header) {
+            header.insertAdjacentHTML('afterbegin', utils.createIcon(icon, 'w-5 h-5 text-yellow-600'));
+        }
+    });
 }
 
-// Initialize on page load
+/**
+ * Initialize the agent page on DOM ready
+ */
 document.addEventListener('DOMContentLoaded', () => {
     initializeSectionIcons();
     loadAndDisplayAgent();

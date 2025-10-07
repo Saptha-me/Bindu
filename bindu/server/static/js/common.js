@@ -10,6 +10,18 @@ const BADGE_CLASSES = {
     neutral: 'bg-gray-100 text-gray-700 border-gray-200'
 };
 
+const TRUST_LABELS = {
+    low: 'Low Trust',
+    medium: 'Medium Trust',
+    high: 'High Trust'
+};
+
+const TRUST_BADGE_TYPES = {
+    low: 'error',
+    medium: 'warning',
+    high: 'success'
+};
+
 const TOAST_CLASSES = {
     success: 'bg-green-500',
     error: 'bg-red-500',
@@ -18,8 +30,32 @@ const TOAST_CLASSES = {
 };
 
 // Helper functions
+
+/**
+ * Get badge CSS classes based on type
+ * @param {string} type - Badge type (success, error, warning, info, neutral)
+ * @returns {string} CSS classes for the badge
+ */
 function getBadgeClass(type) {
     return BADGE_CLASSES[type] || BADGE_CLASSES.neutral;
+}
+
+/**
+ * Get trust badge type from trust level
+ * @param {string} trustLevel - Trust level (low, medium, high)
+ * @returns {string} Badge type for the trust level
+ */
+function getTrustBadgeType(trustLevel) {
+    return TRUST_BADGE_TYPES[trustLevel] || 'neutral';
+}
+
+/**
+ * Get trust label from trust level
+ * @param {string} trustLevel - Trust level (low, medium, high)
+ * @returns {string} Human-readable trust label
+ */
+function getTrustLabel(trustLevel) {
+    return TRUST_LABELS[trustLevel] || 'Unknown';
 }
 
 function getToastClass(type) {
@@ -341,25 +377,44 @@ async function loadFooter() {
     container.innerHTML = buildFooter();
 }
 
-// Create icon using Iconify
+/**
+ * Icon mapping for Iconify icons
+ * Centralized icon definitions used across all pages
+ */
+const ICON_MAP = {
+    // Common icons
+    'chart-bar': 'heroicons:chart-bar-20-solid',
+    'computer-desktop': 'heroicons:computer-desktop-20-solid',
+    'shield-check': 'heroicons:shield-check-20-solid',
+    'puzzle-piece': 'heroicons:puzzle-piece-20-solid',
+    'tag': 'heroicons:tag-20-solid',
+    'globe-alt': 'heroicons:globe-alt-20-solid',
+    'clock': 'heroicons:clock-20-solid',
+    'chevron-down': 'heroicons:chevron-down-20-solid',
+    'chevron-right': 'heroicons:chevron-right-20-solid',
+    'chevron-left': 'heroicons:chevron-left-20-solid',
+    'archive-box': 'heroicons:archive-box-20-solid',
+    'document-text': 'heroicons:document-text-20-solid',
+    'arrow-path': 'heroicons:arrow-path-20-solid',
+    'trash': 'heroicons:trash-20-solid',
+    'plus': 'heroicons:plus-20-solid',
+    'cog': 'heroicons:cog-6-tooth-20-solid',
+    'paper-airplane': 'heroicons:paper-airplane-20-solid',
+    // Message action icons
+    'clipboard': 'heroicons:clipboard-document-20-solid',
+    'check': 'heroicons:check-20-solid',
+    'thumb-up': 'heroicons:hand-thumb-up-20-solid',
+    'thumb-down': 'heroicons:hand-thumb-down-20-solid'
+};
+
+/**
+ * Create an Iconify icon element
+ * @param {string} iconName - Name of the icon from ICON_MAP
+ * @param {string} className - CSS classes to apply to the icon
+ * @returns {string} HTML string for the icon element
+ */
 function createIcon(iconName, className = 'w-5 h-5') {
-    // Map icon names to Iconify icon identifiers
-    const iconMap = {
-        'chart-bar': 'heroicons:chart-bar-20-solid',
-        'computer-desktop': 'heroicons:computer-desktop-20-solid',
-        'shield-check': 'heroicons:shield-check-20-solid',
-        'puzzle-piece': 'heroicons:puzzle-piece-20-solid',
-        'tag': 'heroicons:tag-20-solid',
-        'globe-alt': 'heroicons:globe-alt-20-solid',
-        'clock': 'heroicons:clock-20-solid',
-        'chevron-down': 'heroicons:chevron-down-20-solid',
-        'archive-box': 'heroicons:archive-box-20-solid',
-        'document-text': 'heroicons:document-text-20-solid',
-        'arrow-path': 'heroicons:arrow-path-20-solid',
-        'trash': 'heroicons:trash-20-solid'
-    };
-    
-    const iconId = iconMap[iconName] || iconMap['chart-bar'];
+    const iconId = ICON_MAP[iconName] || ICON_MAP['chart-bar'];
     return `<iconify-icon icon="${iconId}" class="${className}"></iconify-icon>`;
 }
 
@@ -485,7 +540,14 @@ function createSettingRow(label, value, isEnabled = null) {
     `;
 }
 
-// Create dropdown component
+/**
+ * Create a collapsible dropdown component
+ * @param {string} id - Unique ID for the dropdown
+ * @param {string} title - Title text for the dropdown header
+ * @param {boolean} isAvailable - Whether the content is available
+ * @param {string} content - HTML content to display when expanded
+ * @returns {string} HTML string for the dropdown component
+ */
 function createDropdown(id, title, isAvailable, content) {
     const badgeType = isAvailable ? 'success' : 'error';
     const statusBadge = getBadgeClass(badgeType);
@@ -509,36 +571,100 @@ function createDropdown(id, title, isAvailable, content) {
     `;
 }
 
+/**
+ * Create a skill card component
+ * @param {Object} skill - Skill object with name and description
+ * @param {string} skill.name - Name of the skill
+ * @param {string} [skill.description] - Description of the skill
+ * @returns {string} HTML string for the skill card
+ */
+function createSkillCard(skill) {
+    return `
+        <div class="p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+            <div class="flex items-start gap-3">
+                <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+                <div>
+                    <div class="font-semibold text-yellow-700 mb-1">${skill.name}</div>
+                    <div class="text-sm text-gray-600">${skill.description || 'Ability to answer basic questions'}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Create a technical detail row component
+ * @param {string} label - Label for the detail
+ * @param {string} value - Value to display
+ * @param {boolean} [isMonospace=false] - Whether to use monospace font
+ * @returns {string} HTML string for the technical detail row
+ */
+function createTechnicalDetail(label, value, isMonospace = false) {
+    const valueClass = isMonospace ? 'font-mono text-sm' : 'font-mono text-xs';
+    const containerClass = isMonospace ? 'bg-gray-50 rounded-lg px-3 py-2 border border-gray-200' : 'bg-gray-50 rounded-lg px-3 py-2 border border-gray-200 break-all text-gray-600';
+    
+    return `
+        <div>
+            <div class="text-sm font-medium text-gray-500 mb-2">${label}</div>
+            <div class="${containerClass}">
+                <div class="${valueClass}">${value}</div>
+            </div>
+        </div>
+    `;
+}
+
 // Make functions globally available
 window.utils = {
+    // Formatting utilities
     formatTimestamp,
     formatRelativeTime,
     truncateText,
+    escapeHtml,
+    parseMarkdown,
+    
+    // Interaction utilities
     copyToClipboard,
     showToast,
     toggleDropdown,
-    escapeHtml,
-    parseMarkdown,
     debounce,
+    
+    // Theme utilities
     initTheme,
     toggleTheme,
+    
+    // Component loaders
     loadComponent,
     loadHeader,
     loadFooter,
+    
+    // UI component creators
     createIcon,
-    getBadgeClass,
-    getToastClass,
-    createPageStructure,
-    generateUUID,
-    getStatusColor,
-    getStatusIcon,
-    yesNo,
     createEmptyState,
     createErrorState,
     createStatCard,
     createStatRow,
     createSettingRow,
-    createDropdown
+    createDropdown,
+    createSkillCard,
+    createTechnicalDetail,
+    
+    // Badge and status utilities
+    getBadgeClass,
+    getToastClass,
+    getTrustBadgeType,
+    getTrustLabel,
+    getStatusColor,
+    getStatusIcon,
+    
+    // Helper utilities
+    createPageStructure,
+    generateUUID,
+    yesNo,
+    
+    // Constants (exposed for reference)
+    ICON_MAP,
+    TRUST_LABELS,
+    TRUST_BADGE_TYPES
 };
 
 // Load common scripts dynamically

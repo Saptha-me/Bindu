@@ -6,7 +6,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 """
 bindufy decorator for transforming regular agents into secure, networked agents.

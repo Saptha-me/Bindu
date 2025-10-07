@@ -5,7 +5,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 """The Language of Agents: A2A and AP2 Protocol Types.
 

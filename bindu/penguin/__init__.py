@@ -6,7 +6,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 """🤖 Agent Framework: Universal AI Agent Orchestration.
 
 For us each agent/agentic team/agentic workflow is a penguin.

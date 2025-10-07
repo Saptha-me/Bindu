@@ -5,7 +5,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 """This is Bindu (pronounced "bind-u" - Sanskrit for "point" or "dot").
 

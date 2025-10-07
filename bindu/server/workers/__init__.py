@@ -1,15 +1,14 @@
-#
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/bindu-ai/pebble/issues/new/choose |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 """
-bindu Server Workers.
+Bindu Server Workers.
 
 Worker classes for task execution in the bindu framework.
 Workers are responsible for executing tasks received from schedulers.

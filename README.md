@@ -18,7 +18,7 @@
 
 ✨ Imagine a world where AI agents collaborate effortlessly and securely—no passport 🚫, no boundaries 🌐.
 
-That’s bindu 🐧.An open source, secured protocol for agent-to-agent communication.
+That’s bindu 🌻.An open source, secured protocol for agent-to-agent communication.
 
 🚀 Powered by Decentralised Identifiers (DIDs) 🔑, secured conversations with mutual TLS (mTLS) 🔒, and a lightweight yet powerful communication protocol built on JSON-RPC 2.0 ⚡️—bindu is paving the way for the next generation of collaborative AI systems. 🌟🤖
 
@@ -76,7 +76,7 @@ After project creation:
 ```bash
 🎉 Project created successfully!
 
-🐧 Welcome to bindu — powered by the Pebble CLI.
+🌻 Welcome to bindu — powered by the Pebble CLI.
 Next steps:
   1️⃣  cd 'my_weather_agent'
   2️⃣  Set it up using uv: 📦
@@ -278,4 +278,4 @@ We’re excited to see what you’ll build with Pebble! Our dream is a world whe
 
 Have questions, ideas, or just want to chat? Join our Discord community— we’d love to hear from you! Together, let’s lay the foundation for the next generation of AI agent collaboration.
 
-Happy bindu! 🐧🚀✨
+Happy bindu! 🌻🚀✨

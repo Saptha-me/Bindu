@@ -6,7 +6,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 """🔧 Global Constants: The Foundation Stones
 

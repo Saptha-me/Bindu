@@ -5,7 +5,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 """DID (Decentralized Identifier) Extension for Bindu Agents.
 

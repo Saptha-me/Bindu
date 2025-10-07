@@ -9,6 +9,9 @@ from uuid import UUID
 from typing_extensions import TypeVar
 
 from bindu.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
+from bindu.utils.logging import get_logger
+
+logger = get_logger("bindu.server.storage.memory_storage")
 
 from .base import Storage
 

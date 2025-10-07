@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
+from functools import partial
 from pathlib import Path
-from typing import AsyncIterator, Optional, Sequence
+from typing import AsyncIterator, Callable, Optional, Sequence
 from uuid import UUID
 
 from starlette.applications import Starlette
@@ -46,12 +47,12 @@ class BinduApplication(Starlette):
         url: str = "http://localhost",
         port: int = 3773,
         version: str = "1.0.0",
-        description: Optional[str] = None,
+        description: str | None = None,
         debug: bool = False,
-        static_dir: Optional[Path] = None,
-        lifespan: Optional[Lifespan] = None,
-        routes: Optional[Sequence[Route]] = None,
-        middleware: Optional[Sequence[Middleware]] = None
+        static_dir: Path | None = None,
+        lifespan: Lifespan | None = None,
+        routes: Sequence[Route] | None = None,
+        middleware: Sequence[Middleware] | None = None
     ):
         """Initialize Pebble application.
 
@@ -90,44 +91,85 @@ class BinduApplication(Starlette):
         self.default_output_modes = ["application/json"]
 
         # TaskManager will be initialized in lifespan
-        self.task_manager: Optional[TaskManager] = None
+        self.task_manager: TaskManager | None = None
         self._storage = storage
         self._scheduler = scheduler
-
-        # Setup
         self._agent_card_json_schema: bytes | None = None
-        
-        # Agent card and protocol endpoints
-        self.router.add_route(
-            "/.well-known/agent.json", 
-            self._wrap_agent_card_endpoint, 
-            methods=["HEAD", "GET", "OPTIONS"]
-        )
-        self.router.add_route("/", self._wrap_agent_run_endpoint, methods=["POST"])
-        
-        # Static file endpoints
-        self.router.add_route("/docs", self._wrap_docs_endpoint, methods=["GET"])
-        self.router.add_route("/docs.html", self._wrap_docs_endpoint, methods=["GET"])
-        self.router.add_route("/agent.html", self._wrap_agent_page_endpoint, methods=["GET"])
-        self.router.add_route("/chat.html", self._wrap_chat_page_endpoint, methods=["GET"])
-        self.router.add_route("/storage.html", self._wrap_storage_page_endpoint, methods=["GET"])
-        
-        # JavaScript files
-        self.router.add_route("/js/common.js", self._wrap_common_js_endpoint, methods=["GET"])
-        self.router.add_route("/js/api.js", self._wrap_api_js_endpoint, methods=["GET"])
-        self.router.add_route("/js/agent.js", self._wrap_agent_js_endpoint, methods=["GET"])
-        
-        # CSS files
-        self.router.add_route("/css/custom.css", self._wrap_custom_css_endpoint, methods=["GET"])
-        
-        # Component files (legacy)
-        self.router.add_route("/components/layout.js", self._wrap_layout_js_endpoint, methods=["GET"])
-        self.router.add_route("/components/header.html", self._wrap_header_component_endpoint, methods=["GET"])
-        self.router.add_route("/components/footer.html", self._wrap_footer_component_endpoint, methods=["GET"])
-        
+
+        # Register all routes
+        self._register_routes()
+
+    def _register_routes(self) -> None:
+        """Register all application routes."""
+        # Protocol endpoints
+        self._add_route("/.well-known/agent.json", agent_card_endpoint, ["HEAD", "GET", "OPTIONS"], with_app=True)
+        self._add_route("/", agent_run_endpoint, ["POST"], with_app=True)
+
         # DID endpoints
-        self.router.add_route("/did/resolve", self._wrap_did_resolve_endpoint, methods=["GET", "POST"])
-        self.router.add_route("/agent/info", self._wrap_agent_info_endpoint, methods=["GET"])
+        self._add_route("/did/resolve", did_resolve_endpoint, ["GET", "POST"], with_app=True)
+        self._add_route("/agent/info", agent_info_endpoint, ["GET"], with_app=True)
+
+        # HTML pages
+        html_routes = [
+            ("/docs", docs_endpoint),
+            ("/docs.html", docs_endpoint),
+            ("/agent.html", agent_page_endpoint),
+            ("/chat.html", chat_page_endpoint),
+            ("/storage.html", storage_page_endpoint),
+        ]
+        for path, endpoint in html_routes:
+            self._add_route(path, endpoint, ["GET"], with_static=True)
+
+        # JavaScript files
+        js_routes = [
+            ("/js/common.js", common_js_endpoint),
+            ("/js/api.js", api_js_endpoint),
+            ("/js/agent.js", agent_js_endpoint),
+            ("/components/layout.js", layout_js_endpoint),
+        ]
+        for path, endpoint in js_routes:
+            self._add_route(path, endpoint, ["GET"], with_static=True)
+
+        # CSS files
+        self._add_route("/css/custom.css", custom_css_endpoint, ["GET"], with_static=True)
+
+        # Component files (legacy)
+        self._add_route("/components/header.html", header_component_endpoint, ["GET"], with_static=True)
+        self._add_route("/components/footer.html", footer_component_endpoint, ["GET"], with_static=True)
+
+    def _add_route(
+        self,
+        path: str,
+        endpoint: Callable,
+        methods: list[str],
+        with_app: bool = False,
+        with_static: bool = False,
+    ) -> None:
+        """Add a route with appropriate wrapper.
+
+        Args:
+            path: Route path
+            endpoint: Endpoint function
+            methods: HTTP methods
+            with_app: Pass app instance to endpoint
+            with_static: Pass static_dir to endpoint
+        """
+        if with_app:
+            handler = partial(self._wrap_with_app, endpoint)
+        elif with_static:
+            handler = partial(self._wrap_with_static, endpoint)
+        else:
+            handler = endpoint
+
+        self.router.add_route(path, handler, methods=methods)
+
+    async def _wrap_with_app(self, endpoint: Callable, request: Request) -> Response:
+        """Wrap endpoint that requires app instance."""
+        return await endpoint(self, request)
+
+    async def _wrap_with_static(self, endpoint: Callable, request: Request) -> Response:
+        """Wrap endpoint that requires static_dir."""
+        return await endpoint(request, self.static_dir)
 
     def _create_default_lifespan(
         self,
@@ -139,78 +181,15 @@ class BinduApplication(Starlette):
 
         @asynccontextmanager
         async def lifespan(app: Starlette) -> AsyncIterator[None]:
-            # Initialize TaskManager and enter its context
             task_manager = TaskManager(scheduler=scheduler, storage=storage, manifest=manifest)
             async with task_manager:
-                # Store reference for use in endpoints
                 app.task_manager = task_manager
                 yield
 
         return lifespan
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Handle ASGI requests with TaskManager validation."""
         if scope["type"] == "http" and (self.task_manager is None or not self.task_manager.is_running):
             raise RuntimeError("TaskManager was not properly initialized.")
         await super().__call__(scope, receive, send)
-
-    # Wrapper methods to pass app instance to endpoint functions
-    async def _wrap_agent_card_endpoint(self, request: Request) -> Response:
-        """Wrapper for agent card endpoint."""
-        return await agent_card_endpoint(self, request)
-
-    async def _wrap_agent_run_endpoint(self, request: Request) -> Response:
-        """Wrapper for agent run endpoint."""
-        return await agent_run_endpoint(self, request)
-
-    async def _wrap_did_resolve_endpoint(self, request: Request) -> Response:
-        """Wrapper for DID resolve endpoint."""
-        return await did_resolve_endpoint(self, request)
-
-    async def _wrap_agent_info_endpoint(self, request: Request) -> Response:
-        """Wrapper for agent info endpoint."""
-        return await agent_info_endpoint(self, request)
-
-    # Static file endpoint wrappers
-    async def _wrap_docs_endpoint(self, request: Request) -> Response:
-        """Wrapper for docs endpoint."""
-        return await docs_endpoint(request, self.static_dir)
-
-    async def _wrap_agent_page_endpoint(self, request: Request) -> Response:
-        """Wrapper for agent page endpoint."""
-        return await agent_page_endpoint(request, self.static_dir)
-
-    async def _wrap_chat_page_endpoint(self, request: Request) -> Response:
-        """Wrapper for chat page endpoint."""
-        return await chat_page_endpoint(request, self.static_dir)
-
-    async def _wrap_storage_page_endpoint(self, request: Request) -> Response:
-        """Wrapper for storage page endpoint."""
-        return await storage_page_endpoint(request, self.static_dir)
-
-    async def _wrap_common_js_endpoint(self, request: Request) -> Response:
-        """Wrapper for common js endpoint."""
-        return await common_js_endpoint(request, self.static_dir)
-
-    async def _wrap_api_js_endpoint(self, request: Request) -> Response:
-        """Wrapper for api js endpoint."""
-        return await api_js_endpoint(request, self.static_dir)
-
-    async def _wrap_agent_js_endpoint(self, request: Request) -> Response:
-        """Wrapper for agent js endpoint."""
-        return await agent_js_endpoint(request, self.static_dir)
-
-    async def _wrap_custom_css_endpoint(self, request: Request) -> Response:
-        """Wrapper for custom css endpoint."""
-        return await custom_css_endpoint(request, self.static_dir)
-
-    async def _wrap_layout_js_endpoint(self, request: Request) -> Response:
-        """Wrapper for layout js endpoint."""
-        return await layout_js_endpoint(request, self.static_dir)
-
-    async def _wrap_header_component_endpoint(self, request: Request) -> Response:
-        """Wrapper for header component endpoint."""
-        return await header_component_endpoint(request, self.static_dir)
-
-    async def _wrap_footer_component_endpoint(self, request: Request) -> Response:
-        """Wrapper for footer component endpoint."""
-        return await footer_component_endpoint(request, self.static_dir)

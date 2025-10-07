@@ -1,20 +1,27 @@
-"""Simple but beautiful logging configuration for bindu using Rich."""
+"""Optimized logging configuration for bindu using Rich and Loguru."""
 
 from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 from loguru import logger
 from rich.console import Console
 from rich.logging import RichHandler
-from rich.panel import Panel
 from rich.theme import Theme
 from rich.traceback import install as install_rich_traceback
 
-# Set up Rich console with custom theme
-bindu_THEME = Theme(
+# Constants
+LOG_DIR = Path("logs")
+LOG_FILE = LOG_DIR / "bindu_server.log"
+LOG_ROTATION = "10 MB"
+LOG_RETENTION = "1 week"
+LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {module}:{function}:{line} | {message}"
+
+# Rich theme for colorful logging
+BINDU_THEME = Theme(
     {
         "info": "bold cyan",
         "warning": "bold yellow",
@@ -27,79 +34,101 @@ bindu_THEME = Theme(
     }
 )
 
-# Create console with our theme
-console = Console(theme=bindu_THEME, highlight=True)
-
-# Install Rich traceback handler for prettier exceptions
-install_rich_traceback(console=console, show_locals=True)
-
-# Global flag to track if logging has been configured
+# Lazy initialization - console created only when needed
+_console: Optional[Console] = None
 _is_logging_configured = False
 
 
-def configure_logger(docker_mode: bool = False) -> None:
+def _get_console() -> Console:
+    """Get or create the Rich console instance (lazy initialization)."""
+    global _console
+    if _console is None:
+        _console = Console(theme=BINDU_THEME, highlight=True)
+        install_rich_traceback(console=_console, show_locals=True, width=120)
+    return _console
+
+
+def configure_logger(
+    docker_mode: bool = False,
+    log_level: str = "INFO",
+    show_banner: bool = True,
+) -> None:
     """Configure loguru logger with Rich integration.
 
     Args:
-        docker_mode: Optimize for Docker environment
+        docker_mode: Optimize for Docker environment (no file logging)
+        log_level: Minimum log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        show_banner: Show startup banner
     """
     global _is_logging_configured
 
-    # Only configure once
     if _is_logging_configured:
         return
 
-    # Remove default logger
     logger.remove()
+    console = _get_console()
 
-    # File logging (skip in Docker mode)
+    # File logging (skip in Docker mode for performance)
     if not docker_mode:
-        os.makedirs("logs", exist_ok=True)
+        LOG_DIR.mkdir(exist_ok=True)
         logger.add(
-            "logs/bindu_server.log",
-            rotation="10 MB",
-            retention="1 week",
-            level="INFO",
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {module}:{function}:{line} | {message}",
+            LOG_FILE,
+            rotation=LOG_ROTATION,
+            retention=LOG_RETENTION,
+            level=log_level,
+            format=LOG_FORMAT,
+            enqueue=True,  # Async logging for better performance
+            backtrace=True,
+            diagnose=True,
         )
 
-    # Add Rich handler for beautiful console output with our custom theme
-    logger.configure(
-        handlers=[
-            {
-                "sink": RichHandler(console=console, rich_tracebacks=True, markup=True, log_time_format="[%X]"),
-                "format": "{message} {extra}",
-            }
-        ]
+    # Rich console handler
+    logger.add(
+        RichHandler(
+            console=console,
+            rich_tracebacks=True,
+            markup=True,
+            log_time_format="[%X]",
+            show_path=False,  # Cleaner output
+        ),
+        format="{message}",
+        level=log_level,
     )
 
-    # Show a startup banner (not in Docker)
-    if not docker_mode:
-        console.print(Panel.fit("[bold cyan]bindu 🌻 [/bold cyan]", border_style="cyan"))
+    # Optional startup banner
+    if show_banner and not docker_mode:
+        console.print("[bold cyan]🌻 bindu logging initialized[/bold cyan]", style="dim")
 
     _is_logging_configured = True
 
 
 def get_logger(name: Optional[str] = None) -> logger.__class__:
-    """Get a configured logger instance.
+    """Get a configured logger instance with automatic name inference.
 
     Args:
-        name: Optional name for the logger
+        name: Optional logger name (auto-inferred from caller if not provided)
 
     Returns:
-        A configured logger instance
+        Configured logger instance bound to the module name
     """
-    # Ensure global logging is configured
     configure_logger()
 
-    # If name is not provided, try to infer it from the caller's frame
     if name is None:
+        # Auto-infer module name from caller's frame
         frame = sys._getframe(1)
-        name = frame.f_globals.get("__name__", "unknown")
+        name = frame.f_globals.get("__name__", "bindu")
 
-    # Return a contextualized logger
     return logger.bind(module=name)
 
 
-# Export commonly used objects
-log = get_logger("bindu 🌻")  # Quick access to logger
+def set_log_level(level: str) -> None:
+    """Dynamically change log level at runtime.
+
+    Args:
+        level: New log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    """
+    logger.level(level)
+
+
+# Pre-configured logger for quick access
+log = get_logger("bindu")

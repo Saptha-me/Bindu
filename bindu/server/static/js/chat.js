@@ -5,6 +5,30 @@
  */
 
 // ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/**
+ * Message sender types
+ * @const
+ */
+const SENDER = {
+    USER: 'user',
+    AGENT: 'agent',
+    STATUS: 'status'
+};
+
+/**
+ * Task state constants
+ * @const
+ */
+const TASK_STATE = {
+    COMPLETED: 'completed',
+    FAILED: 'failed',
+    CANCELED: 'canceled'
+};
+
+// ============================================================================
 // STATE MANAGEMENT
 // ============================================================================
 
@@ -14,7 +38,8 @@
  */
 const chatState = {
     contextId: null,
-    currentTaskId: null
+    currentTaskId: null,
+    pollingController: null  // Stores polling cancellation controller
 };
 
 /**
@@ -77,12 +102,12 @@ async function sendMessage() {
         }
 
         // Display user message
-        addMessage(message, 'user', chatState.currentTaskId);
+        addMessage(message, SENDER.USER, chatState.currentTaskId);
 
         // Try to extract and display agent response
         const agentResponse = utils.extractAgentResponse(result);
         if (agentResponse) {
-            addMessage(agentResponse, 'agent', chatState.currentTaskId);
+            addMessage(agentResponse, SENDER.AGENT, chatState.currentTaskId);
             chatState.currentTaskId = null;
         }
         
@@ -95,21 +120,25 @@ async function sendMessage() {
     } catch (error) {
         console.error('Error sending message:', error);
         utils.showToast('Error: ' + error.message, 'error');
-        addMessage('Error: ' + error.message, 'status');
-    } finally {
-        sendButton.disabled = false;
+        addMessage('Error: ' + error.message, SENDER.STATUS);
     }
 }
 
 /**
- * Start task polling with exponential backoff
+ * Start polling for task status updates
  * Uses centralized polling utility from api.js
  * @async
  */
 function startTaskPolling() {
     if (!chatState.currentTaskId) return;
+    
+    // Cancel any existing polling
+    if (chatState.pollingController) {
+        chatState.pollingController.cancel();
+    }
 
-    api.pollTaskWithBackoff(
+    // Start new polling with cancellation control
+    chatState.pollingController = api.pollTaskWithBackoff(
         chatState.currentTaskId,
         handleTaskUpdate,
         handleTaskError
@@ -124,21 +153,26 @@ function startTaskPolling() {
 function handleTaskUpdate(task, isTerminal) {
     removeProcessingMessage();
 
-    if (task.status.state === 'completed') {
+    const state = task.status.state;
+    
+    if (state === TASK_STATE.COMPLETED) {
         // Extract and display agent response
         const responseText = utils.extractTaskResponse(task);
         if (responseText) {
-            addMessage(responseText, 'agent', task.task_id);
+            addMessage(responseText, SENDER.AGENT, task.task_id);
         }
         chatState.currentTaskId = null;
+        chatState.pollingController = null;
         
-    } else if (task.status.state === 'failed') {
-        addMessage('Task failed: ' + (task.status.error || 'Unknown error'), 'status');
+    } else if (state === TASK_STATE.FAILED) {
+        addMessage('Task failed: ' + (task.status.error || 'Unknown error'), SENDER.STATUS);
         chatState.currentTaskId = null;
+        chatState.pollingController = null;
         
-    } else if (task.status.state === 'canceled') {
-        addMessage('Task was canceled', 'status');
+    } else if (state === TASK_STATE.CANCELED) {
+        addMessage('Task was canceled', SENDER.STATUS);
         chatState.currentTaskId = null;
+        chatState.pollingController = null;
         
     } else {
         // Still processing, show indicator
@@ -154,7 +188,7 @@ function handleTaskError(error) {
     console.error('Error polling task status:', error);
     removeProcessingMessage();
     utils.showToast('Error getting task status: ' + error.message, 'error');
-    addMessage('Error getting task status: ' + error.message, 'status');
+    addMessage('Error getting task status: ' + error.message, SENDER.STATUS);
     chatState.currentTaskId = null;
 }
 
@@ -169,10 +203,10 @@ function handleTaskError(error) {
  * @param {string|null} [taskId=null] - Optional task ID for the message
  */
 function addMessage(content, sender, taskId = null) {
-    const messagesDiv = document.getElementById('messages');
+    const messagesDiv = domCache.get('messages');
     const messageDiv = document.createElement('div');
     
-    if (sender === 'user') {
+    if (sender === SENDER.USER) {
         messageDiv.className = 'flex justify-end';
         messageDiv.innerHTML = `
           <div class="max-w-2xl px-4 py-2 bg-primary-green text-white rounded-full ${taskId ? 'cursor-help' : ''}" ${taskId ? `data-task-id="${taskId}"` : ''}>
@@ -181,7 +215,7 @@ function addMessage(content, sender, taskId = null) {
             </div>
           </div>
         `;
-    } else if (sender === 'agent') {
+    } else if (sender === SENDER.AGENT) {
         messageDiv.className = 'flex justify-start';
         const parsedContent = marked.parse(content);
         const messageId = api.generateId();
@@ -201,7 +235,7 @@ function addMessage(content, sender, taskId = null) {
               </div>
             </div>
           `;
-    } else if (sender === 'status') {
+    } else if (sender === SENDER.STATUS) {
         messageDiv.className = 'flex justify-center';
         messageDiv.innerHTML = `
           <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 max-w-md text-center">
@@ -211,7 +245,7 @@ function addMessage(content, sender, taskId = null) {
     }
 
     messagesDiv.appendChild(messageDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    utils.scrollToBottom(messagesDiv);
 }
 
 /**
@@ -234,7 +268,7 @@ function addProcessingMessage() {
       `;
     
     messagesDiv.appendChild(messageDiv);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    utils.scrollToBottom(messagesDiv);
 }
 
 /**
@@ -246,6 +280,10 @@ function removeProcessingMessage() {
         processingMessage.remove();
     }
 }
+
+// ============================================================================
+// MESSAGE ACTION HANDLERS
+// ============================================================================
 
 /**
  * Copy a message to clipboard
@@ -274,7 +312,7 @@ function showCopyFeedback(messageId) {
     const copyBtn = document.querySelector(`.copy-btn[data-message-id="${messageId}"]`);
     if (copyBtn) {
         const originalIcon = copyBtn.innerHTML;
-        copyBtn.innerHTML = createMessageIcon('copySuccess', 'w-4 h-4 text-green-500');
+        copyBtn.innerHTML = utils.createMessageIcon('copySuccess', 'w-4 h-4 text-green-500');
         copyBtn.classList.add('animate-pulse');
         setTimeout(() => {
             copyBtn.innerHTML = originalIcon;
@@ -288,23 +326,7 @@ function showCopyFeedback(messageId) {
  * @param {string} messageId - ID of the message to like
  */
 function likeMessage(messageId) {
-    const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
-    const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
-    
-    if (likeBtn && dislikeBtn) {
-        if (likeBtn.classList.contains('liked')) {
-            // Unlike
-            likeBtn.classList.remove('liked', 'text-green-500');
-            likeBtn.innerHTML = createMessageIcon('like');
-        } else {
-            // Like
-            likeBtn.classList.add('liked', 'text-green-500');
-            likeBtn.innerHTML = createMessageIcon('like', 'w-4 h-4 text-green-500');
-            // Remove dislike if present
-            dislikeBtn.classList.remove('disliked', 'text-red-500');
-            dislikeBtn.innerHTML = createMessageIcon('dislike');
-        }
-    }
+    utils.toggleReaction(messageId, 'like');
 }
 
 /**
@@ -312,40 +334,28 @@ function likeMessage(messageId) {
  * @param {string} messageId - ID of the message to dislike
  */
 function dislikeMessage(messageId) {
-    const dislikeBtn = document.querySelector(`.dislike-btn[data-message-id="${messageId}"]`);
-    const likeBtn = document.querySelector(`.like-btn[data-message-id="${messageId}"]`);
-    
-    if (dislikeBtn && likeBtn) {
-        if (dislikeBtn.classList.contains('disliked')) {
-            // Undislike
-            dislikeBtn.classList.remove('disliked', 'text-red-500');
-            dislikeBtn.innerHTML = createMessageIcon('dislike');
-        } else {
-            // Dislike
-            dislikeBtn.classList.add('disliked', 'text-red-500');
-            dislikeBtn.innerHTML = createMessageIcon('dislike', 'w-4 h-4 text-red-500');
-            // Remove like if present
-            likeBtn.classList.remove('liked', 'text-green-500');
-            likeBtn.innerHTML = createMessageIcon('like');
-        }
-    }
+    utils.toggleReaction(messageId, 'dislike');
 }
+
+// ============================================================================
+// CONTEXT & CHAT MANAGEMENT
+// ============================================================================
 
 /**
  * Clear all messages from the chat
  */
 function clearChat() {
-    const messagesDiv = getCachedElement('messages');
+    const messagesDiv = domCache.get('messages');
     messagesDiv.innerHTML = '';
-    addMessage('Chat cleared. Start a new conversation!', 'status');
+    addMessage('Chat cleared. Start a new conversation!', SENDER.STATUS);
 }
 
 /**
  * Create a new conversation context
  */
 function newContext() {
-    contextId = api.generateId();
-    addMessage('New context started', 'status');
+    chatState.contextId = api.generateId();
+    addMessage('New context started', SENDER.STATUS);
     renderContexts();
 }
 
@@ -353,80 +363,77 @@ function newContext() {
  * Render the current context in the sidebar
  */
 function renderContexts() {
-    const contextsList = getCachedElement('contexts-list');
+    const contextsList = domCache.get('contexts-list');
     contextsList.innerHTML = `
         <div class="w-full text-left p-3 rounded-lg border bg-primary-green text-white border-primary-green">
             <div class="flex items-center gap-2">
                 <div class="w-2 h-2 rounded-full bg-white"></div>
-                <span class="text-sm font-medium">Context: ${contextId.substring(0, 8)}...</span>
+                <span class="text-sm font-medium">Context: ${chatState.contextId.substring(0, 8)}...</span>
             </div>
         </div>
     `;
 }
 
+// ============================================================================
+// UI INTERACTION HANDLERS
+// ============================================================================
+
 /**
  * Toggle the sidebar collapsed/expanded state
  */
 function toggleSidebar() {
-    const sidebar = getCachedElement('sidebar');
-    const toggleIcon = getCachedElement('toggle-icon');
+    const sidebar = domCache.get('sidebar');
+    const toggleIcon = domCache.get('toggle-icon');
     const isCollapsed = sidebar.classList.contains('collapsed');
     
     if (isCollapsed) {
         sidebar.classList.remove('collapsed');
         sidebar.style.width = '320px';
-        // Change to right-pointing chevron (expand)
-        toggleIcon.innerHTML = createChatIcon('chevron-right', 'w-4 h-4');
+        toggleIcon.innerHTML = utils.createIcon('chevron-right', 'w-4 h-4');
     } else {
         sidebar.classList.add('collapsed');
         sidebar.style.width = '64px';
-        // Change to left-pointing chevron (collapse)
-        toggleIcon.innerHTML = createChatIcon('chevron-left', 'w-4 h-4');
+        toggleIcon.innerHTML = utils.createIcon('chevron-left', 'w-4 h-4');
     }
 }
 
 /**
- * Create a chat UI icon using common utilities
- * @param {string} iconName - Icon name from common ICON_MAP
- * @param {string} [className='w-4 h-4'] - CSS classes for the icon
- * @returns {string} HTML string for the icon
- */
-function createChatIcon(iconName, className = 'w-4 h-4') {
-    return utils.createIcon(iconName, className);
-}
-
-/**
  * Initialize all icons in the chat interface
+ * Uses centralized icon utilities from common.js
  */
 function initializeIcons() {
-    // Initialize sidebar icons
-    getCachedElement('toggle-icon').innerHTML = createChatIcon('chevron-right', 'w-4 h-4');
-    getCachedElement('new-context-icon').innerHTML = createChatIcon('plus', 'w-4 h-4');
-    getCachedElement('clear-icon').innerHTML = createChatIcon('trash', 'w-4 h-4');
-    getCachedElement('settings-icon').innerHTML = createChatIcon('cog', 'w-4 h-4');
-    getCachedElement('send-icon').innerHTML = createChatIcon('paper-airplane', 'w-4 h-4');
+    domCache.get('toggle-icon').innerHTML = utils.createIcon('chevron-right', 'w-4 h-4');
+    domCache.get('new-context-icon').innerHTML = utils.createIcon('plus', 'w-4 h-4');
+    domCache.get('clear-icon').innerHTML = utils.createIcon('trash', 'w-4 h-4');
+    domCache.get('settings-icon').innerHTML = utils.createIcon('cog', 'w-4 h-4');
+    domCache.get('send-icon').innerHTML = utils.createIcon('paper-airplane', 'w-4 h-4');
 }
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
 
 /**
  * Initialize the chat page on DOM ready
+ * Sets up state, UI, and event listeners
  */
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize context ID
-    contextId = utils.generateUUID();
+    // Initialize context ID using API's ID generator for consistency
+    chatState.contextId = api.generateId();
     
     // Initialize UI
     initializeIcons();
     renderContexts();
     
     // Set up event listeners
-    getCachedElement('send-btn').addEventListener('click', sendMessage);
-    getCachedElement('message-input').addEventListener('keypress', handleKeyPress);
-    getCachedElement('clear-chat').addEventListener('click', clearChat);
-    getCachedElement('new-context').addEventListener('click', newContext);
-    getCachedElement('toggle-sidebar').addEventListener('click', toggleSidebar);
+    domCache.get('send-btn').addEventListener('click', sendMessage);
+    domCache.get('message-input').addEventListener('keypress', handleKeyPress);
+    domCache.get('clear-chat').addEventListener('click', clearChat);
+    domCache.get('new-context').addEventListener('click', newContext);
+    domCache.get('toggle-sidebar').addEventListener('click', toggleSidebar);
     
     // Event delegation for message action buttons
-    getCachedElement('messages').addEventListener('click', function(event) {
+    domCache.get('messages').addEventListener('click', function(event) {
         const target = event.target.closest('button');
         if (!target) return;
         

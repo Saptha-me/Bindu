@@ -2,34 +2,72 @@
 // Shared functions used across multiple pages
 
 // Constants
-const BADGE_CLASSES = {
-    success: 'bg-green-50 text-green-700 border-green-200',
-    error: 'bg-red-50 text-red-700 border-red-200',
-    warning: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    info: 'bg-blue-50 text-blue-700 border-blue-200',
-    neutral: 'bg-gray-100 text-gray-700 border-gray-200'
+// Consolidated style mappings
+const STYLE_MAPS = {
+    badge: {
+        success: 'bg-green-50 text-green-700 border-green-200',
+        error: 'bg-red-50 text-red-700 border-red-200',
+        warning: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+        info: 'bg-blue-50 text-blue-700 border-blue-200',
+        neutral: 'bg-gray-100 text-gray-700 border-gray-200'
+    },
+    toast: {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-yellow-500',
+        info: 'bg-blue-500'
+    },
+    status: {
+        completed: 'bg-green-100 text-green-800',
+        failed: 'bg-red-100 text-red-800',
+        running: 'bg-blue-100 text-blue-800',
+        pending: 'bg-yellow-100 text-yellow-800',
+        canceled: 'bg-gray-100 text-gray-800',
+        working: 'bg-purple-100 text-purple-800'
+    },
+    statusIcon: {
+        completed: '✅',
+        failed: '❌',
+        running: '⚡',
+        pending: '⏳',
+        canceled: '🚫',
+        working: '🔄'
+    },
+    trust: {
+        low: { label: 'Low Trust', type: 'error' },
+        medium: { label: 'Medium Trust', type: 'warning' },
+        high: { label: 'High Trust', type: 'success' }
+    }
 };
 
+// Legacy constants for backward compatibility
+const BADGE_CLASSES = STYLE_MAPS.badge;
+const TOAST_CLASSES = STYLE_MAPS.toast;
 const TRUST_LABELS = {
-    low: 'Low Trust',
-    medium: 'Medium Trust',
-    high: 'High Trust'
+    low: STYLE_MAPS.trust.low.label,
+    medium: STYLE_MAPS.trust.medium.label,
+    high: STYLE_MAPS.trust.high.label
 };
-
 const TRUST_BADGE_TYPES = {
-    low: 'error',
-    medium: 'warning',
-    high: 'success'
-};
-
-const TOAST_CLASSES = {
-    success: 'bg-green-500',
-    error: 'bg-red-500',
-    warning: 'bg-yellow-500',
-    info: 'bg-blue-500'
+    low: STYLE_MAPS.trust.low.type,
+    medium: STYLE_MAPS.trust.medium.type,
+    high: STYLE_MAPS.trust.high.type
 };
 
 // Helper functions
+
+/**
+ * Generic style mapper - DRY utility for all style lookups
+ * @param {string} category - Style category (badge, toast, status, etc.)
+ * @param {string} key - Lookup key
+ * @param {string} defaultKey - Default fallback key
+ * @returns {string} CSS classes or value
+ */
+function getStyleClass(category, key, defaultKey = null) {
+    const map = STYLE_MAPS[category];
+    if (!map) return '';
+    return map[key] || (defaultKey ? map[defaultKey] : '');
+}
 
 /**
  * Get badge CSS classes based on type
@@ -37,7 +75,7 @@ const TOAST_CLASSES = {
  * @returns {string} CSS classes for the badge
  */
 function getBadgeClass(type) {
-    return BADGE_CLASSES[type] || BADGE_CLASSES.neutral;
+    return getStyleClass('badge', type, 'neutral');
 }
 
 /**
@@ -46,7 +84,7 @@ function getBadgeClass(type) {
  * @returns {string} Badge type for the trust level
  */
 function getTrustBadgeType(trustLevel) {
-    return TRUST_BADGE_TYPES[trustLevel] || 'neutral';
+    return STYLE_MAPS.trust[trustLevel]?.type || 'neutral';
 }
 
 /**
@@ -55,19 +93,24 @@ function getTrustBadgeType(trustLevel) {
  * @returns {string} Human-readable trust label
  */
 function getTrustLabel(trustLevel) {
-    return TRUST_LABELS[trustLevel] || 'Unknown';
+    return STYLE_MAPS.trust[trustLevel]?.label || 'Unknown';
 }
 
+/**
+ * Get toast CSS classes
+ * @param {string} type - Toast type
+ * @returns {string} CSS classes
+ */
 function getToastClass(type) {
-    return TOAST_CLASSES[type] || TOAST_CLASSES.info;
+    return getStyleClass('toast', type, 'info');
 }
 
-// Format timestamp to readable string
-function formatTimestamp(timestamp) {
+// Format timestamp to readable string (memoized)
+const formatTimestamp = memoize(function(timestamp) {
     if (!timestamp) return 'N/A';
     const date = new Date(timestamp);
     return date.toLocaleString();
-}
+}, 100);
 
 // Format relative time (e.g., "2 minutes ago")
 function formatRelativeTime(timestamp) {
@@ -87,11 +130,11 @@ function formatRelativeTime(timestamp) {
     return 'Just now';
 }
 
-// Truncate text with ellipsis
-function truncateText(text, maxLength = 50) {
+// Truncate text with ellipsis (memoized)
+const truncateText = memoize(function(text, maxLength = 50) {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
-}
+}, 200);
 
 // Copy text to clipboard
 async function copyToClipboard(text) {
@@ -104,16 +147,10 @@ async function copyToClipboard(text) {
     }
 }
 
-// Show toast notification
+// Show toast notification (optimized with proper cleanup)
 function showToast(message, type = 'info') {
-    // Get or create toast container
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toast-container';
-        toastContainer.className = 'fixed bottom-4 right-4 z-50 space-y-2';
-        document.body.appendChild(toastContainer);
-    }
+    // Get or create toast container using stored reference
+    const toastContainer = domRefs.getToastContainer();
     
     // Create toast element
     const toast = document.createElement('div');
@@ -121,44 +158,70 @@ function showToast(message, type = 'info') {
     toast.textContent = message;
     toastContainer.appendChild(toast);
     
+    // Track timers for cleanup
+    let fadeTimer = null;
+    let removeTimer = null;
+    
     // Auto-remove after 3 seconds
-    setTimeout(() => {
+    const removeToast = () => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
-        setTimeout(() => {
+        
+        removeTimer = setTimeout(() => {
             toast.remove();
-            // Remove container if empty
+            // Clean up timer references
+            if (fadeTimer) cleanupRegistry.clearTimeout(fadeTimer);
+            if (removeTimer) cleanupRegistry.clearTimeout(removeTimer);
+            
+            // Remove container if empty and clear reference
             if (toastContainer.children.length === 0) {
                 toastContainer.remove();
+                domRefs.clearToastContainer();
             }
         }, 300);
-    }, 3000);
-}
-
-// Toggle dropdown
-function toggleDropdown(dropdownId) {
-    const content = document.getElementById(dropdownId);
-    const header = content.previousElementSibling;
-    const icon = header.querySelector('.dropdown-icon');
+        cleanupRegistry.registerTimeout(removeTimer);
+    };
     
-    if (content.classList.contains('expanded')) {
-        content.classList.remove('expanded');
-        icon.classList.remove('expanded');
-    } else {
-        content.classList.add('expanded');
-        icon.classList.add('expanded');
-    }
+    fadeTimer = setTimeout(removeToast, 3000);
+    cleanupRegistry.registerTimeout(fadeTimer);
+    
+    // Return cleanup function
+    return () => {
+        if (fadeTimer) {
+            cleanupRegistry.clearTimeout(fadeTimer);
+            fadeTimer = null;
+        }
+        if (removeTimer) {
+            cleanupRegistry.clearTimeout(removeTimer);
+            removeTimer = null;
+        }
+        toast.remove();
+    };
 }
 
-// Escape HTML to prevent XSS
-function escapeHtml(text) {
+// Toggle dropdown (optimized with DOM caching)
+function toggleDropdown(dropdownId) {
+    const content = domCache.get(dropdownId);
+    if (!content) return;
+    
+    const header = content.previousElementSibling;
+    const icon = header?.querySelector('.dropdown-icon');
+    
+    const isExpanded = content.classList.contains('expanded');
+    content.classList.toggle('expanded', !isExpanded);
+    icon?.classList.toggle('expanded', !isExpanded);
+}
+
+// Escape HTML to prevent XSS (memoized for performance)
+const escapeHtml = memoize(function(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-}
+}, 500); // Cache up to 500 escaped strings
 
-// Parse markdown to HTML (basic implementation)
-function parseMarkdown(text) {
+// Parse markdown to HTML (memoized for performance)
+const parseMarkdownMemo = createMemoized(function(text) {
     if (!text) return '';
     
     // Use marked.js if available, otherwise basic parsing
@@ -188,18 +251,105 @@ function parseMarkdown(text) {
     html = html.replace(/\n/g, '<br>');
     
     return html;
-}
+}, 200); // Cache up to 200 parsed markdown strings
 
-// Debounce function
+// Export the memoized function
+const parseMarkdown = parseMarkdownMemo.fn;
+
+// Debounce function (with cleanup support)
 function debounce(func, wait) {
     let timeout;
-    return function executedFunction(...args) {
+    
+    const debounced = function executedFunction(...args) {
         const later = () => {
-            clearTimeout(timeout);
+            if (timeout) cleanupRegistry.clearTimeout(timeout);
+            timeout = null;
             func(...args);
         };
-        clearTimeout(timeout);
+        
+        if (timeout) cleanupRegistry.clearTimeout(timeout);
         timeout = setTimeout(later, wait);
+        cleanupRegistry.registerTimeout(timeout);
+    };
+    
+    // Add cancel method for manual cleanup
+    debounced.cancel = () => {
+        if (timeout) {
+            cleanupRegistry.clearTimeout(timeout);
+            timeout = null;
+        }
+    };
+    
+    return debounced;
+}
+
+/**
+ * Memoization utility with LRU cache
+ * Caches function results to avoid expensive recomputation
+ * @param {Function} fn - Function to memoize
+ * @param {number} maxSize - Maximum cache size (default: 100)
+ * @returns {Function} Memoized function
+ */
+function memoize(fn, maxSize = 100) {
+    const cache = new Map();
+    
+    return function memoized(...args) {
+        // Create cache key from arguments
+        const key = JSON.stringify(args);
+        
+        // Return cached result if exists
+        if (cache.has(key)) {
+            return cache.get(key);
+        }
+        
+        // Compute result
+        const result = fn.apply(this, args);
+        
+        // Store in cache
+        cache.set(key, result);
+        
+        // Implement LRU: remove oldest entry if cache is full
+        if (cache.size > maxSize) {
+            const firstKey = cache.keys().next().value;
+            cache.delete(firstKey);
+        }
+        
+        return result;
+    };
+}
+
+/**
+ * Create a memoized function with manual cache control
+ * @param {Function} fn - Function to memoize
+ * @param {number} maxSize - Maximum cache size
+ * @returns {Object} Object with memoized function and cache control methods
+ */
+function createMemoized(fn, maxSize = 100) {
+    const cache = new Map();
+    
+    const memoized = function(...args) {
+        const key = JSON.stringify(args);
+        
+        if (cache.has(key)) {
+            return cache.get(key);
+        }
+        
+        const result = fn.apply(this, args);
+        cache.set(key, result);
+        
+        if (cache.size > maxSize) {
+            const firstKey = cache.keys().next().value;
+            cache.delete(firstKey);
+        }
+        
+        return result;
+    };
+    
+    return {
+        fn: memoized,
+        clear: () => cache.clear(),
+        size: () => cache.size,
+        has: (key) => cache.has(JSON.stringify([key]))
     };
 }
 
@@ -216,30 +366,62 @@ function toggleTheme() {
     localStorage.setItem('theme', newTheme);
 }
 
-// Generic component loader with error handling
+// Generic component loader with error handling, cleanup, and deduplication
 async function loadComponent(componentName, targetId) {
-    const container = document.getElementById(targetId);
+    const container = domCache.get(targetId);
     if (!container) {
         console.warn(`Container ${targetId} not found`);
         return;
     }
     
-    try {
-        const response = await fetch(`/components/${componentName}.html`);
-        if (!response.ok) {
-            throw new Error(`Failed to load ${componentName}: ${response.statusText}`);
-        }
+    // Create unique key for deduplication
+    const requestKey = `component:${componentName}:${targetId}`;
+    
+    // Use request deduplication
+    return requestDeduplicator.dedupe(requestKey, async () => {
+        // Create abort controller for request cleanup
+        const abortController = new AbortController();
         
-        container.innerHTML = await response.text();
-        
-        // Special handling for header
-        if (componentName === 'header') {
-            highlightActivePage();
+        try {
+            const response = await fetch(`/components/${componentName}.html`, {
+                signal: abortController.signal
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load ${componentName}: ${response.statusText}`);
+            }
+            
+            const content = await response.text();
+            
+            // Only update DOM if container still exists
+            if (document.body.contains(container)) {
+                container.innerHTML = content;
+                
+                // Invalidate cache after DOM change
+                domCache.clear();
+                
+                // Special handling for header
+                if (componentName === 'header') {
+                    highlightActivePage();
+                }
+            }
+            
+            return content;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log(`Component load aborted: ${componentName}`);
+            } else {
+                console.error(`Error loading ${componentName}:`, error);
+                if (document.body.contains(container)) {
+                    container.innerHTML = `<div class="text-red-500 text-sm">Failed to load ${componentName}</div>`;
+                }
+            }
+            throw error; // Re-throw to propagate to deduplicator
+        } finally {
+            // Cleanup function for abort controller
+            abortController.abort();
         }
-    } catch (error) {
-        console.error(`Error loading ${componentName}:`, error);
-        container.innerHTML = `<div class="text-red-500 text-sm">Failed to load ${componentName}</div>`;
-    }
+    });
 }
 
 // Load common head content
@@ -290,10 +472,8 @@ function buildHeader() {
                     <div class="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-sm font-medium">
                         Online
                     </div>
-                    <a href="https://github.com/bindu-ai/pebble/" target="_blank" rel="noopener noreferrer">
-                        <svg class="w-6 h-6 text-gray-700 hover:text-gray-900 transition-colors" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.186 6.839 9.525.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.157-1.11-1.465-1.11-1.465-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.847-2.337 4.695-4.566 4.944.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .267.18.578.688.48C19.138 20.204 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/>
-                        </svg>
+                    <a href="https://github.com/Saptha-me/Bindu" target="_blank" rel="noopener noreferrer" class="text-gray-700 hover:text-gray-900 transition-colors">
+                        ${createIcon('github', 'w-6 h-6')}
                     </a>
                 </div>
             </div>
@@ -301,25 +481,38 @@ function buildHeader() {
     `;
 }
 
-// Load header component
+// Load header component (optimized with stored references and deduplication)
 async function loadHeader() {
-    const container = document.getElementById('header-placeholder');
+    const container = domRefs.headerPlaceholder || domCache.get('header-placeholder');
     if (!container) {
         console.warn('Header placeholder not found');
         return;
     }
     
-    // Inject header HTML
-    container.innerHTML = buildHeader();
+    // Use request deduplication for header loading
+    const requestKey = 'header:load';
     
-    // Highlight active page
-    highlightActivePage();
+    return requestDeduplicator.dedupe(requestKey, async () => {
+        // Inject header HTML
+        container.innerHTML = buildHeader();
+        
+        // Refresh header-specific references
+        domRefs.refreshHeader();
+        
+        // Invalidate nav-related cache after DOM change
+        domCache.clear();
+        
+        // Highlight active page
+        highlightActivePage();
+        
+        return true;
+    });
 }
 
-// Highlight active page in navigation
+// Highlight active page in navigation (optimized)
 function highlightActivePage() {
     const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'chat';
-    const navLinks = document.querySelectorAll('nav a[data-page]');
+    const navLinks = domCache.queryAll('nav a[data-page]');
     
     navLinks.forEach(link => {
         const page = link.getAttribute('data-page');
@@ -365,20 +558,27 @@ function buildFooter() {
     `;
 }
 
-// Load footer component
+// Load footer component (optimized with stored references and deduplication)
 async function loadFooter() {
-    const container = document.getElementById('footer-placeholder');
+    const container = domRefs.footerPlaceholder || domCache.get('footer-placeholder');
     if (!container) {
         console.warn('Footer placeholder not found');
         return;
     }
     
-    // Inject footer HTML
-    container.innerHTML = buildFooter();
+    // Use request deduplication for footer loading
+    const requestKey = 'footer:load';
+    
+    return requestDeduplicator.dedupe(requestKey, async () => {
+        // Inject footer HTML
+        container.innerHTML = buildFooter();
+        
+        return true;
+    });
 }
 
 /**
- * Icon mapping for Iconify icons
+ * Consolidated icon mapping for Iconify icons
  * Centralized icon definitions used across all pages
  */
 const ICON_MAP = {
@@ -400,23 +600,30 @@ const ICON_MAP = {
     'plus': 'heroicons:plus-20-solid',
     'cog': 'heroicons:cog-6-tooth-20-solid',
     'paper-airplane': 'heroicons:paper-airplane-20-solid',
-    // Message action icons
+    // Message action icons (consolidated from MESSAGE_ICON_MAP)
     'clipboard': 'heroicons:clipboard-document-20-solid',
     'check': 'heroicons:check-20-solid',
     'thumb-up': 'heroicons:hand-thumb-up-20-solid',
-    'thumb-down': 'heroicons:hand-thumb-down-20-solid'
+    'thumb-down': 'heroicons:hand-thumb-down-20-solid',
+    // Aliases for message actions
+    'copy': 'heroicons:clipboard-document-20-solid',
+    'copySuccess': 'heroicons:check-20-solid',
+    'like': 'heroicons:hand-thumb-up-20-solid',
+    'dislike': 'heroicons:hand-thumb-down-20-solid',
+    // Brand icons
+    'github': 'mdi:github'
 };
 
 /**
- * Create an Iconify icon element
+ * Create an Iconify icon element (memoized)
  * @param {string} iconName - Name of the icon from ICON_MAP
  * @param {string} className - CSS classes to apply to the icon
  * @returns {string} HTML string for the icon element
  */
-function createIcon(iconName, className = 'w-5 h-5') {
+const createIcon = memoize(function(iconName, className = 'w-5 h-5') {
     const iconId = ICON_MAP[iconName] || ICON_MAP['chart-bar'];
     return `<iconify-icon icon="${iconId}" class="${className}"></iconify-icon>`;
-}
+}, 150);
 
 // Create page structure helper
 function createPageStructure(config) {
@@ -434,40 +641,37 @@ function createPageStructure(config) {
     }
 }
 
-// Generate UUID v4
+/**
+ * Generate UUID v4 (not memoized - must be unique each time)
+ * Optimized version without regex for better performance
+ * @returns {string} UUID v4 string
+ */
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
+    const hex = '0123456789abcdef';
+    let uuid = '';
+    for (let i = 0; i < 36; i++) {
+        if (i === 8 || i === 13 || i === 18 || i === 23) {
+            uuid += '-';
+        } else if (i === 14) {
+            uuid += '4';
+        } else if (i === 19) {
+            uuid += hex[(Math.random() * 4 | 0) + 8];
+        } else {
+            uuid += hex[Math.random() * 16 | 0];
+        }
+    }
+    return uuid;
 }
 
-// Status color mapping for task states
-function getStatusColor(state) {
-    const colors = {
-        completed: 'bg-green-100 text-green-800',
-        failed: 'bg-red-100 text-red-800',
-        running: 'bg-blue-100 text-blue-800',
-        pending: 'bg-yellow-100 text-yellow-800',
-        canceled: 'bg-gray-100 text-gray-800',
-        working: 'bg-purple-100 text-purple-800'
-    };
-    return colors[state] || 'bg-gray-100 text-gray-800';
-}
+// Status color mapping for task states (memoized, using consolidated map)
+const getStatusColor = memoize(function(state) {
+    return getStyleClass('status', state, 'canceled');
+}, 10);
 
-// Status icon mapping for task states
-function getStatusIcon(state) {
-    const icons = {
-        completed: '✅',
-        failed: '❌',
-        running: '⚡',
-        pending: '⏳',
-        canceled: '🚫',
-        working: '🔄'
-    };
-    return icons[state] || '❓';
-}
+// Status icon mapping for task states (memoized, using consolidated map)
+const getStatusIcon = memoize(function(state) {
+    return STYLE_MAPS.statusIcon[state] || '❓';
+}, 10);
 
 // Helper for yes/no display
 function yesNo(value) {
@@ -477,10 +681,12 @@ function yesNo(value) {
 /**
  * DOM element caching utility
  * Improves performance by caching DOM queries
- * @returns {Object} Cache manager with get method
+ * @returns {Object} Cache manager with get, query, queryAll, and clear methods
  */
 function createDOMCache() {
     const cache = {};
+    const queryCache = {};
+    
     return {
         get: (id) => {
             if (!cache[id]) {
@@ -488,34 +694,240 @@ function createDOMCache() {
             }
             return cache[id];
         },
+        query: (selector) => {
+            if (!queryCache[selector]) {
+                queryCache[selector] = document.querySelector(selector);
+            }
+            return queryCache[selector];
+        },
+        queryAll: (selector) => {
+            // Don't cache queryAll as it returns a live NodeList
+            return document.querySelectorAll(selector);
+        },
+        invalidate: (key) => {
+            if (key) {
+                delete cache[key];
+                delete queryCache[key];
+            }
+        },
         clear: () => {
             Object.keys(cache).forEach(key => delete cache[key]);
+            Object.keys(queryCache).forEach(key => delete queryCache[key]);
         }
     };
 }
 
+// Global DOM cache instance
+const domCache = createDOMCache();
+
 /**
- * Message icon mapping for chat actions
- * Maps user-friendly names to Iconify icon IDs
- * @const
+ * Request deduplication manager for component loading
+ * Prevents multiple simultaneous requests for the same resource
  */
-const MESSAGE_ICON_MAP = {
-    copy: 'clipboard',
-    copySuccess: 'check',
-    like: 'thumb-up',
-    dislike: 'thumb-down'
+const requestDeduplicator = {
+    pendingRequests: new Map(),
+    
+    /**
+     * Get or create a request for a resource
+     * @param {string} key - Unique key for the request
+     * @param {Function} requestFn - Function that returns a Promise
+     * @returns {Promise} The pending or new request
+     */
+    async dedupe(key, requestFn) {
+        // Return existing pending request if available
+        if (this.pendingRequests.has(key)) {
+            return this.pendingRequests.get(key);
+        }
+        
+        // Create new request
+        const promise = requestFn()
+            .finally(() => {
+                // Clean up after request completes (success or failure)
+                this.pendingRequests.delete(key);
+            });
+        
+        // Store pending request
+        this.pendingRequests.set(key, promise);
+        
+        return promise;
+    },
+    
+    /**
+     * Cancel a pending request
+     * @param {string} key - Request key to cancel
+     */
+    cancel(key) {
+        this.pendingRequests.delete(key);
+    },
+    
+    /**
+     * Cancel all pending requests
+     */
+    cancelAll() {
+        this.pendingRequests.clear();
+    },
+    
+    /**
+     * Check if a request is pending
+     * @param {string} key - Request key
+     * @returns {boolean}
+     */
+    isPending(key) {
+        return this.pendingRequests.has(key);
+    }
 };
 
 /**
- * Create a message action icon
+ * Global cleanup registry for memory leak prevention
+ * Tracks timers, event listeners, and other resources that need cleanup
+ */
+const cleanupRegistry = {
+    timers: new Set(),
+    intervals: new Set(),
+    eventListeners: new Map(),
+    
+    /**
+     * Register a timeout for cleanup
+     */
+    registerTimeout(id) {
+        this.timers.add(id);
+        return id;
+    },
+    
+    /**
+     * Register an interval for cleanup
+     */
+    registerInterval(id) {
+        this.intervals.add(id);
+        return id;
+    },
+    
+    /**
+     * Register an event listener for cleanup
+     */
+    registerEventListener(element, event, handler, options) {
+        const key = `${element.tagName || 'window'}_${event}`;
+        if (!this.eventListeners.has(key)) {
+            this.eventListeners.set(key, []);
+        }
+        this.eventListeners.get(key).push({ element, event, handler, options });
+    },
+    
+    /**
+     * Clear a specific timeout
+     */
+    clearTimeout(id) {
+        clearTimeout(id);
+        this.timers.delete(id);
+    },
+    
+    /**
+     * Clear a specific interval
+     */
+    clearInterval(id) {
+        clearInterval(id);
+        this.intervals.delete(id);
+    },
+    
+    /**
+     * Clear all registered resources
+     */
+    clearAll() {
+        // Clear all timers
+        this.timers.forEach(id => clearTimeout(id));
+        this.timers.clear();
+        
+        // Clear all intervals
+        this.intervals.forEach(id => clearInterval(id));
+        this.intervals.clear();
+        
+        // Remove all event listeners
+        this.eventListeners.forEach(listeners => {
+            listeners.forEach(({ element, event, handler, options }) => {
+                element?.removeEventListener(event, handler, options);
+            });
+        });
+        this.eventListeners.clear();
+    }
+};
+
+/**
+ * Global DOM references for frequently accessed elements
+ * Stores direct references to avoid repeated queries
+ */
+const domRefs = {
+    body: null,
+    toastContainer: null,
+    headerPlaceholder: null,
+    footerPlaceholder: null,
+    headerAgentName: null,
+    headerAgentSubtitle: null,
+    
+    /**
+     * Initialize DOM references
+     * Call this after DOM is ready or after dynamic content loads
+     */
+    init() {
+        this.body = document.body;
+        this.headerPlaceholder = document.getElementById('header-placeholder');
+        this.footerPlaceholder = document.getElementById('footer-placeholder');
+    },
+    
+    /**
+     * Refresh header-specific references
+     * Call after header is loaded
+     */
+    refreshHeader() {
+        this.headerAgentName = document.getElementById('header-agent-name');
+        this.headerAgentSubtitle = document.getElementById('header-agent-subtitle');
+    },
+    
+    /**
+     * Get or create toast container with reference caching
+     */
+    getToastContainer() {
+        if (!this.toastContainer || !document.body.contains(this.toastContainer)) {
+            this.toastContainer = document.getElementById('toast-container');
+            if (!this.toastContainer) {
+                this.toastContainer = document.createElement('div');
+                this.toastContainer.id = 'toast-container';
+                this.toastContainer.className = 'fixed bottom-4 right-4 z-50 space-y-2';
+                this.body.appendChild(this.toastContainer);
+            }
+        }
+        return this.toastContainer;
+    },
+    
+    /**
+     * Clear toast container reference
+     */
+    clearToastContainer() {
+        this.toastContainer = null;
+    },
+    
+    /**
+     * Clear all DOM references
+     */
+    clearAll() {
+        this.body = null;
+        this.toastContainer = null;
+        this.headerPlaceholder = null;
+        this.footerPlaceholder = null;
+        this.headerAgentName = null;
+        this.headerAgentSubtitle = null;
+    }
+};
+
+/**
+ * Create a message action icon (memoized)
+ * Now uses consolidated ICON_MAP directly
  * @param {string} iconName - Icon name (copy, copySuccess, like, dislike)
  * @param {string} [className='w-4 h-4'] - CSS classes for the icon
  * @returns {string} HTML string for the icon
  */
-function createMessageIcon(iconName, className = 'w-4 h-4') {
-    const mappedIcon = MESSAGE_ICON_MAP[iconName] || iconName;
-    return createIcon(mappedIcon, className);
-}
+const createMessageIcon = memoize(function(iconName, className = 'w-4 h-4') {
+    return createIcon(iconName, className);
+}, 50);
 
 /**
  * Extract agent response content from API result
@@ -569,6 +981,52 @@ function extractTaskResponse(task) {
     return null;
 }
 
+/**
+ * Scroll element to bottom
+ * @param {HTMLElement} element - Element to scroll
+ */
+function scrollToBottom(element) {
+    if (element) {
+        element.scrollTop = element.scrollHeight;
+    }
+}
+
+/**
+ * Toggle button reaction state (like/dislike)
+ * Optimized with cached selectors
+ * @param {string} messageId - Message ID
+ * @param {string} type - 'like' or 'dislike'
+ */
+function toggleReaction(messageId, type) {
+    const isLike = type === 'like';
+    const cacheKey = `${type}-btn-${messageId}`;
+    const oppositeCacheKey = `${isLike ? 'dislike' : 'like'}-btn-${messageId}`;
+    
+    const primaryBtn = domCache.query(`.${type}-btn[data-message-id="${messageId}"]`);
+    const oppositeBtn = domCache.query(`.${isLike ? 'dislike' : 'like'}-btn[data-message-id="${messageId}"]`);
+    
+    if (!primaryBtn || !oppositeBtn) return;
+    
+    const activeClass = `${type}d`;
+    const colorClass = isLike ? 'text-green-500' : 'text-red-500';
+    const iconName = type;
+    
+    if (primaryBtn.classList.contains(activeClass)) {
+        // Remove reaction
+        primaryBtn.classList.remove(activeClass, colorClass);
+        primaryBtn.innerHTML = createMessageIcon(iconName);
+    } else {
+        // Add reaction
+        primaryBtn.classList.add(activeClass, colorClass);
+        primaryBtn.innerHTML = createMessageIcon(iconName, `w-4 h-4 ${colorClass}`);
+        // Remove opposite reaction
+        const oppositeActiveClass = isLike ? 'disliked' : 'liked';
+        const oppositeColorClass = isLike ? 'text-red-500' : 'text-green-500';
+        oppositeBtn.classList.remove(oppositeActiveClass, oppositeColorClass);
+        oppositeBtn.innerHTML = createMessageIcon(isLike ? 'dislike' : 'like');
+    }
+}
+
 // Create empty state component
 function createEmptyState(message, iconName = 'puzzle-piece', iconSize = 'w-12 h-12') {
     return `
@@ -597,21 +1055,46 @@ function createErrorState(message, onRetry) {
     `;
 }
 
-// Create stat card component
-function createStatCard(icon, label, value) {
-    return `
-        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <div class="flex items-center gap-2 mb-2">
-                ${createIcon(icon, 'w-4 h-4 text-gray-500')}
-                <span class="text-sm font-medium text-gray-500">${label}</span>
+/**
+ * Generic info row creator - DRY utility for stat/setting rows
+ * @param {Object} config - Configuration object
+ * @returns {string} HTML string
+ */
+function createInfoRow(config) {
+    const {
+        label,
+        value,
+        type = 'stat', // 'stat', 'setting', 'card'
+        icon = null,
+        colorClass = 'text-gray-900',
+        badgeType = 'neutral'
+    } = config;
+    
+    if (type === 'card') {
+        return `
+            <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <div class="flex items-center gap-2 mb-2">
+                    ${icon ? createIcon(icon, 'w-4 h-4 text-gray-500') : ''}
+                    <span class="text-sm font-medium text-gray-500">${label}</span>
+                </div>
+                <div class="font-mono text-lg font-semibold text-gray-900">${value}</div>
             </div>
-            <div class="font-mono text-lg font-semibold text-gray-900">${value}</div>
-        </div>
-    `;
-}
-
-// Create stat row component
-function createStatRow(label, value, colorClass = 'text-gray-900') {
+        `;
+    }
+    
+    if (type === 'setting') {
+        const badgeClass = getBadgeClass(badgeType);
+        return `
+            <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
+                <span class="font-medium text-gray-900">${label}</span>
+                <div class="px-3 py-1 ${badgeClass} border rounded-full text-sm font-medium">
+                    ${value}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Default: stat row
     return `
         <div class="flex justify-between items-center py-2 border-b border-gray-200">
             <span class="text-sm font-medium text-gray-600">${label}</span>
@@ -620,19 +1103,18 @@ function createStatRow(label, value, colorClass = 'text-gray-900') {
     `;
 }
 
-// Create setting row component
+// Backward compatibility wrappers
+function createStatCard(icon, label, value) {
+    return createInfoRow({ type: 'card', icon, label, value });
+}
+
+function createStatRow(label, value, colorClass = 'text-gray-900') {
+    return createInfoRow({ type: 'stat', label, value, colorClass });
+}
+
 function createSettingRow(label, value, isEnabled = null) {
     const badgeType = isEnabled === null ? 'neutral' : (isEnabled ? 'success' : 'error');
-    const badgeClass = getBadgeClass(badgeType);
-    
-    return `
-        <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
-            <span class="font-medium text-gray-900">${label}</span>
-            <div class="px-3 py-1 ${badgeClass} border rounded-full text-sm font-medium">
-                ${value}
-            </div>
-        </div>
-    `;
+    return createInfoRow({ type: 'setting', label, value, badgeType });
 }
 
 /**
@@ -696,12 +1178,12 @@ function createSkillCard(skill) {
  */
 function createTechnicalDetail(label, value, isMonospace = false) {
     const valueClass = isMonospace ? 'font-mono text-sm' : 'font-mono text-xs';
-    const containerClass = isMonospace ? 'bg-gray-50 rounded-lg px-3 py-2 border border-gray-200' : 'bg-gray-50 rounded-lg px-3 py-2 border border-gray-200 break-all text-gray-600';
+    const extraClass = isMonospace ? '' : ' break-all text-gray-600';
     
     return `
         <div>
             <div class="text-sm font-medium text-gray-500 mb-2">${label}</div>
-            <div class="${containerClass}">
+            <div class="bg-gray-50 rounded-lg px-3 py-2 border border-gray-200${extraClass}">
                 <div class="${valueClass}">${value}</div>
             </div>
         </div>
@@ -825,12 +1307,15 @@ window.utils = {
     truncateText,
     escapeHtml,
     parseMarkdown,
+    parseMarkdownMemo, // Expose memoized version with cache control
     
     // Interaction utilities
     copyToClipboard,
     showToast,
     toggleDropdown,
     debounce,
+    memoize,
+    createMemoized,
     
     // Theme utilities
     initTheme,
@@ -856,6 +1341,7 @@ window.utils = {
     createContextCard,
     
     // Badge and status utilities
+    getStyleClass, // Generic style mapper
     getBadgeClass,
     getToastClass,
     getTrustBadgeType,
@@ -865,43 +1351,96 @@ window.utils = {
     
     // Helper utilities
     createPageStructure,
-    generateUUID,
+    generateUUID, // Used by api.js generateId() as fallback
     yesNo,
     createDOMCache,
+    domCache, // Expose global cache instance
+    domRefs, // Expose global DOM references
+    cleanupRegistry, // Expose cleanup registry
+    requestDeduplicator, // Expose request deduplicator
     extractAgentResponse,
     extractTaskResponse,
+    scrollToBottom,
+    toggleReaction,
     
     // Constants (exposed for reference)
+    STYLE_MAPS, // Consolidated style mappings
     ICON_MAP,
-    MESSAGE_ICON_MAP,
     TRUST_LABELS,
-    TRUST_BADGE_TYPES
+    TRUST_BADGE_TYPES,
+    // Legacy constants
+    BADGE_CLASSES,
+    TOAST_CLASSES
 };
 
-// Load common scripts dynamically
+// Load common scripts dynamically (with cleanup)
 function loadCommonScripts() {
     // Only load if not already loaded
     if (!document.getElementById('common-api-script')) {
         const apiScript = document.createElement('script');
         apiScript.id = 'common-api-script';
         apiScript.src = 'js/api.js';
+        
+        // Add error handler to prevent memory leaks
+        const errorHandler = (e) => {
+            console.error('Failed to load api.js:', e);
+            apiScript.remove();
+        };
+        
+        apiScript.addEventListener('error', errorHandler, { once: true });
         document.body.appendChild(apiScript);
     }
 }
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize DOM references
+    domRefs.init();
+    
     // Theme initialization disabled for now (white background only)
     // initTheme();
     
     // Load common scripts
     loadCommonScripts();
     
-    // Load components if placeholders exist
-    if (document.getElementById('footer-placeholder')) {
+    // Load components if placeholders exist (using stored references)
+    if (domRefs.footerPlaceholder) {
         loadFooter();
     }
-    if (document.getElementById('header-placeholder')) {
+    if (domRefs.headerPlaceholder) {
         loadHeader();
     }
 });
+
+// Cleanup on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+    cleanupRegistry.clearAll();
+    domCache.clear();
+    domRefs.clearAll();
+    requestDeduplicator.cancelAll();
+});
+
+// Cleanup on page hide (for back/forward cache)
+window.addEventListener('pagehide', () => {
+    cleanupRegistry.clearAll();
+    requestDeduplicator.cancelAll();
+});
+
+// Expose cache clearing utilities for debugging
+window.clearMemoCache = () => {
+    parseMarkdownMemo.clear();
+    console.log('Memoization caches cleared');
+};
+
+window.clearAllCaches = () => {
+    parseMarkdownMemo.clear();
+    domCache.clear();
+    cleanupRegistry.clearAll();
+    requestDeduplicator.cancelAll();
+    console.log('All caches and resources cleared');
+};
+
+// Debug utility to check pending requests
+window.getPendingRequests = () => {
+    return Array.from(requestDeduplicator.pendingRequests.keys());
+};

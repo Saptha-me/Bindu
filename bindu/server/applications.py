@@ -15,11 +15,13 @@ from bindu.common.models import AgentManifest
 from .endpoints import (
     agent_card_endpoint,
     agent_info_endpoint,
+    agent_js_endpoint,
     agent_page_endpoint,
     agent_run_endpoint,
+    api_js_endpoint,
     chat_page_endpoint,
-    common_css_endpoint,
     common_js_endpoint,
+    custom_css_endpoint,
     did_resolve_endpoint,
     docs_endpoint,
     footer_component_endpoint,
@@ -109,8 +111,16 @@ class BinduApplication(Starlette):
         self.router.add_route("/agent.html", self._wrap_agent_page_endpoint, methods=["GET"])
         self.router.add_route("/chat.html", self._wrap_chat_page_endpoint, methods=["GET"])
         self.router.add_route("/storage.html", self._wrap_storage_page_endpoint, methods=["GET"])
-        self.router.add_route("/common.js", self._wrap_common_js_endpoint, methods=["GET"])
-        self.router.add_route("/common.css", self._wrap_common_css_endpoint, methods=["GET"])
+        
+        # JavaScript files
+        self.router.add_route("/js/common.js", self._wrap_common_js_endpoint, methods=["GET"])
+        self.router.add_route("/js/api.js", self._wrap_api_js_endpoint, methods=["GET"])
+        self.router.add_route("/js/agent.js", self._wrap_agent_js_endpoint, methods=["GET"])
+        
+        # CSS files
+        self.router.add_route("/css/custom.css", self._wrap_custom_css_endpoint, methods=["GET"])
+        
+        # Component files (legacy)
         self.router.add_route("/components/layout.js", self._wrap_layout_js_endpoint, methods=["GET"])
         self.router.add_route("/components/header.html", self._wrap_header_component_endpoint, methods=["GET"])
         self.router.add_route("/components/footer.html", self._wrap_footer_component_endpoint, methods=["GET"])
@@ -181,9 +191,17 @@ class BinduApplication(Starlette):
         """Wrapper for common js endpoint."""
         return await common_js_endpoint(request, self.static_dir)
 
-    async def _wrap_common_css_endpoint(self, request: Request) -> Response:
-        """Wrapper for common css endpoint."""
-        return await common_css_endpoint(request, self.static_dir)
+    async def _wrap_api_js_endpoint(self, request: Request) -> Response:
+        """Wrapper for api js endpoint."""
+        return await api_js_endpoint(request, self.static_dir)
+
+    async def _wrap_agent_js_endpoint(self, request: Request) -> Response:
+        """Wrapper for agent js endpoint."""
+        return await agent_js_endpoint(request, self.static_dir)
+
+    async def _wrap_custom_css_endpoint(self, request: Request) -> Response:
+        """Wrapper for custom css endpoint."""
+        return await custom_css_endpoint(request, self.static_dir)
 
     async def _wrap_layout_js_endpoint(self, request: Request) -> Response:
         """Wrapper for layout js endpoint."""

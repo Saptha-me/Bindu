@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator, Optional, Sequence
 from uuid import UUID
 
@@ -45,6 +46,7 @@ class BinduApplication(Starlette):
         version: str = "1.0.0",
         description: Optional[str] = None,
         debug: bool = False,
+        static_dir: Optional[Path] = None,
         lifespan: Optional[Lifespan] = None,
         routes: Optional[Sequence[Route]] = None,
         middleware: Optional[Sequence[Middleware]] = None
@@ -60,6 +62,7 @@ class BinduApplication(Starlette):
             version: Server version
             description: Server description
             debug: Enable debug mode
+            static_dir: Optional custom static files directory (defaults to bindu's static dir)
             lifespan: Optional custom lifespan
             routes: Optional custom routes
             middleware: Optional middleware
@@ -80,6 +83,7 @@ class BinduApplication(Starlette):
         self.version = version
         self.description = description
         self.manifest = manifest
+        self.static_dir = static_dir
         self.default_input_modes = ["application/json"]
         self.default_output_modes = ["application/json"]
 
@@ -100,16 +104,16 @@ class BinduApplication(Starlette):
         self.router.add_route("/", self._wrap_agent_run_endpoint, methods=["POST"])
         
         # Static file endpoints
-        self.router.add_route("/docs", docs_endpoint, methods=["GET"])
-        self.router.add_route("/docs.html", docs_endpoint, methods=["GET"])
-        self.router.add_route("/agent.html", agent_page_endpoint, methods=["GET"])
-        self.router.add_route("/chat.html", chat_page_endpoint, methods=["GET"])
-        self.router.add_route("/storage.html", storage_page_endpoint, methods=["GET"])
-        self.router.add_route("/common.js", common_js_endpoint, methods=["GET"])
-        self.router.add_route("/common.css", common_css_endpoint, methods=["GET"])
-        self.router.add_route("/components/layout.js", layout_js_endpoint, methods=["GET"])
-        self.router.add_route("/components/header.html", header_component_endpoint, methods=["GET"])
-        self.router.add_route("/components/footer.html", footer_component_endpoint, methods=["GET"])
+        self.router.add_route("/docs", self._wrap_docs_endpoint, methods=["GET"])
+        self.router.add_route("/docs.html", self._wrap_docs_endpoint, methods=["GET"])
+        self.router.add_route("/agent.html", self._wrap_agent_page_endpoint, methods=["GET"])
+        self.router.add_route("/chat.html", self._wrap_chat_page_endpoint, methods=["GET"])
+        self.router.add_route("/storage.html", self._wrap_storage_page_endpoint, methods=["GET"])
+        self.router.add_route("/common.js", self._wrap_common_js_endpoint, methods=["GET"])
+        self.router.add_route("/common.css", self._wrap_common_css_endpoint, methods=["GET"])
+        self.router.add_route("/components/layout.js", self._wrap_layout_js_endpoint, methods=["GET"])
+        self.router.add_route("/components/header.html", self._wrap_header_component_endpoint, methods=["GET"])
+        self.router.add_route("/components/footer.html", self._wrap_footer_component_endpoint, methods=["GET"])
         
         # DID endpoints
         self.router.add_route("/did/resolve", self._wrap_did_resolve_endpoint, methods=["GET", "POST"])
@@ -155,3 +159,40 @@ class BinduApplication(Starlette):
     async def _wrap_agent_info_endpoint(self, request: Request) -> Response:
         """Wrapper for agent info endpoint."""
         return await agent_info_endpoint(self, request)
+
+    # Static file endpoint wrappers
+    async def _wrap_docs_endpoint(self, request: Request) -> Response:
+        """Wrapper for docs endpoint."""
+        return await docs_endpoint(request, self.static_dir)
+
+    async def _wrap_agent_page_endpoint(self, request: Request) -> Response:
+        """Wrapper for agent page endpoint."""
+        return await agent_page_endpoint(request, self.static_dir)
+
+    async def _wrap_chat_page_endpoint(self, request: Request) -> Response:
+        """Wrapper for chat page endpoint."""
+        return await chat_page_endpoint(request, self.static_dir)
+
+    async def _wrap_storage_page_endpoint(self, request: Request) -> Response:
+        """Wrapper for storage page endpoint."""
+        return await storage_page_endpoint(request, self.static_dir)
+
+    async def _wrap_common_js_endpoint(self, request: Request) -> Response:
+        """Wrapper for common js endpoint."""
+        return await common_js_endpoint(request, self.static_dir)
+
+    async def _wrap_common_css_endpoint(self, request: Request) -> Response:
+        """Wrapper for common css endpoint."""
+        return await common_css_endpoint(request, self.static_dir)
+
+    async def _wrap_layout_js_endpoint(self, request: Request) -> Response:
+        """Wrapper for layout js endpoint."""
+        return await layout_js_endpoint(request, self.static_dir)
+
+    async def _wrap_header_component_endpoint(self, request: Request) -> Response:
+        """Wrapper for header component endpoint."""
+        return await header_component_endpoint(request, self.static_dir)
+
+    async def _wrap_footer_component_endpoint(self, request: Request) -> Response:
+        """Wrapper for footer component endpoint."""
+        return await footer_component_endpoint(request, self.static_dir)

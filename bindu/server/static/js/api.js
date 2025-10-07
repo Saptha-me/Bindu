@@ -336,6 +336,51 @@ async function getTaskStatus(taskId) {
 }
 
 /**
+ * Task polling configuration
+ * @const
+ */
+const POLLING_CONFIG = {
+    INITIAL_INTERVAL: 1000,  // 1 second
+    MAX_INTERVAL: 5000,      // 5 seconds
+    BACKOFF_MULTIPLIER: 1.5
+};
+
+/**
+ * Poll task status with exponential backoff
+ * Automatically handles polling until task reaches terminal state
+ * @param {string} taskId - Task ID to poll
+ * @param {Function} onUpdate - Callback for status updates (task, isComplete)
+ * @param {Function} onError - Callback for errors
+ * @param {number} [interval=1000] - Current polling interval (internal use)
+ * @returns {Promise<void>}
+ */
+async function pollTaskWithBackoff(taskId, onUpdate, onError, interval = POLLING_CONFIG.INITIAL_INTERVAL) {
+    try {
+        const task = await getTaskStatus(taskId);
+        const state = task.status?.state;
+        
+        // Check if task is in terminal state
+        const isTerminal = ['completed', 'failed', 'canceled'].includes(state);
+        
+        // Call update callback
+        onUpdate(task, isTerminal);
+        
+        // Continue polling if not terminal
+        if (!isTerminal) {
+            const nextInterval = Math.min(
+                interval * POLLING_CONFIG.BACKOFF_MULTIPLIER,
+                POLLING_CONFIG.MAX_INTERVAL
+            );
+            setTimeout(() => {
+                pollTaskWithBackoff(taskId, onUpdate, onError, nextInterval);
+            }, interval);
+        }
+    } catch (error) {
+        onError(error);
+    }
+}
+
+/**
  * Global API namespace
  * All API functions are exposed through window.api
  * @namespace api
@@ -365,5 +410,9 @@ window.api = {
     getTask,
     getTaskStatus,
     cancelTask,
-    getTasksGrouped
+    getTasksGrouped,
+    pollTaskWithBackoff,
+    
+    // Constants
+    POLLING_CONFIG
 };

@@ -474,6 +474,101 @@ function yesNo(value) {
     return value ? 'Yes' : 'No';
 }
 
+/**
+ * DOM element caching utility
+ * Improves performance by caching DOM queries
+ * @returns {Object} Cache manager with get method
+ */
+function createDOMCache() {
+    const cache = {};
+    return {
+        get: (id) => {
+            if (!cache[id]) {
+                cache[id] = document.getElementById(id);
+            }
+            return cache[id];
+        },
+        clear: () => {
+            Object.keys(cache).forEach(key => delete cache[key]);
+        }
+    };
+}
+
+/**
+ * Message icon mapping for chat actions
+ * Maps user-friendly names to Iconify icon IDs
+ * @const
+ */
+const MESSAGE_ICON_MAP = {
+    copy: 'clipboard',
+    copySuccess: 'check',
+    like: 'thumb-up',
+    dislike: 'thumb-down'
+};
+
+/**
+ * Create a message action icon
+ * @param {string} iconName - Icon name (copy, copySuccess, like, dislike)
+ * @param {string} [className='w-4 h-4'] - CSS classes for the icon
+ * @returns {string} HTML string for the icon
+ */
+function createMessageIcon(iconName, className = 'w-4 h-4') {
+    const mappedIcon = MESSAGE_ICON_MAP[iconName] || iconName;
+    return createIcon(mappedIcon, className);
+}
+
+/**
+ * Extract agent response content from API result
+ * Handles multiple possible response formats
+ * @param {Object} result - API response result
+ * @returns {string|null} Extracted content or null if not found
+ */
+function extractAgentResponse(result) {
+    if (!result) return null;
+    
+    // Try different response formats
+    if (result.reply) return result.reply;
+    if (result.content) return result.content;
+    
+    // Check messages array
+    if (result.messages && result.messages.length > 0) {
+        const agentMsg = result.messages.find(m => 
+            m.role === 'assistant' || m.role === 'agent'
+        );
+        if (agentMsg && agentMsg.content) {
+            return agentMsg.content;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Extract text from task history
+ * Finds the last agent message in task history
+ * @param {Object} task - Task object with history
+ * @returns {string|null} Extracted text or null
+ */
+function extractTaskResponse(task) {
+    if (!task || !task.history || task.history.length === 0) {
+        return null;
+    }
+    
+    // Find the last message with role 'agent' or 'assistant'
+    const lastAgentMessage = [...task.history].reverse().find(
+        msg => msg.role === 'agent' || msg.role === 'assistant'
+    );
+    
+    if (lastAgentMessage && lastAgentMessage.parts && lastAgentMessage.parts.length > 0) {
+        const textPart = lastAgentMessage.parts.find(part => part.kind === 'text');
+        if (textPart) {
+            return textPart.text;
+        }
+    }
+    
+    return null;
+}
+
 // Create empty state component
 function createEmptyState(message, iconName = 'puzzle-piece', iconSize = 'w-12 h-12') {
     return `
@@ -748,6 +843,7 @@ window.utils = {
     
     // UI component creators
     createIcon,
+    createMessageIcon,
     createEmptyState,
     createErrorState,
     createStatCard,
@@ -771,9 +867,13 @@ window.utils = {
     createPageStructure,
     generateUUID,
     yesNo,
+    createDOMCache,
+    extractAgentResponse,
+    extractTaskResponse,
     
     // Constants (exposed for reference)
     ICON_MAP,
+    MESSAGE_ICON_MAP,
     TRUST_LABELS,
     TRUST_BADGE_TYPES
 };

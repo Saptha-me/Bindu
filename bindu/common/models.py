@@ -16,7 +16,7 @@ configuration, and runtime behavior.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Callable, Literal
 from uuid import UUID
 
 from bindu.extensions.did import DIDAgentExtension

@@ -47,7 +47,7 @@ def _serve_static_file(
 
 
 def _create_static_endpoint(relative_path: str, media_type: str) -> Callable:
-    """Factory function to create static file endpoint handlers.
+    """Create a static file endpoint handler.
     
     Args:
         relative_path: Relative path to the file from static directory

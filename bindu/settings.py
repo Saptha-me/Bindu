@@ -48,7 +48,7 @@ class UISettings(BaseSettings):
     )
 
     # Branding settings
-    logo_emoji: str = "🐧"
+    logo_emoji: str = "🌻"
     default_agent_name: str = "bindu Agent"
     protocol_name: str = "bindu Protocol"
     protocol_url: str = "https://bindu.ai"

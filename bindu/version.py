@@ -12,7 +12,7 @@ by accessing the installed package metadata.
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 from importlib.metadata import version
 

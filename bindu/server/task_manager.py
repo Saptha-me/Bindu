@@ -84,7 +84,7 @@ and we coordinate the entire kitchen operation to deliver perfect results.
 
 *"Just like a well-run restaurant, every task gets the attention it deserves!"* 🌟
 
-Thank you users! We ❤️ you! - 🐧
+Thank you users! We ❤️ you! - 🌻
 """
 
 from __future__ import annotations

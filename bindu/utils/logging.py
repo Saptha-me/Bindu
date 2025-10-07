@@ -6,7 +6,7 @@
 # |                                                         |
 # |---------------------------------------------------------|
 #
-#  Thank you users! We ❤️ you! - 🐧
+#  Thank you users! We ❤️ you! - 🌻
 
 """Simple but beautiful logging configuration for bindu using Rich."""
 
@@ -83,7 +83,7 @@ def configure_logger(docker_mode: bool = False) -> None:
 
     # Show a startup banner (not in Docker)
     if not docker_mode:
-        console.print(Panel.fit("[bold cyan]bindu 🐧 [/bold cyan]", border_style="cyan"))
+        console.print(Panel.fit("[bold cyan]bindu 🌻 [/bold cyan]", border_style="cyan"))
 
     _is_logging_configured = True
 
@@ -110,4 +110,4 @@ def get_logger(name: Optional[str] = None) -> logger.__class__:
 
 
 # Export commonly used objects
-log = get_logger("bindu 🐧")  # Quick access to logger
+log = get_logger("bindu 🌻")  # Quick access to logger

@@ -1,6 +1,31 @@
 // Common utilities for Bindu Agent UI
 // Shared functions used across multiple pages
 
+// Constants
+const BADGE_CLASSES = {
+    success: 'bg-green-50 text-green-700 border-green-200',
+    error: 'bg-red-50 text-red-700 border-red-200',
+    warning: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    info: 'bg-blue-50 text-blue-700 border-blue-200',
+    neutral: 'bg-gray-100 text-gray-700 border-gray-200'
+};
+
+const TOAST_CLASSES = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    warning: 'bg-yellow-500',
+    info: 'bg-blue-500'
+};
+
+// Helper functions
+function getBadgeClass(type) {
+    return BADGE_CLASSES[type] || BADGE_CLASSES.neutral;
+}
+
+function getToastClass(type) {
+    return TOAST_CLASSES[type] || TOAST_CLASSES.info;
+}
+
 // Format timestamp to readable string
 function formatTimestamp(timestamp) {
     if (!timestamp) return 'N/A';
@@ -45,19 +70,32 @@ async function copyToClipboard(text) {
 
 // Show toast notification
 function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 ${
-        type === 'success' ? 'bg-green-500' :
-        type === 'error' ? 'bg-red-500' :
-        type === 'warning' ? 'bg-yellow-500' :
-        'bg-blue-500'
-    }`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
+    // Get or create toast container
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed bottom-4 right-4 z-50 space-y-2';
+        document.body.appendChild(toastContainer);
+    }
     
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `px-6 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${getToastClass(type)}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    
+    // Auto-remove after 3 seconds
     setTimeout(() => {
         toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            toast.remove();
+            // Remove container if empty
+            if (toastContainer.children.length === 0) {
+                toastContainer.remove();
+            }
+        }, 300);
     }, 3000);
 }
 
@@ -142,78 +180,333 @@ function toggleTheme() {
     localStorage.setItem('theme', newTheme);
 }
 
-// Load component from external file
-async function loadComponent(componentPath, targetElementId) {
+// Generic component loader with error handling
+async function loadComponent(componentName, targetId) {
+    const container = document.getElementById(targetId);
+    if (!container) {
+        console.warn(`Container ${targetId} not found`);
+        return;
+    }
+    
     try {
-        const response = await fetch(componentPath);
+        const response = await fetch(`/components/${componentName}.html`);
         if (!response.ok) {
-            throw new Error(`Failed to load component: ${response.status}`);
+            throw new Error(`Failed to load ${componentName}: ${response.statusText}`);
         }
-        const html = await response.text();
-        const targetElement = document.getElementById(targetElementId);
-        if (targetElement) {
-            targetElement.innerHTML = html;
-        } else {
-            console.warn(`Target element #${targetElementId} not found`);
+        
+        container.innerHTML = await response.text();
+        
+        // Special handling for header
+        if (componentName === 'header') {
+            highlightActivePage();
         }
     } catch (error) {
-        console.error(`Error loading component from ${componentPath}:`, error);
+        console.error(`Error loading ${componentName}:`, error);
+        container.innerHTML = `<div class="text-red-500 text-sm">Failed to load ${componentName}</div>`;
     }
+}
+
+// Load common head content
+async function loadCommonHead() {
+    try {
+        const response = await fetch('/components/head.html');
+        if (!response.ok) {
+            throw new Error(`Failed to load head: ${response.statusText}`);
+        }
+        
+        const headContent = await response.text();
+        
+        // Create a temporary div to parse the HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = headContent;
+        
+        // Append all elements to document head
+        Array.from(temp.children).forEach(element => {
+            document.head.appendChild(element);
+        });
+    } catch (error) {
+        console.error('Error loading common head:', error);
+    }
+}
+
+// Build header HTML
+function buildHeader() {
+    return `
+        <header class="border-b border-gray-200 bg-white">
+            <div class="flex items-center justify-between p-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+                        <img src="https://orvsccdc47.ufs.sh/f/Slhdc2MbjygMbusHsQBGIu7ZmbJta6NLkf1hT4cjBFQSEOnl" alt="Logo" class="w-8 h-8 object-cover" />
+                    </div>
+                    <div>
+                        <h1 id="header-agent-name" class="text-lg font-semibold text-gray-900">Loading Agent...</h1>
+                        <p id="header-agent-subtitle" class="text-sm text-gray-500">Loading...</p>
+                    </div>
+                </div>
+                <div class="flex-1 flex items-center justify-center">
+                    <nav class="flex bg-gray-100 rounded-lg p-1">
+                        <a href="chat.html" class="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md text-sm font-medium transition-colors" data-page="chat">Chat</a>
+                        <a href="agent.html" class="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md text-sm font-medium transition-colors" data-page="agent">Agent Info</a>
+                        <a href="storage.html" class="px-4 py-2 text-gray-600 hover:text-gray-900 rounded-md text-sm font-medium transition-colors" data-page="storage">Storage</a>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-sm font-medium">
+                        Online
+                    </div>
+                    <a href="https://github.com/bindu-ai/pebble/" target="_blank" rel="noopener noreferrer">
+                        <svg class="w-6 h-6 text-gray-700 hover:text-gray-900 transition-colors" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.186 6.839 9.525.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.157-1.11-1.465-1.11-1.465-.908-.62.069-.608.069-.608 1.004.07 1.532 1.032 1.532 1.032.892 1.53 2.341 1.088 2.91.833.091-.647.35-1.088.636-1.339-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.748-1.025 2.748-1.025.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.847-2.337 4.695-4.566 4.944.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .267.18.578.688.48C19.138 20.204 22 16.447 22 12.021 22 6.484 17.523 2 12 2z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </header>
+    `;
 }
 
 // Load header component
 async function loadHeader() {
-    await loadComponent('/components/header.html', 'header-placeholder');
-    // Highlight active page after header loads
+    const container = document.getElementById('header-placeholder');
+    if (!container) {
+        console.warn('Header placeholder not found');
+        return;
+    }
+    
+    // Inject header HTML
+    container.innerHTML = buildHeader();
+    
+    // Highlight active page
     highlightActivePage();
 }
 
-// Load footer component
-async function loadFooter() {
-    await loadComponent('/components/footer.html', 'footer-placeholder');
-}
-
-// Highlight the active page in navigation
+// Highlight active page in navigation
 function highlightActivePage() {
-    const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'agent';
+    const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'chat';
     const navLinks = document.querySelectorAll('nav a[data-page]');
     
     navLinks.forEach(link => {
         const page = link.getAttribute('data-page');
         if (page === currentPage) {
             link.classList.remove('text-gray-600', 'hover:text-gray-900');
-            link.classList.add('bg-primary-yellow', 'text-gray-900');
+            link.classList.add('bg-yellow-500', 'text-white');
         }
     });
 }
 
-// Create Heroicon SVG element
-function createIcon(iconName, className = 'w-5 h-5') {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('class', className);
-    svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('stroke-width', '2');
-    svg.setAttribute('stroke-linecap', 'round');
-    svg.setAttribute('stroke-linejoin', 'round');
+// Build footer HTML
+function buildFooter() {
+    return `
+        <footer class="bg-white border-t border-gray-200 mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="text-center">
+                    <div class="flex items-center justify-center space-x-2 mb-4">
+                        <span class="text-2xl">🌻</span>
+                        <h3 class="text-lg font-semibold text-gray-900">Bindu Protocol</h3>
+                    </div>
+                    <p class="text-gray-600 max-w-3xl mx-auto mb-4">
+                        Bindu is a decentralized agent-to-agent communication protocol. 
+                        <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform 
+                        where you can bindufy your agent and be part of the agent economy.
+                    </p>
+                    <p class="text-sm text-gray-500 mb-6">
+                        This is the local version. For production deployment, please follow the 
+                        <a href="https://docs.bindu.ai" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="text-yellow-600 hover:text-yellow-700 underline transition-colors">
+                            documentation
+                        </a>.
+                    </p>
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <p class="text-sm text-gray-500">
+                            © 2025 Bindu AI. Built with ❤️ from Amsterdam.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    `;
+}
+
+// Load footer component
+async function loadFooter() {
+    const container = document.getElementById('footer-placeholder');
+    if (!container) {
+        console.warn('Footer placeholder not found');
+        return;
+    }
     
-    // Icon path data mapping
-    const icons = {
-        'chart-bar': 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z',
-        'computer-desktop': 'M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25',
-        'shield-check': 'M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z',
-        'puzzle-piece': 'M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z',
-        'tag': 'M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z M6 6h.008v.008H6V6Z',
-        'globe-alt': 'M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418',
-        'clock': 'M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z'
+    // Inject footer HTML
+    container.innerHTML = buildFooter();
+}
+
+// Create icon using Iconify
+function createIcon(iconName, className = 'w-5 h-5') {
+    // Map icon names to Iconify icon identifiers
+    const iconMap = {
+        'chart-bar': 'heroicons:chart-bar-20-solid',
+        'computer-desktop': 'heroicons:computer-desktop-20-solid',
+        'shield-check': 'heroicons:shield-check-20-solid',
+        'puzzle-piece': 'heroicons:puzzle-piece-20-solid',
+        'tag': 'heroicons:tag-20-solid',
+        'globe-alt': 'heroicons:globe-alt-20-solid',
+        'clock': 'heroicons:clock-20-solid',
+        'chevron-down': 'heroicons:chevron-down-20-solid',
+        'archive-box': 'heroicons:archive-box-20-solid',
+        'document-text': 'heroicons:document-text-20-solid',
+        'arrow-path': 'heroicons:arrow-path-20-solid',
+        'trash': 'heroicons:trash-20-solid'
     };
     
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', icons[iconName] || icons['chart-bar']);
-    svg.appendChild(path);
+    const iconId = iconMap[iconName] || iconMap['chart-bar'];
+    return `<iconify-icon icon="${iconId}" class="${className}"></iconify-icon>`;
+}
+
+// Create page structure helper
+function createPageStructure(config) {
+    const { title, description } = config;
     
-    return svg.outerHTML;
+    // Update title and description if provided
+    if (title) {
+        document.title = title;
+    }
+    if (description) {
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+            metaDesc.content = description;
+        }
+    }
+}
+
+// Generate UUID v4
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// Status color mapping for task states
+function getStatusColor(state) {
+    const colors = {
+        completed: 'bg-green-100 text-green-800',
+        failed: 'bg-red-100 text-red-800',
+        running: 'bg-blue-100 text-blue-800',
+        pending: 'bg-yellow-100 text-yellow-800',
+        canceled: 'bg-gray-100 text-gray-800',
+        working: 'bg-purple-100 text-purple-800'
+    };
+    return colors[state] || 'bg-gray-100 text-gray-800';
+}
+
+// Status icon mapping for task states
+function getStatusIcon(state) {
+    const icons = {
+        completed: '✅',
+        failed: '❌',
+        running: '⚡',
+        pending: '⏳',
+        canceled: '🚫',
+        working: '🔄'
+    };
+    return icons[state] || '❓';
+}
+
+// Helper for yes/no display
+function yesNo(value) {
+    return value ? 'Yes' : 'No';
+}
+
+// Create empty state component
+function createEmptyState(message, iconName = 'puzzle-piece', iconSize = 'w-12 h-12') {
+    return `
+        <div class="text-center py-8 text-gray-500">
+            ${createIcon(iconName, `${iconSize} mx-auto mb-3 text-gray-300`)}
+            <div class="text-sm">${message}</div>
+        </div>
+    `;
+}
+
+// Create error state component
+function createErrorState(message, onRetry) {
+    return `
+        <div class="text-center py-12">
+            <div class="text-gray-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <p class="text-gray-600 text-lg font-medium">Error Loading Data</p>
+            <p class="text-gray-500 mt-1">${message}</p>
+            <button onclick="${onRetry}" class="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">
+                Retry
+            </button>
+        </div>
+    `;
+}
+
+// Create stat card component
+function createStatCard(icon, label, value) {
+    return `
+        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <div class="flex items-center gap-2 mb-2">
+                ${createIcon(icon, 'w-4 h-4 text-gray-500')}
+                <span class="text-sm font-medium text-gray-500">${label}</span>
+            </div>
+            <div class="font-mono text-lg font-semibold text-gray-900">${value}</div>
+        </div>
+    `;
+}
+
+// Create stat row component
+function createStatRow(label, value, colorClass = 'text-gray-900') {
+    return `
+        <div class="flex justify-between items-center py-2 border-b border-gray-200">
+            <span class="text-sm font-medium text-gray-600">${label}</span>
+            <span class="text-sm font-semibold ${colorClass}">${value}</span>
+        </div>
+    `;
+}
+
+// Create setting row component
+function createSettingRow(label, value, isEnabled = null) {
+    const badgeType = isEnabled === null ? 'neutral' : (isEnabled ? 'success' : 'error');
+    const badgeClass = getBadgeClass(badgeType);
+    
+    return `
+        <div class="flex justify-between items-center p-3 border border-gray-200 rounded-lg">
+            <span class="font-medium text-gray-900">${label}</span>
+            <div class="px-3 py-1 ${badgeClass} border rounded-full text-sm font-medium">
+                ${value}
+            </div>
+        </div>
+    `;
+}
+
+// Create dropdown component
+function createDropdown(id, title, isAvailable, content) {
+    const badgeType = isAvailable ? 'success' : 'error';
+    const statusBadge = getBadgeClass(badgeType);
+    const statusText = isAvailable ? 'Available' : 'Not available';
+    
+    return `
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="p-3 bg-gray-50 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition-colors" onclick="utils.toggleDropdown('${id}')">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-700">${title}</span>
+                    <div class="px-2 py-1 ${statusBadge} border rounded text-xs">
+                        ${statusText}
+                    </div>
+                </div>
+                ${createIcon('chevron-down', 'dropdown-icon w-4 h-4 text-gray-400')}
+            </div>
+            <div id="${id}" class="dropdown-content bg-white">
+                ${content}
+            </div>
+        </div>
+    `;
 }
 
 // Make functions globally available
@@ -232,13 +525,40 @@ window.utils = {
     loadComponent,
     loadHeader,
     loadFooter,
-    createIcon
+    createIcon,
+    getBadgeClass,
+    getToastClass,
+    createPageStructure,
+    generateUUID,
+    getStatusColor,
+    getStatusIcon,
+    yesNo,
+    createEmptyState,
+    createErrorState,
+    createStatCard,
+    createStatRow,
+    createSettingRow,
+    createDropdown
 };
+
+// Load common scripts dynamically
+function loadCommonScripts() {
+    // Only load if not already loaded
+    if (!document.getElementById('common-api-script')) {
+        const apiScript = document.createElement('script');
+        apiScript.id = 'common-api-script';
+        apiScript.src = 'js/api.js';
+        document.body.appendChild(apiScript);
+    }
+}
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     // Theme initialization disabled for now (white background only)
     // initTheme();
+    
+    // Load common scripts
+    loadCommonScripts();
     
     // Load components if placeholders exist
     if (document.getElementById('footer-placeholder')) {

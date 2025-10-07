@@ -1,34 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Info - Bindu</title>
     <meta name="description" content="Agent information and capabilities">
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary-yellow': '#f9dc5c',
-                    },
-                    fontFamily: {
-                        'geist': ['Geist', 'sans-serif'],
-                        'geist-mono': ['Geist Mono', 'monospace'],
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Heroicons -->
-    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/index.js"></script>
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/custom.css">
+    <!-- Common Head Content -->
+    <script src="js/head-loader.js"></script>
 </head>
 <body class="font-geist antialiased bg-white text-gray-900">
     <!-- Header (loaded dynamically) -->
@@ -51,20 +28,14 @@
             <!-- Capabilities and Skills -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div id="capabilities-section" class="p-6 border border-gray-200 bg-white rounded-lg shadow-sm">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
+                    <div class="flex items-center gap-2 mb-4" id="capabilities-header">
                         <h3 class="text-lg font-semibold text-gray-900">Capabilities</h3>
                     </div>
                     <div id="capabilities-list" class="space-y-2"></div>
                 </div>
 
                 <div class="p-6 border border-gray-200 bg-white rounded-lg shadow-sm">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
+                    <div class="flex items-center gap-2 mb-4" id="skills-header">
                         <h3 class="text-lg font-semibold text-gray-900">Skills</h3>
                     </div>
                     <div id="skills-list"></div>
@@ -74,20 +45,14 @@
             <!-- Identity and Extensions -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="p-6 border border-gray-200 bg-white rounded-lg shadow-sm">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                        </svg>
+                    <div class="flex items-center gap-2 mb-4" id="identity-header">
                         <h3 class="text-lg font-semibold text-gray-900">Identity & Trust</h3>
                     </div>
                     <div id="identity-trust-list"></div>
                 </div>
 
                 <div class="p-6 border border-gray-200 bg-white rounded-lg shadow-sm">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
-                        </svg>
+                    <div class="flex items-center gap-2 mb-4" id="extensions-header">
                         <h3 class="text-lg font-semibold text-gray-900">Extensions</h3>
                     </div>
                     <div id="extensions-list"></div>
@@ -101,7 +66,6 @@
 
     <!-- Scripts -->
     <script src="js/common.js"></script>
-    <script src="js/api.js"></script>
     <script src="js/agent.js"></script>
 </body>
 </html>

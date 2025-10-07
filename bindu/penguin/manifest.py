@@ -22,6 +22,9 @@ from uuid import UUID
 from bindu.common.models import AgentManifest
 from bindu.common.protocol.types import AgentCapabilities, AgentTrust, Skill
 from bindu.extensions.did import DIDAgentExtension
+from bindu.utils.logging import get_logger
+
+logger = get_logger("bindu.penguin.manifest")
 
 
 def validate_agent_function(agent_function: Callable) -> None:
@@ -33,22 +36,28 @@ def validate_agent_function(agent_function: Callable) -> None:
     Raises:
         ValueError: If function signature is invalid
     """
+    logger.debug(f"Validating agent function: {agent_function.__name__}")
     signature = inspect.signature(agent_function)
     params = list(signature.parameters.values())
     param_count = len(params)
 
     if param_count < 1:
+        logger.error(f"Agent function '{agent_function.__name__}' missing 'messages' parameter")
         raise ValueError(
             "Agent function must have at least 'messages' parameter of type list[binduMessage]"
         )
 
     if param_count > 1:
+        logger.error(f"Agent function '{agent_function.__name__}' has too many parameters: {param_count}")
         raise ValueError(
             "Agent function must have only 'messages' and optional 'context' parameters"
         )
 
     if params[0].name != "messages":
+        logger.error(f"Agent function '{agent_function.__name__}' first parameter must be 'messages', got '{params[0].name}'")
         raise ValueError("First parameter must be named 'messages'")
+    
+    logger.debug(f"Agent function '{agent_function.__name__}' validated successfully")
 
 
 def create_manifest(
@@ -193,10 +202,13 @@ def create_manifest(
     """
 
     # Analyze function signature for parameter detection
+    logger.debug(f"Creating manifest for agent function: {agent_function.__name__}")
     sig = inspect.signature(agent_function)
     param_names = list(sig.parameters.keys())
     has_context_param = "context" in param_names
     has_execution_state = "execution_state" in param_names
+    
+    logger.debug(f"Function parameters: {param_names}, has_context={has_context_param}, has_execution_state={has_execution_state}")
 
     # Prepare manifest metadata
     manifest_name = name or agent_function.__name__.replace("_", "-")
@@ -205,6 +217,8 @@ def create_manifest(
         or inspect.getdoc(agent_function) 
         or f"Agent: {manifest_name}"
     )
+    
+    logger.info(f"Creating agent manifest: name='{manifest_name}', version={version}, kind={kind}")
 
     # Create base manifest
     manifest = AgentManifest(
@@ -255,6 +269,7 @@ def create_manifest(
 
         # Async generator function (streaming)
         if inspect.isasyncgenfunction(agent_function):
+            logger.debug(f"Creating async generator run method for '{manifest_name}'")
             async def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 try:
@@ -267,6 +282,7 @@ def create_manifest(
 
         # Coroutine function (async single/multi result)
         elif inspect.iscoroutinefunction(agent_function):
+            logger.debug(f"Creating coroutine run method for '{manifest_name}'")
             async def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 result = await agent_function(*params)
@@ -283,12 +299,14 @@ def create_manifest(
 
         # Sync generator function
         elif inspect.isgeneratorfunction(agent_function):
+            logger.debug(f"Creating sync generator run method for '{manifest_name}'")
             def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 yield from agent_function(*params)
 
         # Regular sync function
         else:
+            logger.debug(f"Creating sync function run method for '{manifest_name}'")
             def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 return agent_function(*params)
@@ -297,10 +315,13 @@ def create_manifest(
 
     # Attach run method to manifest
     manifest.run = _create_run_method()
+    logger.debug(f"Run method attached to manifest '{manifest_name}'")
 
     # Attach extra metadata attributes if provided
     if extra_metadata:
+        logger.debug(f"Attaching extra metadata to manifest '{manifest_name}': {list(extra_metadata.keys())}")
         for key, value in extra_metadata.items():
             setattr(manifest, key, value)
 
+    logger.info(f"Agent manifest '{manifest_name}' created successfully (id={id})")
     return manifest

@@ -1,4 +1,13 @@
-"""Endpoint modules for Pebble server."""
+# |---------------------------------------------------------|
+# |                                                         |
+# |                 Give Feedback / Get Help                |
+# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
+# |                                                         |
+# |---------------------------------------------------------|
+#
+#  Thank you users! We ❤️ you! - 🐧
+
+"""Endpoint modules for Bindu server."""
 
 from .a2a_protocol import agent_run_endpoint
 from .agent_card import agent_card_endpoint
@@ -23,7 +32,7 @@ __all__ = [
     # DID Endpoints
     "did_resolve_endpoint",
     "agent_info_endpoint",
-    # Static Files
+    # Static Files & Pages
     "docs_endpoint",
     "agent_page_endpoint",
     "chat_page_endpoint",

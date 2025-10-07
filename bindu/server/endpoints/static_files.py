@@ -1,6 +1,5 @@
 """Static file serving endpoints."""
 
-import logging
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -8,8 +7,9 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 
 from bindu.utils.constants import MEDIA_TYPES
+from bindu.utils.logging import get_logger
 
-logger = logging.getLogger("bindu.server.endpoints.static_files")
+logger = get_logger("bindu.server.endpoints.static_files")
 
 
 def _serve_static_file(

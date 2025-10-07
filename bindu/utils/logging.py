@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 from typing import Optional
@@ -13,26 +12,7 @@ from rich.logging import RichHandler
 from rich.theme import Theme
 from rich.traceback import install as install_rich_traceback
 
-# Constants
-LOG_DIR = Path("logs")
-LOG_FILE = LOG_DIR / "bindu_server.log"
-LOG_ROTATION = "10 MB"
-LOG_RETENTION = "1 week"
-LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {module}:{function}:{line} | {message}"
-
-# Rich theme for colorful logging
-BINDU_THEME = Theme(
-    {
-        "info": "bold cyan",
-        "warning": "bold yellow",
-        "error": "bold red",
-        "critical": "bold white on red",
-        "debug": "dim blue",
-        "bindu.did": "bold green",
-        "bindu.security": "bold magenta",
-        "bindu.agent": "bold blue",
-    }
-)
+from bindu.settings import app_settings
 
 # Lazy initialization - console created only when needed
 _console: Optional[Console] = None
@@ -43,21 +23,38 @@ def _get_console() -> Console:
     """Get or create the Rich console instance (lazy initialization)."""
     global _console
     if _console is None:
-        _console = Console(theme=BINDU_THEME, highlight=True)
-        install_rich_traceback(console=_console, show_locals=True, width=120)
+        # Build theme from settings
+        theme = Theme(
+            {
+                "info": app_settings.logging.theme_info,
+                "warning": app_settings.logging.theme_warning,
+                "error": app_settings.logging.theme_error,
+                "critical": app_settings.logging.theme_critical,
+                "debug": app_settings.logging.theme_debug,
+                "bindu.did": app_settings.logging.theme_did,
+                "bindu.security": app_settings.logging.theme_security,
+                "bindu.agent": app_settings.logging.theme_agent,
+            }
+        )
+        _console = Console(theme=theme, highlight=True)
+        install_rich_traceback(
+            console=_console,
+            show_locals=app_settings.logging.show_locals,
+            width=app_settings.logging.traceback_width,
+        )
     return _console
 
 
 def configure_logger(
     docker_mode: bool = False,
-    log_level: str = "INFO",
+    log_level: Optional[str] = None,
     show_banner: bool = True,
 ) -> None:
     """Configure loguru logger with Rich integration.
 
     Args:
         docker_mode: Optimize for Docker environment (no file logging)
-        log_level: Minimum log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        log_level: Minimum log level (uses settings default if not provided)
         show_banner: Show startup banner
     """
     global _is_logging_configured
@@ -67,16 +64,22 @@ def configure_logger(
 
     logger.remove()
     console = _get_console()
+    
+    # Use settings default if log_level not provided
+    level = log_level or app_settings.logging.default_level
 
     # File logging (skip in Docker mode for performance)
     if not docker_mode:
-        LOG_DIR.mkdir(exist_ok=True)
+        log_dir = Path(app_settings.logging.log_dir)
+        log_file = log_dir / app_settings.logging.log_filename
+        log_dir.mkdir(exist_ok=True)
+        
         logger.add(
-            LOG_FILE,
-            rotation=LOG_ROTATION,
-            retention=LOG_RETENTION,
-            level=log_level,
-            format=LOG_FORMAT,
+            log_file,
+            rotation=app_settings.logging.log_rotation,
+            retention=app_settings.logging.log_retention,
+            level=level,
+            format=app_settings.logging.log_format,
             enqueue=True,  # Async logging for better performance
             backtrace=True,
             diagnose=True,
@@ -92,7 +95,7 @@ def configure_logger(
             show_path=False,  # Cleaner output
         ),
         format="{message}",
-        level=log_level,
+        level=level,
     )
 
     # Optional startup banner

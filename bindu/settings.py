@@ -142,6 +142,44 @@ class DeploymentSettings(BaseSettings):
     docker_healthcheck_path: str = "/healthz"
 
 
+class LoggingSettings(BaseSettings):
+    """Logging configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="LOGGING__",
+        extra="allow",
+    )
+
+    # Log Directory and File
+    log_dir: str = "logs"
+    log_filename: str = "bindu_server.log"
+    
+    # Log Rotation and Retention
+    log_rotation: str = "10 MB"
+    log_retention: str = "1 week"
+    
+    # Log Format
+    log_format: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {module}:{function}:{line} | {message}"
+    
+    # Log Levels
+    default_level: str = "INFO"
+    
+    # Rich Theme Colors
+    theme_info: str = "bold cyan"
+    theme_warning: str = "bold yellow"
+    theme_error: str = "bold red"
+    theme_critical: str = "bold white on red"
+    theme_debug: str = "dim blue"
+    theme_did: str = "bold green"
+    theme_security: str = "bold magenta"
+    theme_agent: str = "bold blue"
+    
+    # Rich Console Settings
+    traceback_width: int = 120
+    show_locals: bool = True
+
+
 class ObservabilitySettings(BaseSettings):
     """Observability and instrumentation configuration settings."""
 
@@ -197,6 +235,7 @@ class Settings(BaseSettings):
     did: DIDSettings = DIDSettings()
     network: NetworkSettings = NetworkSettings()
     deployment: DeploymentSettings = DeploymentSettings()
+    logging: LoggingSettings = LoggingSettings()
     observability: ObservabilitySettings = ObservabilitySettings()
 
 

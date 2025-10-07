@@ -1,9 +1,10 @@
-"""Utility classes and functions for worker operations."""
+"""Optimized utility classes for worker operations and message conversion."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
-from uuid import uuid4
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional, Union
+from uuid import UUID, uuid4
 
 from bindu.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
 from bindu.settings import app_settings
@@ -11,48 +12,55 @@ from bindu.settings import app_settings
 if TYPE_CHECKING:
     from bindu.extensions.did import DIDAgentExtension
 
+# Type aliases for better readability
+ChatMessage = dict[str, str]
+ProtocolMessage = Message
+
 
 class MessageConverter:
-    """Utility class for converting between different message formats."""
+    """Optimized converter for message format transformations."""
+
+    # Role mapping for chat format conversion
+    ROLE_MAP = {"agent": "assistant", "user": "user"}
 
     @staticmethod
-    def to_chat_format(history: list[Message]) -> list[dict[str, str]]:
-        """Convert pebble protocol messages to standard chat format.
+    def to_chat_format(history: list[Message]) -> list[ChatMessage]:
+        """Convert protocol messages to standard chat format.
 
         Args:
-            history: List of pebble protocol messages
+            history: List of protocol messages
 
         Returns:
-            List of messages in standard chat format with role and content fields
+            List of chat messages with role and content fields
         """
-        message_history = []
-        for message in history:
-            content = MessageConverter._extract_text_content(message)
-            if content:
-                # Get role and convert agent to assistant for standard format
-                role = message.get("role", "user")
-                if role == "agent":
-                    role = "assistant"
-
-                message_history.append({"role": role, "content": content})
-        return message_history
+        return [
+            {"role": MessageConverter.ROLE_MAP.get(msg.get("role", "user"), "user"), "content": content}
+            for msg in history
+            if (content := MessageConverter._extract_text_content(msg))
+        ]
 
     @staticmethod
-    def to_protocol_messages(result: Any, task_id: str = None, context_id: str = None) -> list[Message]:
-        """Convert manifest result to pebble protocol messages.
+    def to_protocol_messages(
+        result: Any,
+        task_id: Optional[Union[str, UUID]] = None,
+        context_id: Optional[Union[str, UUID]] = None,
+    ) -> list[ProtocolMessage]:
+        """Convert manifest result to protocol messages.
 
         Args:
             result: Manifest execution result
-            task_id: Optional task ID for the message
-            context_id: Optional context ID for the message
+            task_id: Optional task ID
+            context_id: Optional context ID
 
         Returns:
-            List of pebble protocol messages
+            List of protocol messages
         """
-        message_id = uuid4()
-        parts = PartConverter.result_to_parts(result)
-
-        message_data = {"role": "assistant", "parts": parts, "kind": "message", "message_id": message_id}
+        message_data: dict[str, Any] = {
+            "role": "assistant",
+            "parts": PartConverter.result_to_parts(result),
+            "kind": "message",
+            "message_id": uuid4(),
+        }
 
         if task_id:
             message_data["task_id"] = task_id
@@ -63,135 +71,146 @@ class MessageConverter:
 
     @staticmethod
     def _extract_text_content(message: Message) -> str:
-        """Extract text content from a pebble protocol message."""
-        if "parts" not in message or not message["parts"]:
+        """Extract text content from protocol message."""
+        parts = message.get("parts", [])
+        if not parts:
             return ""
 
-        text_parts = [part["text"] for part in message["parts"] if part.get("kind") == "text" and "text" in part]
-
-        return " ".join(text_parts) if text_parts else ""
+        # Use generator for memory efficiency
+        text_parts = (part["text"] for part in parts if part.get("kind") == "text" and "text" in part)
+        return " ".join(text_parts)
 
 
 class PartConverter:
-    """Utility class for converting between different part formats."""
+    """Optimized converter for Part type transformations."""
+
+    # Part type mapping for efficient lookup
+    PART_TYPES = {
+        "text": (TextPart, "text"),
+        "file": (FilePart, "file"),
+        "data": (DataPart, "data"),
+    }
 
     @staticmethod
-    def dict_to_part(data: dict) -> Part:
-        """Convert a dictionary to the appropriate Part type.
+    def dict_to_part(data: dict[str, Any]) -> Part:
+        """Convert dictionary to appropriate Part type.
 
         Args:
-            data: Dictionary that may represent a Part
+            data: Dictionary representing a Part
 
         Returns:
             Appropriate Part type (TextPart, FilePart, or DataPart)
         """
         kind = data.get("kind")
-
-        if kind == "text" and "text" in data:
-            return TextPart(**data)
-        elif kind == "file" and "file" in data:
-            return FilePart(**data)
-        elif kind == "data" and "data" in data:
-            return DataPart(**data)
-        else:
-            # Convert unknown dict to DataPart
-            return DataPart(kind="data", data=data)
+        
+        if kind in PartConverter.PART_TYPES:
+            part_class, required_field = PartConverter.PART_TYPES[kind]
+            if required_field in data:
+                return part_class(**data)
+        
+        # Fallback: convert unknown dict to DataPart
+        return DataPart(kind="data", data=data)
 
     @staticmethod
     def result_to_parts(result: Any) -> list[Part]:
-        """Convert result to list of Parts."""
+        """Convert result to list of Parts with optimized type checking."""
+        # Fast path for strings
         if isinstance(result, str):
             return [TextPart(kind="text", text=result)]
-        elif isinstance(result, (list, tuple)):
-            if all(isinstance(item, str) for item in result):
-                # Handle streaming results
+        
+        # Handle sequences
+        if isinstance(result, (list, tuple)):
+            # Check if all items are strings (common case)
+            if result and all(isinstance(item, str) for item in result):
                 return [TextPart(kind="text", text=item) for item in result]
-            else:
-                # Handle mixed list
-                parts = []
-                for item in result:
-                    if isinstance(item, str):
-                        parts.append(TextPart(kind="text", text=item))
-                    elif isinstance(item, dict):
-                        parts.append(PartConverter.dict_to_part(item))
-                    else:
-                        parts.append(TextPart(kind="text", text=str(item)))
-                return parts
-        elif isinstance(result, dict):
+            
+            # Handle mixed types
+            parts: list[Part] = []
+            for item in result:
+                if isinstance(item, str):
+                    parts.append(TextPart(kind="text", text=item))
+                elif isinstance(item, dict):
+                    parts.append(PartConverter.dict_to_part(item))
+                else:
+                    parts.append(TextPart(kind="text", text=str(item)))
+            return parts
+        
+        # Handle dictionaries
+        if isinstance(result, dict):
             return [PartConverter.dict_to_part(result)]
-        else:
-            # Convert other types to text representation
-            return [TextPart(kind="text", text=str(result))]
+        
+        # Fallback: convert to text
+        return [TextPart(kind="text", text=str(result))]
 
 
 class ArtifactBuilder:
-    """Utility class for building artifacts from results."""
+    """Optimized builder for creating artifacts from results."""
 
     @staticmethod
     def from_result(
-        results: Any, artifact_name: str = "result", did_extension: Optional["DIDAgentExtension"] = None
+        results: Any,
+        artifact_name: str = "result",
+        did_extension: Optional["DIDAgentExtension"] = None,
     ) -> list[Artifact]:
-        """Convert manifest execution result to pebble protocol artifacts.
+        """Convert execution result to protocol artifacts.
 
         Args:
             results: Result from manifest execution
             artifact_name: Name for the artifact
-            did_extension: Optional DID extension to add signatures to parts
+            did_extension: Optional DID extension for signing
 
         Returns:
-            List of pebble protocol artifacts
+            List of protocol artifacts
         """
-        artifact_id = uuid4()
-
         # Convert result to appropriate part type
         if isinstance(results, str):
             parts = [{"kind": "text", "text": results}]
-        elif isinstance(results, (list, tuple)) and all(isinstance(item, str) for item in results):
-            # Handle streaming results that were collected
+        elif isinstance(results, (list, tuple)) and results and all(isinstance(item, str) for item in results):
+            # Join streaming results efficiently
             parts = [{"kind": "text", "text": "\n".join(results)}]
         else:
-            # Handle structured data
+            # Structured data
             parts = [{"kind": "data", "data": {"result": results}}]
 
-        # Apply signing if did_extension provided
+        # Apply DID signing if available
         if did_extension:
+            metadata_key = app_settings.did.agent_extension_metadata
             for part in parts:
                 if part.get("kind") == "text" and "text" in part:
-                    signature = did_extension.sign_text(part["text"])
-                    part.setdefault("metadata", {})[app_settings.did.agent_extension_metadata] = signature
+                    part.setdefault("metadata", {})[metadata_key] = did_extension.sign_text(part["text"])
 
-        return [Artifact(artifact_id=artifact_id, name=artifact_name, parts=parts)]
+        return [Artifact(artifact_id=uuid4(), name=artifact_name, parts=parts)]
 
 
 class TaskStateManager:
-    """Utility class for managing task state transitions."""
+    """Optimized manager for task state transitions and validation."""
 
     @staticmethod
-    async def validate_task_state(task: dict, expected_state: str = "submitted") -> None:
-        """Validate that a task is in the expected state.
+    async def validate_task_state(task: dict[str, Any], expected_state: str = "submitted") -> None:
+        """Validate task is in expected state.
 
         Args:
             task: Task dictionary
             expected_state: Expected task state
 
         Raises:
-            ValueError: If task state is not as expected
+            ValueError: If task state doesn't match expected
         """
-        if task["status"]["state"] != expected_state:
-            raise ValueError(f"Task {task['task_id']} has already been processed (state: {task['status']['state']})")
+        current_state = task["status"]["state"]
+        if current_state != expected_state:
+            raise ValueError(
+                f"Task {task['task_id']} already processed (state: {current_state}, expected: {expected_state})"
+            )
 
     @staticmethod
     def build_response_messages(results: Any) -> list[Message]:
-        """Build response messages from results with consistent formatting."""
-        response_messages: list[Message] = []
+        """Build response messages from results with optimized formatting."""
+        # Normalize to list
+        messages_list = [results] if isinstance(results, str) else results
 
-        if isinstance(results, str):
-            results = [results]
-
-        for message in results:
-            parts = PartConverter.result_to_parts(message)
-
-            if parts:
-                response_messages.append(Message(role="agent", parts=parts, kind="message", message_id=uuid4()))
-
-        return response_messages
+        # Build messages efficiently using list comprehension
+        return [
+            Message(role="agent", parts=parts, kind="message", message_id=uuid4())
+            for msg in messages_list
+            if (parts := PartConverter.result_to_parts(msg))
+        ]

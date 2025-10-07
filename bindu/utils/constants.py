@@ -83,6 +83,13 @@ DEFAULT_URL = f"http://{DEFAULT_HOST}:{DEFAULT_PORT}"
 DEFAULT_REQUEST_TIMEOUT = 30
 DEFAULT_CONNECTION_TIMEOUT = 10
 
+# Media Types for Static Files
+MEDIA_TYPES = {
+    ".html": "text/html",
+    ".js": "application/javascript",
+    ".css": "text/css",
+}
+
 # =============================================================================
 # 🚀 DEPLOYMENT CONSTANTS
 # =============================================================================

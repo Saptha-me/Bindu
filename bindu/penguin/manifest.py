@@ -140,10 +140,10 @@ def create_manifest(
         @bindufy(name="Weather Agent", version="1.0.0")
         async def weather_agent(input: str, context=None):
             '''Provides streaming weather updates.'''
-            yield f"🌤️ Fetching weather for: {input}"
+            yield f"Fetching weather for: {input}"
             await asyncio.sleep(1)  # Simulate API call
-            yield f"☀️ Current temp: 22°C, Sunny"
-            yield f"📅 3-day forecast: Sunny, Cloudy, Rainy"
+            yield f"Current temp: 22°C, Sunny"
+            yield f"3-day forecast: Sunny, Cloudy, Rainy"
 
         # Coroutine Agent (Single Response)
         @bindufy(name="Translator", version="1.0.0")

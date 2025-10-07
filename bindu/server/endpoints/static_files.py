@@ -1,64 +1,92 @@
 """Static file serving endpoints."""
 
+import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Callable, Optional
 
 from starlette.requests import Request
-from starlette.responses import FileResponse, Response
+from starlette.responses import FileResponse, JSONResponse, Response
 
-if TYPE_CHECKING:
-    pass
+from bindu.utils.constants import MEDIA_TYPES
 
-
-async def docs_endpoint(request: Request) -> Response:
-    """Serve the documentation interface."""
-    docs_path = Path(__file__).parent.parent / "static" / "docs.html"
-    return FileResponse(docs_path, media_type="text/html")
+logger = logging.getLogger("bindu.server.endpoints.static_files")
 
 
-async def agent_page_endpoint(request: Request) -> Response:
-    """Serve the agent information page."""
-    agent_path = Path(__file__).parent.parent / "static" / "agent.html"
-    return FileResponse(agent_path, media_type="text/html")
+def _serve_static_file(
+    file_path: Path, 
+    media_type: str, 
+    request: Request
+) -> Response:
+    """Serve a static file with error handling and logging.
+    
+    Args:
+        file_path: Path to the file to serve
+        media_type: MIME type of the file
+        request: Starlette request object
+        
+    Returns:
+        FileResponse or JSONResponse with error
+    """
+    try:
+        if not file_path.exists():
+            logger.warning(f"Static file not found: {file_path} (requested by {request.client.host})")
+            return JSONResponse(
+                content={"error": "File not found", "path": str(file_path.name)},
+                status_code=404
+            )
+        
+        logger.debug(f"Serving static file: {file_path.name} to {request.client.host}")
+        return FileResponse(file_path, media_type=media_type)
+        
+    except Exception as e:
+        logger.error(f"Error serving static file {file_path}: {e}", exc_info=True)
+        return JSONResponse(
+            content={"error": "Internal server error"},
+            status_code=500
+        )
 
 
-async def chat_page_endpoint(request: Request) -> Response:
-    """Serve the chat interface page."""
-    chat_path = Path(__file__).parent.parent / "static" / "chat.html"
-    return FileResponse(chat_path, media_type="text/html")
+def _create_static_endpoint(relative_path: str, media_type: str) -> Callable:
+    """Factory function to create static file endpoint handlers.
+    
+    Args:
+        relative_path: Relative path to the file from static directory
+        media_type: MIME type of the file
+        
+    Returns:
+        Async endpoint function
+    """
+    async def endpoint(request: Request, static_dir: Optional[Path] = None) -> Response:
+        file_path = static_dir / relative_path
+        return _serve_static_file(file_path, media_type, request)
+    
+    return endpoint
 
 
-async def storage_page_endpoint(request: Request) -> Response:
-    """Serve the storage management page."""
-    storage_path = Path(__file__).parent.parent / "static" / "storage.html"
-    return FileResponse(storage_path, media_type="text/html")
+# Create all static file endpoints using the factory
+docs_endpoint = _create_static_endpoint("docs.html", MEDIA_TYPES[".html"])
+docs_endpoint.__doc__ = "Serve the documentation interface."
 
+agent_page_endpoint = _create_static_endpoint("agent.html", MEDIA_TYPES[".html"])
+agent_page_endpoint.__doc__ = "Serve the agent information page."
 
-async def common_js_endpoint(request: Request) -> Response:
-    """Serve the common JavaScript file."""
-    js_path = Path(__file__).parent.parent / "static" / "common.js"
-    return FileResponse(js_path, media_type="application/javascript")
+chat_page_endpoint = _create_static_endpoint("chat.html", MEDIA_TYPES[".html"])
+chat_page_endpoint.__doc__ = "Serve the chat interface page."
 
+storage_page_endpoint = _create_static_endpoint("storage.html", MEDIA_TYPES[".html"])
+storage_page_endpoint.__doc__ = "Serve the storage management page."
 
-async def common_css_endpoint(request: Request) -> Response:
-    """Serve the common CSS file."""
-    css_path = Path(__file__).parent.parent / "static" / "common.css"
-    return FileResponse(css_path, media_type="text/css")
+common_js_endpoint = _create_static_endpoint("common.js", MEDIA_TYPES[".js"])
+common_js_endpoint.__doc__ = "Serve the common JavaScript file."
 
+common_css_endpoint = _create_static_endpoint("common.css", MEDIA_TYPES[".css"])
+common_css_endpoint.__doc__ = "Serve the common CSS file."
 
-async def layout_js_endpoint(request: Request) -> Response:
-    """Serve the layout JavaScript file."""
-    js_path = Path(__file__).parent.parent / "static" / "components" / "layout.js"
-    return FileResponse(js_path, media_type="application/javascript")
+layout_js_endpoint = _create_static_endpoint("components/layout.js", MEDIA_TYPES[".js"])
+layout_js_endpoint.__doc__ = "Serve the layout JavaScript file."
 
+header_component_endpoint = _create_static_endpoint("components/header.html", MEDIA_TYPES[".html"])
+header_component_endpoint.__doc__ = "Serve the header component."
 
-async def header_component_endpoint(request: Request) -> Response:
-    """Serve the header component."""
-    header_path = Path(__file__).parent.parent / "static" / "components" / "header.html"
-    return FileResponse(header_path, media_type="text/html")
-
-
-async def footer_component_endpoint(request: Request) -> Response:
-    """Serve the footer component."""
-    footer_path = Path(__file__).parent.parent / "static" / "components" / "footer.html"
-    return FileResponse(footer_path, media_type="text/html")
+footer_component_endpoint = _create_static_endpoint("components/footer.html", MEDIA_TYPES[".html"])
+footer_component_endpoint.__doc__ = "Serve the footer component."

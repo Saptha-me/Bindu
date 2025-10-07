@@ -5,83 +5,11 @@ let tasks = [];
 let contexts = [];
 let currentView = 'contexts';
 
-// Helper functions
-function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
-
-function getStatusColor(state) {
-    const colors = {
-        completed: 'bg-green-100 text-green-800',
-        failed: 'bg-red-100 text-red-800',
-        running: 'bg-blue-100 text-blue-800',
-        pending: 'bg-yellow-100 text-yellow-800',
-        canceled: 'bg-gray-100 text-gray-800',
-        working: 'bg-purple-100 text-purple-800'
-    };
-    return colors[state] || 'bg-gray-100 text-gray-800';
-}
-
-function getStatusIcon(state) {
-    const icons = {
-        completed: '✅',
-        failed: '❌',
-        running: '⚡',
-        pending: '⏳',
-        canceled: '🚫',
-        working: '🔄'
-    };
-    return icons[state] || '❓';
-}
-
-// Component helper functions
-function createEmptyState(icon, title, subtitle) {
-    return `
-        <div class="text-center py-12">
-            <div class="text-gray-400 mb-4">
-                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    ${icon}
-                </svg>
-            </div>
-            <p class="text-gray-600 text-lg font-medium">${title}</p>
-            <p class="text-gray-500 mt-1">${subtitle}</p>
-        </div>
-    `;
-}
-
-function createErrorState(message, onRetry) {
-    return `
-        <div class="text-center py-12">
-            <div class="text-gray-400 mb-4">
-                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <p class="text-gray-600 text-lg font-medium">Error Loading Data</p>
-            <p class="text-gray-500 mt-1">${message}</p>
-            <button onclick="${onRetry}" class="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">
-                Retry
-            </button>
-        </div>
-    `;
-}
-
-function createStatRow(label, value, colorClass = 'text-gray-900') {
-    return `
-        <div class="flex justify-between items-center py-2 border-b border-gray-200">
-            <span class="text-sm font-medium text-gray-600">${label}</span>
-            <span class="text-sm font-semibold ${colorClass}">${value}</span>
-        </div>
-    `;
-}
+// Helper functions specific to storage page
 
 function createTaskCard(task) {
-    const statusColor = getStatusColor(task.status?.state);
-    const statusIcon = getStatusIcon(task.status?.state);
+    const statusColor = utils.getStatusColor(task.status?.state);
+    const statusIcon = utils.getStatusIcon(task.status?.state);
     const latestMessage = task.history?.[task.history.length - 1]?.parts?.[0]?.text || 'No content';
     const truncatedMessage = latestMessage.substring(0, 100) + (latestMessage.length > 100 ? '...' : '');
     
@@ -153,7 +81,7 @@ function createContextCard(contextData) {
                                 class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                             <span id="toggle-${contextId}">Show Tasks</span>
                         </button>
-                        <button onclick="clearContext('${contextId}')" 
+                        <button onclick="clearContextById('${contextId}')" 
                                 class="text-red-600 hover:text-red-800 text-sm font-medium">
                             Clear
                         </button>
@@ -173,31 +101,7 @@ function createContextCard(contextData) {
 // API functions
 async function loadTasks() {
     try {
-        const payload = {
-            jsonrpc: "2.0",
-            method: "tasks/list",
-            params: { length: 100 },
-            id: generateUUID()
-        };
-
-        const response = await fetch('/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.error) {
-            throw new Error(result.error.message || 'Unknown error');
-        }
-        
-        // Parse the message arrays into task objects
-        const rawData = result.result || [];
+        const rawData = await api.listTasks(null, 100);
         tasks = [];
         
         rawData.forEach(messageArray => {
@@ -229,38 +133,14 @@ async function loadTasks() {
         console.error('Error loading tasks:', error);
         const taskList = document.getElementById('task-list');
         if (taskList) {
-            taskList.innerHTML = createErrorState(error.message, 'loadTasks()');
+            taskList.innerHTML = utils.createErrorState(error.message, 'loadTasks()');
         }
     }
 }
 
 async function loadContexts() {
     try {
-        const payload = {
-            jsonrpc: "2.0",
-            method: "contexts/list",
-            params: { length: 100 },
-            id: generateUUID()
-        };
-
-        const response = await fetch('/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.error) {
-            throw new Error(result.error.message || 'Unknown error');
-        }
-        
-        // Parse the message arrays to extract unique contexts
-        const rawData = result.result || [];
+        const rawData = await api.listContexts(100);
         const contextMap = {};
         
         rawData.forEach(messageArray => {
@@ -296,7 +176,7 @@ async function loadContexts() {
         console.error('Error loading contexts:', error);
         const contextsList = document.getElementById('contexts-list');
         if (contextsList) {
-            contextsList.innerHTML = createErrorState(error.message, 'loadContexts()');
+            contextsList.innerHTML = utils.createErrorState(error.message, 'loadContexts()');
         }
     }
 }
@@ -314,11 +194,11 @@ function updateStats() {
     if (storageStats) {
         storageStats.innerHTML = `
             <div class="space-y-3">
-                ${createStatRow('Total Contexts', totalContexts)}
-                ${createStatRow('Total Tasks', totalTasks)}
-                ${createStatRow('Active Tasks', activeTasks, 'text-blue-600')}
-                ${createStatRow('Completed', completedTasks, 'text-green-600')}
-                ${createStatRow('Failed', failedTasks, 'text-red-600')}
+                ${utils.createStatRow('Total Contexts', totalContexts)}
+                ${utils.createStatRow('Total Tasks', totalTasks)}
+                ${utils.createStatRow('Active Tasks', activeTasks, 'text-blue-600')}
+                ${utils.createStatRow('Completed', completedTasks, 'text-green-600')}
+                ${utils.createStatRow('Failed', failedTasks, 'text-red-600')}
                 <div class="flex justify-between items-center py-2">
                     <span class="text-sm font-medium text-gray-600">Canceled</span>
                     <span class="text-sm font-semibold text-gray-600">${canceledTasks}</span>
@@ -332,8 +212,7 @@ function displayTasks() {
     const taskList = document.getElementById('task-list');
     
     if (tasks.length === 0) {
-        const emptyIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>';
-        taskList.innerHTML = createEmptyState(emptyIcon, 'No tasks found', 'Start a conversation in the chat to see task history here');
+        taskList.innerHTML = utils.createEmptyState('Start a conversation in the chat to see task history here', 'document-text', 'w-16 h-16');
         return;
     }
 
@@ -344,8 +223,7 @@ function displayContexts() {
     const contextsList = document.getElementById('contexts-list');
     
     if (contexts.length === 0) {
-        const emptyIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>';
-        contextsList.innerHTML = createEmptyState(emptyIcon, 'No contexts found', 'Start a conversation to create contexts with tasks');
+        contextsList.innerHTML = utils.createEmptyState('Start a conversation to create contexts with tasks', 'archive-box', 'w-16 h-16');
         return;
     }
 
@@ -388,8 +266,8 @@ function toggleContext(contextId) {
         const contextTasks = tasks.filter(t => t.context_id === contextId);
         if (contextTasks.length > 0) {
             tasksDiv.innerHTML = contextTasks.map(task => {
-                const statusColor = getStatusColor(task.status?.state);
-                const statusIcon = getStatusIcon(task.status?.state);
+                const statusColor = utils.getStatusColor(task.status?.state);
+                const statusIcon = utils.getStatusIcon(task.status?.state);
                 const latestMessage = task.history?.[task.history.length - 1]?.parts?.[0]?.text || 'No content';
                 const truncatedMessage = latestMessage.substring(0, 100) + (latestMessage.length > 100 ? '...' : '');
                 
@@ -451,28 +329,7 @@ async function clearStorage() {
     }
 
     try {
-        const payload = {
-            jsonrpc: "2.0",
-            method: "contexts/clear",
-            params: {},
-            id: generateUUID()
-        };
-
-        const response = await fetch('/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.error) {
-            throw new Error(result.error.message || 'Unknown error');
-        }
+        await api.clearAllStorage();
 
         tasks = [];
         contexts = [];
@@ -490,38 +347,15 @@ async function clearStorage() {
     }
 }
 
-async function clearContext(contextId) {
+async function clearContextById(contextId) {
     if (!confirm('Are you sure you want to clear this context and all its tasks?')) {
         return;
     }
 
     try {
-        const payload = {
-            jsonrpc: "2.0",
-            method: "contexts/clear",
-            params: { context_id: contextId },
-            id: generateUUID()
-        };
-
-        const response = await fetch('/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.error) {
-            throw new Error(result.error.message || 'Unknown error');
-        }
-
+        await api.clearContext(contextId);
         utils.showToast('Context cleared successfully', 'success');
         refreshData();
-        
     } catch (error) {
         console.error('Error clearing context:', error);
         utils.showToast('Failed to clear context: ' + error.message, 'error');

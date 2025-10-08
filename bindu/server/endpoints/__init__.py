@@ -16,13 +16,12 @@ from .static_files import (
     agent_js_endpoint,
     agent_page_endpoint,
     api_js_endpoint,
+    chat_js_endpoint,
     chat_page_endpoint,
     common_js_endpoint,
     custom_css_endpoint,
-    docs_endpoint,
-    footer_component_endpoint,
-    header_component_endpoint,
-    layout_js_endpoint,
+    head_loader_js_endpoint,
+    storage_js_endpoint,
     storage_page_endpoint,
 )
 
@@ -35,7 +34,6 @@ __all__ = [
     "did_resolve_endpoint",
     "agent_info_endpoint",
     # Static Files & Pages
-    "docs_endpoint",
     "agent_page_endpoint",
     "chat_page_endpoint",
     "storage_page_endpoint",
@@ -43,10 +41,9 @@ __all__ = [
     "common_js_endpoint",
     "api_js_endpoint",
     "agent_js_endpoint",
+    "chat_js_endpoint",
+    "storage_js_endpoint",
+    "head_loader_js_endpoint",
     # CSS files
     "custom_css_endpoint",
-    # Component files (legacy)
-    "layout_js_endpoint",
-    "header_component_endpoint",
-    "footer_component_endpoint",
 ]

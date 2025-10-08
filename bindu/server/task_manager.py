@@ -157,7 +157,7 @@ class TaskManager:
     @trace_task_operation("send_message")
     @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
-        """Send a message using the Pebble protocol."""
+        """Send a message using the A2A protocol."""
         message = request["params"]["message"]
         context_id = self._parse_context_id(message.get("context_id"))
         task: Task = await self.storage.submit_task(context_id, message)

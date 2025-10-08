@@ -28,7 +28,7 @@ def _create_agent_card(app: "BinduApplication") -> AgentCard:
     return AgentCard(
         id=app.manifest.id,
         name=app.manifest.name,
-        description=app.manifest.description or "An AI agent exposed as an Pebble agent.",
+        description=app.manifest.description or "An AI agent exposed as an A2A agent.",
         url=app.url,
         version=app.version,
         protocol_version="0.2.5",

@@ -281,13 +281,16 @@ def bindufy(
     storage_instance = _create_storage_instance(storage_config)
     scheduler_instance = _create_scheduler_instance(scheduler_config)
 
-    # Create the Pebble application
-    pebble_app = BinduApplication(
+    # Create the Bindu application
+    # Use bindu's built-in static directory from the package
+    bindu_static_dir = Path(__file__).parent.parent / "server" / "static"
+    bindu_app = BinduApplication(
         storage=storage_instance,
         scheduler=scheduler_instance,
         penguin_id=agent_id,
         manifest=_manifest,
         version=validated_config["version"],
+        static_dir=bindu_static_dir,
     )
 
     # Setup telemetry if enabled
@@ -302,6 +305,6 @@ def bindufy(
 
     # Display server startup banner and run
     logger.info(prepare_server_display(host=host, port=port, agent_id=agent_id))
-    uvicorn.run(pebble_app, host=host, port=port)
+    uvicorn.run(bindu_app, host=host, port=port)
 
     return _manifest

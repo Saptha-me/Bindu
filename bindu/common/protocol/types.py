@@ -1337,57 +1337,60 @@ InternalError = JSONRPCError[
         "Please try again or contact support if the issue persists. See: /health"
     ],
 ]
+# A2A Protocol Standard Error Codes (-32000 to -32003)
 TaskNotFoundError = JSONRPCError[
-    Literal[-32001],
+    Literal[-32000],
     Literal[
         "The specified task ID was not found. The task may have been completed, canceled, or expired. "
         "Check task status: GET /tasks/{id}"
     ],
 ]
 TaskNotCancelableError = JSONRPCError[
-    Literal[-32002],
+    Literal[-32001],
     Literal[
         "This task cannot be canceled in its current state. Tasks can only be canceled while pending or running. "
         "See task lifecycle: /docs/tasks"
     ],
 ]
-ContextNotFoundError = JSONRPCError[
-    Literal[-32003],
-    Literal[
-        "The specified context ID was not found. The context may have been deleted or expired. "
-        "Check context status: GET /contexts/{id}"
-    ],
-]
-ContextNotCancelableError = JSONRPCError[
-    Literal[-32004],
-    Literal[
-        "This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. "
-        "See context lifecycle: /docs/contexts"
-    ],
-]
 PushNotificationNotSupportedError = JSONRPCError[
-    Literal[-32005],
+    Literal[-32002],
     Literal[
         "Push notifications are not supported by this server configuration. "
         "Please use polling to check task status. See: GET /tasks/{id}"
     ],
 ]
 UnsupportedOperationError = JSONRPCError[
-    Literal[-32006],
+    Literal[-32003],
     Literal[
         "The requested operation is not supported by this agent or server configuration. "
         "See supported operations: /docs/capabilities"
     ],
 ]
+
+# NotPartOfA2A Error Codes (-32100+)
+ContextNotFoundError = JSONRPCError[
+    Literal[-32100],
+    Literal[
+        "The specified context ID was not found. The context may have been deleted or expired. "
+        "Check context status: GET /contexts/{id}"
+    ],
+]
+ContextNotCancelableError = JSONRPCError[
+    Literal[-32101],
+    Literal[
+        "This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. "
+        "See context lifecycle: /docs/contexts"
+    ],
+]
 ContentTypeNotSupportedError = JSONRPCError[
-    Literal[-32007],
+    Literal[-32102],
     Literal[
         "The content type in the request is not supported. "
         "Please use application/json or check supported content types. See: /docs/content-types"
     ],
 ]
 InvalidAgentResponseError = JSONRPCError[
-    Literal[-32008],
+    Literal[-32103],
     Literal[
         "The agent returned an invalid or malformed response. This may indicate an agent configuration issue. "
         "See troubleshooting: /docs/troubleshooting"

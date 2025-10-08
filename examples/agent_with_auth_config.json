@@ -1,0 +1,64 @@
+{
+  "author": "raahul@saptha.me",
+  "name": "Secure Agent",
+  "description": "An AI agent with Auth0 M2M authentication enabled",
+  "version": "1.0.0",
+  "recreate_keys": true,
+  "skills": [
+    {
+      "name": "secure-operations",
+      "description": "Authenticated operations with access control",
+      "version": "1.0.0"
+    }
+  ],
+  "capabilities": {
+    "reasoning": true,
+    "code_execution": false,
+    "web_search": false,
+    "file_operations": false,
+    "multimodal": false
+  },
+  "agent_trust": "medium",
+  "kind": "agent",
+  "debug_mode": true,
+  "debug_level": 2,
+  "monitoring": false,
+  "telemetry": false,
+  "num_history_sessions": 10,
+  "documentation_url": "https://docs.saptha.me/agents/secure",
+  "extra_metadata": {
+    "domain": "enterprise",
+    "specialization": "secure_operations",
+    "requires_auth": true
+  },
+  "auth": {
+    "enabled": true,
+    "domain": "your-tenant.auth0.com",
+    "audience": "https://api.bindu.ai",
+    "algorithms": ["RS256"],
+    "issuer": "https://your-tenant.auth0.com/",
+    "jwks_uri": "https://your-tenant.auth0.com/.well-known/jwks.json",
+    "require_permissions": true,
+    "permissions": {
+      "message/send": ["agent:write"],
+      "tasks/get": ["agent:read"],
+      "tasks/cancel": ["agent:write"],
+      "tasks/list": ["agent:read"],
+      "contexts/list": ["agent:read"],
+      "tasks/feedback": ["agent:write"]
+    }
+  },
+  "deployment": {
+    "url": "http://localhost:8030",
+    "expose": true,
+    "protocol_version": "1.0.0",
+    "proxy_urls": ["https://secure.saptha.me"],
+    "cors_origins": ["*"]
+  },
+  "storage": {
+    "type": "memory"
+  },
+  "scheduler": {
+    "type": "memory"
+  }
+}

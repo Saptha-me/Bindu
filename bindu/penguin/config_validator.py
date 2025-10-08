@@ -31,6 +31,7 @@ class ConfigValidator:
         "extra_metadata": {},
         "agent_trust": None,
         "key_password": None,
+        "auth": None,
     }
     
     # Required fields that must be present
@@ -96,6 +97,10 @@ class ConfigValidator:
             from bindu.utils.security import get_key_password
             config["key_password"] = get_key_password(config)
         
+        # Validate auth configuration if provided
+        if config.get("auth"):
+            cls._validate_auth_config(config["auth"])
+        
         return config
     
     @classmethod
@@ -125,6 +130,62 @@ class ConfigValidator:
         # Validate kind
         if config.get("kind") not in ["agent", "team", "workflow"]:
             raise ValueError("Field 'kind' must be one of: agent, team, workflow")
+    
+    @classmethod
+    def _validate_auth_config(cls, auth_config: Dict[str, Any]) -> None:
+        """Validate authentication configuration.
+        
+        Args:
+            auth_config: Auth configuration dictionary
+            
+        Raises:
+            ValueError: If auth configuration is invalid
+        """
+        if not isinstance(auth_config, dict):
+            raise ValueError("Field 'auth' must be a dictionary")
+        
+        # Check if enabled
+        if not auth_config.get("enabled", False):
+            return  # Auth disabled, no further validation needed
+        
+        # Required fields when auth is enabled
+        required_auth_fields = ["domain", "audience"]
+        missing = [field for field in required_auth_fields if not auth_config.get(field)]
+        if missing:
+            raise ValueError(
+                f"Auth is enabled but missing required fields: {', '.join(missing)}. "
+                f"Required: domain, audience"
+            )
+        
+        # Validate domain format
+        domain = auth_config.get("domain", "")
+        if not domain or "." not in domain:
+            raise ValueError(
+                f"Invalid auth domain: '{domain}'. "
+                f"Expected format: 'your-tenant.auth0.com' or 'your-tenant.us.auth0.com'"
+            )
+        
+        # Validate audience format (should be a URL)
+        audience = auth_config.get("audience", "")
+        if not audience or not (audience.startswith("http://") or audience.startswith("https://")):
+            raise ValueError(
+                f"Invalid auth audience: '{audience}'. "
+                f"Expected format: 'https://api.your-domain.com' or 'https://your-api-identifier'"
+            )
+        
+        # Validate algorithms if provided
+        if "algorithms" in auth_config:
+            algorithms = auth_config["algorithms"]
+            if not isinstance(algorithms, list):
+                raise ValueError("Field 'auth.algorithms' must be a list")
+            
+            valid_algorithms = ["RS256", "RS384", "RS512", "HS256", "HS384", "HS512"]
+            invalid_algs = [alg for alg in algorithms if alg not in valid_algorithms]
+            if invalid_algs:
+                raise ValueError(
+                    f"Invalid algorithms in auth config: {invalid_algs}. "
+                    f"Valid options: {valid_algorithms}"
+                )
     
     @classmethod
     def create_bindufy_config(cls, raw_config: Dict[str, Any]) -> Dict[str, Any]:

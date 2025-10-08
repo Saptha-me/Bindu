@@ -43,6 +43,8 @@ dependencies = [
     "ty>=0.0.1a14",
     "agno>=2.1.1",
     "openai>=2.1.0",
+    "pyjwt[crypto]>=2.8.0",
+    "requests>=2.31.0",
 ]
 
 [project.optional-dependencies]

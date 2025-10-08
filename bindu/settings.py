@@ -265,6 +265,55 @@ CRITICAL: When returning state transition JSON, return ONLY the JSON object with
     enable_structured_responses: bool = True
 
 
+class AuthSettings(BaseSettings):
+    """Authentication and authorization configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="AUTH__",
+        extra="allow",
+    )
+
+    # Enable/disable authentication
+    enabled: bool = False
+
+    # Auth0 Configuration
+    domain: str = ""
+    audience: str = ""
+    algorithms: list[str] = ["RS256"]
+    issuer: str = ""
+
+    # JWKS Configuration
+    jwks_uri: str = ""
+    jwks_cache_ttl: int = 3600  # Cache JWKS for 1 hour
+    
+    # Token Validation
+    leeway: int = 10  # Clock skew tolerance in seconds
+    
+    # Public Endpoints (no authentication required)
+    public_endpoints: list[str] = [
+        "/.well-known/agent.json",
+        "/did/resolve",
+        "/agent/info",
+        "/agent.html",
+        "/chat.html",
+        "/storage.html",
+        "/js/*",
+        "/css/*",
+    ]
+    
+    # Permission-based access control
+    require_permissions: bool = False
+    permissions: dict[str, list[str]] = {
+        "message/send": ["agent:write"],
+        "tasks/get": ["agent:read"],
+        "tasks/cancel": ["agent:write"],
+        "tasks/list": ["agent:read"],
+        "contexts/list": ["agent:read"],
+        "tasks/feedback": ["agent:write"],
+    }
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -281,6 +330,7 @@ class Settings(BaseSettings):
     logging: LoggingSettings = LoggingSettings()
     observability: ObservabilitySettings = ObservabilitySettings()
     agent: AgentSettings = AgentSettings()
+    auth: AuthSettings = AuthSettings()
 
 
 app_settings = Settings()

@@ -266,7 +266,14 @@ CRITICAL: When returning state transition JSON, return ONLY the JSON object with
 
 
 class AuthSettings(BaseSettings):
-    """Authentication and authorization configuration settings."""
+    """Authentication and authorization configuration settings.
+    
+    Supports multiple authentication providers:
+    - auth0: Auth0 (default)
+    - cognito: AWS Cognito (future)
+    - azure: Azure AD (future)
+    - custom: Custom JWT provider (future)
+    """
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -276,6 +283,9 @@ class AuthSettings(BaseSettings):
 
     # Enable/disable authentication
     enabled: bool = False
+    
+    # Authentication provider
+    provider: str = "auth0"  # Options: auth0, cognito, azure, custom
 
     # Auth0 Configuration
     domain: str = ""
@@ -289,6 +299,15 @@ class AuthSettings(BaseSettings):
     
     # Token Validation
     leeway: int = 10  # Clock skew tolerance in seconds
+    
+    # AWS Cognito Configuration (future use)
+    region: str = ""  # e.g., "us-east-1"
+    user_pool_id: str = ""  # e.g., "us-east-1_XXXXXXXXX"
+    app_client_id: str = ""  # Cognito app client ID
+    
+    # Azure AD Configuration (future use)
+    tenant_id: str = ""  # Azure AD tenant ID
+    client_id: str = ""  # Azure AD application ID
     
     # Public Endpoints (no authentication required)
     public_endpoints: list[str] = [

@@ -31,6 +31,7 @@ from starlette.routing import Route
 from starlette.types import Lifespan, Receive, Scope, Send
 
 from bindu.common.models import AgentManifest
+from bindu.settings import app_settings
 
 from .endpoints import (
     agent_card_endpoint,
@@ -48,6 +49,7 @@ from .endpoints import (
     storage_js_endpoint,
     storage_page_endpoint,
 )
+from .middleware import Auth0Middleware
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .storage.memory_storage import InMemoryStorage
 from .task_manager import TaskManager
@@ -70,7 +72,8 @@ class BinduApplication(Starlette):
         static_dir: Path | None = None,
         lifespan: Lifespan | None = None,
         routes: Sequence[Route] | None = None,
-        middleware: Sequence[Middleware] | None = None
+        middleware: Sequence[Middleware] | None = None,
+        auth_enabled: bool = False
     ):
         """Initialize Bindu application.
 
@@ -87,15 +90,27 @@ class BinduApplication(Starlette):
             lifespan: Optional custom lifespan
             routes: Optional custom routes
             middleware: Optional middleware
+            auth_enabled: Enable Auth0 authentication middleware
         """
         # Create default lifespan if none provided
         if lifespan is None:
             lifespan = self._create_default_lifespan(storage, scheduler, manifest)
 
+        # Add Auth0 middleware if authentication is enabled
+        middleware_list = list(middleware) if middleware else []
+        if auth_enabled and app_settings.auth.enabled:
+            from bindu.utils.logging import get_logger
+            logger = get_logger("bindu.server.applications")
+            logger.info("Auth0 authentication enabled")
+            
+            # Add Auth0 middleware to the beginning of middleware chain
+            auth_middleware = Middleware(Auth0Middleware, auth_config=app_settings.auth)
+            middleware_list.insert(0, auth_middleware)
+
         super().__init__(
             debug=debug,
             routes=routes,
-            middleware=middleware,
+            middleware=middleware_list if middleware_list else None,
             lifespan=lifespan,
         )
 

@@ -168,6 +168,21 @@ def bindufy(
     
     validated_config = ConfigValidator.validate_and_process(config)
     
+    # Update app_settings.auth if auth config is provided
+    if "auth" in validated_config and validated_config["auth"].get("enabled"):
+        auth_config = validated_config["auth"]
+        app_settings.auth.enabled = True
+        app_settings.auth.domain = auth_config.get("domain", "")
+        app_settings.auth.audience = auth_config.get("audience", "")
+        app_settings.auth.algorithms = auth_config.get("algorithms", ["RS256"])
+        app_settings.auth.issuer = auth_config.get("issuer", "")
+        app_settings.auth.jwks_uri = auth_config.get("jwks_uri", "")
+        app_settings.auth.public_endpoints = auth_config.get("public_endpoints", app_settings.auth.public_endpoints)
+        app_settings.auth.require_permissions = auth_config.get("require_permissions", False)
+        app_settings.auth.permissions = auth_config.get("permissions", app_settings.auth.permissions)
+        
+        logger.info(f"Auth0 configuration loaded: domain={auth_config.get('domain')}, audience={auth_config.get('audience')}")
+    
     # Generate agent_id if not provided
     agent_id = validated_config.get("id", uuid4().hex)
     
@@ -284,6 +299,10 @@ def bindufy(
     # Create the Bindu application
     # Use bindu's built-in static directory from the package
     bindu_static_dir = Path(__file__).parent.parent / "server" / "static"
+    
+    # Check if auth is enabled in config
+    auth_enabled = validated_config.get("auth", {}).get("enabled", False)
+    
     bindu_app = BinduApplication(
         storage=storage_instance,
         scheduler=scheduler_instance,
@@ -291,6 +310,7 @@ def bindufy(
         manifest=_manifest,
         version=validated_config["version"],
         static_dir=bindu_static_dir,
+        auth_enabled=auth_enabled,
     )
 
     # Setup telemetry if enabled

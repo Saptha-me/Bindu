@@ -35,6 +35,21 @@
       "domain": "general",
       "specialization": "basic_qa"
     },
+    "auth": {
+      "enabled": false,
+      "domain": "your-tenant.auth0.com",
+      "audience": "https://api.bindu.ai",
+      "algorithms": ["RS256"],
+      "require_permissions": false,
+      "permissions": {
+        "message/send": ["agent:write"],
+        "tasks/get": ["agent:read"],
+        "tasks/cancel": ["agent:write"],
+        "tasks/list": ["agent:read"],
+        "contexts/list": ["agent:read"],
+        "tasks/feedback": ["agent:write"]
+      }
+    },
     "deployment": {
       "url": "http://localhost:8030",
       "expose": true,

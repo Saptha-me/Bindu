@@ -32,10 +32,17 @@ This aligns with the A2A "Task-only Agent" pattern where **all responses are Tas
 
 | Aspect | Messages | Artifacts |
 |--------|----------|-----------|
-| **Purpose** | Interaction, negotiation, status updates | Final deliverable, task output |
-| **Task State** | `working`, `input-required`, `auth-required` | `completed` (terminal) |
-| **When Used** | During task execution | When task completes |
-| **Immutability** | Task still mutable | Task becomes immutable |
+| **Purpose** | Interaction, negotiation, status updates, explanations | Final deliverable, task output |
+| **Task State** | `working`, `input-required`, `auth-required`, `completed`, `failed` | `completed` only |
+| **When Used** | During task execution AND at completion | When task completes successfully |
+| **Immutability** | Task still mutable (non-terminal) or immutable (terminal) | Task becomes immutable |
+| **Content** | Agent's response text, explanations, error messages | Structured deliverable (files, data) |
+
+**Key Distinction:**
+- **Intermediate states** (`input-required`, `auth-required`): Message ONLY, no artifacts
+- **Completed state**: Message (explanation) + Artifact (deliverable)
+- **Failed state**: Message (error explanation) ONLY, no artifacts
+- **Canceled state**: State change only, no new content
 
 ## Flow Diagram
 
@@ -131,6 +138,22 @@ Context1 (same conversation)
 - "canceled"       # User canceled
 - "rejected"       # Agent rejected
 ```
+
+### 2. Message and Artifact Handling by State
+
+**Why Both Message and Artifact for Completed Tasks?**
+
+1. **Message**: Provides context and explanation for the task history
+   - "Here's your report with the requested analysis"
+   - Maintains conversation continuity
+   - Useful for debugging and audit trails
+
+2. **Artifact**: Contains the actual deliverable
+   - The PDF file, JSON data, or structured output
+   - Immutable result that client requested
+   - Signed with DID for verification
+
+Both serve different purposes and are part of the complete task record.
 
 ### 3. Structured Response Format
 

@@ -66,6 +66,7 @@ class Storage(ABC, Generic[ContextT]):
         state: TaskState,
         new_artifacts: list[Artifact] | None = None,
         new_messages: list[Message] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Task:
         """Update task state and append new content.
 
@@ -74,6 +75,7 @@ class Storage(ABC, Generic[ContextT]):
             state: New task state (working, completed, failed, etc.)
             new_artifacts: Optional artifacts to append
             new_messages: Optional messages to append to history
+            metadata: Optional metadata to update/merge with task metadata
 
         Returns:
             Updated task object

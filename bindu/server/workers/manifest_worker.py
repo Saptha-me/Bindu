@@ -30,7 +30,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams, TaskState
@@ -116,15 +116,15 @@ class ManifestWorker(Worker):
             )
             
             if state in ("input-required", "auth-required"):
-                # Hybrid Pattern: Return Message, keep task open
+                # Hybrid Pattern: Return Message only, keep task open
                 await self._handle_intermediate_state(task, state, metadata, message_content)
             else:
-                # Hybrid Pattern: Task complete - generate Artifacts
-                await self._process_and_save_results(task, results)
+                # Hybrid Pattern: Task complete - generate Message + Artifacts
+                await self._handle_terminal_state(task, results, state)
 
         except Exception as e:
-            # Mark task as failed and re-raise
-            await self.storage.update_task(task["task_id"], state="failed")
+            # Handle task failure with error message
+            await self._handle_task_failure(task, str(e))
             raise
 
     async def cancel_task(self, params: TaskIdParams) -> None:
@@ -248,33 +248,73 @@ class ManifestWorker(Worker):
         await self.storage.append_to_contexts(task["context_id"], agent_messages)
 
     # -------------------------------------------------------------------------
-    # Task Completion
+    # Terminal State Handling
     # -------------------------------------------------------------------------
 
-    async def _process_and_save_results(self, task: dict[str, Any], results: Any) -> None:
-        """Process results and complete task.
+    async def _handle_terminal_state(
+        self, 
+        task: dict[str, Any], 
+        results: Any,
+        state: TaskState = "completed"
+    ) -> None:
+        """Handle terminal task states (completed/failed).
         
-        Hybrid Pattern - Task Completion:
-        1. Convert agent response to Message
-        2. Generate Artifacts (final deliverable)
-        3. Update task to 'completed' state (terminal/immutable)
+        Hybrid Pattern - Terminal States:
+        - completed: Message (explanation) + Artifacts (deliverable)
+        - failed: Message (error explanation) only, NO artifacts
+        - canceled: State change only, NO new content
 
         Args:
-            task: Task dict being completed
+            task: Task dict being finalized
             results: Agent execution results
+            state: Terminal state (completed or failed)
         """
-        # Convert agent response to message format
-        agent_messages = MessageConverter.to_protocol_messages(results, task["task_id"], task["context_id"])
+        if state == "completed":
+            # Success: Add both Message and Artifacts
+            agent_messages = MessageConverter.to_protocol_messages(
+                results, task["task_id"], task["context_id"]
+            )
+            await self.storage.append_to_contexts(task["context_id"], agent_messages)
+            
+            artifacts = self.build_artifacts(results)
+            await self.storage.update_task(
+                task["task_id"], 
+                state="completed", 
+                new_artifacts=artifacts, 
+                new_messages=agent_messages
+            )
+        
+        elif state == "failed":
+            # Failure: Message only (error explanation), NO artifacts
+            error_message = MessageConverter.to_protocol_messages(
+                results, task["task_id"], task["context_id"]
+            )
+            await self.storage.append_to_contexts(task["context_id"], error_message)
+            await self.storage.update_task(
+                task["task_id"], 
+                state="failed", 
+                new_messages=error_message
+            )
+    
+    async def _handle_task_failure(self, task: dict[str, Any], error: str) -> None:
+        """Handle task execution failure.
+        
+        Creates an error message and marks task as failed without artifacts.
 
-        # Update context with new agent messages
-        await self.storage.append_to_contexts(task["context_id"], agent_messages)
-
-        # Build artifacts from results (final deliverable)
-        artifacts = self.build_artifacts(results)
-
-        # Update task with completion (terminal state - task becomes immutable)
+        Args:
+            task: Task that failed
+            error: Error description
+        """
+        error_message = MessageConverter.to_protocol_messages(
+            f"Task execution failed: {error}", 
+            task["task_id"], 
+            task["context_id"]
+        )
+        await self.storage.append_to_contexts(task["context_id"], error_message)
         await self.storage.update_task(
-            task["task_id"], state="completed", new_artifacts=artifacts, new_messages=agent_messages
+            task["task_id"], 
+            state="failed", 
+            new_messages=error_message
         )
     
     # -------------------------------------------------------------------------

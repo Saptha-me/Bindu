@@ -122,11 +122,12 @@ class InMemoryStorage(Storage[ContextT]):
         state: TaskState,
         new_artifacts: list[Artifact] | None = None,
         new_messages: list[Message] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Task:
         """Update task state and append new content.
 
         Hybrid Pattern Support:
-        - Message only: update_task(task_id, "input-required", new_messages=[...])
+        - Message only: update_task(task_id, "input-required", new_messages=[...], metadata={...})
         - Completion: update_task(task_id, "completed", new_artifacts=[...], new_messages=[...])
 
         Args:
@@ -134,6 +135,7 @@ class InMemoryStorage(Storage[ContextT]):
             state: New task state (working, completed, failed, etc.)
             new_artifacts: Optional artifacts to append (for completion)
             new_messages: Optional messages to append to history
+            metadata: Optional metadata to update/merge with task metadata
 
         Returns:
             Updated task object
@@ -150,6 +152,11 @@ class InMemoryStorage(Storage[ContextT]):
         
         task = self.tasks[task_id]
         task["status"] = TaskStatus(state=state, timestamp=datetime.now(timezone.utc).isoformat())
+
+        if metadata:
+            if "metadata" not in task:
+                task["metadata"] = {}
+            task["metadata"].update(metadata)
 
         if new_artifacts:
             if "artifacts" not in task:

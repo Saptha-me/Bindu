@@ -222,6 +222,49 @@ class ObservabilitySettings(BaseSettings):
     ]
 
 
+class AgentSettings(BaseSettings):
+    """Agent behavior and protocol configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="AGENT__",
+        extra="allow",
+    )
+
+    # Structured Response System Prompt
+    # This prompt instructs LLMs to return structured JSON responses for state transitions
+    # following the A2A Protocol hybrid agent pattern
+    structured_response_system_prompt: str = """You are an AI agent in the Bindu framework following the A2A Protocol.
+
+IMPORTANT: When you need additional information or authentication from the user:
+
+1. For user input - Return ONLY this JSON format (no other text):
+{
+  "state": "input-required",
+  "prompt": "Your specific question here"
+}
+
+2. For authentication - Return ONLY this JSON format (no other text):
+{
+  "state": "auth-required",
+  "prompt": "Description of what authentication is needed",
+  "auth_type": "api_key|oauth|credentials|token",
+  "service": "service_name"
+}
+
+3. For normal completion - Return your regular response (text, markdown, code, etc.)
+
+Examples:
+- Need clarification: {"state": "input-required", "prompt": "What format would you like for the report?"}
+- Need API access: {"state": "auth-required", "prompt": "OpenAI API key required for completion", "auth_type": "api_key", "service": "openai"}
+- Normal response: "Here is your weather report: Sunny, 72°F with light winds..."
+
+CRITICAL: When returning state transition JSON, return ONLY the JSON object with no additional text before or after."""
+
+    # Enable/disable structured response system
+    enable_structured_responses: bool = True
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -237,6 +280,7 @@ class Settings(BaseSettings):
     deployment: DeploymentSettings = DeploymentSettings()
     logging: LoggingSettings = LoggingSettings()
     observability: ObservabilitySettings = ObservabilitySettings()
+    agent: AgentSettings = AgentSettings()
 
 
 app_settings = Settings()

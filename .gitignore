@@ -181,5 +181,5 @@ pebble_project_certificates/*
 pebble_project_private_key.json
 
 # Examples directory - exclude all generated files
-examples/*
+#examples/*
 

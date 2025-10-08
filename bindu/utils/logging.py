@@ -98,11 +98,6 @@ def configure_logger(
         level=level,
     )
 
-    # Optional startup banner
-    if show_banner and not docker_mode:
-        from bindu.utils.display import prepare_server_display
-        prepare_server_display()
-
     _is_logging_configured = True
 
 

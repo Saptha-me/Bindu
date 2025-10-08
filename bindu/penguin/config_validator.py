@@ -16,8 +16,8 @@ class ConfigValidator:
     
     # Default values for optional fields
     DEFAULTS = {
-        "name": "pebble-agent",
-        "description": "A Pebble agent",
+        "name": "bindu-agent",
+        "description": "A Bindu agent",
         "version": "1.0.0",
         "recreate_keys": True,
         "skills": [],

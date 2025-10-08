@@ -122,7 +122,7 @@ function createSettingsSection() {
         </div>
         <div class="space-y-3">
             ${utils.createSettingRow('Trust Level', `<span class="capitalize">${agentCard.agentTrust || 'Unknown'}</span>`)}
-            ${utils.createSettingRow('Identity Provider', 'Pebble Protocol')}
+            ${utils.createSettingRow('Identity Provider', 'A2A Protocol')}
             ${utils.createSettingRow('Agent ID', `<span class="font-mono text-xs">${agentCard.id || 'Unknown'}</span>`)}
         </div>
     `;

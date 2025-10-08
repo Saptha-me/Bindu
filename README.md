@@ -76,7 +76,7 @@ After project creation:
 ```bash
 🎉 Project created successfully!
 
-🌻 Welcome to bindu — powered by the Pebble CLI.
+🌻 Welcome to bindu — powered by the bindu CLI.
 Next steps:
   1️⃣  cd 'my_weather_agent'
   2️⃣  Set it up using uv: 📦
@@ -258,14 +258,9 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/Fr6rc
 
 ## FAQ
 
-**Can Pebble be deployed locally?**
-Yes! Pebble supports local development as well as cloud-based deployments.
+**Can bindu be deployed locally?**
+Yes! bindu supports local development as well as cloud-based deployments.
 
-**Does Pebble support other languages besides Python?**
-Absolutely! Any language that can implement JSON-RPC and mTLS is compatible.
-
-**How scalable is Pebble?**
-Pebble's minimal dependencies and protocol simplicity ensure scalability across complex agent ecosystems.
 
 ## ⭐ Star History
 
@@ -273,9 +268,5 @@ Pebble's minimal dependencies and protocol simplicity ensure scalability across 
 
 
 Built with ❤️ by the bindu team from Amsterdam 🌷.
-
-We’re excited to see what you’ll build with Pebble! Our dream is a world where agents across the internet communicate securely, openly, and effortlessly.
-
-Have questions, ideas, or just want to chat? Join our Discord community— we’d love to hear from you! Together, let’s lay the foundation for the next generation of AI agent collaboration.
 
 Happy bindu! 🌻🚀✨

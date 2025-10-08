@@ -64,9 +64,7 @@ def _create_static_endpoint(relative_path: str, media_type: str) -> Callable:
 
 
 # Create all static file endpoints using the factory
-docs_endpoint = _create_static_endpoint("docs.html", app_settings.network.media_types[".html"])
-docs_endpoint.__doc__ = "Serve the documentation interface."
-
+# HTML Pages
 agent_page_endpoint = _create_static_endpoint("agent.html", app_settings.network.media_types[".html"])
 agent_page_endpoint.__doc__ = "Serve the agent information page."
 
@@ -76,6 +74,7 @@ chat_page_endpoint.__doc__ = "Serve the chat interface page."
 storage_page_endpoint = _create_static_endpoint("storage.html", app_settings.network.media_types[".html"])
 storage_page_endpoint.__doc__ = "Serve the storage management page."
 
+# JavaScript Files
 common_js_endpoint = _create_static_endpoint("js/common.js", app_settings.network.media_types[".js"])
 common_js_endpoint.__doc__ = "Serve the common JavaScript file."
 
@@ -85,14 +84,15 @@ api_js_endpoint.__doc__ = "Serve the API JavaScript file."
 agent_js_endpoint = _create_static_endpoint("js/agent.js", app_settings.network.media_types[".js"])
 agent_js_endpoint.__doc__ = "Serve the agent page JavaScript file."
 
+chat_js_endpoint = _create_static_endpoint("js/chat.js", app_settings.network.media_types[".js"])
+chat_js_endpoint.__doc__ = "Serve the chat JavaScript file."
+
+storage_js_endpoint = _create_static_endpoint("js/storage.js", app_settings.network.media_types[".js"])
+storage_js_endpoint.__doc__ = "Serve the storage JavaScript file."
+
+head_loader_js_endpoint = _create_static_endpoint("js/head-loader.js", app_settings.network.media_types[".js"])
+head_loader_js_endpoint.__doc__ = "Serve the head loader JavaScript file."
+
+# CSS Files
 custom_css_endpoint = _create_static_endpoint("css/custom.css", app_settings.network.media_types[".css"])
 custom_css_endpoint.__doc__ = "Serve the custom CSS file."
-
-layout_js_endpoint = _create_static_endpoint("components/layout.js", app_settings.network.media_types[".js"])
-layout_js_endpoint.__doc__ = "Serve the layout JavaScript file."
-
-header_component_endpoint = _create_static_endpoint("components/header.html", app_settings.network.media_types[".html"])
-header_component_endpoint.__doc__ = "Serve the header component."
-
-footer_component_endpoint = _create_static_endpoint("components/footer.html", app_settings.network.media_types[".html"])
-footer_component_endpoint.__doc__ = "Serve the footer component."

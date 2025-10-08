@@ -39,14 +39,13 @@ from .endpoints import (
     agent_page_endpoint,
     agent_run_endpoint,
     api_js_endpoint,
+    chat_js_endpoint,
     chat_page_endpoint,
     common_js_endpoint,
     custom_css_endpoint,
     did_resolve_endpoint,
-    docs_endpoint,
-    footer_component_endpoint,
-    header_component_endpoint,
-    layout_js_endpoint,
+    head_loader_js_endpoint,
+    storage_js_endpoint,
     storage_page_endpoint,
 )
 from .scheduler.memory_scheduler import InMemoryScheduler
@@ -55,7 +54,7 @@ from .task_manager import TaskManager
 
 
 class BinduApplication(Starlette):
-    """Pebble application class for creating Pebble-compatible servers."""
+    """Bindu application class for creating Bindu-compatible servers."""
 
     def __init__(
         self,
@@ -73,7 +72,7 @@ class BinduApplication(Starlette):
         routes: Sequence[Route] | None = None,
         middleware: Sequence[Middleware] | None = None
     ):
-        """Initialize Pebble application.
+        """Initialize Bindu application.
 
         Args:
             manifest: Agent manifest to serve
@@ -130,8 +129,6 @@ class BinduApplication(Starlette):
 
         # HTML pages
         html_routes = [
-            ("/docs", docs_endpoint),
-            ("/docs.html", docs_endpoint),
             ("/agent.html", agent_page_endpoint),
             ("/chat.html", chat_page_endpoint),
             ("/storage.html", storage_page_endpoint),
@@ -144,17 +141,15 @@ class BinduApplication(Starlette):
             ("/js/common.js", common_js_endpoint),
             ("/js/api.js", api_js_endpoint),
             ("/js/agent.js", agent_js_endpoint),
-            ("/components/layout.js", layout_js_endpoint),
+            ("/js/chat.js", chat_js_endpoint),
+            ("/js/storage.js", storage_js_endpoint),
+            ("/js/head-loader.js", head_loader_js_endpoint),
         ]
         for path, endpoint in js_routes:
             self._add_route(path, endpoint, ["GET"], with_static=True)
 
         # CSS files
         self._add_route("/css/custom.css", custom_css_endpoint, ["GET"], with_static=True)
-
-        # Component files (legacy)
-        self._add_route("/components/header.html", header_component_endpoint, ["GET"], with_static=True)
-        self._add_route("/components/footer.html", footer_component_endpoint, ["GET"], with_static=True)
 
     def _add_route(
         self,

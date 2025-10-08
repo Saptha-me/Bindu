@@ -27,7 +27,7 @@ from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
 from bindu.server import BinduApplication, InMemoryScheduler, InMemoryStorage
-from bindu.server.utils.display import prepare_server_display
+from bindu.utils.display import prepare_server_display
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
@@ -138,7 +138,7 @@ def bindufy(
                 Must have signature: (messages: str) -> str
 
     Returns:
-        AgentManifest: The manifest for the pebblified agent
+        AgentManifest: The manifest for the bindufied agent
     
     Example:
         agent = Agent(
@@ -189,9 +189,9 @@ def bindufy(
     handler._pebble_agent = agent
     
     # Validate that this is a protocol-compliant function
-    logger.info(f"🔍 Validating handler function: {handler.__name__}")
+    logger.info(f"Validating handler function: {handler.__name__}")
     validate_agent_function(handler)
-    logger.info(f"🔍 Agent ID: {agent_id}")
+    logger.info(f"Agent ID: {agent_id}")
 
     # Get caller information for file paths
     frame = inspect.currentframe()
@@ -236,7 +236,7 @@ def bindufy(
     )
 
     logger.info("DID Extension setup complete", did=did_extension.did)
-    logger.info("📋 Creating agent manifest...")
+    logger.info("Creating agent manifest...")
 
     # Update capabilities to include DID extension
     capabilities = _update_capabilities_with_did(
@@ -269,13 +269,13 @@ def bindufy(
 
     # Log manifest creation
     skill_count = len(_manifest.skills) if _manifest.skills else 0
-    logger.info(f"🚀 Agent '{did_extension.did}' successfully pebblified!")
+    logger.info(f"Agent '{did_extension.did}' successfully bindufied!")
     logger.debug(
-        f"📊 Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | "
+        f"Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | "
         f"{skill_count} skills | {_manifest.url}"
     )
 
-    logger.info(f"🚀 Starting deployment for agent: {agent_id}")
+    logger.info(f"Starting deployment for agent: {agent_id}")
 
     # Create server components
     storage_instance = _create_storage_instance(storage_config)

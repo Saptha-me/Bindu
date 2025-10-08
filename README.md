@@ -256,7 +256,7 @@ Here's what's next for bindu:
 
 Suggest features or contribute by joining our [Discord](https://discord.gg/Fr6rcRJa)!
 
-## 📋 FAQ
+## FAQ
 
 **Can Pebble be deployed locally?**
 Yes! Pebble supports local development as well as cloud-based deployments.

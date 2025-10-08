@@ -100,7 +100,8 @@ def configure_logger(
 
     # Optional startup banner
     if show_banner and not docker_mode:
-        console.print("[bold cyan]🌻 bindu logging initialized[/bold cyan]", style="dim")
+        from bindu.utils.display import prepare_server_display
+        prepare_server_display()
 
     _is_logging_configured = True
 

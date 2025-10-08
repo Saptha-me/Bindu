@@ -1368,23 +1368,59 @@ UnsupportedOperationError = JSONRPCError[
     ],
 ]
 
-# Bindu-specific extensions (-32004 to -32099)
-ContextNotFoundError = JSONRPCError[
+# Authentication errors (-32004 to -32010)
+AuthenticationRequiredError = JSONRPCError[
     Literal[-32004],
+    Literal[
+        "Authentication is required to access this endpoint. "
+        "Include a valid JWT token in the Authorization header: Bearer <token>"
+    ],
+]
+InvalidTokenError = JSONRPCError[
+    Literal[-32005],
+    Literal[
+        "The provided authentication token is invalid or malformed. "
+        "Verify token format and signature."
+    ],
+]
+TokenExpiredError = JSONRPCError[
+    Literal[-32006],
+    Literal[
+        "The authentication token has expired. "
+        "Request a new token from your authentication provider."
+    ],
+]
+InvalidTokenSignatureError = JSONRPCError[
+    Literal[-32007],
+    Literal[
+        "Token signature verification failed. "
+        "The token may have been tampered with or signed with an incorrect key."
+    ],
+]
+InsufficientPermissionsError = JSONRPCError[
+    Literal[-32008],
+    Literal[
+        "The authenticated user or service does not have sufficient permissions for this operation. "
+        "Contact your administrator to request access."
+    ],
+]
+
+ContextNotFoundError = JSONRPCError[
+    Literal[-32010],
     Literal[
         "The specified context ID was not found. The context may have been deleted or expired. "
         "Check context status: GET /contexts/{id}"
     ],
 ]
 ContextNotCancelableError = JSONRPCError[
-    Literal[-32005],
+    Literal[-32011],
     Literal[
         "This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. "
         "See context lifecycle: /docs/contexts"
     ],
 ]
 ContentTypeNotSupportedError = JSONRPCError[
-    Literal[-32006],
+    Literal[-32012],
     Literal[
         "The content type in the request is not supported. "
         "Please use application/json or check supported content types. See: /docs/content-types"

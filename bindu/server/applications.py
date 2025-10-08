@@ -96,15 +96,42 @@ class BinduApplication(Starlette):
         if lifespan is None:
             lifespan = self._create_default_lifespan(storage, scheduler, manifest)
 
-        # Add Auth0 middleware if authentication is enabled
+        # Add authentication middleware if enabled
         middleware_list = list(middleware) if middleware else []
         if auth_enabled and app_settings.auth.enabled:
             from bindu.utils.logging import get_logger
             logger = get_logger("bindu.server.applications")
-            logger.info("Auth0 authentication enabled")
             
-            # Add Auth0 middleware to the beginning of middleware chain
-            auth_middleware = Middleware(Auth0Middleware, auth_config=app_settings.auth)
+            # Select middleware based on provider
+            provider = app_settings.auth.provider.lower()
+            
+            if provider == "auth0":
+                logger.info("Auth0 authentication enabled")
+                auth_middleware = Middleware(Auth0Middleware, auth_config=app_settings.auth)
+            elif provider == "cognito":
+                logger.info("AWS Cognito authentication enabled")
+                from .middleware.auth_cognito import CognitoMiddleware
+                auth_middleware = Middleware(CognitoMiddleware, auth_config=app_settings.auth)
+            elif provider == "azure":
+                logger.warning("Azure AD authentication not yet implemented")
+                raise NotImplementedError(
+                    "Azure AD authentication is not yet implemented. "
+                    "Use 'auth0' provider or implement AzureADMiddleware."
+                )
+            elif provider == "custom":
+                logger.warning("Custom JWT authentication not yet implemented")
+                raise NotImplementedError(
+                    "Custom JWT authentication is not yet implemented. "
+                    "Use 'auth0' provider or implement CustomJWTMiddleware."
+                )
+            else:
+                logger.error(f"Unknown authentication provider: {provider}")
+                raise ValueError(
+                    f"Unknown authentication provider: '{provider}'. "
+                    f"Supported providers: auth0, cognito, azure, custom"
+                )
+            
+            # Add auth middleware to the beginning of middleware chain
             middleware_list.insert(0, auth_middleware)
 
         super().__init__(

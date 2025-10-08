@@ -1337,7 +1337,8 @@ InternalError = JSONRPCError[
         "Please try again or contact support if the issue persists. See: /health"
     ],
 ]
-# A2A Protocol Standard Error Codes (-32000 to -32003)
+# A2A Protocol Server Error Codes (-32000 to -32099)
+# Standard A2A errors (-32000 to -32003)
 TaskNotFoundError = JSONRPCError[
     Literal[-32000],
     Literal[
@@ -1367,30 +1368,30 @@ UnsupportedOperationError = JSONRPCError[
     ],
 ]
 
-# NotPartOfA2A Error Codes (-32100+)
+# Bindu-specific extensions (-32004 to -32099)
 ContextNotFoundError = JSONRPCError[
-    Literal[-32100],
+    Literal[-32004],
     Literal[
         "The specified context ID was not found. The context may have been deleted or expired. "
         "Check context status: GET /contexts/{id}"
     ],
 ]
 ContextNotCancelableError = JSONRPCError[
-    Literal[-32101],
+    Literal[-32005],
     Literal[
         "This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. "
         "See context lifecycle: /docs/contexts"
     ],
 ]
 ContentTypeNotSupportedError = JSONRPCError[
-    Literal[-32102],
+    Literal[-32006],
     Literal[
         "The content type in the request is not supported. "
         "Please use application/json or check supported content types. See: /docs/content-types"
     ],
 ]
 InvalidAgentResponseError = JSONRPCError[
-    Literal[-32103],
+    Literal[-32007],
     Literal[
         "The agent returned an invalid or malformed response. This may indicate an agent configuration issue. "
         "See troubleshooting: /docs/troubleshooting"

@@ -49,7 +49,7 @@ class StorageConfig:
     """
 
     type: Literal["postgres", "qdrant", "memory"]
-    connection_string: str
+    connection_string: str | None = None
 
 
 @dataclass(frozen=True)

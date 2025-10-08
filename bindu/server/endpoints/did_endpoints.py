@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from bindu.server.utils.request_utils import get_client_ip
+from bindu.utils.request_utils import get_client_ip
 from bindu.utils.logging import get_logger
 
 if TYPE_CHECKING:

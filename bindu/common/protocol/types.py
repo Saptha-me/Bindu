@@ -59,6 +59,7 @@ TaskState: TypeAlias = Literal[
     "failed",  # The task failed due to an error during execution.
     "rejected",  # The task was rejected by the agent and was not started.
     "auth-required",  # The task requires authentication to proceed.
+    "payment-required",  # The task requires payment to proceed. <NotPartOfA2A>
     "unknown",  # The task is in an unknown or indeterminate state. <NotPartOfA2A>
     "trust-verification-required",  # The task requires trust verification to proceed. <NotPartOfA2A>
     "pending",  # The task is pending execution. <NotPartOfA2A>

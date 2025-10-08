@@ -57,6 +57,7 @@ class DIDAgentExtension:
         key_dir: Path,
         author: Optional[str] = None,
         agent_name: Optional[str] = None,
+        agent_id: Optional[str] = None,
         key_password: Optional[str] = None,
     ):
         """Initialize the DID extension with cryptographic identity.
@@ -67,8 +68,9 @@ class DIDAgentExtension:
             key_dir: Directory path where the Ed25519 key pair will be stored.
                     Private key saved as 'private.pem', public key as 'public.pem'.
             author: The creator/owner of the agent (e.g., email or identifier).
-                   Used to construct human-readable DIDs: did:bindu:{author}:{agent_name}
+                   Used to construct human-readable DIDs: did:bindu:{author}:{agent_name}:{agent_id}
             agent_name: The name of the agent. Combined with author to create the DID.
+            agent_id: The unique identifier of the agent. Appended at the end of the DID.
             key_password: Optional password to encrypt the private key at rest.
                          Can be a direct password, environment variable reference (env:VAR_NAME),
                          or 'prompt' for interactive entry. None means unencrypted.
@@ -81,16 +83,18 @@ class DIDAgentExtension:
         
         Example:
             >>> from pathlib import Path
+            >>> from uuid import uuid4
             >>> did_ext = DIDAgentExtension(
             ...     recreate_keys=False,
             ...     key_dir=Path(".keys"),
             ...     author="alice@example.com",
             ...     agent_name="travel_agent",
+            ...     agent_id=str(uuid4()),
             ...     key_password="env:AGENT_KEY_PASSWORD"
             ... )
             >>> did_ext.generate_and_save_key_pair()
             >>> print(did_ext.did)
-            'did:bindu:alice_at_example_com:travel_agent'
+            'did:bindu:alice_at_example_com:travel_agent:550e8400-e29b-41d4-a716-446655440000'
         """
         # Store key directory and paths
         self._key_dir = key_dir
@@ -99,6 +103,7 @@ class DIDAgentExtension:
         self.recreate_keys = recreate_keys
         self.author = author  # The author/owner of the agent
         self.agent_name = agent_name
+        self.agent_id = agent_id  # The unique agent identifier
         self.key_password = key_password.encode() if key_password else None
         self._created_at = datetime.now(timezone.utc).isoformat()  # Cache creation timestamp
         
@@ -290,14 +295,14 @@ class DIDAgentExtension:
         """Create custom bindu DID format.
 
         Returns:
-            DID string in format did:bindu:{author}:{agent_name}
+            DID string in format did:bindu:{author}:{agent_name}:{agent_id}
             Falls back to did:key format if author or agent_name not provided
         """
-        # Use custom bindu format if author and agent_name provided
-        if self.author and self.agent_name:
+        # Use custom bindu format if author, agent_name, and agent_id provided
+        if self.author and self.agent_name and self.agent_id:
             sanitized_author = self._sanitize_did_component(self.author)
             sanitized_agent_name = self._sanitize_did_component(self.agent_name)
-            return f"did:{app_settings.did.method_bindu}:{sanitized_author}:{sanitized_agent_name}"
+            return f"did:{app_settings.did.method_bindu}:{sanitized_author}:{sanitized_agent_name}:{self.agent_id}"
         
         # Fallback to did:key format with multibase encoding
         public_key_bytes = self._get_public_key_raw_bytes()

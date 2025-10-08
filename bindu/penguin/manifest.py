@@ -36,28 +36,21 @@ def validate_agent_function(agent_function: Callable) -> None:
     Raises:
         ValueError: If function signature is invalid
     """
-    logger.debug(f"Validating agent function: {agent_function.__name__}")
-    signature = inspect.signature(agent_function)
-    params = list(signature.parameters.values())
-    param_count = len(params)
-
-    if param_count < 1:
-        logger.error(f"Agent function '{agent_function.__name__}' missing 'messages' parameter")
-        raise ValueError(
-            "Agent function must have at least 'messages' parameter of type list[binduMessage]"
-        )
-
-    if param_count > 1:
-        logger.error(f"Agent function '{agent_function.__name__}' has too many parameters: {param_count}")
-        raise ValueError(
-            "Agent function must have only 'messages' and optional 'context' parameters"
-        )
-
-    if params[0].name != "messages":
-        logger.error(f"Agent function '{agent_function.__name__}' first parameter must be 'messages', got '{params[0].name}'")
-        raise ValueError("First parameter must be named 'messages'")
+    func_name = agent_function.__name__
+    logger.debug(f"Validating agent function: {func_name}")
     
-    logger.debug(f"Agent function '{agent_function.__name__}' validated successfully")
+    params = list(inspect.signature(agent_function).parameters.values())
+    
+    if not params:
+        raise ValueError("Agent function must have at least 'messages' parameter of type list[binduMessage]")
+    
+    if len(params) > 1:
+        raise ValueError("Agent function must have only 'messages' parameter")
+    
+    if params[0].name != "messages":
+        raise ValueError(f"First parameter must be named 'messages', got '{params[0].name}'")
+    
+    logger.debug(f"Agent function '{func_name}' validated successfully")
 
 
 def create_manifest(

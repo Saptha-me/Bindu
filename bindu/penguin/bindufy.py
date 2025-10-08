@@ -185,9 +185,6 @@ def bindufy(
         if validated_config.get("scheduler") else None
     )
     
-    # Store the agent reference in the handler's closure (for potential future use)
-    handler._pebble_agent = agent
-    
     # Validate that this is a protocol-compliant function
     logger.info(f"Validating handler function: {handler.__name__}")
     validate_agent_function(handler)
@@ -208,12 +205,15 @@ def bindufy(
             key_dir=caller_dir / app_settings.did.pki_dir,
             author=validated_config.get("author"),
             agent_name=validated_config.get("name"),
+            agent_id=str(agent_id),
             key_password=validated_config.get("key_password")
         )
         did_extension.generate_and_save_key_pair()
     except Exception as exc:
         logger.error(f"Failed to initialize DID extension: {exc}")
         raise
+
+    logger.info(f"DID extension initialized: {did_extension.did}")
     
     # Set agent metadata for DID document
     agent_url = deployment_config.url if deployment_config else app_settings.network.default_url

@@ -37,16 +37,14 @@ class InMemoryStorage(Storage[ContextT]):
     
     Storage Structure:
     - tasks: Dict[UUID, Task] - All tasks indexed by task_id
-    - contexts: Dict[UUID, Context] - All contexts indexed by context_id
+    - contexts: Dict[UUID, list[UUID]] - Task IDs grouped by context_id
     - task_feedback: Dict[UUID, List[dict]] - Optional feedback storage
     """
 
     def __init__(self):
         self.tasks: dict[UUID, Task] = {}
-        self.contexts: dict[UUID, ContextT] = {}
+        self.contexts: dict[UUID, list[UUID]] = {}
         self.task_feedback: dict[UUID, list[dict[str, Any]]] = {}
-        # Performance optimization: Index tasks by context_id for O(1) lookup
-        self._context_task_index: dict[UUID, list[UUID]] = {}
 
     async def load_task(self, task_id: UUID, history_length: int | None = None) -> Task | None:
         """Load a task from memory.
@@ -111,10 +109,10 @@ class InMemoryStorage(Storage[ContextT]):
         task = Task(task_id=task_id, context_id=context_id, kind="task", status=task_status, history=[message])
         self.tasks[task_id] = task
 
-        # Update context index for O(1) lookup
-        if context_id not in self._context_task_index:
-            self._context_task_index[context_id] = []
-        self._context_task_index[context_id].append(task_id)
+        # Add task to context
+        if context_id not in self.contexts:
+            self.contexts[context_id] = []
+        self.contexts[context_id].append(task_id)
 
         return task
 
@@ -172,7 +170,10 @@ class InMemoryStorage(Storage[ContextT]):
         return task
 
     async def update_context(self, context_id: UUID, context: ContextT) -> None:
-        """Store or update context.
+        """Store or update context metadata.
+        
+        Note: This stores additional context metadata. Task associations are
+        managed automatically via submit_task().
 
         Args:
             context_id: Context identifier
@@ -184,16 +185,17 @@ class InMemoryStorage(Storage[ContextT]):
         if not isinstance(context_id, UUID):
             raise TypeError(f"context_id must be UUID, got {type(context_id).__name__}")
         
-        self.contexts[context_id] = context
+        # Note: This method is kept for backward compatibility but contexts
+        # are now primarily managed as task lists
 
-    async def load_context(self, context_id: UUID) -> ContextT | None:
-        """Load context from storage.
+    async def load_context(self, context_id: UUID) -> list[UUID] | None:
+        """Load context task list from storage.
 
         Args:
             context_id: Unique identifier of the context
 
         Returns:
-            Context object if found, None otherwise
+            List of task UUIDs if context exists, None otherwise
         
         Raises:
             TypeError: If context_id is not UUID
@@ -205,9 +207,9 @@ class InMemoryStorage(Storage[ContextT]):
 
     async def append_to_contexts(self, context_id: UUID, messages: list[Message]) -> None:
         """Append messages to context history.
-
-        Efficient operation that updates context without full rebuild.
-        Creates new context if it doesn't exist.
+        
+        Note: This method is deprecated as contexts now store task lists.
+        Messages are stored in task history instead.
 
         Args:
             context_id: Context to update
@@ -222,30 +224,9 @@ class InMemoryStorage(Storage[ContextT]):
         if not isinstance(messages, list):
             raise TypeError(f"messages must be list, got {type(messages).__name__}")
         
-        if not messages:
-            return
-
-        existing_context = self.contexts.get(context_id)
-        timestamp = datetime.now(timezone.utc).isoformat()
-
-        if existing_context is None:
-            # Create new context with message history
-            new_context = cast(ContextT, {
-                "context_id": context_id,
-                "kind": "context",
-                "created_at": timestamp,
-                "updated_at": timestamp,
-                "status": "active",
-                "message_history": messages,  # No need to copy, we own this list
-            })
-            self.contexts[context_id] = new_context
-        else:
-            # Append to existing message history
-            if isinstance(existing_context, dict):
-                if "message_history" not in existing_context:
-                    existing_context["message_history"] = []
-                existing_context["message_history"].extend(messages)
-                existing_context["updated_at"] = timestamp
+        # Ensure context exists
+        if context_id not in self.contexts:
+            self.contexts[context_id] = []
 
     async def list_tasks(self, length: int | None = None) -> list[Task]:
         """List all tasks in storage.
@@ -267,7 +248,6 @@ class InMemoryStorage(Storage[ContextT]):
         """List tasks belonging to a specific context.
 
         Used for building conversation history and supporting task refinements.
-        Optimized with O(1) index lookup instead of O(n) scan.
 
         Args:
             context_id: Context to filter tasks by
@@ -282,8 +262,8 @@ class InMemoryStorage(Storage[ContextT]):
         if not isinstance(context_id, UUID):
             raise TypeError(f"context_id must be UUID, got {type(context_id).__name__}")
         
-        # Use index for O(1) lookup instead of O(n) scan
-        task_ids = self._context_task_index.get(context_id, [])
+        # Get task IDs from context
+        task_ids = self.contexts.get(context_id, [])
         tasks: list[Task] = [self.tasks[task_id] for task_id in task_ids if task_id in self.tasks]
         
         if length is not None and length > 0 and length < len(tasks):
@@ -297,13 +277,16 @@ class InMemoryStorage(Storage[ContextT]):
             length: Optional limit on number of contexts to return (most recent)
 
         Returns:
-            List of context objects
+            List of context objects with task counts
         """
-        if length is None:
-            return list(self.contexts.values())
+        contexts = [
+            {"context_id": ctx_id, "task_count": len(task_ids), "task_ids": task_ids}
+            for ctx_id, task_ids in self.contexts.items()
+        ]
         
-        all_contexts = list(self.contexts.values())
-        return all_contexts[-length:] if length < len(all_contexts) else all_contexts
+        if length is not None and length > 0 and length < len(contexts):
+            return contexts[-length:]
+        return contexts
 
     async def clear_all(self) -> None:
         """Clear all tasks and contexts from storage.
@@ -313,7 +296,6 @@ class InMemoryStorage(Storage[ContextT]):
         self.tasks.clear()
         self.contexts.clear()
         self.task_feedback.clear()
-        self._context_task_index.clear()
 
     async def store_task_feedback(self, task_id: UUID, feedback_data: dict[str, Any]) -> None:
         """Store user feedback for a task.

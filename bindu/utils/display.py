@@ -10,7 +10,12 @@ from rich.text import Text
 from rich.console import Group
 
 
-def prepare_server_display(host: str = None, port: int = None, agent_id: str = None) -> None:
+def prepare_server_display(
+    host: str = None,
+    port: int = None,
+    agent_id: str = None,
+    agent_did: str = None,
+    ) -> None:
     """Prepare a beautiful display for the server using rich.
 
     Args:
@@ -56,6 +61,12 @@ def prepare_server_display(host: str = None, port: int = None, agent_id: str = N
         table.add_row(
             Text("Agent:", style="bold cyan"),
             Text(agent_id, style="bold blue")
+        )
+    
+    if agent_did:
+        table.add_row(
+            Text("Agent DID:", style="bold cyan"),
+            Text(agent_did, style="bold blue")
         )
     
     # Create tagline

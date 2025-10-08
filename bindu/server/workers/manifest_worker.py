@@ -36,6 +36,7 @@ from uuid import UUID
 from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams, TaskState
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
+from bindu.settings import app_settings
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
 
@@ -101,10 +102,22 @@ class ManifestWorker(Worker):
         message_history = await self._build_complete_message_history(task)
 
         try:
-            # Step 3: Execute manifest
-            conversation_context = "\n".join(
-                f"{msg['role']}: {msg['content']}" for msg in message_history
-            ) if message_history else ""
+            # Step 3: Execute manifest with system prompt (if enabled)
+            if app_settings.agent.enable_structured_responses:
+                # Inject structured response system prompt
+                system_prompt = app_settings.agent.structured_response_system_prompt
+                if message_history:
+                    conversation_context = f"system: {system_prompt}\n" + "\n".join(
+                        f"{msg['role']}: {msg['content']}" for msg in message_history
+                    )
+                else:
+                    conversation_context = f"system: {system_prompt}"
+            else:
+                # No system prompt injection
+                conversation_context = "\n".join(
+                    f"{msg['role']}: {msg['content']}" for msg in message_history
+                ) if message_history else ""
+            
             results = self.manifest.run(conversation_context)
 
             # Step 4: Parse response and detect state

@@ -99,8 +99,8 @@ class ManifestWorker(Worker):
             raise ValueError(f"Task {params['task_id']} not found")
 
         await TaskStateManager.validate_task_state(task)
-        await self.storage.update_task(task["task_id"], state="working")
-        await self._notify_lifecycle(task["task_id"], task["context_id"], "working", False)
+        await self.storage.update_task(task["id"], state="working")
+        await self._notify_lifecycle(task["id"], task["context_id"], "working", False)
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
@@ -228,7 +228,7 @@ class ManifestWorker(Worker):
             # Strategy 2: Context-based history (implicit continuation)
             # Only enabled if configured in manifest
             tasks_by_context = await self.storage.list_tasks_by_context(task["context_id"])
-            previous_tasks = [t for t in tasks_by_context if t["task_id"] != task["task_id"]]
+            previous_tasks = [t for t in tasks_by_context if t["id"] != task["id"]]
             
             all_previous_messages: list[Message] = []
             for prev_task in previous_tasks:
@@ -267,16 +267,16 @@ class ManifestWorker(Worker):
             message_content: Content for agent message (any type: str, dict, list, etc.)
         """
         agent_messages = MessageConverter.to_protocol_messages(
-            message_content, task["task_id"], task["context_id"]
+            message_content, task["id"], task["context_id"]
         )
         
         # Update task with state and append agent messages to history
         await self.storage.update_task(
-            task["task_id"], 
+            task["id"], 
             state=state,
             new_messages=agent_messages
         )
-        await self._notify_lifecycle(task["task_id"], task["context_id"], state, False)
+        await self._notify_lifecycle(task["id"], task["context_id"], state, False)
 
     # -------------------------------------------------------------------------
     # Terminal State Handling
@@ -318,37 +318,37 @@ class ManifestWorker(Worker):
         if state == "completed":
             # Success: Add both Message and Artifacts
             agent_messages = MessageConverter.to_protocol_messages(
-                results, task["task_id"], task["context_id"]
+                results, task["id"], task["context_id"]
             )
             artifacts = self.build_artifacts(results)
             
             await self.storage.update_task(
-                task["task_id"], 
+                task["id"], 
                 state=state, 
                 new_artifacts=artifacts, 
                 new_messages=agent_messages
             )
-            await self._notify_lifecycle(task["task_id"], task["context_id"], state, True)
+            await self._notify_lifecycle(task["id"], task["context_id"], state, True)
         
         elif state in ("failed", "rejected"):
             # Failure/Rejection: Message only (explanation), NO artifacts
             error_message = MessageConverter.to_protocol_messages(
-                results, task["task_id"], task["context_id"]
+                results, task["id"], task["context_id"]
             )
             await self.storage.update_task(
-                task["task_id"], 
+                task["id"], 
                 state=state, 
                 new_messages=error_message
             )
-            await self._notify_lifecycle(task["task_id"], task["context_id"], state, True)
+            await self._notify_lifecycle(task["id"], task["context_id"], state, True)
         
         elif state == "canceled":
             # Canceled: State change only, NO new content
             await self.storage.update_task(
-                task["task_id"], 
+                task["id"], 
                 state=state
             )
-            await self._notify_lifecycle(task["task_id"], task["context_id"], state, True)
+            await self._notify_lifecycle(task["id"], task["context_id"], state, True)
     
     async def _handle_task_failure(self, task: dict[str, Any], error: str) -> None:
         """Handle task execution failure.
@@ -365,15 +365,15 @@ class ManifestWorker(Worker):
         """
         error_message = MessageConverter.to_protocol_messages(
             f"Task execution failed: {error}", 
-            task["task_id"], 
+            task["id"], 
             task["context_id"]
         )
         await self.storage.update_task(
-            task["task_id"], 
+            task["id"], 
             state="failed", 
             new_messages=error_message
         )
-        await self._notify_lifecycle(task["task_id"], task["context_id"], "failed", True)
+        await self._notify_lifecycle(task["id"], task["context_id"], "failed", True)
     
     # -------------------------------------------------------------------------
     # Result Collection

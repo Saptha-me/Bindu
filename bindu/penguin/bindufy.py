@@ -26,7 +26,6 @@ from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
-from bindu.server import BinduApplication, InMemoryScheduler, InMemoryStorage
 from bindu.utils.display import prepare_server_display
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
@@ -84,22 +83,24 @@ def _parse_deployment_url(deployment_config: DeploymentConfig | None) -> tuple[s
     return host, port
 
 
-def _create_storage_instance(storage_config: StorageConfig | None) -> InMemoryStorage:
+def _create_storage_instance(storage_config: StorageConfig | None):
     """Factory function to create storage instance based on configuration.
     
     Note: Currently only InMemoryStorage is supported.
     Future implementations will support PostgreSQL and other backends.
     """
+    from bindu.server import InMemoryStorage
     # TODO: Implement PostgreSQL and other storage backends
     return InMemoryStorage()
 
 
-def _create_scheduler_instance(scheduler_config: SchedulerConfig | None) -> InMemoryScheduler:
+def _create_scheduler_instance(scheduler_config: SchedulerConfig | None):
     """Factory function to create scheduler instance based on configuration.
     
     Note: Currently only InMemoryScheduler is supported.
     Future implementations will support Redis and other backends.
     """
+    from bindu.server import InMemoryScheduler
     # TODO: Implement Redis and other scheduler backends
     return InMemoryScheduler()
 
@@ -294,6 +295,9 @@ def bindufy(
 
     logger.info(f"Starting deployment for agent: {agent_id}")
 
+    # Import server components (deferred to avoid circular import)
+    from bindu.server import BinduApplication
+    
     # Create server components
     storage_instance = _create_storage_instance(storage_config)
     scheduler_instance = _create_scheduler_instance(scheduler_config)

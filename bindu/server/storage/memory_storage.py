@@ -160,7 +160,7 @@ class InMemoryStorage(Storage[ContextT]):
         
         # Task doesn't exist - create new task
         task_status = TaskStatus(state="submitted", timestamp=datetime.now(timezone.utc).isoformat())
-        task = Task(task_id=task_id, context_id=context_id, kind="task", status=task_status, history=[message])
+        task = Task(id=task_id, context_id=context_id, kind="task", status=task_status, history=[message])
         self.tasks[task_id] = task
 
         # Add task to context

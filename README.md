@@ -2,7 +2,7 @@
   <img src="assets/bindu-logo.svg" alt="bindu Logo" width="200">
 </p>
 
-<h1 align="center">bindu: Agent-to-Agent Communication </h1>
+<h1 align="center"> bindu </h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Hits](https://hits.sh/github.com/bindu-ai/pebble.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/bindu-ai/pebble/)

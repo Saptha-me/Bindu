@@ -45,10 +45,16 @@ dependencies = [
     "openai>=2.1.0",
     "pyjwt[crypto]>=2.8.0",
     "requests>=2.31.0",
+    "pytest-asyncio>=0.26.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest-asyncio>=0.26.0"]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.26.0",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.2.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["bindu"]  # Changed from src/bindu to reflect actual directory structure
@@ -69,5 +75,6 @@ bindu = { workspace = true }
 [dependency-groups]
 dev = [
     "bindu",
+    "pytest-cov>=7.0.0",
     "ty>=0.0.1a14",
 ]

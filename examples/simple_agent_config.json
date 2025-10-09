@@ -36,11 +36,21 @@
       "specialization": "basic_qa"
     },
     "auth": {
-      "enabled": false,
-      "domain": "your-tenant.auth0.com",
-      "audience": "https://api.bindu.ai",
+      "enabled": true,
+      "provider": "auth0",
+      "domain": "dev-tlzrol0zsxw40ujx.us.auth0.com",
+      "audience": "https://dev-tlzrol0zsxw40ujx.us.auth0.com/api/v2/",
       "algorithms": ["RS256"],
+      "issuer": "https://dev-tlzrol0zsxw40ujx.us.auth0.com/",
+      "jwks_uri": "https://dev-tlzrol0zsxw40ujx.us.auth0.com/.well-known/jwks.json",
       "require_permissions": false,
+      "public_endpoints": [
+        "/health",
+        "/agent.html",
+        "/.well-known/*",
+        "/did/resolve*",
+        "/agent/info"
+      ],
       "permissions": {
         "message/send": ["agent:write"],
         "tasks/get": ["agent:read"],

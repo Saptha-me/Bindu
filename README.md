@@ -261,6 +261,13 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/Fr6rc
 **Can bindu be deployed locally?**
 Yes! bindu supports local development as well as cloud-based deployments.
 
+## Security:
+curl --request POST \
+  --url https://dev-tlzrol0zsxw40ujx.us.auth0.com/oauth/token \
+  --header 'content-type: application/json' \
+  --data '{"client_id":"GGLemeiKL6MfXD7Hy4L4mtz8WNIhRtkS","client_secret":"zXcdPIQRAM9iHzABZtcfaN_2iICW4pfuoyUChIcVDF5488ejtyKG_U_PyWj9kpJT","audience":"https://dev-tlzrol0zsxw40ujx.us.auth0.com/api/v2/","grant_type":"client_credentials"}' \
+  | jq -r '.access_token'
+
 
 ## ⭐ Star History
 

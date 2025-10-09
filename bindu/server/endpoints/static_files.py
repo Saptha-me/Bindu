@@ -6,7 +6,9 @@ from typing import Callable, Optional
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 
+from bindu.common.protocol.types import InternalError, TaskNotFoundError
 from bindu.settings import app_settings
+from bindu.utils.request_utils import extract_error_fields, jsonrpc_error
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.server.endpoints.static_files")
@@ -30,20 +32,16 @@ def _serve_static_file(
     try:
         if not file_path.exists():
             logger.warning(f"Static file not found: {file_path} (requested by {request.client.host})")
-            return JSONResponse(
-                content={"error": "File not found", "path": str(file_path.name)},
-                status_code=404
-            )
+            code, message = extract_error_fields(TaskNotFoundError)
+            return jsonrpc_error(code, message, f"File not found: {file_path.name}", status=404)
         
         logger.debug(f"Serving static file: {file_path.name} to {request.client.host}")
         return FileResponse(file_path, media_type=media_type)
         
     except Exception as e:
         logger.error(f"Error serving static file {file_path}: {e}", exc_info=True)
-        return JSONResponse(
-            content={"error": "Internal server error"},
-            status_code=500
-        )
+        code, message = extract_error_fields(InternalError)
+        return jsonrpc_error(code, message, str(e), status=500)
 
 
 def _create_static_endpoint(relative_path: str, media_type: str) -> Callable:

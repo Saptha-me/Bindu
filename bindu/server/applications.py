@@ -35,7 +35,6 @@ from bindu.settings import app_settings
 
 from .endpoints import (
     agent_card_endpoint,
-    agent_info_endpoint,
     agent_js_endpoint,
     agent_page_endpoint,
     agent_run_endpoint,
@@ -167,7 +166,6 @@ class BinduApplication(Starlette):
 
         # DID endpoints
         self._add_route("/did/resolve", did_resolve_endpoint, ["GET", "POST"], with_app=True)
-        self._add_route("/agent/info", agent_info_endpoint, ["GET"], with_app=True)
 
         # HTML pages
         html_routes = [

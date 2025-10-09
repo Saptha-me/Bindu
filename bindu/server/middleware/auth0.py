@@ -53,13 +53,6 @@ class Auth0Middleware(AuthMiddleware):
             
         Returns:
             Decoded token payload with claims
-            
-        Raises:
-            jwt.ExpiredSignatureError: Token has expired
-            jwt.InvalidAudienceError: Token audience doesn't match
-            jwt.InvalidIssuerError: Token issuer doesn't match
-            jwt.InvalidSignatureError: Token signature verification failed
-            jwt.InvalidTokenError: Other token validation errors
         """
         return self.validator.validate_token(token)
     
@@ -70,22 +63,6 @@ class Auth0Middleware(AuthMiddleware):
             token_payload: Decoded and validated JWT payload
             
         Returns:
-            Dictionary with standardized user information:
-            {
-                "sub": "auth0|user_id" or "client_id@clients",
-                "is_m2m": bool,  # True if M2M token (ends with @clients)
-                "permissions": [...],  # From permissions or scope claim
-                "scope": "...",
-                "azp": "client_id",
-                "gty": "grant_type",
-                # User-specific fields (if not M2M):
-                "email": "...",
-                "email_verified": bool,
-                "name": "...",
-                "nickname": "...",
-                "picture": "...",
-                # M2M-specific fields:
-                "client_id": "..."  # Extracted from sub
-            }
+            Dictionary with standardized user information
         """
         return self.validator.extract_user_info(token_payload)

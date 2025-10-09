@@ -231,6 +231,18 @@ class AgentSettings(BaseSettings):
         extra="allow",
     )
 
+    # A2A Protocol Method Handlers
+    # Maps JSON-RPC method names to task_manager handler method names
+    method_handlers: dict[str, str] = {
+        "message/send": "send_message",
+        "tasks/get": "get_task",
+        "tasks/cancel": "cancel_task",
+        "tasks/list": "list_tasks",
+        "contexts/list": "list_contexts",
+        "contexts/clear": "clear_context",
+        "tasks/feedback": "task_feedback",
+    }
+
     # Task State Configuration (A2A Protocol)
     # Non-terminal states: Task is mutable, can receive new messages
     non_terminal_states: frozenset[str] = frozenset({

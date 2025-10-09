@@ -103,7 +103,7 @@ class ManifestWorker(Worker):
 
         try:
             # Step 3: Execute manifest with system prompt (if enabled)
-            if app_settings.agent.enable_structured_responses:
+            if self.manifest.enable_system_message and app_settings.agent.enable_structured_responses:
                 # Inject structured response system prompt as first message
                 system_prompt = app_settings.agent.structured_response_system_prompt
                 if system_prompt:
@@ -217,8 +217,9 @@ class ManifestWorker(Worker):
             current_messages = task.get("history", [])
             all_messages = referenced_messages + current_messages
             
-        else:
+        elif self.manifest.enable_context_based_history:
             # Strategy 2: Context-based history (implicit continuation)
+            # Only enabled if configured in manifest
             tasks_by_context = await self.storage.list_tasks_by_context(task["context_id"])
             previous_tasks = [t for t in tasks_by_context if t["task_id"] != task["task_id"]]
             
@@ -230,6 +231,9 @@ class ManifestWorker(Worker):
             
             current_messages = task.get("history", [])
             all_messages = all_previous_messages + current_messages
+        else:
+            # No context-based history - only use current task messages
+            all_messages = task.get("history", [])
         
         return self.build_message_history(all_messages) if all_messages else []
 

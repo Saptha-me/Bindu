@@ -94,9 +94,12 @@ from bindu.common.protocol.types import (
     Task,
     TaskFeedbackRequest,
     TaskFeedbackResponse,
+    TaskNotCancelableError,
     TaskNotFoundError,
     TaskSendParams,
 )
+
+from bindu.settings import app_settings
 
 from ..utils.task_telemetry import trace_context_operation, trace_task_operation, track_active_task
 from .scheduler import Scheduler
@@ -216,11 +219,25 @@ class TaskManager:
     async def cancel_task(self, request: CancelTaskRequest) -> CancelTaskResponse:
         """Cancel a running task."""
         task_id = request["params"]["task_id"]
-        await self.scheduler.cancel_task(request["params"])
         task = await self.storage.load_task(task_id)
 
         if task is None:
             return self._create_error_response(CancelTaskResponse, request["id"], TaskNotFoundError, "Task not found")
+        
+        # Check if task is in a cancelable state
+        current_state = task["status"]["state"]
+        
+        if current_state in app_settings.agent.terminal_states:
+            return self._create_error_response(
+                CancelTaskResponse,
+                request["id"],
+                TaskNotCancelableError,
+                f"Task cannot be canceled in '{current_state}' state. Tasks can only be canceled while pending or running."
+            )
+        
+        # Cancel the task
+        await self.scheduler.cancel_task(request["params"])
+        task = await self.storage.load_task(task_id)
 
         return CancelTaskResponse(jsonrpc="2.0", id=request["id"], result=task)
 

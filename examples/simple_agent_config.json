@@ -30,6 +30,8 @@
     "monitoring": false,
     "telemetry": false,
     "num_history_sessions": 5,
+    "enable_system_message": true,
+    "enable_context_based_history": false,
     "documentation_url": "https://docs.saptha.me/agents/simple",
     "extra_metadata": {
       "domain": "general",

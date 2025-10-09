@@ -292,7 +292,17 @@ class ManifestWorker(Worker):
             task: Task dict being finalized
             results: Agent execution results
             state: Terminal state (completed or failed)
+            
+        Raises:
+            ValueError: If state is not a terminal state
         """
+        # Validate that state is terminal
+        if state not in app_settings.agent.terminal_states:
+            raise ValueError(
+                f"Invalid terminal state '{state}'. Must be one of: {app_settings.agent.terminal_states}"
+            )
+        
+        # Handle different terminal states
         if state == "completed":
             # Success: Add both Message and Artifacts
             agent_messages = MessageConverter.to_protocol_messages(
@@ -302,20 +312,27 @@ class ManifestWorker(Worker):
             
             await self.storage.update_task(
                 task["task_id"], 
-                state="completed", 
+                state=state, 
                 new_artifacts=artifacts, 
                 new_messages=agent_messages
             )
         
-        elif state == "failed":
-            # Failure: Message only (error explanation), NO artifacts
+        elif state in ("failed", "rejected"):
+            # Failure/Rejection: Message only (explanation), NO artifacts
             error_message = MessageConverter.to_protocol_messages(
                 results, task["task_id"], task["context_id"]
             )
             await self.storage.update_task(
                 task["task_id"], 
-                state="failed", 
+                state=state, 
                 new_messages=error_message
+            )
+        
+        elif state == "canceled":
+            # Canceled: State change only, NO new content
+            await self.storage.update_task(
+                task["task_id"], 
+                state=state
             )
     
     async def _handle_task_failure(self, task: dict[str, Any], error: str) -> None:

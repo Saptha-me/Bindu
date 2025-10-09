@@ -23,6 +23,7 @@ from uuid import UUID
 from typing_extensions import TypeVar
 
 from bindu.common.protocol.types import Artifact, Context, Message, Task, TaskState, TaskStatus
+from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.server.storage.memory_storage")
@@ -114,6 +115,20 @@ class InMemoryStorage(Storage[ContextT]):
         elif message_id_raw is not None and not isinstance(message_id_raw, UUID):
             raise TypeError(f"message_id must be UUID or str, got {type(message_id_raw).__name__}")
 
+        # Validate and normalize reference_task_ids if present
+        if "reference_task_ids" in message:
+            ref_ids = message["reference_task_ids"]
+            if ref_ids is not None:
+                normalized_refs = []
+                for ref_id in ref_ids:
+                    if isinstance(ref_id, str):
+                        normalized_refs.append(UUID(ref_id))
+                    elif isinstance(ref_id, UUID):
+                        normalized_refs.append(ref_id)
+                    else:
+                        raise TypeError(f"reference_task_id must be UUID or str, got {type(ref_id).__name__}")
+                message["reference_task_ids"] = normalized_refs
+
         # Check if task already exists
         existing_task = self.tasks.get(task_id)
         
@@ -121,10 +136,8 @@ class InMemoryStorage(Storage[ContextT]):
             # Task exists - check if it's mutable
             current_state = existing_task["status"]["state"]
             
-            # Terminal states (immutable)
-            terminal_states = {"completed", "failed", "canceled", "rejected"}
-            
-            if current_state in terminal_states:
+            # Check if task is in terminal state (immutable)
+            if current_state in app_settings.agent.terminal_states:
                 raise ValueError(
                     f"Cannot continue task {task_id}: Task is in terminal state '{current_state}' and is immutable. "
                     f"Create a new task with referenceTaskIds to continue the conversation."

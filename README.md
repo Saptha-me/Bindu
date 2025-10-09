@@ -269,6 +269,28 @@ curl --request POST \
   | jq -r '.access_token'
 
 
+  Standard JSON-RPC (-32700 to -32603)
+├─ -32700: Parse error
+├─ -32600: Invalid Request
+├─ -32601: Method not found
+├─ -32602: Invalid params
+└─ -32603: Internal error
+
+A2A Official (-32001 to -32007)
+├─ -32001: TaskNotFoundError ✅
+├─ -32002: TaskNotCancelableError ✅
+├─ -32003: PushNotificationNotSupportedError ✅
+├─ -32004: UnsupportedOperationError ✅
+├─ -32005: ContentTypeNotSupportedError ✅
+├─ -32006: InvalidAgentResponseError ✅
+└─ -32007: AuthenticatedExtendedCardNotConfiguredError ✅
+
+Bindu Extensions (-32008 to -32099)
+├─ -32008: TaskImmutableError (custom)
+├─ -32009 to -32013: Authentication errors
+└─ -32020 to -32021: Context errors
+
+
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bindu-ai/pebble&type=Date)](https://star-history.com/#bindu-ai/pebble&Date)

@@ -15,11 +15,11 @@ from starlette.responses import JSONResponse, Response
 
 from bindu.common.protocol.types import (
     AuthenticationRequiredError,
-    InsufficientPermissionsError,
     InvalidTokenError,
     InvalidTokenSignatureError,
     TokenExpiredError,
 )
+from bindu.utils.request_utils import extract_error_fields
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.server.middleware.base")
@@ -200,7 +200,14 @@ class AuthMiddleware(BaseHTTPMiddleware, ABC):
         
         if not token:
             logger.warning(f"Authentication required for {path} - No token provided")
-            return AuthenticationRequiredError
+            # Extract request ID for proper JSON-RPC error response
+            request_id = await self._extract_request_id(request)
+            AUTH_REQUIRED_CODE, AUTH_REQUIRED_MSG = extract_error_fields(AuthenticationRequiredError)
+            return self._create_error_response(
+                code=AUTH_REQUIRED_CODE,
+                message=AUTH_REQUIRED_MSG,
+                request_id=request_id
+            )
         
         # Validate token (provider-specific implementation)
         try:
@@ -215,7 +222,8 @@ class AuthMiddleware(BaseHTTPMiddleware, ABC):
             user_info = self._extract_user_info(token_payload)
         except Exception as e:
             logger.error(f"Failed to extract user info for {path}: {e}")
-            return InvalidTokenError
+            code, message = extract_error_fields(InvalidTokenError)
+            return self._create_error_response(code=code, message=message)
         
         # Attach user info to request state
         request.state.user = user_info
@@ -233,6 +241,53 @@ class AuthMiddleware(BaseHTTPMiddleware, ABC):
     # -------------------------------------------------------------------------
     # Error Handling (Provider-Specific)
     # -------------------------------------------------------------------------
+    
+    async def _extract_request_id(self, request: Request) -> Any:
+        """Extract request ID from JSON-RPC request body.
+        
+        Args:
+            request: HTTP request
+            
+        Returns:
+            Request ID or None if not found/parseable
+        """
+        try:
+            body = await request.body()
+            if body:
+                import json
+                data = json.loads(body)
+                return data.get("id")
+        except Exception:
+            pass
+        return None
+    
+    def _create_error_response(
+        self, code: int, message: str, data: str | None = None, status: int = 401, request_id: Any = None
+    ) -> JSONResponse:
+        """Create a JSON-RPC error response.
+        
+        Args:
+            code: JSON-RPC error code (from protocol specification)
+            message: Error message (from protocol specification)
+            data: Optional additional error data
+            status: HTTP status code (default: 401)
+            request_id: Optional JSON-RPC request ID
+            
+        Returns:
+            JSONResponse with JSON-RPC error format
+        """
+        error_dict: dict[str, Any] = {"code": code, "message": message}
+        if data:
+            error_dict["data"] = data
+        
+        return JSONResponse(
+            content={
+                "jsonrpc": "2.0",
+                "error": error_dict,
+                "id": request_id,
+            },
+            status_code=status,
+        )
     
     def _handle_validation_error(self, error: Exception, path: str) -> JSONResponse:
         """Handle token validation errors.
@@ -252,10 +307,22 @@ class AuthMiddleware(BaseHTTPMiddleware, ABC):
         
         # Common error patterns
         if "expired" in error_str.lower():
-            return TokenExpiredError
+            code, message = extract_error_fields(TokenExpiredError)
+            return self._create_error_response(code=code, message=message)
         elif "signature" in error_str.lower():
-            return InvalidTokenSignatureError
+            code, message = extract_error_fields(InvalidTokenSignatureError)
+            return self._create_error_response(code=code, message=message)
         elif "audience" in error_str.lower() or "issuer" in error_str.lower():
-            return InvalidTokenError
+            code, message = extract_error_fields(InvalidTokenError)
+            return self._create_error_response(
+                code=code,
+                message=message,
+                data=f"Token validation failed: {error_str}"
+            )
         else:
-            return InvalidTokenError
+            code, message = extract_error_fields(InvalidTokenError)
+            return self._create_error_response(
+                code=code,
+                message=message,
+                data=f"Token validation failed: {error_str}"
+            )

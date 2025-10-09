@@ -1338,109 +1338,129 @@ InternalError = JSONRPCError[
     ],
 ]
 # A2A Protocol Server Error Codes (-32000 to -32099)
-# Standard A2A errors (-32000 to -32003)
+# Official A2A specification errors (-32001 to -32007)
+# See: https://a2a-protocol.org/dev/specification/#82-a2a-specific-errors
 TaskNotFoundError = JSONRPCError[
-    Literal[-32000],
+    Literal[-32001],
     Literal[
         "The specified task ID was not found. The task may have been completed, canceled, or expired. "
         "Check task status: GET /tasks/{id}"
     ],
 ]
 TaskNotCancelableError = JSONRPCError[
-    Literal[-32001],
+    Literal[-32002],
     Literal[
         "This task cannot be canceled in its current state. Tasks can only be canceled while pending or running. "
         "See task lifecycle: /docs/tasks"
     ],
 ]
 PushNotificationNotSupportedError = JSONRPCError[
-    Literal[-32002],
+    Literal[-32003],
     Literal[
         "Push notifications are not supported by this server configuration. "
         "Please use polling to check task status. See: GET /tasks/{id}"
     ],
 ]
 UnsupportedOperationError = JSONRPCError[
-    Literal[-32003],
+    Literal[-32004],
     Literal[
         "The requested operation is not supported by this agent or server configuration. "
         "See supported operations: /docs/capabilities"
     ],
 ]
+ContentTypeNotSupportedError = JSONRPCError[
+    Literal[-32005],
+    Literal[
+        "The specified content type or media type is not supported by this agent. "
+        "Check supported types in agent capabilities."
+    ],
+]
+InvalidAgentResponseError = JSONRPCError[
+    Literal[-32006],
+    Literal[
+        "The agent returned an invalid or malformed response. "
+        "This may indicate an agent implementation issue."
+    ],
+]
+AuthenticatedExtendedCardNotConfiguredError = JSONRPCError[
+    Literal[-32007],
+    Literal[
+        "The authenticated extended agent card is not configured on this server. "
+        "See agent configuration documentation."
+    ],
+]
 
-# Authentication errors (-32004 to -32010)
+# Bindu-specific extensions (-32008 to -32099)
+# Custom errors not in A2A specification but useful for implementation
+TaskImmutableError = JSONRPCError[
+    Literal[-32008],
+    Literal[
+        "This task is in a terminal state and cannot be modified. "
+        "Create a new task with referenceTaskIds to continue the conversation."
+    ],
+]
+
+# Authentication errors (-32009 to -32015)
+# Bindu-specific authentication extensions
 AuthenticationRequiredError = JSONRPCError[
-    Literal[-32004],
+    Literal[-32009],
     Literal[
         "Authentication is required to access this endpoint. "
         "Include a valid JWT token in the Authorization header: Bearer <token>"
     ],
 ]
 InvalidTokenError = JSONRPCError[
-    Literal[-32005],
+    Literal[-32010],
     Literal[
         "The provided authentication token is invalid or malformed. "
         "Verify token format and signature."
     ],
 ]
 TokenExpiredError = JSONRPCError[
-    Literal[-32006],
+    Literal[-32011],
     Literal[
         "The authentication token has expired. "
         "Request a new token from your authentication provider."
     ],
 ]
 InvalidTokenSignatureError = JSONRPCError[
-    Literal[-32007],
+    Literal[-32012],
     Literal[
         "Token signature verification failed. "
         "The token may have been tampered with or signed with an incorrect key."
     ],
 ]
 InsufficientPermissionsError = JSONRPCError[
-    Literal[-32008],
+    Literal[-32013],
     Literal[
         "The authenticated user or service does not have sufficient permissions for this operation. "
         "Contact your administrator to request access."
     ],
 ]
 
+# Context errors (-32020 to -32029)
+# Bindu-specific context management extensions
 ContextNotFoundError = JSONRPCError[
-    Literal[-32010],
+    Literal[-32020],
     Literal[
         "The specified context ID was not found. The context may have been deleted or expired. "
         "Check context status: GET /contexts/{id}"
     ],
 ]
 ContextNotCancelableError = JSONRPCError[
-    Literal[-32011],
+    Literal[-32021],
     Literal[
         "This context cannot be canceled in its current state. Contexts can only be canceled while pending or running. "
         "See context lifecycle: /docs/contexts"
     ],
 ]
-ContentTypeNotSupportedError = JSONRPCError[
-    Literal[-32012],
-    Literal[
-        "The content type in the request is not supported. "
-        "Please use application/json or check supported content types. See: /docs/content-types"
-    ],
-]
-InvalidAgentResponseError = JSONRPCError[
-    Literal[-32007],
-    Literal[
-        "The agent returned an invalid or malformed response. This may indicate an agent configuration issue. "
-        "See troubleshooting: /docs/troubleshooting"
-    ],
-]
-
 
 # -----------------------------------------------------------------------------
 # JSON-RPC Request & Response Types
 # -----------------------------------------------------------------------------
 
 SendMessageRequest = JSONRPCRequest[Literal["message/send"], MessageSendParams]
-SendMessageResponse = JSONRPCResponse[Union[Task, Message], JSONRPCError[Any, Any]]
+SendMessageResponse = JSONRPCResponse[Union[Task, Message], Union[TaskImmutableError, JSONRPCError[Any, Any]]]
 
 StreamMessageRequest = JSONRPCRequest[Literal["message/stream"], MessageSendParams]
 StreamMessageResponse = JSONRPCResponse[Union[Task, Message], JSONRPCError[Any, Any]]

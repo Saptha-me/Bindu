@@ -7,10 +7,10 @@ from typing import Any
 from urllib import error, request
 from urllib.parse import urlparse
 
-from pebbling.common.protocol.types import PushNotificationConfig
-from pebbling.utils.logging import get_logger
+from bindu.common.protocol.types import PushNotificationConfig
+from bindu.utils.logging import get_logger
 
-logger = get_logger("pebbling.server.notifications")
+logger = get_logger("bindu.server.notifications")
 
 
 class NotificationDeliveryError(Exception):

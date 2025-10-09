@@ -43,6 +43,7 @@ from .base import AuthMiddleware
 
 # Export all authentication implementations
 from .auth0 import Auth0Middleware
+from .dev import DevMiddleware
 #from .cognito import CognitoMiddleware # TODO: Implement Cognito authentication
 
 __all__ = [
@@ -50,5 +51,6 @@ __all__ = [
     "AuthMiddleware",
     # Authentication implementations
     "Auth0Middleware",
+    "DevMiddleware",
     #"CognitoMiddleware",
 ]

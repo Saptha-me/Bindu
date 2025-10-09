@@ -11,7 +11,7 @@
 
 from .a2a_protocol import agent_run_endpoint
 from .agent_card import agent_card_endpoint
-from .did_endpoints import agent_info_endpoint, did_resolve_endpoint
+from .did_endpoints import did_resolve_endpoint
 from .static_files import (
     agent_js_endpoint,
     agent_page_endpoint,
@@ -32,7 +32,6 @@ __all__ = [
     "agent_card_endpoint",
     # DID Endpoints
     "did_resolve_endpoint",
-    "agent_info_endpoint",
     # Static Files & Pages
     "agent_page_endpoint",
     "chat_page_endpoint",

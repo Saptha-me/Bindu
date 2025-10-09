@@ -72,19 +72,28 @@ class InMemoryStorage(Storage[ContextT]):
         return task
 
     async def submit_task(self, context_id: UUID, message: Message) -> Task:
-        """Create and store a new task.
+        """Create a new task or continue an existing non-terminal task.
+        
+        Task-First Pattern (Bindu):
+        - If task exists and is in non-terminal state: Append message and reset to 'submitted'
+        - If task exists and is in terminal state: Raise error (immutable)
+        - If task doesn't exist: Create new task
 
         Args:
             context_id: Context to associate the task with
             message: Initial message containing task request
 
         Returns:
-            Newly created task in 'submitted' state
+            Task in 'submitted' state (new or continued)
+            
+        Raises:
+            TypeError: If IDs are invalid types
+            ValueError: If attempting to continue a terminal task
         """
         if not isinstance(context_id, UUID):
             raise TypeError(f"context_id must be UUID, got {type(context_id).__name__}")
         
-        # Use existing task ID from message or generate new one
+        # Parse task ID from message
         task_id_raw = message.get("task_id")
         task_id: UUID
         
@@ -105,6 +114,38 @@ class InMemoryStorage(Storage[ContextT]):
         elif message_id_raw is not None and not isinstance(message_id_raw, UUID):
             raise TypeError(f"message_id must be UUID or str, got {type(message_id_raw).__name__}")
 
+        # Check if task already exists
+        existing_task = self.tasks.get(task_id)
+        
+        if existing_task:
+            # Task exists - check if it's mutable
+            current_state = existing_task["status"]["state"]
+            
+            # Terminal states (immutable)
+            terminal_states = {"completed", "failed", "canceled", "rejected"}
+            
+            if current_state in terminal_states:
+                raise ValueError(
+                    f"Cannot continue task {task_id}: Task is in terminal state '{current_state}' and is immutable. "
+                    f"Create a new task with referenceTaskIds to continue the conversation."
+                )
+            
+            # Non-terminal states (mutable) - append message and continue
+            logger.info(f"Continuing existing task {task_id} from state '{current_state}'")
+            
+            if "history" not in existing_task:
+                existing_task["history"] = []
+            existing_task["history"].append(message)
+            
+            # Reset to submitted state for re-execution
+            existing_task["status"] = TaskStatus(
+                state="submitted", 
+                timestamp=datetime.now(timezone.utc).isoformat()
+            )
+            
+            return existing_task
+        
+        # Task doesn't exist - create new task
         task_status = TaskStatus(state="submitted", timestamp=datetime.now(timezone.utc).isoformat())
         task = Task(task_id=task_id, context_id=context_id, kind="task", status=task_status, history=[message])
         self.tasks[task_id] = task

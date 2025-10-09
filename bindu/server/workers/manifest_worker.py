@@ -123,13 +123,13 @@ class ManifestWorker(Worker):
             structured_response = self._parse_structured_response(results)
             
             # Determine task state based on response
-            state, metadata, message_content = self._determine_task_state(
+            state, message_content = self._determine_task_state(
                 results, structured_response
             )
             
             if state in ("input-required", "auth-required"):
                 # Hybrid Pattern: Return Message only, keep task open
-                await self._handle_intermediate_state(task, state, metadata, message_content)
+                await self._handle_intermediate_state(task, state, message_content)
             else:
                 # Hybrid Pattern: Task complete - generate Message + Artifacts
                 await self._handle_terminal_state(task, results, state)
@@ -241,23 +241,30 @@ class ManifestWorker(Worker):
         self, 
         task: dict[str, Any], 
         state: TaskState, 
-        metadata: dict[str, Any],
         message_content: Any
     ) -> None:
         """Handle intermediate task states (input-required, auth-required).
+        
+        A2A Protocol Compliance:
+        - Agent messages are added to task.history
+        - Task remains in mutable state (working, input-required, auth-required)
+        - All information is in the message, no redundant metadata
 
         Args:
             task: Current task
             state: Task state to set
-            metadata: Metadata to store with task
             message_content: Content for agent message (any type: str, dict, list, etc.)
         """
-        await self.storage.update_task(task["task_id"], state=state, metadata=metadata)
-        
         agent_messages = MessageConverter.to_protocol_messages(
             message_content, task["task_id"], task["context_id"]
         )
-        await self.storage.append_to_contexts(task["context_id"], agent_messages)
+        
+        # Update task with state and append agent messages to history
+        await self.storage.update_task(
+            task["task_id"], 
+            state=state,
+            new_messages=agent_messages
+        )
 
     # -------------------------------------------------------------------------
     # Terminal State Handling
@@ -275,6 +282,11 @@ class ManifestWorker(Worker):
         - completed: Message (explanation) + Artifacts (deliverable)
         - failed: Message (error explanation) only, NO artifacts
         - canceled: State change only, NO new content
+        
+        A2A Protocol Compliance:
+        - Agent messages are added to task.history
+        - Artifacts are added to task.artifacts (completed only)
+        - Task becomes immutable after reaching terminal state
 
         Args:
             task: Task dict being finalized
@@ -286,9 +298,8 @@ class ManifestWorker(Worker):
             agent_messages = MessageConverter.to_protocol_messages(
                 results, task["task_id"], task["context_id"]
             )
-            await self.storage.append_to_contexts(task["context_id"], agent_messages)
-            
             artifacts = self.build_artifacts(results)
+            
             await self.storage.update_task(
                 task["task_id"], 
                 state="completed", 
@@ -301,7 +312,6 @@ class ManifestWorker(Worker):
             error_message = MessageConverter.to_protocol_messages(
                 results, task["task_id"], task["context_id"]
             )
-            await self.storage.append_to_contexts(task["context_id"], error_message)
             await self.storage.update_task(
                 task["task_id"], 
                 state="failed", 
@@ -312,6 +322,10 @@ class ManifestWorker(Worker):
         """Handle task execution failure.
         
         Creates an error message and marks task as failed without artifacts.
+        
+        A2A Protocol Compliance:
+        - Error message added to task.history
+        - Task marked as failed (terminal state)
 
         Args:
             task: Task that failed
@@ -322,7 +336,6 @@ class ManifestWorker(Worker):
             task["task_id"], 
             task["context_id"]
         )
-        await self.storage.append_to_contexts(task["context_id"], error_message)
         await self.storage.update_task(
             task["task_id"], 
             state="failed", 
@@ -507,7 +520,7 @@ class ManifestWorker(Worker):
         self, 
         result: Any, 
         structured: Optional[dict[str, Any]]
-    ) -> tuple[TaskState, dict[str, Any], Any]:
+    ) -> tuple[TaskState, Any]:
         """Determine task state from agent response.
         
         Handles multiple response types:
@@ -521,7 +534,7 @@ class ManifestWorker(Worker):
             structured: Parsed structured response if available
 
         Returns:
-            Tuple of (state, metadata, message_content)
+            Tuple of (state, message_content)
             message_content can be str, dict, list, or any serializable type
         """
         # Check structured response first (preferred)
@@ -529,26 +542,16 @@ class ManifestWorker(Worker):
             state = structured.get("state")
             if state == "input-required":
                 prompt = structured.get("prompt", self._serialize_result(result))
-                return (
-                    "input-required",
-                    {"prompt": prompt},
-                    prompt
-                )
+                return ("input-required", prompt)
             elif state == "auth-required":
-                metadata = {
-                    "auth_prompt": structured.get("prompt", self._serialize_result(result)),
-                    "auth_type": structured.get("auth_type"),
-                    "service": structured.get("service")
-                }
-                # Remove None values
-                metadata = {k: v for k, v in metadata.items() if v is not None}
-                return ("auth-required", metadata, metadata["auth_prompt"])
+                prompt = structured.get("prompt", self._serialize_result(result))
+                return ("auth-required", prompt)
         
         # Default: task completion with any result type
-        return ("completed", {}, result)
+        return ("completed", result)
     
     def _serialize_result(self, result: Any) -> str:
-        """Serialize result to string for metadata storage.
+        """Serialize result to string for message content.
         
         Args:
             result: Any agent result

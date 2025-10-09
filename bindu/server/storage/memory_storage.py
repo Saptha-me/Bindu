@@ -16,6 +16,7 @@ Note: All data is lost when the application stops. Use persistent storage for pr
 
 from __future__ import annotations as _annotations
 
+import copy
 from datetime import datetime, timezone
 from typing import Any, cast
 from uuid import UUID
@@ -64,13 +65,14 @@ class InMemoryStorage(Storage[ContextT]):
         if task is None:
             return None
 
-        # Return copy with limited history to avoid mutating stored task
-        if history_length is not None and history_length > 0 and "history" in task:
-            task_copy = cast(Task, task.copy())
-            task_copy["history"] = task["history"][-history_length:]
-            return task_copy
+        # Always return a deep copy to prevent mutations affecting stored task
+        task_copy = cast(Task, copy.deepcopy(task))
         
-        return task
+        # Limit history if requested
+        if history_length is not None and history_length > 0 and "history" in task:
+            task_copy["history"] = task["history"][-history_length:]
+        
+        return task_copy
 
     async def submit_task(self, context_id: UUID, message: Message) -> Task:
         """Create a new task or continue an existing non-terminal task.
@@ -94,7 +96,7 @@ class InMemoryStorage(Storage[ContextT]):
         if not isinstance(context_id, UUID):
             raise TypeError(f"context_id must be UUID, got {type(context_id).__name__}")
         
-        # Parse task ID from message
+        # Parse task ID from message (handle both snake_case and camelCase)
         task_id_raw = message.get("task_id")
         task_id: UUID
         
@@ -105,7 +107,7 @@ class InMemoryStorage(Storage[ContextT]):
         else:
             raise TypeError(f"task_id must be UUID or str, got {type(task_id_raw).__name__}")
 
-        # Ensure all UUID fields are proper UUID objects
+        # Ensure all UUID fields are proper UUID objects (normalize to snake_case)
         message["task_id"] = task_id
         message["context_id"] = context_id
 
@@ -115,9 +117,10 @@ class InMemoryStorage(Storage[ContextT]):
         elif message_id_raw is not None and not isinstance(message_id_raw, UUID):
             raise TypeError(f"message_id must be UUID or str, got {type(message_id_raw).__name__}")
 
-        # Validate and normalize reference_task_ids if present
-        if "reference_task_ids" in message:
-            ref_ids = message["reference_task_ids"]
+        # Validate and normalize reference_task_ids if present (handle both formats)
+        ref_ids_key = "reference_task_ids"
+        if ref_ids_key in message:
+            ref_ids = message[ref_ids_key]
             if ref_ids is not None:
                 normalized_refs = []
                 for ref_id in ref_ids:

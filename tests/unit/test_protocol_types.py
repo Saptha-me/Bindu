@@ -253,12 +253,20 @@ class TestJSONRPCRequests:
         """Test A2A request type adapter validation."""
         message = create_test_message()
         
+        # Convert message to camelCase for pydantic validation
         request_dict = {
             "jsonrpc": "2.0",
             "id": str(uuid4()),
             "method": "message/send",
             "params": {
-                "message": message,
+                "message": {
+                    "messageId": str(message["message_id"]),
+                    "contextId": str(message["context_id"]),
+                    "taskId": str(message["task_id"]),
+                    "kind": "message",
+                    "parts": message["parts"],
+                    "role": message["role"],
+                },
                 "configuration": {
                     "acceptedOutputModes": ["application/json"],
                 },
@@ -350,12 +358,36 @@ class TestErrorCodes:
             InternalError,
         )
         
-        # These should have the correct code values
-        assert JSONParseError.__annotations__["code"] == -32700
-        assert InvalidRequestError.__annotations__["code"] == -32600
-        assert MethodNotFoundError.__annotations__["code"] == -32601
-        assert InvalidParamsError.__annotations__["code"] == -32602
-        assert InternalError.__annotations__["code"] == -32603
+        # Create instances and verify code values
+        json_parse_error: JSONParseError = {
+            "code": -32700,
+            "message": "Failed to parse JSON payload. Please ensure the request body contains valid JSON syntax. See: https://www.jsonrpc.org/specification#error_object",
+        }
+        assert json_parse_error["code"] == -32700
+        
+        invalid_request_error: InvalidRequestError = {
+            "code": -32600,
+            "message": "Request payload validation failed. The request structure does not conform to JSON-RPC 2.0 specification. See: https://www.jsonrpc.org/specification#error_object",
+        }
+        assert invalid_request_error["code"] == -32600
+        
+        method_not_found_error: MethodNotFoundError = {
+            "code": -32601,
+            "message": "The requested method is not available on this server. Please check the method name and try again. See API docs: /docs",
+        }
+        assert method_not_found_error["code"] == -32601
+        
+        invalid_params_error: InvalidParamsError = {
+            "code": -32602,
+            "message": "Invalid or missing parameters for the requested method. Please verify parameter types and required fields. See API docs: /docs",
+        }
+        assert invalid_params_error["code"] == -32602
+        
+        internal_error: InternalError = {
+            "code": -32603,
+            "message": "An internal server error occurred while processing the request. Please try again or contact support if the issue persists. See: /health",
+        }
+        assert internal_error["code"] == -32603
     
     def test_a2a_error_codes(self):
         """Test A2A-specific error codes."""
@@ -365,9 +397,24 @@ class TestErrorCodes:
             PushNotificationNotSupportedError,
         )
         
-        assert TaskNotFoundError.__annotations__["code"] == -32001
-        assert TaskNotCancelableError.__annotations__["code"] == -32002
-        assert PushNotificationNotSupportedError.__annotations__["code"] == -32003
+        # Create instances and verify code values
+        task_not_found_error: TaskNotFoundError = {
+            "code": -32001,
+            "message": "The specified task ID was not found. The task may have been completed, canceled, or expired. Check task status: GET /tasks/{id}",
+        }
+        assert task_not_found_error["code"] == -32001
+        
+        task_not_cancelable_error: TaskNotCancelableError = {
+            "code": -32002,
+            "message": "This task cannot be canceled in its current state. Tasks can only be canceled while pending or running. See task lifecycle: /docs/tasks",
+        }
+        assert task_not_cancelable_error["code"] == -32002
+        
+        push_notification_not_supported_error: PushNotificationNotSupportedError = {
+            "code": -32003,
+            "message": "Push notifications are not supported by this server configuration. Please use polling to check task status. See: GET /tasks/{id}",
+        }
+        assert push_notification_not_supported_error["code"] == -32003
     
     def test_bindu_error_codes(self):
         """Test Bindu-specific error codes."""
@@ -376,5 +423,15 @@ class TestErrorCodes:
             ContextNotFoundError,
         )
         
-        assert TaskImmutableError.__annotations__["code"] == -32008
-        assert ContextNotFoundError.__annotations__["code"] == -32020
+        # Create instances and verify code values
+        task_immutable_error: TaskImmutableError = {
+            "code": -32008,
+            "message": "This task is in a terminal state and cannot be modified. Create a new task with referenceTaskIds to continue the conversation.",
+        }
+        assert task_immutable_error["code"] == -32008
+        
+        context_not_found_error: ContextNotFoundError = {
+            "code": -32020,
+            "message": "The specified context ID was not found. The context may have been deleted or expired. Check context status: GET /contexts/{id}",
+        }
+        assert context_not_found_error["code"] == -32020

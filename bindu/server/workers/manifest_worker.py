@@ -29,8 +29,8 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Optional
 from uuid import UUID
 
 from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams, TaskState
@@ -65,6 +65,9 @@ class ManifestWorker(Worker):
 
     manifest: AgentManifest
     """The agent manifest containing execution logic and DID identity."""
+    
+    lifecycle_notifier: Optional[Callable[[UUID, UUID, str, bool], Any]] = field(default=None)
+    """Optional callback for task lifecycle notifications (task_id, context_id, state, final)."""
 
     # -------------------------------------------------------------------------
     # Task Execution (Hybrid Pattern)
@@ -97,6 +100,7 @@ class ManifestWorker(Worker):
 
         await TaskStateManager.validate_task_state(task)
         await self.storage.update_task(task["task_id"], state="working")
+        await self._notify_lifecycle(task["task_id"], task["context_id"], "working", False)
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
@@ -145,7 +149,10 @@ class ManifestWorker(Worker):
         Args:
             params: Task identification parameters containing task_id
         """
-        await self.storage.update_task(params["task_id"], state="canceled")
+        task = await self.storage.load_task(params["task_id"])
+        if task:
+            await self.storage.update_task(params["task_id"], state="canceled")
+            await self._notify_lifecycle(params["task_id"], task["context_id"], "canceled", True)
 
     # -------------------------------------------------------------------------
     # Protocol Conversion
@@ -269,6 +276,7 @@ class ManifestWorker(Worker):
             state=state,
             new_messages=agent_messages
         )
+        await self._notify_lifecycle(task["task_id"], task["context_id"], state, False)
 
     # -------------------------------------------------------------------------
     # Terminal State Handling
@@ -320,6 +328,7 @@ class ManifestWorker(Worker):
                 new_artifacts=artifacts, 
                 new_messages=agent_messages
             )
+            await self._notify_lifecycle(task["task_id"], task["context_id"], state, True)
         
         elif state in ("failed", "rejected"):
             # Failure/Rejection: Message only (explanation), NO artifacts
@@ -331,6 +340,7 @@ class ManifestWorker(Worker):
                 state=state, 
                 new_messages=error_message
             )
+            await self._notify_lifecycle(task["task_id"], task["context_id"], state, True)
         
         elif state == "canceled":
             # Canceled: State change only, NO new content
@@ -338,6 +348,7 @@ class ManifestWorker(Worker):
                 task["task_id"], 
                 state=state
             )
+            await self._notify_lifecycle(task["task_id"], task["context_id"], state, True)
     
     async def _handle_task_failure(self, task: dict[str, Any], error: str) -> None:
         """Handle task execution failure.
@@ -362,6 +373,7 @@ class ManifestWorker(Worker):
             state="failed", 
             new_messages=error_message
         )
+        await self._notify_lifecycle(task["task_id"], task["context_id"], "failed", True)
     
     # -------------------------------------------------------------------------
     # Result Collection
@@ -586,3 +598,26 @@ class ManifestWorker(Worker):
             return json.dumps(result)
         else:
             return str(result)
+    
+    # -------------------------------------------------------------------------
+    # Lifecycle Notifications
+    # -------------------------------------------------------------------------
+    
+    async def _notify_lifecycle(self, task_id: UUID, context_id: UUID, state: str, final: bool) -> None:
+        """Notify lifecycle changes if notifier is configured.
+        
+        Args:
+            task_id: Task identifier
+            context_id: Context identifier
+            state: New task state
+            final: Whether this is a terminal state
+        """
+        if self.lifecycle_notifier:
+            try:
+                result = self.lifecycle_notifier(task_id, context_id, state, final)
+                # Handle both sync and async notifiers
+                if hasattr(result, "__await__"):
+                    await result
+            except Exception:
+                # Silently ignore notification errors to not disrupt task execution
+                pass

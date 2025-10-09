@@ -71,7 +71,7 @@ import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from bindu.common.protocol.types import (
     CancelTaskRequest,
@@ -301,7 +301,7 @@ class TaskManager:
             scheduler_params["history_length"] = history_length
 
         await self.scheduler.run_task(scheduler_params)
-        return SendMessageResponse(jsonrpc="2.0", id=request_id, result=task)
+        return SendMessageResponse(jsonrpc="2.0", id=request["id"], result=task)
 
     @trace_task_operation("get_task")
     async def get_task(self, request: GetTaskRequest) -> GetTaskResponse:

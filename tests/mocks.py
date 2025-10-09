@@ -20,7 +20,7 @@ class MockAgent:
         self.call_count = 0
         self.last_input = None
     
-    async def __call__(self, message: str) -> str:
+    def __call__(self, message: str) -> str:
         """Execute the mock agent."""
         self.call_count += 1
         self.last_input = message
@@ -83,9 +83,10 @@ class MockManifest:
         self.enable_context_based_history = False
     
     def run(self, message_history: list):
-        """Run the agent.
+        """Run the agent synchronously.
         
-        Returns a coroutine that ManifestWorker will await via _collect_results().
+        Returns a generator that yields the agent result.
+        This matches the sync generator pattern from the real manifest.
         """
         # Extract the last user message from history
         if message_history:
@@ -97,14 +98,13 @@ class MockManifest:
         else:
             content = ""
         
-        # Return the coroutine for _collect_results to handle
+        # Call agent function (now sync)
+        # Note: Exceptions will propagate to the caller (ManifestWorker)
         if callable(self.agent_fn):
-            return self.agent_fn(content)
-        
-        # For non-callable, return a simple async function
-        async def _return_mock():
-            return "Mock response"
-        return _return_mock()
+            result = self.agent_fn(content)
+            yield result
+        else:
+            yield "Mock response"
 
 
 class MockDIDExtension:

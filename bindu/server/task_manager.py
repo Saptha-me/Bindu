@@ -293,7 +293,7 @@ class TaskManager:
 
         task: Task = await self.storage.submit_task(context_id, message)
 
-        scheduler_params: TaskSendParams = {"task_id": task["task_id"], "context_id": context_id, "message": message}
+        scheduler_params: TaskSendParams = {"task_id": task["id"], "context_id": context_id, "message": message}
 
         # Add optional configuration parameters
         config = request["params"].get("configuration", {})
@@ -360,11 +360,11 @@ class TaskManager:
         async def stream_generator():
             """Generates a consumable stream based on the function which was decorated using pebblify"""
             try:
-                await self.storage.update_task(task["task_id"], state="working")
+                await self.storage.update_task(task["id"], state="working")
                 # yield the initial status update event to indicate processing of the task has started
                 status_event = {
                     "kind": "status-update",
-                    "task_id": str(task["task_id"]),
+                    "task_id": str(task["id"]),
                     "context_id": str(context_id),
                     "status": {"state": "working", "timestamp": datetime.now(timezone.utc).isoformat()},
                     "final": False,
@@ -381,7 +381,7 @@ class TaskManager:
                             if chunk:
                                 artifact_event = {
                                     "kind": "artifact-update",
-                                    "task_id": str(task["task_id"]),
+                                    "task_id": str(task["id"]),
                                     "context_id": str(context_id),
                                     "artifact": {
                                         "artifact_id": str(uuid.uuid4()),
@@ -398,7 +398,7 @@ class TaskManager:
                             if chunk:
                                 artifact_event = {
                                     "kind": "artifact-update",
-                                    "task_id": str(task["task_id"]),
+                                    "task_id": str(task["id"]),
                                     "context_id": str(context_id),
                                     "artifact": {
                                         "artifact_id": str(uuid.uuid4()),
@@ -414,7 +414,7 @@ class TaskManager:
                         if manifest_result:
                             artifact_event = {
                                 "kind": "artifact-update",
-                                "task_id": str(task["task_id"]),
+                                "task_id": str(task["id"]),
                                 "context_id": str(context_id),
                                 "artifact": {
                                     "artifact_id": str(uuid.uuid4()),
@@ -428,7 +428,7 @@ class TaskManager:
                 # Send completion status
                 completion_event = {
                     "kind": "status-update",
-                    "task_id": str(task["task_id"]),
+                    "task_id": str(task["id"]),
                     "context_id": str(context_id),
                     "status": {"state": "completed", "timestamp": datetime.now(timezone.utc).isoformat()},
                     "final": True,
@@ -436,18 +436,18 @@ class TaskManager:
                 yield f"data: {json.dumps(completion_event)}\n\n"
 
                 # Update task state in storage
-                await self.storage.update_task(task["task_id"], state="completed")
+                await self.storage.update_task(task["id"], state="completed")
             except Exception as e:
                 error_event = {
                     "kind": "status-update",
-                    "task_id": str(task["task_id"]),
+                    "task_id": str(task["id"]),
                     "context_id": str(context_id),
                     "status": {"state": "failed", "timestamp": datetime.now(timezone.utc).isoformat()},
                     "final": True,
                     "error": str(e),
                 }
                 yield f"data: {json.dumps(error_event)}\n\n"
-                await self.storage.update_task(task["task_id"], state="failed")
+                await self.storage.update_task(task["id"], state="failed")
 
         return StreamingResponse(stream_generator(), media_type="text/event-stream")
 

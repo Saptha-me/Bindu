@@ -9,6 +9,13 @@ from bindu.common.protocol.types import TaskSendParams
 from tests.utils import create_test_message
 
 
+async def get_next_task(scheduler):
+    """Helper to get the next task from scheduler."""
+    async for task_op in scheduler.receive_task_operations():
+        return task_op
+    return None
+
+
 class TestSchedulerBasics:
     """Test basic scheduler operations."""
     
@@ -26,14 +33,15 @@ class TestSchedulerBasics:
                 "message": message,
             }
             
-            await scheduler.submit_task(params)
+            await scheduler.run_task(params)
             
             # Get the task from queue
-            retrieved = await scheduler.get_task()
+            task_op = await get_next_task(scheduler)
             
-            assert retrieved is not None
-            assert retrieved["task_id"] == task_id
-            assert retrieved["context_id"] == context_id
+            assert task_op is not None
+            assert task_op["operation"] == "run"
+            assert task_op["params"]["task_id"] == task_id
+            assert task_op["params"]["context_id"] == context_id
     
     @pytest.mark.asyncio
     async def test_fifo_ordering(self):
@@ -47,13 +55,13 @@ class TestSchedulerBasics:
                     "task_id": task_id,
                     "context_id": uuid4(),
                 }
-                await scheduler.submit_task(params)
+                await scheduler.run_task(params)
             
             # Retrieve tasks - should be in same order
             retrieved_ids = []
             for _ in range(5):
-                params = await scheduler.get_task()
-                retrieved_ids.append(params["task_id"])
+                task_op = await get_next_task(scheduler)
+                retrieved_ids.append(task_op["params"]["task_id"])
             
             assert retrieved_ids == task_ids
     
@@ -63,7 +71,7 @@ class TestSchedulerBasics:
         async with InMemoryScheduler() as scheduler:
             # Try to get with timeout
             with pytest.raises(asyncio.TimeoutError):
-                await asyncio.wait_for(scheduler.get_task(), timeout=0.1)
+                await asyncio.wait_for(get_next_task(scheduler), timeout=0.1)
     
     @pytest.mark.asyncio
     async def test_submit_after_get_unblocks(self):
@@ -77,15 +85,15 @@ class TestSchedulerBasics:
                     "task_id": task_id,
                     "context_id": uuid4(),
                 }
-                await scheduler.submit_task(params)
+                await scheduler.run_task(params)
             
             # Start submit task
             submit_task = asyncio.create_task(submit_delayed())
             
             # This should block until submit completes
-            params = await scheduler.get_task()
+            task_op = await get_next_task(scheduler)
+            assert task_op["params"]["task_id"] == task_id
             
-            assert params["task_id"] == task_id
             await submit_task
 
 
@@ -103,9 +111,9 @@ class TestSchedulerLifecycle:
                 "task_id": uuid4(),
                 "context_id": uuid4(),
             }
-            await scheduler.submit_task(params)
-            retrieved = await scheduler.get_task()
-            assert retrieved is not None
+            await scheduler.run_task(params)
+            task_op = await get_next_task(scheduler)
+            assert task_op is not None
     
     @pytest.mark.asyncio
     async def test_multiple_submit_get_cycles(self):
@@ -118,10 +126,9 @@ class TestSchedulerLifecycle:
                     "context_id": uuid4(),
                 }
                 
-                await scheduler.submit_task(params)
-                retrieved = await scheduler.get_task()
-                
-                assert retrieved["task_id"] == task_id
+                await scheduler.run_task(params)
+                task_op = await get_next_task(scheduler)
+                assert task_op["params"]["task_id"] == task_id
     
     @pytest.mark.asyncio
     async def test_graceful_shutdown(self):
@@ -135,7 +142,7 @@ class TestSchedulerLifecycle:
                     "task_id": uuid4(),
                     "context_id": uuid4(),
                 }
-                await scheduler.submit_task(params)
+                await scheduler.run_task(params)
         
         # After exit, scheduler should be shut down
         # Implementation-specific: verify shutdown behavior
@@ -156,15 +163,15 @@ class TestConcurrentOperations:
                     "task_id": task_id,
                     "context_id": uuid4(),
                 }
-                await scheduler.submit_task(params)
+                await scheduler.run_task(params)
             
             await asyncio.gather(*[submit(tid) for tid in task_ids])
             
             # Retrieve all tasks
             retrieved_ids = set()
             for _ in range(20):
-                params = await scheduler.get_task()
-                retrieved_ids.add(params["task_id"])
+                task_op = await get_next_task(scheduler)
+                retrieved_ids.add(task_op["params"]["task_id"])
             
             # All tasks should be retrieved
             assert retrieved_ids == set(task_ids)
@@ -181,11 +188,11 @@ class TestConcurrentOperations:
                     "task_id": uuid4(),
                     "context_id": uuid4(),
                 }
-                await scheduler.submit_task(params)
+                await scheduler.run_task(params)
             
             # Multiple consumers get tasks concurrently
             async def consumer():
-                return await scheduler.get_task()
+                return await get_next_task(scheduler)
             
             results = await asyncio.gather(*[consumer() for _ in range(num_tasks)])
             
@@ -194,7 +201,7 @@ class TestConcurrentOperations:
             assert all(r is not None for r in results)
             
             # All task IDs should be unique
-            task_ids = [r["task_id"] for r in results]
+            task_ids = [r["params"]["task_id"] for r in results]
             assert len(set(task_ids)) == num_tasks
     
     @pytest.mark.asyncio
@@ -211,13 +218,13 @@ class TestConcurrentOperations:
                         "context_id": uuid4(),
                         "metadata": {"index": i},
                     }
-                    await scheduler.submit_task(params)
+                    await scheduler.run_task(params)
                     await asyncio.sleep(0.01)  # Simulate work
             
             async def consumer():
                 for _ in range(num_tasks):
-                    params = await scheduler.get_task()
-                    consumed.append(params)
+                    task_op = await get_next_task(scheduler)
+                    consumed.append(task_op["params"])
                     await asyncio.sleep(0.01)  # Simulate work
             
             # Run producer and consumer concurrently
@@ -240,11 +247,11 @@ class TestTaskParameters:
                 "message": message,
             }
             
-            await scheduler.submit_task(params)
-            retrieved = await scheduler.get_task()
+            await scheduler.run_task(params)
+            task_op = await get_next_task(scheduler)
             
-            assert "message" in retrieved
-            assert retrieved["message"]["parts"][0]["text"] == "Test message"
+            assert "message" in task_op["params"]
+            assert task_op["params"]["message"]["parts"][0]["text"] == "Test message"
     
     @pytest.mark.asyncio
     async def test_task_with_history_length(self):
@@ -256,11 +263,11 @@ class TestTaskParameters:
                 "history_length": 10,
             }
             
-            await scheduler.submit_task(params)
-            retrieved = await scheduler.get_task()
+            await scheduler.run_task(params)
+            task_op = await get_next_task(scheduler)
             
-            assert "history_length" in retrieved
-            assert retrieved["history_length"] == 10
+            assert "history_length" in task_op["params"]
+            assert task_op["params"]["history_length"] == 10
     
     @pytest.mark.asyncio
     async def test_task_with_metadata(self):
@@ -273,12 +280,12 @@ class TestTaskParameters:
                 "metadata": metadata,
             }
             
-            await scheduler.submit_task(params)
-            retrieved = await scheduler.get_task()
+            await scheduler.run_task(params)
+            task_op = await get_next_task(scheduler)
             
-            assert "metadata" in retrieved
-            assert retrieved["metadata"]["custom"] == "value"
-            assert retrieved["metadata"]["priority"] == "high"
+            assert "metadata" in task_op["params"]
+            assert task_op["params"]["metadata"]["custom"] == "value"
+            assert task_op["params"]["metadata"]["priority"] == "high"
 
 
 class TestQueueBehavior:
@@ -299,13 +306,13 @@ class TestQueueBehavior:
                     "task_id": task_id,
                     "context_id": uuid4(),
                 }
-                await scheduler.submit_task(params)
+                await scheduler.run_task(params)
             
             # Retrieve all tasks
             retrieved_ids = []
             for _ in range(num_tasks):
-                params = await scheduler.get_task()
-                retrieved_ids.append(params["task_id"])
+                task_op = await get_next_task(scheduler)
+                retrieved_ids.append(task_op["params"]["task_id"])
             
             # All tasks should be accounted for
             assert set(submitted_ids) == set(retrieved_ids)
@@ -321,18 +328,18 @@ class TestQueueBehavior:
             task_id_2 = uuid4()
             
             # Submit to different schedulers
-            await scheduler1.submit_task({
+            await scheduler1.run_task({
                 "task_id": task_id_1,
                 "context_id": uuid4(),
             })
-            await scheduler2.submit_task({
+            await scheduler2.run_task({
                 "task_id": task_id_2,
                 "context_id": uuid4(),
             })
             
             # Each scheduler should only have its own task
-            params1 = await scheduler1.get_task()
-            params2 = await scheduler2.get_task()
+            task_op1 = await get_next_task(scheduler1)
+            task_op2 = await get_next_task(scheduler2)
             
-            assert params1["task_id"] == task_id_1
-            assert params2["task_id"] == task_id_2
+            assert task_op1["params"]["task_id"] == task_id_1
+            assert task_op2["params"]["task_id"] == task_id_2

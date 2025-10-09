@@ -4,7 +4,7 @@ import pytest
 from uuid import uuid4
 
 from bindu.server.storage.memory_storage import InMemoryStorage
-from tests.utils import create_test_task, create_test_context, assert_task_state
+from tests.utils import create_test_task, create_test_context, create_test_message, assert_task_state
 
 
 class TestTaskStorage:
@@ -13,10 +13,14 @@ class TestTaskStorage:
     @pytest.mark.asyncio
     async def test_save_and_load_task(self, storage: InMemoryStorage):
         """Test saving and loading a task."""
-        task = create_test_task(state="submitted")
+        # Create a message to submit a task
+        message = create_test_message(text="Test task")
+        context_id = message["context_id"]
+        
+        # Submit task through storage API
+        task = await storage.submit_task(context_id, message)
         task_id = task["id"]
         
-        await storage.save_task(task)
         loaded_task = await storage.load_task(task_id)
         
         assert loaded_task is not None
@@ -34,14 +38,14 @@ class TestTaskStorage:
     @pytest.mark.asyncio
     async def test_update_task(self, storage: InMemoryStorage):
         """Test updating an existing task."""
-        task = create_test_task(state="submitted")
+        # Submit a task first
+        message = create_test_message(text="Test task")
+        context_id = message["context_id"]
+        task = await storage.submit_task(context_id, message)
         task_id = task["id"]
         
-        await storage.save_task(task)
-        
-        # Update task state
-        task["status"]["state"] = "working"
-        await storage.save_task(task)
+        # Update task state using storage API
+        await storage.update_task(task_id, "working")
         
         loaded_task = await storage.load_task(task_id)
         assert_task_state(loaded_task, "working")
@@ -55,13 +59,18 @@ class TestTaskStorage:
     @pytest.mark.asyncio
     async def test_list_tasks_multiple(self, storage: InMemoryStorage):
         """Test listing multiple tasks."""
-        task1 = create_test_task(state="submitted")
-        task2 = create_test_task(state="working")
-        task3 = create_test_task(state="completed")
+        # Submit multiple tasks
+        msg1 = create_test_message(text="Task 1")
+        msg2 = create_test_message(text="Task 2")
+        msg3 = create_test_message(text="Task 3")
         
-        await storage.save_task(task1)
-        await storage.save_task(task2)
-        await storage.save_task(task3)
+        task1 = await storage.submit_task(msg1["context_id"], msg1)
+        task2 = await storage.submit_task(msg2["context_id"], msg2)
+        task3 = await storage.submit_task(msg3["context_id"], msg3)
+        
+        # Update states
+        await storage.update_task(task2["id"], "working")
+        await storage.update_task(task3["id"], "completed")
         
         tasks = await storage.list_tasks()
         assert len(tasks) == 3
@@ -76,10 +85,14 @@ class TestTaskStorage:
         """Test storing and retrieving task with artifacts."""
         from tests.utils import create_test_artifact
         
-        artifact = create_test_artifact(text="Result")
-        task = create_test_task(state="completed", artifacts=[artifact])
+        # Submit task
+        message = create_test_message(text="Generate result")
+        task = await storage.submit_task(message["context_id"], message)
         
-        await storage.save_task(task)
+        # Update with artifacts
+        artifact = create_test_artifact(text="Result")
+        await storage.update_task(task["id"], "completed", new_artifacts=[artifact])
+        
         loaded_task = await storage.load_task(task["id"])
         
         assert "artifacts" in loaded_task
@@ -91,11 +104,14 @@ class TestTaskStorage:
         """Test storing and retrieving task with history."""
         from tests.utils import create_test_message
         
+        # Submit task with initial message
         msg1 = create_test_message(text="First")
-        msg2 = create_test_message(text="Second")
-        task = create_test_task(history=[msg1, msg2])
+        task = await storage.submit_task(msg1["context_id"], msg1)
         
-        await storage.save_task(task)
+        # Add more messages to history
+        msg2 = create_test_message(text="Second", task_id=task["id"], context_id=task["context_id"])
+        await storage.update_task(task["id"], "working", new_messages=[msg2])
+        
         loaded_task = await storage.load_task(task["id"])
         
         assert "history" in loaded_task
@@ -108,15 +124,19 @@ class TestContextStorage:
     @pytest.mark.asyncio
     async def test_save_and_load_context(self, storage: InMemoryStorage):
         """Test saving and loading a context."""
-        context = create_test_context(name="Test Session")
-        context_id = context["context_id"]
+        from uuid import uuid4
         
-        await storage.save_context(context)
+        context_id = uuid4()
+        
+        # Submit a task to create the context
+        message = create_test_message(context_id=context_id, text="Test Session")
+        await storage.submit_task(context_id, message)
+        
+        # Load context (returns list of task IDs)
         loaded_context = await storage.load_context(context_id)
         
         assert loaded_context is not None
-        assert loaded_context["context_id"] == context_id
-        assert loaded_context["name"] == "Test Session"
+        assert len(loaded_context) == 1
     
     @pytest.mark.asyncio
     async def test_load_nonexistent_context(self, storage: InMemoryStorage):
@@ -129,17 +149,21 @@ class TestContextStorage:
     @pytest.mark.asyncio
     async def test_update_context(self, storage: InMemoryStorage):
         """Test updating an existing context."""
-        context = create_test_context(status="active")
-        context_id = context["context_id"]
+        from uuid import uuid4
         
-        await storage.save_context(context)
+        context_id = uuid4()
         
-        # Update context status
-        context["status"] = "completed"
-        await storage.save_context(context)
+        # Create context by submitting a task
+        message = create_test_message(context_id=context_id, text="Initial")
+        await storage.submit_task(context_id, message)
         
+        # Add another task to the context
+        message2 = create_test_message(context_id=context_id, text="Second")
+        await storage.submit_task(context_id, message2)
+        
+        # Verify context has both tasks
         loaded_context = await storage.load_context(context_id)
-        assert loaded_context["status"] == "completed"
+        assert len(loaded_context) == 2
     
     @pytest.mark.asyncio
     async def test_list_contexts_empty(self, storage: InMemoryStorage):
@@ -150,13 +174,16 @@ class TestContextStorage:
     @pytest.mark.asyncio
     async def test_list_contexts_multiple(self, storage: InMemoryStorage):
         """Test listing multiple contexts."""
-        ctx1 = create_test_context(name="Session 1")
-        ctx2 = create_test_context(name="Session 2")
-        ctx3 = create_test_context(name="Session 3")
+        from uuid import uuid4
         
-        await storage.save_context(ctx1)
-        await storage.save_context(ctx2)
-        await storage.save_context(ctx3)
+        # Create multiple contexts by submitting tasks
+        ctx1_id = uuid4()
+        ctx2_id = uuid4()
+        ctx3_id = uuid4()
+        
+        await storage.submit_task(ctx1_id, create_test_message(context_id=ctx1_id, text="Session 1"))
+        await storage.submit_task(ctx2_id, create_test_message(context_id=ctx2_id, text="Session 2"))
+        await storage.submit_task(ctx3_id, create_test_message(context_id=ctx3_id, text="Session 3"))
         
         contexts = await storage.list_contexts()
         assert len(contexts) == 3
@@ -164,29 +191,35 @@ class TestContextStorage:
     @pytest.mark.asyncio
     async def test_clear_context(self, storage: InMemoryStorage):
         """Test clearing a context."""
-        context = create_test_context(name="To Clear")
-        context_id = context["context_id"]
+        from uuid import uuid4
         
-        await storage.save_context(context)
+        context_id = uuid4()
+        
+        # Create context with tasks
+        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
+        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
+        
+        # Clear the context
         await storage.clear_context(context_id)
         
-        # Context should still exist but be cleared
+        # Context should be removed
         loaded_context = await storage.load_context(context_id)
-        # Implementation-specific: check what clear_context does
-        # For now, just verify it doesn't raise an error
-        assert True
+        assert loaded_context is None
     
     @pytest.mark.asyncio
     async def test_context_with_tasks(self, storage: InMemoryStorage):
         """Test context with associated task IDs."""
-        task_ids = [uuid4(), uuid4(), uuid4()]
-        context = create_test_context(tasks=task_ids)
+        context_id = uuid4()
         
-        await storage.save_context(context)
-        loaded_context = await storage.load_context(context["context_id"])
+        # Submit multiple tasks to the same context
+        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
+        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
+        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 3"))
         
-        assert "tasks" in loaded_context
-        assert len(loaded_context["tasks"]) == 3
+        loaded_context = await storage.load_context(context_id)
+        
+        assert loaded_context is not None
+        assert len(loaded_context) == 3
 
 
 class TestTaskContextRelationship:
@@ -197,13 +230,14 @@ class TestTaskContextRelationship:
         """Test multiple tasks in the same context."""
         context_id = uuid4()
         
-        task1 = create_test_task(context_id=context_id, state="submitted")
-        task2 = create_test_task(context_id=context_id, state="working")
-        task3 = create_test_task(context_id=context_id, state="completed")
+        # Submit tasks to the same context
+        task1 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
+        task2 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
+        task3 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 3"))
         
-        await storage.save_task(task1)
-        await storage.save_task(task2)
-        await storage.save_task(task3)
+        # Update states
+        await storage.update_task(task2["id"], "working")
+        await storage.update_task(task3["id"], "completed")
         
         # All tasks should have the same context_id
         loaded1 = await storage.load_task(task1["id"])
@@ -218,19 +252,15 @@ class TestTaskContextRelationship:
     async def test_context_tracks_tasks(self, storage: InMemoryStorage):
         """Test that context can track its tasks."""
         context_id = uuid4()
-        task1_id = uuid4()
-        task2_id = uuid4()
         
-        context = create_test_context(
-            context_id=context_id,
-            tasks=[task1_id, task2_id]
-        )
+        # Submit tasks to create context
+        task1 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
+        task2 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
         
-        await storage.save_context(context)
         loaded_context = await storage.load_context(context_id)
         
-        assert task1_id in loaded_context["tasks"]
-        assert task2_id in loaded_context["tasks"]
+        assert task1["id"] in loaded_context
+        assert task2["id"] in loaded_context
 
 
 class TestConcurrentAccess:
@@ -241,10 +271,13 @@ class TestConcurrentAccess:
         """Test saving multiple tasks concurrently."""
         import asyncio
         
-        tasks = [create_test_task() for _ in range(10)]
+        # Create messages for tasks
+        messages = [create_test_message(text=f"Task {i}") for i in range(10)]
         
-        # Save all tasks concurrently
-        await asyncio.gather(*[storage.save_task(task) for task in tasks])
+        # Submit all tasks concurrently
+        await asyncio.gather(*[
+            storage.submit_task(msg["context_id"], msg) for msg in messages
+        ])
         
         # Verify all tasks were saved
         all_tasks = await storage.list_tasks()
@@ -255,8 +288,8 @@ class TestConcurrentAccess:
         """Test reading tasks concurrently."""
         import asyncio
         
-        task = create_test_task()
-        await storage.save_task(task)
+        message = create_test_message(text="Test task")
+        task = await storage.submit_task(message["context_id"], message)
         task_id = task["id"]
         
         # Read the same task multiple times concurrently
@@ -273,17 +306,18 @@ class TestConcurrentAccess:
         """Test concurrent updates to the same task."""
         import asyncio
         
-        task = create_test_task(state="submitted")
-        await storage.save_task(task)
+        message = create_test_message(text="Test task")
+        task = await storage.submit_task(message["context_id"], message)
         
         # Update task state multiple times concurrently
-        async def update_task(state_suffix: int):
-            loaded = await storage.load_task(task["id"])
-            loaded["status"]["state"] = "working"
-            loaded["metadata"] = {"update": state_suffix}
-            await storage.save_task(loaded)
+        async def update_task_state(state_suffix: int):
+            await storage.update_task(
+                task["id"], 
+                "working", 
+                metadata={"update": state_suffix}
+            )
         
-        await asyncio.gather(*[update_task(i) for i in range(5)])
+        await asyncio.gather(*[update_task_state(i) for i in range(5)])
         
         # Task should be updated (last write wins)
         final_task = await storage.load_task(task["id"])
@@ -297,8 +331,8 @@ class TestDataIntegrity:
     @pytest.mark.asyncio
     async def test_task_immutability_after_load(self, storage: InMemoryStorage):
         """Test that modifying loaded task doesn't affect storage."""
-        task = create_test_task(state="submitted")
-        await storage.save_task(task)
+        message = create_test_message(text="Test task")
+        task = await storage.submit_task(message["context_id"], message)
         
         # Load and modify
         loaded = await storage.load_task(task["id"])
@@ -316,9 +350,13 @@ class TestDataIntegrity:
             "service": "test_service",
             "custom_data": {"nested": "value"}
         }
-        task = create_test_task(metadata=metadata)
         
-        await storage.save_task(task)
+        message = create_test_message(text="Test task")
+        task = await storage.submit_task(message["context_id"], message)
+        
+        # Update with metadata
+        await storage.update_task(task["id"], "working", metadata=metadata)
+        
         loaded = await storage.load_task(task["id"])
         
         assert loaded["metadata"]["auth_type"] == "api_key"

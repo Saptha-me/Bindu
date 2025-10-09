@@ -396,8 +396,9 @@ class TestErrorHandling:
             "message": message,
         }
         
-        # Should not raise, but mark task as failed
-        await worker.run_task(params)
+        # Should raise exception but also mark task as failed
+        with pytest.raises(ValueError, match="Something went wrong"):
+            await worker.run_task(params)
         
         failed_task = await storage.load_task(task["id"])
         assert_task_state(failed_task, "failed")

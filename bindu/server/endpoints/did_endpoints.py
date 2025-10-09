@@ -83,37 +83,3 @@ async def did_resolve_endpoint(app: "BinduApplication", request: Request) -> Res
             content={"error": "Internal server error"},
             status_code=500
         )
-
-
-async def agent_info_endpoint(app: "BinduApplication", request: Request) -> Response:
-    """Get simplified agent information.
-    
-    GET /agent/info
-    """
-    client_ip = get_client_ip(request)
-    
-    try:
-        did_extension = _get_did_extension(app)
-        
-        if did_extension:
-            logger.debug(f"Serving agent info with DID extension to {client_ip}")
-            agent_info = did_extension.get_agent_info()
-            return JSONResponse(content=agent_info)
-        
-        # Fallback if no DID extension
-        logger.debug(f"Serving basic agent info (no DID extension) to {client_ip}")
-        return JSONResponse(
-            content={
-                "name": app.manifest.name,
-                "version": app.manifest.version,
-                "description": app.manifest.description,
-                "url": app.manifest.url
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Error serving agent info to {client_ip}: {e}", exc_info=True)
-        return JSONResponse(
-            content={"error": "Internal server error"},
-            status_code=500
-        )

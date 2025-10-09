@@ -1,4 +1,6 @@
 """
+Bindu Agent Handler Examples - User Control Patterns
+
 The bindufy function takes three arguments:
 1. agent: The agent instance (created once, reused for all requests)
 2. config: Configuration dictionary
@@ -9,11 +11,13 @@ Benefits:
 - Clear separation of concerns
 - Easy to test handlers independently
 - Can swap agents or configs without changing handler logic
+- Framework agnostic (works with Agno, LangChain, custom agents)
 """
 
 import json
 import os
 import sys
+from typing import Any
 
 # Add parent directory to path so we can import bindu
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,17 +44,27 @@ simple_agent = Agent(
 )
 
 # Define the handler function that uses the agent
-def simple_handler(messages: str) -> str:
-    """Simple stateless agent handler - sees current message.
+def simple_handler(messages: list[dict[str, str]]) -> Any:
+    """Simple stateless agent handler - receives message history.
+    
+    Args:
+        messages: List of message dicts with 'role' and 'content' keys
+                  e.g., [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
+    
+    Returns:
+        Agent result in any format - ManifestWorker will intelligently extract the response.
+        Can return:
+        - Raw agent output (list of Messages, Message object, etc.)
+        - Pre-extracted string
+        - Structured dict with {"state": "input-required", ...}
     
     A2A Protocol: Each message creates a new task.
     Context continuity maintained via contextId and referenceTaskIds.
     """
+    # Return raw result - let ManifestWorker's _normalize_result() handle extraction
     result = simple_agent.run(input=messages)
-    return result.to_dict()["content"]
+    return result
 
 
 # bindufy the simple agent
 bindufy(simple_agent, simple_config, simple_handler)
-
-

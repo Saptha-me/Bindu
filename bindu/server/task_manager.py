@@ -112,9 +112,9 @@ from bindu.settings import app_settings
 
 from ..utils.logging import get_logger
 from ..utils.task_telemetry import trace_context_operation, trace_task_operation, track_active_task
+from ..utils.notifications import NotificationDeliveryError, NotificationService
 from .scheduler import Scheduler
 from .storage import Storage
-from .utils.notifications import NotificationDeliveryError, NotificationService
 from .workers import ManifestWorker
 
 

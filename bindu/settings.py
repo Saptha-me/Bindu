@@ -231,6 +231,24 @@ class AgentSettings(BaseSettings):
         extra="allow",
     )
 
+    # Task State Configuration (A2A Protocol)
+    # Non-terminal states: Task is mutable, can receive new messages
+    non_terminal_states: frozenset[str] = frozenset({
+        "submitted",       # Task submitted, awaiting execution
+        "working",         # Agent actively processing
+        "input-required",  # Waiting for user input
+        "auth-required",   # Waiting for authentication
+        "payment-required" # Waiting for payment (Bindu extension)
+    })
+    
+    # Terminal states: Task is immutable, no further changes allowed
+    terminal_states: frozenset[str] = frozenset({
+        "completed",  # Successfully completed with artifacts
+        "failed",     # Failed due to error
+        "canceled",   # Canceled by user
+        "rejected"    # Rejected by agent
+    })
+
     # Structured Response System Prompt
     # This prompt instructs LLMs to return structured JSON responses for state transitions
     # following the A2A Protocol hybrid agent pattern

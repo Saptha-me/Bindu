@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from bindu.common.protocol.types import AgentCard, agent_card_ta
-from bindu.utils.request_utils import get_client_ip
+from bindu.common.protocol.types import AgentCard, agent_card_ta, InternalError
+from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 from bindu.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -64,7 +64,5 @@ async def agent_card_endpoint(app: "BinduApplication", request: Request) -> Resp
         
     except Exception as e:
         logger.error(f"Error serving agent card to {client_ip}: {e}", exc_info=True)
-        return JSONResponse(
-            content={"error": "Internal server error"},
-            status_code=500
-        )
+        code, message = extract_error_fields(InternalError)
+        return jsonrpc_error(code, message, str(e), status=500)

@@ -349,6 +349,41 @@ class InMemoryStorage(Storage[ContextT]):
             return contexts[-length:]
         return contexts
 
+    async def clear_context(self, context_id: UUID) -> None:
+        """Clear all tasks associated with a specific context.
+
+        Args:
+            context_id: The context ID to clear
+
+        Raises:
+            TypeError: If context_id is not UUID
+            ValueError: If context does not exist
+
+        Warning: This is a destructive operation.
+        """
+        if not isinstance(context_id, UUID):
+            raise TypeError(f"context_id must be UUID, got {type(context_id).__name__}")
+        
+        # Check if context exists
+        if context_id not in self.contexts:
+            raise ValueError(f"Context {context_id} not found")
+        
+        # Get task IDs from the context
+        task_ids = self.contexts.get(context_id, [])
+        
+        # Remove all tasks associated with this context
+        for task_id in task_ids:
+            if task_id in self.tasks:
+                del self.tasks[task_id]
+            # Also clear feedback for these tasks
+            if task_id in self.task_feedback:
+                del self.task_feedback[task_id]
+        
+        # Remove the context itself
+        del self.contexts[context_id]
+        
+        logger.info(f"Cleared context {context_id}: removed {len(task_ids)} tasks")
+
     async def clear_all(self) -> None:
         """Clear all tasks and contexts from storage.
 

@@ -155,6 +155,16 @@ class Storage(ABC, Generic[ContextT]):
     # -------------------------------------------------------------------------
 
     @abstractmethod
+    async def clear_context(self, context_id: UUID) -> None:
+        """Clear all tasks associated with a specific context.
+
+        Args:
+            context_id: The context ID to clear
+
+        Warning: This is a destructive operation.
+        """
+
+    @abstractmethod
     async def clear_all(self) -> None:
         """Clear all tasks and contexts from storage.
 

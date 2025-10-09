@@ -21,7 +21,7 @@ METHOD_HANDLERS = {
     "tasks/cancel": "cancel_task",
     "tasks/list": "list_tasks",
     "contexts/list": "list_contexts",
-    "tasks/clear": "clear_tasks",
+    "contexts/clear": "clear_context",
     "tasks/feedback": "task_feedback",
 }
 

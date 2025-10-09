@@ -104,21 +104,20 @@ class ManifestWorker(Worker):
         try:
             # Step 3: Execute manifest with system prompt (if enabled)
             if app_settings.agent.enable_structured_responses:
-                # Inject structured response system prompt
+                # Inject structured response system prompt as first message
                 system_prompt = app_settings.agent.structured_response_system_prompt
-                if message_history:
-                    conversation_context = f"system: {system_prompt}\n" + "\n".join(
-                        f"{msg['role']}: {msg['content']}" for msg in message_history
-                    )
-                else:
-                    conversation_context = f"system: {system_prompt}"
-            else:
-                # No system prompt injection
-                conversation_context = "\n".join(
-                    f"{msg['role']}: {msg['content']}" for msg in message_history
-                ) if message_history else ""
+                if system_prompt:
+                    # Create new list to avoid mutating original message_history
+                    message_history = [{"role": "system", "content": system_prompt}] + (message_history or [])
             
-            results = self.manifest.run(conversation_context)
+            # Pass message history as structured list of dicts
+            raw_results = self.manifest.run(message_history or [])
+            
+            # Handle generator/async generator responses
+            collected_results = await self._collect_results(raw_results)
+            
+            # Normalize result to extract final response (intelligent extraction)
+            results = self._normalize_result(collected_results)
 
             # Step 4: Parse response and detect state
             structured_response = self._parse_structured_response(results)
@@ -243,7 +242,7 @@ class ManifestWorker(Worker):
         task: dict[str, Any], 
         state: TaskState, 
         metadata: dict[str, Any],
-        message_content: str
+        message_content: Any
     ) -> None:
         """Handle intermediate task states (input-required, auth-required).
 
@@ -251,7 +250,7 @@ class ManifestWorker(Worker):
             task: Current task
             state: Task state to set
             metadata: Metadata to store with task
-            message_content: Content for agent message
+            message_content: Content for agent message (any type: str, dict, list, etc.)
         """
         await self.storage.update_task(task["task_id"], state=state, metadata=metadata)
         
@@ -331,77 +330,213 @@ class ManifestWorker(Worker):
         )
     
     # -------------------------------------------------------------------------
+    # Result Collection
+    # -------------------------------------------------------------------------
+    
+    async def _collect_results(self, raw_results: Any) -> Any:
+        """Collect results from manifest execution.
+        
+        Handles different result types:
+        - Direct return: str, dict, list, etc.
+        - Generator: Collect all yielded values
+        - Async generator: Await and collect all yielded values
+        
+        Args:
+            raw_results: Raw result from manifest.run()
+            
+        Returns:
+            Collected result (single value or last yielded value)
+        """
+        # Check if it's an async generator
+        if hasattr(raw_results, "__anext__"):
+            collected = []
+            try:
+                async for chunk in raw_results:
+                    collected.append(chunk)
+            except StopAsyncIteration:
+                pass
+            # Return last chunk or all chunks if multiple
+            return collected[-1] if collected else None
+        
+        # Check if it's a sync generator
+        elif hasattr(raw_results, "__next__"):
+            collected = []
+            try:
+                for chunk in raw_results:
+                    collected.append(chunk)
+            except StopIteration:
+                pass
+            # Return last chunk or all chunks if multiple
+            return collected[-1] if collected else None
+        
+        # Direct return value (str, dict, list, etc.)
+        else:
+            return raw_results
+    
+    def _normalize_result(self, result: Any) -> Any:
+        """Intelligently normalize agent result to extract final response.
+        
+        This method gives users full control over what they return from handlers:
+        - Return raw agent output → System extracts intelligently
+        - Return pre-extracted string → System uses directly
+        - Return structured dict → System respects state transitions
+        
+        Handles multiple formats from different frameworks:
+        - Plain string: "Hello!" → "Hello!"
+        - Dict with state: {"state": "input-required", ...} → pass through
+        - Dict with content: {"content": "Hello!"} → "Hello!"
+        - List of messages: [Message(...), Message(content="Hello!")] → "Hello!"
+        - Message object: Message(content="Hello!") → "Hello!"
+        - Custom objects: Try .content, .to_dict()["content"], or str()
+        
+        Args:
+            result: Raw result from handler function
+            
+        Returns:
+            Normalized result (str, dict with state, or original if can't normalize)
+        """
+        # Strategy 1: Already a string - use directly
+        if isinstance(result, str):
+            return result
+        
+        # Strategy 2: Dict with "state" key - structured response (pass through)
+        if isinstance(result, dict):
+            if "state" in result:
+                return result  # Structured state transition
+            elif "content" in result:
+                return result["content"]  # Extract content from dict
+            else:
+                return result  # Unknown dict format, pass through
+        
+        # Strategy 3: List (e.g., list of Message objects from Agno)
+        if isinstance(result, list) and result:
+            last_item = result[-1]
+            
+            # Try to extract content from last item
+            if hasattr(last_item, "content"):
+                return last_item.content
+            elif hasattr(last_item, "to_dict"):
+                item_dict = last_item.to_dict()
+                if "content" in item_dict:
+                    return item_dict["content"]
+            elif isinstance(last_item, dict) and "content" in last_item:
+                return last_item["content"]
+            elif isinstance(last_item, str):
+                return last_item
+            
+            # Can't extract, return last item as-is
+            return last_item
+        
+        # Strategy 4: Object with .content attribute (e.g., Message object)
+        if hasattr(result, "content"):
+            return result.content
+        
+        # Strategy 5: Object with .to_dict() method
+        if hasattr(result, "to_dict"):
+            try:
+                result_dict = result.to_dict()
+                if "content" in result_dict:
+                    return result_dict["content"]
+                return result_dict
+            except Exception:
+                pass
+        
+        # Strategy 6: Fallback to string conversion
+        return str(result) if result is not None else ""
+    
+    # -------------------------------------------------------------------------
     # Response Detection (Structured + Heuristic)
     # -------------------------------------------------------------------------
 
     def _parse_structured_response(self, result: Any) -> Optional[Dict[str, Any]]:
         """Parse agent response for structured state transitions.
         
-        Attempts to extract JSON with format:
+        Handles multiple response types:
+        - dict: Direct structured response
+        - str: JSON string or plain text
+        - list: Array of messages/content
+        - other: Images, binary data, etc.
+        
+        Structured format:
         {"state": "input-required|auth-required", "prompt": "...", ...}
 
         Strategy:
-        1. Try parsing entire response as JSON
-        2. Fall back to regex extraction of JSON blocks
-        3. Return None if no structured response found
+        1. If dict with "state" key → return directly
+        2. If string → try JSON parsing
+        3. If string → try regex extraction of JSON blocks
+        4. Otherwise → return None (normal completion)
 
         Args:
-            result: Agent execution result
+            result: Agent execution result (any type)
 
         Returns:
             Dict with state info if structured response found, None otherwise
         """
-        if not isinstance(result, str):
+        # Strategy 1: Direct dict response
+        if isinstance(result, dict):
+            if "state" in result:
+                return result
             return None
-
-        # Strategy 1: Parse entire response as JSON
-        try:
-            parsed = json.loads(result)
-            if isinstance(parsed, dict) and "state" in parsed:
-                return parsed
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # Strategy 2: Extract JSON from text using regex
-        json_pattern = r'\{[^{}]*"state"[^{}]*\}'
-        matches = re.findall(json_pattern, result, re.DOTALL)
         
-        for match in matches:
+        # Strategy 2: String response - try JSON parsing
+        if isinstance(result, str):
+            # Try parsing entire response as JSON
             try:
-                parsed = json.loads(match)
+                parsed = json.loads(result)
                 if isinstance(parsed, dict) and "state" in parsed:
                     return parsed
             except (json.JSONDecodeError, ValueError):
-                continue
+                pass
+
+            # Try extracting JSON from text using regex
+            json_pattern = r'\{[^{}]*"state"[^{}]*\}'
+            matches = re.findall(json_pattern, result, re.DOTALL)
+            
+            for match in matches:
+                try:
+                    parsed = json.loads(match)
+                    if isinstance(parsed, dict) and "state" in parsed:
+                        return parsed
+                except (json.JSONDecodeError, ValueError):
+                    continue
         
+        # Strategy 3: Other types (list, bytes, etc.) - no state transition
         return None
     
     def _determine_task_state(
         self, 
         result: Any, 
         structured: Optional[dict[str, Any]]
-    ) -> tuple[TaskState, dict[str, Any], str]:
+    ) -> tuple[TaskState, dict[str, Any], Any]:
         """Determine task state from agent response.
+        
+        Handles multiple response types:
+        - Structured dict: {"state": "...", "prompt": "..."}
+        - Plain string: "Hello! How can I assist you?"
+        - Rich content: {"text": "...", "image": "..."}
+        - Binary data: images, files, etc.
 
         Args:
-            result: Agent execution result
+            result: Agent execution result (any type)
             structured: Parsed structured response if available
 
         Returns:
             Tuple of (state, metadata, message_content)
+            message_content can be str, dict, list, or any serializable type
         """
         # Check structured response first (preferred)
         if structured:
             state = structured.get("state")
             if state == "input-required":
+                prompt = structured.get("prompt", self._serialize_result(result))
                 return (
                     "input-required",
-                    {"prompt": structured.get("prompt", result)},
-                    structured.get("prompt", result)
+                    {"prompt": prompt},
+                    prompt
                 )
             elif state == "auth-required":
                 metadata = {
-                    "auth_prompt": structured.get("prompt", result),
+                    "auth_prompt": structured.get("prompt", self._serialize_result(result)),
                     "auth_type": structured.get("auth_type"),
                     "service": structured.get("service")
                 }
@@ -409,19 +544,21 @@ class ManifestWorker(Worker):
                 metadata = {k: v for k, v in metadata.items() if v is not None}
                 return ("auth-required", metadata, metadata["auth_prompt"])
         
-        # Heuristic detection (backward compatibility)
-        if isinstance(result, str):
-            result_lower = result.lower()
-            
-            # Check for auth indicators
-            auth_indicators = ["authentication required", "unauthorized", "api key required"]
-            if any(indicator in result_lower for indicator in auth_indicators):
-                return ("auth-required", {"auth_prompt": result}, result)
-            
-            # Check for input indicators
-            input_indicators = ["?", "please specify", "could you", "would you like"]
-            if any(indicator in result_lower for indicator in input_indicators):
-                return ("input-required", {"prompt": result}, result)
-        
-        # Default: task completion
+        # Default: task completion with any result type
         return ("completed", {}, result)
+    
+    def _serialize_result(self, result: Any) -> str:
+        """Serialize result to string for metadata storage.
+        
+        Args:
+            result: Any agent result
+            
+        Returns:
+            String representation of result
+        """
+        if isinstance(result, str):
+            return result
+        elif isinstance(result, (dict, list)):
+            return json.dumps(result)
+        else:
+            return str(result)

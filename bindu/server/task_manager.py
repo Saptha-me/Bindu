@@ -160,7 +160,22 @@ class TaskManager:
         """Send a message using the A2A protocol."""
         message = request["params"]["message"]
         context_id = self._parse_context_id(message.get("context_id"))
-        task: Task = await self.storage.submit_task(context_id, message)
+        
+        try:
+            task: Task = await self.storage.submit_task(context_id, message)
+        except ValueError as e:
+            # Handle task immutability error
+            error_msg = str(e)
+            if "terminal state" in error_msg and "immutable" in error_msg:
+                from bindu.common.protocol.types import TaskImmutableError
+                return self._create_error_response(
+                    SendMessageResponse, 
+                    request["id"], 
+                    TaskImmutableError, 
+                    error_msg
+                )
+            # Re-raise other ValueErrors
+            raise
 
         scheduler_params = self._build_scheduler_params(task, context_id, message, request["params"])
         await self.scheduler.run_task(scheduler_params)

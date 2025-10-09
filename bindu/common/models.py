@@ -108,6 +108,8 @@ class AgentManifest:
     # Agent Type & Configuration
     kind: Literal["agent", "team", "workflow"]
     num_history_sessions: int
+    enable_system_message: bool = True
+    enable_context_based_history: bool = False
     extra_data: dict[str, Any] = field(default_factory=dict)
 
     # Observability

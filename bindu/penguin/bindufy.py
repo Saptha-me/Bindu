@@ -278,6 +278,8 @@ def bindufy(
         monitoring=validated_config["monitoring"],
         telemetry=validated_config["telemetry"],
         num_history_sessions=validated_config["num_history_sessions"],
+        enable_system_message=validated_config.get("enable_system_message", True),
+        enable_context_based_history=validated_config.get("enable_context_based_history", False),
         documentation_url=validated_config["documentation_url"],
         extra_metadata=validated_config["extra_metadata"],
     )

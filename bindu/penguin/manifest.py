@@ -71,6 +71,8 @@ def create_manifest(
     monitoring: bool = False,
     telemetry: bool = True,
     num_history_sessions: int = 10,
+    enable_system_message: bool = True,
+    enable_context_based_history: bool = False,
     documentation_url: str | None = None,
     extra_metadata: dict[str, Any] | None = None,
 ) -> AgentManifest:
@@ -104,6 +106,8 @@ def create_manifest(
         monitoring: Enable monitoring and metrics collection (default: False).
         telemetry: Enable telemetry data collection (default: True).
         num_history_sessions: Number of conversation history sessions to maintain (default: 10).
+        enable_system_message: Enable system message/prompt in agent execution (default: True).
+        enable_context_based_history: Enable context-based history in agent execution (default: False).
         documentation_url: URL to agent documentation (optional).
         extra_metadata: Additional metadata dictionary to attach to the agent manifest (default: {}).
 
@@ -227,6 +231,8 @@ def create_manifest(
         skills=skills,
         kind=kind,
         num_history_sessions=num_history_sessions,
+        enable_system_message=enable_system_message,
+        enable_context_based_history=enable_context_based_history,
         extra_data=extra_metadata or {},
         debug_mode=debug_mode,
         debug_level=debug_level,

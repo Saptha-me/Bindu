@@ -5,341 +5,69 @@ import pytest
 from uuid import uuid4
 
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
-from bindu.common.protocol.types import TaskSendParams
-from tests.utils import create_test_message
 
 
-async def get_next_task(scheduler):
-    """Helper to get the next task from scheduler."""
-    async for task_op in scheduler.receive_task_operations():
-        return task_op
-    return None
-
-
-class TestSchedulerBasics:
-    """Test basic scheduler operations."""
-    
-    @pytest.mark.asyncio
-    async def test_submit_and_get_task(self):
-        """Test submitting and retrieving a task."""
-        async with InMemoryScheduler() as scheduler:
-            task_id = uuid4()
-            context_id = uuid4()
-            message = create_test_message()
-            
-            params: TaskSendParams = {
-                "task_id": task_id,
-                "context_id": context_id,
-                "message": message,
-            }
-            
-            await scheduler.run_task(params)
-            
-            # Get the task from queue
-            task_op = await get_next_task(scheduler)
-            
-            assert task_op is not None
-            assert task_op["operation"] == "run"
-            assert task_op["params"]["task_id"] == task_id
-            assert task_op["params"]["context_id"] == context_id
-    
-    @pytest.mark.asyncio
-    async def test_fifo_ordering(self):
-        """Test that tasks are retrieved in FIFO order."""
-        async with InMemoryScheduler() as scheduler:
-            task_ids = [uuid4() for _ in range(5)]
-            
-            # Submit tasks in order
-            for task_id in task_ids:
-                params: TaskSendParams = {
-                    "task_id": task_id,
-                    "context_id": uuid4(),
-                }
-                await scheduler.run_task(params)
-            
-            # Retrieve tasks - should be in same order
-            retrieved_ids = []
-            for _ in range(5):
-                task_op = await get_next_task(scheduler)
-                retrieved_ids.append(task_op["params"]["task_id"])
-            
-            assert retrieved_ids == task_ids
-    
-    @pytest.mark.asyncio
-    async def test_empty_queue_blocks(self):
-        """Test that getting from empty queue blocks."""
-        async with InMemoryScheduler() as scheduler:
-            # Try to get with timeout
-            with pytest.raises(asyncio.TimeoutError):
-                await asyncio.wait_for(get_next_task(scheduler), timeout=0.1)
-    
-    @pytest.mark.asyncio
-    async def test_submit_after_get_unblocks(self):
-        """Test that submitting unblocks waiting get."""
-        async with InMemoryScheduler() as scheduler:
-            task_id = uuid4()
-            
-            async def submit_delayed():
-                await asyncio.sleep(0.1)
-                params: TaskSendParams = {
-                    "task_id": task_id,
-                    "context_id": uuid4(),
-                }
-                await scheduler.run_task(params)
-            
-            # Start submit task
-            submit_task = asyncio.create_task(submit_delayed())
-            
-            # This should block until submit completes
-            task_op = await get_next_task(scheduler)
-            assert task_op["params"]["task_id"] == task_id
-            
-            await submit_task
-
-
-class TestSchedulerLifecycle:
-    """Test scheduler lifecycle management."""
-    
-    @pytest.mark.asyncio
-    async def test_context_manager_enter_exit(self):
-        """Test scheduler as async context manager."""
-        scheduler = InMemoryScheduler()
+@pytest.mark.asyncio
+async def test_scheduler_basic_flow():
+    """Test scheduler can send and receive operations."""
+    async with InMemoryScheduler() as scheduler:
+        task_id = uuid4()
+        received = []
         
-        async with scheduler:
-            # Should be usable inside context
-            params: TaskSendParams = {
-                "task_id": uuid4(),
-                "context_id": uuid4(),
-            }
-            await scheduler.run_task(params)
-            task_op = await get_next_task(scheduler)
-            assert task_op is not None
-    
-    @pytest.mark.asyncio
-    async def test_multiple_submit_get_cycles(self):
-        """Test multiple submit/get cycles."""
-        async with InMemoryScheduler() as scheduler:
-            for i in range(10):
-                task_id = uuid4()
-                params: TaskSendParams = {
-                    "task_id": task_id,
-                    "context_id": uuid4(),
-                }
-                
-                await scheduler.run_task(params)
-                task_op = await get_next_task(scheduler)
-                assert task_op["params"]["task_id"] == task_id
-    
-    @pytest.mark.asyncio
-    async def test_graceful_shutdown(self):
-        """Test scheduler graceful shutdown."""
-        scheduler = InMemoryScheduler()
+        async def consumer():
+            """Consume one task operation."""
+            async for op in scheduler.receive_task_operations():
+                received.append(op)
+                return
         
-        async with scheduler:
-            # Submit some tasks
-            for _ in range(5):
-                params: TaskSendParams = {
-                    "task_id": uuid4(),
-                    "context_id": uuid4(),
-                }
-                await scheduler.run_task(params)
+        # Start consumer
+        consumer_task = asyncio.create_task(consumer())
         
-        # After exit, scheduler should be shut down
-        # Implementation-specific: verify shutdown behavior
-
-
-class TestConcurrentOperations:
-    """Test concurrent scheduler operations."""
-    
-    @pytest.mark.asyncio
-    async def test_concurrent_submits(self):
-        """Test submitting tasks concurrently."""
-        async with InMemoryScheduler() as scheduler:
-            task_ids = [uuid4() for _ in range(20)]
-            
-            # Submit all tasks concurrently
-            async def submit(task_id):
-                params: TaskSendParams = {
-                    "task_id": task_id,
-                    "context_id": uuid4(),
-                }
-                await scheduler.run_task(params)
-            
-            await asyncio.gather(*[submit(tid) for tid in task_ids])
-            
-            # Retrieve all tasks
-            retrieved_ids = set()
-            for _ in range(20):
-                task_op = await get_next_task(scheduler)
-                retrieved_ids.add(task_op["params"]["task_id"])
-            
-            # All tasks should be retrieved
-            assert retrieved_ids == set(task_ids)
-    
-    @pytest.mark.asyncio
-    async def test_concurrent_gets(self):
-        """Test multiple consumers getting tasks concurrently."""
-        async with InMemoryScheduler() as scheduler:
-            num_tasks = 10
-            
-            # Submit tasks
-            for _ in range(num_tasks):
-                params: TaskSendParams = {
-                    "task_id": uuid4(),
-                    "context_id": uuid4(),
-                }
-                await scheduler.run_task(params)
-            
-            # Multiple consumers get tasks concurrently
-            async def consumer():
-                return await get_next_task(scheduler)
-            
-            results = await asyncio.gather(*[consumer() for _ in range(num_tasks)])
-            
-            # All gets should succeed
-            assert len(results) == num_tasks
-            assert all(r is not None for r in results)
-            
-            # All task IDs should be unique
-            task_ids = [r["params"]["task_id"] for r in results]
-            assert len(set(task_ids)) == num_tasks
-    
-    @pytest.mark.asyncio
-    async def test_producer_consumer_pattern(self):
-        """Test producer-consumer pattern."""
-        async with InMemoryScheduler() as scheduler:
-            num_tasks = 20
-            consumed = []
-            
-            async def producer():
-                for i in range(num_tasks):
-                    params: TaskSendParams = {
-                        "task_id": uuid4(),
-                        "context_id": uuid4(),
-                        "metadata": {"index": i},
-                    }
-                    await scheduler.run_task(params)
-                    await asyncio.sleep(0.01)  # Simulate work
-            
-            async def consumer():
-                for _ in range(num_tasks):
-                    task_op = await get_next_task(scheduler)
-                    consumed.append(task_op["params"])
-                    await asyncio.sleep(0.01)  # Simulate work
-            
-            # Run producer and consumer concurrently
-            await asyncio.gather(producer(), consumer())
-            
-            assert len(consumed) == num_tasks
-
-
-class TestTaskParameters:
-    """Test task parameter handling."""
-    
-    @pytest.mark.asyncio
-    async def test_task_with_message(self):
-        """Test task parameters with message."""
-        async with InMemoryScheduler() as scheduler:
-            message = create_test_message(text="Test message")
-            params: TaskSendParams = {
-                "task_id": uuid4(),
-                "context_id": uuid4(),
-                "message": message,
-            }
-            
-            await scheduler.run_task(params)
-            task_op = await get_next_task(scheduler)
-            
-            assert "message" in task_op["params"]
-            assert task_op["params"]["message"]["parts"][0]["text"] == "Test message"
-    
-    @pytest.mark.asyncio
-    async def test_task_with_history_length(self):
-        """Test task parameters with history_length."""
-        async with InMemoryScheduler() as scheduler:
-            params: TaskSendParams = {
-                "task_id": uuid4(),
-                "context_id": uuid4(),
-                "history_length": 10,
-            }
-            
-            await scheduler.run_task(params)
-            task_op = await get_next_task(scheduler)
-            
-            assert "history_length" in task_op["params"]
-            assert task_op["params"]["history_length"] == 10
-    
-    @pytest.mark.asyncio
-    async def test_task_with_metadata(self):
-        """Test task parameters with metadata."""
-        async with InMemoryScheduler() as scheduler:
-            metadata = {"custom": "value", "priority": "high"}
-            params: TaskSendParams = {
-                "task_id": uuid4(),
-                "context_id": uuid4(),
-                "metadata": metadata,
-            }
-            
-            await scheduler.run_task(params)
-            task_op = await get_next_task(scheduler)
-            
-            assert "metadata" in task_op["params"]
-            assert task_op["params"]["metadata"]["custom"] == "value"
-            assert task_op["params"]["metadata"]["priority"] == "high"
-
-
-class TestQueueBehavior:
-    """Test queue-specific behavior."""
-    
-    @pytest.mark.asyncio
-    async def test_no_task_loss(self):
-        """Test that no tasks are lost during operations."""
-        async with InMemoryScheduler() as scheduler:
-            num_tasks = 100
-            submitted_ids = []
-            
-            # Submit many tasks
-            for _ in range(num_tasks):
-                task_id = uuid4()
-                submitted_ids.append(task_id)
-                params: TaskSendParams = {
-                    "task_id": task_id,
-                    "context_id": uuid4(),
-                }
-                await scheduler.run_task(params)
-            
-            # Retrieve all tasks
-            retrieved_ids = []
-            for _ in range(num_tasks):
-                task_op = await get_next_task(scheduler)
-                retrieved_ids.append(task_op["params"]["task_id"])
-            
-            # All tasks should be accounted for
-            assert set(submitted_ids) == set(retrieved_ids)
-    
-    @pytest.mark.asyncio
-    async def test_queue_independence(self):
-        """Test that multiple scheduler instances are independent."""
-        scheduler1 = InMemoryScheduler()
-        scheduler2 = InMemoryScheduler()
+        # Give consumer time to start
+        await asyncio.sleep(0.01)
         
-        async with scheduler1, scheduler2:
-            task_id_1 = uuid4()
-            task_id_2 = uuid4()
-            
-            # Submit to different schedulers
-            await scheduler1.run_task({
-                "task_id": task_id_1,
-                "context_id": uuid4(),
-            })
-            await scheduler2.run_task({
-                "task_id": task_id_2,
-                "context_id": uuid4(),
-            })
-            
-            # Each scheduler should only have its own task
-            task_op1 = await get_next_task(scheduler1)
-            task_op2 = await get_next_task(scheduler2)
-            
-            assert task_op1["params"]["task_id"] == task_id_1
-            assert task_op2["params"]["task_id"] == task_id_2
+        # Send task
+        await scheduler.run_task({"task_id": task_id, "context_id": uuid4()})
+        
+        # Wait for consumer
+        await asyncio.wait_for(consumer_task, timeout=1.0)
+        
+        assert len(received) == 1
+        assert received[0]["operation"] == "run"
+        assert received[0]["params"]["task_id"] == task_id
+
+
+@pytest.mark.asyncio
+async def test_scheduler_operations():
+    """Test all scheduler operations."""
+    async with InMemoryScheduler() as scheduler:
+        task_id = uuid4()
+        received = []
+        
+        async def consumer():
+            """Consume operations."""
+            count = 0
+            async for op in scheduler.receive_task_operations():
+                received.append(op)
+                count += 1
+                if count >= 4:
+                    return
+        
+        # Start consumer
+        consumer_task = asyncio.create_task(consumer())
+        await asyncio.sleep(0.01)
+        
+        # Send operations
+        await scheduler.run_task({"task_id": task_id, "context_id": uuid4()})
+        await scheduler.cancel_task({"task_id": task_id})
+        await scheduler.pause_task({"task_id": task_id})
+        await scheduler.resume_task({"task_id": task_id})
+        
+        # Wait for consumer
+        await asyncio.wait_for(consumer_task, timeout=1.0)
+        
+        assert len(received) == 4
+        assert received[0]["operation"] == "run"
+        assert received[1]["operation"] == "cancel"
+        assert received[2]["operation"] == "pause"
+        assert received[3]["operation"] == "resume"

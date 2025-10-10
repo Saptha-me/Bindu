@@ -32,6 +32,15 @@ class ConfigValidator:
         "agent_trust": None,
         "key_password": None,
         "auth": None,
+        "oltp_endpoint": None,
+        "oltp_service_name": None,
+        "oltp_verbose_logging": False,
+        "oltp_service_version": "1.0.0",
+        "oltp_deployment_environment": "production",
+        "oltp_batch_max_queue_size": 2048,
+        "oltp_batch_schedule_delay_millis": 5000,
+        "oltp_batch_max_export_batch_size": 512,
+        "oltp_batch_export_timeout_millis": 30000,
     }
     
     # Required fields that must be present
@@ -100,6 +109,10 @@ class ConfigValidator:
         # Validate auth configuration if provided
         if config.get("auth"):
             cls._validate_auth_config(config["auth"])
+        
+        # Process OLTP configuration only if telemetry is enabled
+        if config.get("telemetry"):
+            cls._process_oltp_config(config)
         
         return config
     
@@ -186,6 +199,41 @@ class ConfigValidator:
                     f"Invalid algorithms in auth config: {invalid_algs}. "
                     f"Valid options: {valid_algorithms}"
                 )
+    
+    @classmethod
+    def _process_oltp_config(cls, config: Dict[str, Any]) -> None:
+        """Process OLTP configuration when telemetry is enabled.
+        
+        This function extracts OLTP endpoint, service name, and verbose logging from the config,
+        supporting environment variable references.
+        
+        Args:
+            config: Configuration dictionary (modified in place)
+        """
+        # Process OLTP endpoint - support environment variable
+        oltp_endpoint = config.get("oltp_endpoint")
+        if oltp_endpoint and isinstance(oltp_endpoint, str):
+            if oltp_endpoint.startswith("env:"):
+                env_var = oltp_endpoint[4:]  # Remove 'env:' prefix
+                config["oltp_endpoint"] = os.getenv(env_var)
+            # else: use the value as-is
+        
+        # Process OLTP service name - support environment variable
+        oltp_service_name = config.get("oltp_service_name")
+        if oltp_service_name and isinstance(oltp_service_name, str):
+            if oltp_service_name.startswith("env:"):
+                env_var = oltp_service_name[4:]  # Remove 'env:' prefix
+                config["oltp_service_name"] = os.getenv(env_var)
+            # else: use the value as-is
+        
+        # Process verbose logging flag - support environment variable
+        oltp_verbose_logging = config.get("oltp_verbose_logging")
+        if oltp_verbose_logging and isinstance(oltp_verbose_logging, str):
+            if oltp_verbose_logging.startswith("env:"):
+                env_var = oltp_verbose_logging[4:]  # Remove 'env:' prefix
+                env_value = os.getenv(env_var, "false").lower()
+                config["oltp_verbose_logging"] = env_value in ("true", "1", "yes")
+            # else: use the value as-is
     
     @classmethod
     def create_bindufy_config(cls, raw_config: Dict[str, Any]) -> Dict[str, Any]:

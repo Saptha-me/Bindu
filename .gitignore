@@ -185,3 +185,5 @@ examples/*
 examples/.pebbling/*
 
 
+examples/.pebbling/private.pem
+examples/.pebbling/public.pem

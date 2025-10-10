@@ -21,8 +21,12 @@ from uuid import uuid4
 
 import uvicorn
 
-import bindu.observability.openinference as OpenInferenceObservability
-from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
+from bindu.common.models import (
+    AgentManifest,
+    DeploymentConfig, 
+    SchedulerConfig, 
+    StorageConfig
+)
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
@@ -281,6 +285,8 @@ def bindufy(
         debug_level=validated_config["debug_level"],
         monitoring=validated_config["monitoring"],
         telemetry=validated_config["telemetry"],
+        oltp_endpoint=validated_config.get("oltp_endpoint"),
+        oltp_service_name=validated_config.get("oltp_service_name"),
         num_history_sessions=validated_config["num_history_sessions"],
         enable_system_message=validated_config.get("enable_system_message", True),
         enable_context_based_history=validated_config.get("enable_context_based_history", False),
@@ -312,6 +318,8 @@ def bindufy(
     # Check if auth is enabled in config
     auth_enabled = validated_config.get("auth", {}).get("enabled", False)
     
+    # Create Bindu application with telemetry config
+    # Telemetry will be initialized in the application lifespan context
     bindu_app = BinduApplication(
         storage=storage_instance,
         scheduler=scheduler_instance,
@@ -320,14 +328,17 @@ def bindufy(
         version=validated_config["version"],
         static_dir=bindu_static_dir,
         auth_enabled=auth_enabled,
+        telemetry_enabled=validated_config["telemetry"],
+        oltp_endpoint=validated_config.get("oltp_endpoint"),
+        oltp_service_name=validated_config.get("oltp_service_name"),
+        oltp_verbose_logging=validated_config.get("oltp_verbose_logging", False),
+        oltp_service_version=validated_config.get("oltp_service_version", "1.0.0"),
+        oltp_deployment_environment=validated_config.get("oltp_deployment_environment", "production"),
+        oltp_batch_max_queue_size=validated_config.get("oltp_batch_max_queue_size", 2048),
+        oltp_batch_schedule_delay_millis=validated_config.get("oltp_batch_schedule_delay_millis", 5000),
+        oltp_batch_max_export_batch_size=validated_config.get("oltp_batch_max_export_batch_size", 512),
+        oltp_batch_export_timeout_millis=validated_config.get("oltp_batch_export_timeout_millis", 30000),
     )
-
-    # Setup telemetry if enabled
-    if validated_config["telemetry"]:
-        try:
-            OpenInferenceObservability.setup()
-        except Exception as exc:
-            logger.warning("OpenInference telemetry setup failed", error=str(exc))
 
     # Parse deployment URL
     host, port = _parse_deployment_url(deployment_config)

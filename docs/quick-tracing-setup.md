@@ -17,9 +17,24 @@ docker run -d --name jaeger \
   jaegertracing/all-in-one:latest
 ```
 
-### 2. Set Environment Variables
+### 2. Configure in Agent Config (Recommended)
 
-**Before starting your agent**, export these:
+Add the `oltp` section to your agent config file:
+
+```json
+{
+  "name": "my-agent",
+  "author": "user@example.com",
+  "description": "My agent",
+  "telemetry": true,
+  "oltp": {
+    "endpoint": "http://localhost:4318/v1/traces",
+    "service_name": "bindu-agent"
+  }
+}
+```
+
+**OR** use environment variables (config takes precedence):
 
 ```bash
 # Point to Jaeger's OTLP endpoint

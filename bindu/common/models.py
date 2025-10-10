@@ -64,6 +64,17 @@ class SchedulerConfig:
 
 
 @dataclass(frozen=True)
+class OLTPConfig:
+    """Configuration for observability and tracing.
+
+    This defines where and how observability data is sent.
+    """
+
+    endpoint: str
+    service_name: str
+
+
+@dataclass(frozen=True)
 class AgentFrameworkSpec:
     """Specification for an agent framework.
 
@@ -117,6 +128,8 @@ class AgentManifest:
     debug_level: Literal[1, 2] = 1
     monitoring: bool = False
     telemetry: bool = True
+    oltp_endpoint: str | None = None
+    oltp_service_name: str | None = None
 
     # Optional Metadata
     documentation_url: str | None = None

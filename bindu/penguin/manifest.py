@@ -70,6 +70,8 @@ def create_manifest(
     debug_level: Literal[1, 2] = 1,
     monitoring: bool = False,
     telemetry: bool = True,
+    oltp_endpoint: str | None = None,
+    oltp_service_name: str | None = None,
     num_history_sessions: int = 10,
     enable_system_message: bool = True,
     enable_context_based_history: bool = False,
@@ -241,6 +243,8 @@ def create_manifest(
         debug_level=debug_level,
         monitoring=monitoring,
         telemetry=telemetry,
+        oltp_endpoint=oltp_endpoint,
+        oltp_service_name=oltp_service_name,
         documentation_url=documentation_url,
     )
 

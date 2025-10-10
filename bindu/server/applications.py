@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from functools import partial
 from pathlib import Path
 from typing import AsyncIterator, Callable, Optional, Sequence
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -61,8 +61,8 @@ class BinduApplication(Starlette):
         self,
         storage: InMemoryStorage,
         scheduler: InMemoryScheduler,
-        penguin_id: UUID,
         manifest: AgentManifest,
+        penguin_id: UUID | None = None,
         url: str = "http://localhost",
         port: int = 3773,
         version: str = "1.0.0",
@@ -80,7 +80,7 @@ class BinduApplication(Starlette):
             manifest: Agent manifest to serve
             storage: Storage backend (defaults to InMemoryStorage)
             scheduler: Task scheduler (defaults to InMemoryScheduler)
-            penguin_id: Unique server identifier
+            penguin_id: Unique server identifier (auto-generated if not provided)
             url: Server URL
             version: Server version
             description: Server description
@@ -91,6 +91,10 @@ class BinduApplication(Starlette):
             middleware: Optional middleware
             auth_enabled: Enable Auth0 authentication middleware
         """
+        # Generate penguin_id if not provided
+        if penguin_id is None:
+            penguin_id = uuid4()
+        
         # Create default lifespan if none provided
         if lifespan is None:
             lifespan = self._create_default_lifespan(storage, scheduler, manifest)
@@ -147,9 +151,6 @@ class BinduApplication(Starlette):
         self.manifest = manifest
         self.static_dir = static_dir
         self.default_input_modes = ["application/json"]
-        self.default_output_modes = ["application/json"]
-
-        # TaskManager will be initialized in lifespan
         self.task_manager: TaskManager | None = None
         self._storage = storage
         self._scheduler = scheduler

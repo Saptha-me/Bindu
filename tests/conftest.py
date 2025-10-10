@@ -101,19 +101,18 @@ def mock_notification_service() -> MockNotificationService:
 async def task_manager(
     storage: InMemoryStorage,
     scheduler: InMemoryScheduler,
-    mock_manifest: MockManifest,
 ):
-    """Create a fully configured TaskManager."""
+    """Create a TaskManager for unit testing (without worker)."""
     # Import here to avoid circular import
     from bindu.server.task_manager import TaskManager
     
+    # Create TaskManager without manifest to avoid worker startup issues in unit tests
     tm = TaskManager(
         scheduler=scheduler,
         storage=storage,
-        manifest=mock_manifest,
+        manifest=None,
     )
-    async with tm:
-        yield tm
+    yield tm
 
 
 @pytest_asyncio.fixture
@@ -133,8 +132,9 @@ async def task_manager_with_push(
         manifest=mock_manifest_with_push,
     )
     tm.notification_service = mock_notification_service
-    async with tm:
-        yield tm
+    await tm.__aenter__()
+    yield tm
+    await tm.__aexit__(None, None, None)
 
 
 @pytest_asyncio.fixture

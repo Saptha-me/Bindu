@@ -71,7 +71,7 @@ import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from bindu.common.protocol.types import (
     CancelTaskRequest,
@@ -98,7 +98,6 @@ from bindu.common.protocol.types import (
     SetTaskPushNotificationRequest,
     SetTaskPushNotificationResponse,
     StreamMessageRequest,
-    StreamMessageResponse,
     Task,
     TaskFeedbackRequest,
     TaskFeedbackResponse,
@@ -107,16 +106,14 @@ from bindu.common.protocol.types import (
     TaskPushNotificationConfig,
     TaskSendParams,
 )
-
 from bindu.settings import app_settings
 
 from ..utils.logging import get_logger
-from ..utils.task_telemetry import trace_context_operation, trace_task_operation, track_active_task
 from ..utils.notifications import NotificationDeliveryError, NotificationService
+from ..utils.task_telemetry import trace_context_operation, trace_task_operation, track_active_task
 from .scheduler import Scheduler
 from .storage import Storage
 from .workers import ManifestWorker
-
 
 logger = get_logger("pebbling.server.task_manager")
 
@@ -333,7 +330,8 @@ class TaskManager:
                 CancelTaskResponse,
                 request["id"],
                 TaskNotCancelableError,
-                f"Task cannot be canceled in '{current_state}' state. Tasks can only be canceled while pending or running."
+                f"Task cannot be canceled in '{current_state}' state. "
+                f"Tasks can only be canceled while pending or running."
             )
         
         # Cancel the task
@@ -350,7 +348,6 @@ class TaskManager:
         """
         from starlette.responses import StreamingResponse
 
-        request_id = str(request["id"])
         message = request["params"]["message"]
         context_id = self._parse_context_id(message.get("context_id"))
 
@@ -607,7 +604,12 @@ class TaskManager:
             )
 
         return ClearContextsResponse(
-            jsonrpc="2.0", id=request["id"], result={"message": f"Context {context_id} and all associated tasks cleared successfully"}
+            jsonrpc="2.0",
+            id=request["id"],
+            result={
+                "message": f"Context {context_id} and all associated tasks "
+                f"cleared successfully"
+            }
         )
 
     @trace_task_operation("task_feedback")

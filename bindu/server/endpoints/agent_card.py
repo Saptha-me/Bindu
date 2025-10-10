@@ -4,11 +4,11 @@ from time import time
 from typing import TYPE_CHECKING
 
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import Response
 
-from bindu.common.protocol.types import AgentCard, agent_card_ta, InternalError
-from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
+from bindu.common.protocol.types import AgentCard, InternalError, agent_card_ta
 from bindu.utils.logging import get_logger
+from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 
 if TYPE_CHECKING:
     from ..applications import BinduApplication

@@ -306,7 +306,10 @@ class DIDAgentExtension:
         
         # Fallback to did:key format with multibase encoding
         public_key_bytes = self._get_public_key_raw_bytes()
-        multibase_encoded = app_settings.did.multibase_prefix + base58.b58encode(public_key_bytes).decode(app_settings.did.base58_encoding)
+        encoded = base58.b58encode(public_key_bytes).decode(
+            app_settings.did.base58_encoding
+        )
+        multibase_encoded = app_settings.did.multibase_prefix + encoded
         return f"did:{app_settings.did.method_key}:{multibase_encoded}"
 
     def set_agent_metadata(self, 

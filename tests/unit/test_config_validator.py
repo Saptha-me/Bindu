@@ -3,11 +3,9 @@
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from bindu.common.protocol.types import Skill
 from bindu.penguin.config_validator import ConfigValidator, load_and_validate_config
 
 

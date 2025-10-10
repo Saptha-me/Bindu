@@ -7,12 +7,12 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
-# Import directly from submodules to avoid circular imports
-from bindu.server.storage.memory_storage import InMemoryStorage
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 
-from tests.mocks import MockAgent, MockManifest, MockDIDExtension, MockNotificationService
-from tests.utils import create_test_message, create_test_task, create_test_context
+# Import directly from submodules to avoid circular imports
+from bindu.server.storage.memory_storage import InMemoryStorage
+from tests.mocks import MockAgent, MockDIDExtension, MockManifest, MockNotificationService
+from tests.utils import create_test_context, create_test_message, create_test_task
 
 
 # Configure asyncio for pytest

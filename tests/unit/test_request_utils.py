@@ -2,10 +2,7 @@
 
 from unittest.mock import Mock
 
-import pytest
-
 from bindu.utils.request_utils import (
-    extract_error_fields,
     get_client_ip,
     jsonrpc_error,
 )

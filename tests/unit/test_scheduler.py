@@ -1,8 +1,9 @@
 """Unit tests for task scheduler (InMemoryScheduler)."""
 
 import asyncio
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 

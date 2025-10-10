@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from starlette.requests import Request
-from starlette.responses import FileResponse, JSONResponse, Response
+from starlette.responses import FileResponse, Response
 
 from bindu.common.protocol.types import InternalError, TaskNotFoundError
 from bindu.settings import app_settings
-from bindu.utils.request_utils import extract_error_fields, jsonrpc_error
 from bindu.utils.logging import get_logger
+from bindu.utils.request_utils import extract_error_fields, jsonrpc_error
 
 logger = get_logger("bindu.server.endpoints.static_files")
 

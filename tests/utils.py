@@ -8,7 +8,6 @@ from bindu.common.protocol.types import (
     Artifact,
     Context,
     Message,
-    Part,
     Task,
     TaskState,
     TaskStatus,

@@ -6,10 +6,8 @@ including JWKS fetching, token signature verification, and claims validation.
 
 import time
 from typing import Any, Optional
-from urllib.parse import urljoin
 
 import jwt
-import requests
 from jwt import PyJWKClient
 
 from bindu.settings import AuthSettings

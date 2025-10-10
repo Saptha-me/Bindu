@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from rich.align import Align
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from rich.console import Group
 
 
 def prepare_server_display(
@@ -26,24 +25,42 @@ def prepare_server_display(
     console = Console()
 
     # ASCII art with gradient colors
-    ascii_art = r"""[cyan]}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}[/cyan]
-[cyan]{{[/cyan]            [yellow]+[/yellow]             [yellow]+[/yellow]                  [yellow]+[/yellow]   [yellow]@[/yellow]          [cyan]{{[/cyan]
-[cyan]}}[/cyan]   [yellow]|[/yellow]                [yellow]*[/yellow]           [yellow]o[/yellow]     [yellow]+[/yellow]                [yellow].[/yellow]    [cyan]}}[/cyan]
-[cyan]{{[/cyan]  [yellow]-O-[/yellow]    [yellow]o[/yellow]               [yellow].[/yellow]               [yellow].[/yellow]          [yellow]+[/yellow]       [cyan]{{[/cyan]
-[cyan]}}[/cyan]   [yellow]|[/yellow]                    [magenta]_,.-----.,_[/magenta]         [yellow]o[/yellow]    [yellow]|[/yellow]          [cyan]}}[/cyan]
-[cyan]{{[/cyan]           [yellow]+[/yellow]    [yellow]*[/yellow]    [magenta].-'.         .'-.          -O-[/magenta]         [cyan]{{[/cyan]
-[cyan]}}[/cyan]      [yellow]*[/yellow]            [magenta].'.-'   .---.   `'.'.[/magenta]         [yellow]|[/yellow]     [yellow]*[/yellow]    [cyan]}}[/cyan]
-[cyan]{{[/cyan] [yellow].[/yellow]                [magenta]/_.-'   /     \   .'-.[/magenta]\                   [cyan]{{[/cyan]
-[cyan]}}[/cyan]         [yellow]'[/yellow] [yellow]-=*<[/yellow]  [magenta]|-._.-  |   @   |   '-._|[/magenta]  [yellow]>*=-[/yellow]    [yellow].[/yellow]     [yellow]+[/yellow] [cyan]}}[/cyan]
-[cyan]{{[/cyan] [yellow]-- )--[/yellow]           [magenta]\`-.    \     /    .-'/[/magenta]                   [cyan]{{[/cyan]
-[cyan]}}[/cyan]       [yellow]*[/yellow]     [yellow]+[/yellow]     [magenta]`.'.    '---'    .'.'[/magenta]    [yellow]+[/yellow]       [yellow]o[/yellow]       [cyan]}}[/cyan]
-[cyan]{{[/cyan]                  [yellow].[/yellow]  [magenta]'-._         _.-'[/magenta]  [yellow].[/yellow]                   [cyan]{{[/cyan]
-[cyan]}}[/cyan]         [yellow]|[/yellow]               [magenta]`~~~~~~~`[/magenta]       [yellow]- --===D[/yellow]       [yellow]@[/yellow]   [cyan]}}[/cyan]
-[cyan]{{[/cyan]   [yellow]o[/yellow]    [yellow]-O-[/yellow]      [yellow]*[/yellow]   [yellow].[/yellow]                  [yellow]*[/yellow]        [yellow]+[/yellow]          [cyan]{{[/cyan]
-[cyan]}}[/cyan]         [yellow]|[/yellow]                      [yellow]+[/yellow]         [yellow].[/yellow]            [yellow]+[/yellow]    [cyan]}}[/cyan]
-[cyan]{{[/cyan] [dim]jgs[/dim]          [yellow].[/yellow]     [yellow]@[/yellow]      [yellow]o[/yellow]                        [yellow]*[/yellow]       [cyan]{{[/cyan]
-[cyan]}}[/cyan]       [yellow]o[/yellow]                          [yellow]*[/yellow]          [yellow]o[/yellow]           [yellow].[/yellow]  [cyan]}}[/cyan]
-[cyan]{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{[/cyan]"""
+    ascii_art = (
+        r"[cyan]}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan]            [yellow]+[/yellow]             [yellow]+[/yellow]"
+        r"                  [yellow]+[/yellow]   [yellow]@[/yellow]          [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]   [yellow]|[/yellow]                [yellow]*[/yellow]           "
+        r"[yellow]o[/yellow]     [yellow]+[/yellow]                [yellow].[/yellow]    [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan]  [yellow]-O-[/yellow]    [yellow]o[/yellow]               [yellow].[/yellow]"
+        r"               [yellow].[/yellow]          [yellow]+[/yellow]       [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]   [yellow]|[/yellow]                    [magenta]_,.-----.,_[/magenta]"
+        r"         [yellow]o[/yellow]    [yellow]|[/yellow]          [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan]           [yellow]+[/yellow]    [yellow]*[/yellow]    [magenta].-'.         .'-.          "
+        r"-O-[/magenta]         [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]      [yellow]*[/yellow]            [magenta].'.-'   .---.   `'.'.[/magenta]"
+        r"         [yellow]|[/yellow]     [yellow]*[/yellow]    [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan] [yellow].[/yellow]                [magenta]/_.-'   /     \   .'-.[/magenta]\\"
+        r"                   [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]         [yellow]'[/yellow] [yellow]-=*<[/yellow]  [magenta]|-._.-  |   @   |   '-._|"
+        r"[/magenta]  [yellow]>*=-[/yellow]    [yellow].[/yellow]     [yellow]+[/yellow] [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan] [yellow]-- )--[/yellow]           [magenta]\`-.    \     /    .-'/[/magenta]"
+        r"                   [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]       [yellow]*[/yellow]     [yellow]+[/yellow]     [magenta]`.'.    '---'    .'.'[/magenta]"
+        r"    [yellow]+[/yellow]       [yellow]o[/yellow]       [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan]                  [yellow].[/yellow]  [magenta]'-._         _.-'[/magenta]  [yellow].[/yellow]"
+        r"                   [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]         [yellow]|[/yellow]               [magenta]`~~~~~~~`[/magenta]"
+        r"       [yellow]- --===D[/yellow]       [yellow]@[/yellow]   [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan]   [yellow]o[/yellow]    [yellow]-O-[/yellow]      [yellow]*[/yellow]   [yellow].[/yellow]"
+        r"                  [yellow]*[/yellow]        [yellow]+[/yellow]          [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]         [yellow]|[/yellow]                      [yellow]+[/yellow]"
+        r"         [yellow].[/yellow]            [yellow]+[/yellow]    [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{[/cyan] [dim]jgs[/dim]          [yellow].[/yellow]     [yellow]@[/yellow]      [yellow]o[/yellow]"
+        r"                        [yellow]*[/yellow]       [cyan]{{[/cyan]" "\n"
+        r"[cyan]}}[/cyan]       [yellow]o[/yellow]                          [yellow]*[/yellow]"
+        r"          [yellow]o[/yellow]           [yellow].[/yellow]  [cyan]}}[/cyan]" "\n"
+        r"[cyan]{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{[/cyan]"
+    )
 
     # Create title
     title = Text("Bindu 🌻", style="bold magenta")

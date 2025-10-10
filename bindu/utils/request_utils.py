@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, Tuple, get_args
+
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from typing import Any, Tuple, get_args
 
 
 def get_client_ip(request: Request) -> str:

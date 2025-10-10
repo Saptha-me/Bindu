@@ -26,8 +26,8 @@ from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
-from bindu.utils.display import prepare_server_display
 from bindu.settings import app_settings
+from bindu.utils.display import prepare_server_display
 from bindu.utils.logging import get_logger
 
 # Configure logging for the module
@@ -182,7 +182,10 @@ def bindufy(
         app_settings.auth.require_permissions = auth_config.get("require_permissions", False)
         app_settings.auth.permissions = auth_config.get("permissions", app_settings.auth.permissions)
         
-        logger.info(f"Auth0 configuration loaded: domain={auth_config.get('domain')}, audience={auth_config.get('audience')}")
+        logger.info(
+            f"Auth0 configuration loaded: domain={auth_config.get('domain')}, "
+            f"audience={auth_config.get('audience')}"
+        )
     
     # Generate agent_id if not provided
     agent_id = validated_config.get("id", uuid4().hex)

@@ -205,7 +205,10 @@ def create_manifest(
     has_context_param = "context" in param_names
     has_execution_state = "execution_state" in param_names
     
-    logger.debug(f"Function parameters: {param_names}, has_context={has_context_param}, has_execution_state={has_execution_state}")
+    logger.debug(
+        f"Function parameters: {param_names}, has_context={has_context_param}, "
+        f"has_execution_state={has_execution_state}"
+    )
 
     # Prepare manifest metadata
     manifest_name = name or agent_function.__name__.replace("_", "-")

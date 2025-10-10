@@ -38,11 +38,12 @@ AVAILABLE AUTHENTICATION OPTIONS:
 
 from __future__ import annotations as _annotations
 
+# Export all authentication implementations
+from .auth0 import Auth0Middleware
+
 # Export the base authentication interface
 from .base import AuthMiddleware
 
-# Export all authentication implementations
-from .auth0 import Auth0Middleware
 #from .cognito import CognitoMiddleware # TODO: Implement Cognito authentication
 
 __all__ = [

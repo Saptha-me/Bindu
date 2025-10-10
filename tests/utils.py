@@ -29,7 +29,7 @@ def create_test_message(
         "kind": "text",
         "text": text,
     }
-    
+
     message: Message = {
         "message_id": message_id or uuid4(),
         "context_id": context_id or uuid4(),
@@ -38,13 +38,13 @@ def create_test_message(
         "parts": [text_part],
         "role": role,  # type: ignore
     }
-    
+
     if reference_task_ids:
         message["reference_task_ids"] = reference_task_ids
-    
+
     if metadata:
         message["metadata"] = metadata
-    
+
     return message
 
 
@@ -60,31 +60,31 @@ def create_test_task(
     """Create a test Task object with sensible defaults."""
     tid = task_id or uuid4()
     cid = context_id or uuid4()
-    
+
     status: TaskStatus = {
         "state": state,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    
+
     if message:
         status["message"] = message
-    
+
     task: Task = {
         "id": tid,
         "context_id": cid,
         "kind": "task",
         "status": status,
     }
-    
+
     if artifacts:
         task["artifacts"] = artifacts
-    
+
     if history:
         task["history"] = history
-    
+
     if metadata:
         task["metadata"] = metadata
-    
+
     return task
 
 
@@ -99,16 +99,16 @@ def create_test_artifact(
         "kind": "text",
         "text": text,
     }
-    
+
     artifact: Artifact = {
         "artifact_id": artifact_id or uuid4(),
         "name": name,
         "parts": [text_part],
     }
-    
+
     if metadata:
         artifact["metadata"] = metadata
-    
+
     return artifact
 
 
@@ -122,7 +122,7 @@ def create_test_context(
 ) -> Context:
     """Create a test Context object."""
     now = datetime.now(timezone.utc).isoformat()
-    
+
     context: Context = {
         "context_id": context_id or uuid4(),
         "kind": "context",
@@ -130,28 +130,26 @@ def create_test_context(
         "created_at": now,
         "updated_at": now,
     }
-    
+
     if tasks:
         context["tasks"] = tasks
-    
+
     if name:
         context["name"] = name
-    
+
     if status:
         context["status"] = status  # type: ignore
-    
+
     if metadata:
         context["metadata"] = metadata
-    
+
     return context
 
 
 def assert_task_state(task: Task, expected_state: TaskState) -> None:
     """Assert that a task is in the expected state."""
     actual_state = task["status"]["state"]
-    assert actual_state == expected_state, (
-        f"Expected task state '{expected_state}', got '{actual_state}'"
-    )
+    assert actual_state == expected_state, f"Expected task state '{expected_state}', got '{actual_state}'"
 
 
 def assert_jsonrpc_error(response: Dict[str, Any], expected_code: int) -> None:
@@ -159,9 +157,7 @@ def assert_jsonrpc_error(response: Dict[str, Any], expected_code: int) -> None:
     assert "error" in response, "Response does not contain an error"
     assert "code" in response["error"], "Error does not contain a code"
     actual_code = response["error"]["code"]
-    assert actual_code == expected_code, (
-        f"Expected error code {expected_code}, got {actual_code}"
-    )
+    assert actual_code == expected_code, f"Expected error code {expected_code}, got {actual_code}"
 
 
 def assert_jsonrpc_success(response: Dict[str, Any]) -> None:

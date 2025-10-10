@@ -18,10 +18,10 @@ logger = get_logger("bindu.server.endpoints.agent_card")
 
 def _create_agent_card(app: "BinduApplication") -> AgentCard:
     """Create agent card from application manifest.
-    
+
     Args:
         app: BinduApplication instance
-        
+
     Returns:
         AgentCard instance
     """
@@ -47,21 +47,21 @@ def _create_agent_card(app: "BinduApplication") -> AgentCard:
 
 async def agent_card_endpoint(app: "BinduApplication", request: Request) -> Response:
     """Serve the agent card JSON schema.
-    
+
     This endpoint provides W3C-compliant agent discovery information.
     """
     client_ip = get_client_ip(request)
-    
+
     try:
         # Lazy initialization of agent card schema
         if app._agent_card_json_schema is None:
             logger.debug("Generating agent card schema")
             agent_card = _create_agent_card(app)
             app._agent_card_json_schema = agent_card_ta.dump_json(agent_card, by_alias=True)
-        
+
         logger.debug(f"Serving agent card to {client_ip}")
         return Response(content=app._agent_card_json_schema, media_type="application/json")
-        
+
     except Exception as e:
         logger.error(f"Error serving agent card to {client_ip}: {e}", exc_info=True)
         code, message = extract_error_fields(InternalError)

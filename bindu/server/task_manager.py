@@ -306,7 +306,7 @@ class TaskManager:
         task_id = request["params"]["task_id"]
         history_length = request["params"].get("history_length")
         task = await self.storage.load_task(task_id, history_length)
-        
+
         if task is None:
             return self._create_error_response(GetTaskResponse, request["id"], TaskNotFoundError, "Task not found")
 
@@ -321,19 +321,19 @@ class TaskManager:
 
         if task is None:
             return self._create_error_response(CancelTaskResponse, request["id"], TaskNotFoundError, "Task not found")
-        
+
         # Check if task is in a cancelable state
         current_state = task["status"]["state"]
-        
+
         if current_state in app_settings.agent.terminal_states:
             return self._create_error_response(
                 CancelTaskResponse,
                 request["id"],
                 TaskNotCancelableError,
                 f"Task cannot be canceled in '{current_state}' state. "
-                f"Tasks can only be canceled while pending or running."
+                f"Tasks can only be canceled while pending or running.",
             )
-        
+
         # Cancel the task
         await self.scheduler.cancel_task(request["params"])
         task = await self.storage.load_task(task_id)
@@ -591,25 +591,17 @@ class TaskManager:
     async def clear_context(self, request: ClearContextsRequest) -> ClearContextsResponse:
         """Clear a context from storage."""
         context_id = request["params"].get("context_id")
-        
+
         try:
             await self.storage.clear_context(context_id)
         except ValueError as e:
             # Context not found
-            return self._create_error_response(
-                ClearContextsResponse,
-                request["id"],
-                ContextNotFoundError,
-                str(e)
-            )
+            return self._create_error_response(ClearContextsResponse, request["id"], ContextNotFoundError, str(e))
 
         return ClearContextsResponse(
             jsonrpc="2.0",
             id=request["id"],
-            result={
-                "message": f"Context {context_id} and all associated tasks "
-                f"cleared successfully"
-            }
+            result={"message": f"Context {context_id} and all associated tasks cleared successfully"},
         )
 
     @trace_task_operation("task_feedback")
@@ -617,7 +609,7 @@ class TaskManager:
         """Submit feedback for a completed task."""
         task_id = request["params"]["task_id"]
         task = await self.storage.load_task(task_id)
-        
+
         if task is None:
             return self._create_error_response(TaskFeedbackResponse, request["id"], TaskNotFoundError, "Task not found")
 

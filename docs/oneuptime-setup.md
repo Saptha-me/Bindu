@@ -252,7 +252,7 @@ processors:
   batch:
     timeout: 10s
     send_batch_size: 1024
-  
+
   resource:
     attributes:
       - key: service.namespace
@@ -273,12 +273,12 @@ service:
       receivers: [otlp]
       processors: [batch, resource]
       exporters: [otlphttp]
-    
+
     metrics:
       receivers: [otlp]
       processors: [batch, resource]
       exporters: [otlphttp]
-    
+
     logs:
       receivers: [otlp]
       processors: [batch, resource]
@@ -417,13 +417,13 @@ OneUptime Cloud has usage limits. Monitor your:
 
 OneUptime provides a **complete observability solution** for Bindu:
 
-✅ **Distributed Tracing**: Full visibility into task flows  
-✅ **Metrics & Dashboards**: Track performance trends  
-✅ **Log Management**: Correlated logs with traces  
-✅ **APM**: Agent performance insights  
-✅ **Alerting**: Proactive issue detection  
-✅ **Incident Management**: Streamlined response  
-✅ **Status Pages**: Customer communication  
-✅ **Open Source**: Self-host or use cloud  
+✅ **Distributed Tracing**: Full visibility into task flows
+✅ **Metrics & Dashboards**: Track performance trends
+✅ **Log Management**: Correlated logs with traces
+✅ **APM**: Agent performance insights
+✅ **Alerting**: Proactive issue detection
+✅ **Incident Management**: Streamlined response
+✅ **Status Pages**: Customer communication
+✅ **Open Source**: Self-host or use cloud
 
 Your existing OpenTelemetry implementation works seamlessly—just configure the endpoint and token! 🚀

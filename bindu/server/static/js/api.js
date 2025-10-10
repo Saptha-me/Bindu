@@ -63,7 +63,7 @@ async function makeApiRequest(method, params) {
     }
 
     const result = await response.json();
-    
+
     if (result.error) {
         throw new Error(result.error.message || 'Unknown API error');
     }
@@ -88,7 +88,7 @@ async function loadAgentCard(forceRefresh = false) {
     if (agentCardCache && !forceRefresh) {
         return agentCardCache;
     }
-    
+
     try {
         const response = await fetch('/.well-known/agent.json');
         if (!response.ok) {
@@ -214,11 +214,11 @@ async function clearAllStorage() {
 async function getTasksGrouped(contextId = null, length = 100) {
     const rawData = await listTasks(contextId, length);
     const taskGroups = {};
-    
+
     // Single pass through all messages
     for (const messageArray of rawData) {
         if (!Array.isArray(messageArray) || messageArray.length === 0) continue;
-        
+
         for (const msg of messageArray) {
             const taskId = msg.task_id;
             if (!taskGroups[taskId]) {
@@ -232,7 +232,7 @@ async function getTasksGrouped(contextId = null, length = 100) {
             taskGroups[taskId].history.push(msg);
         }
     }
-    
+
     return Object.values(taskGroups);
 }
 
@@ -245,11 +245,11 @@ async function getTasksGrouped(contextId = null, length = 100) {
 async function getContextsGrouped(length = 100) {
     const rawData = await listContexts(length);
     const contextMap = {};
-    
+
     // Single pass through all messages
     for (const messageArray of rawData) {
         if (!Array.isArray(messageArray) || messageArray.length === 0) continue;
-        
+
         for (const msg of messageArray) {
             const contextId = msg.context_id;
             if (!contextMap[contextId]) {
@@ -262,7 +262,7 @@ async function getContextsGrouped(length = 100) {
             contextMap[contextId].task_ids.add(msg.task_id);
         }
     }
-    
+
     // Convert to array with task counts (avoid object spread)
     const contexts = [];
     for (const contextId in contextMap) {
@@ -344,20 +344,20 @@ const TERMINAL_STATES = ['completed', 'failed', 'canceled'];
 function pollTaskWithBackoff(taskId, onUpdate, onError) {
     let timeoutId = null;
     let cancelled = false;
-    
+
     async function poll(interval = POLLING_CONFIG.INITIAL_INTERVAL) {
         if (cancelled) return;
-        
+
         try {
             const task = await getTaskStatus(taskId);
             const state = task.status?.state;
-            
+
             // Check if task is in terminal state
             const isTerminal = TERMINAL_STATES.includes(state);
-            
+
             // Call update callback
             onUpdate(task, isTerminal);
-            
+
             // Continue polling if not terminal and not cancelled
             if (!isTerminal && !cancelled) {
                 const nextInterval = Math.min(
@@ -372,10 +372,10 @@ function pollTaskWithBackoff(taskId, onUpdate, onError) {
             }
         }
     }
-    
+
     // Start polling
     poll();
-    
+
     // Return cancellation control
     return {
         cancel: () => {
@@ -397,14 +397,14 @@ window.api = {
     // Core utilities
     generateId,
     makeApiRequest,
-    
+
     // Agent information
     loadAgentCard,
-    
+
     // Messaging
     sendMessage,
     sendChatMessage,
-    
+
     // Context management
     createContext,
     listContexts,
@@ -412,7 +412,7 @@ window.api = {
     clearContext,
     clearAllStorage,
     getContextsGrouped,
-    
+
     // Task management
     listTasks,
     getTask,
@@ -420,7 +420,7 @@ window.api = {
     cancelTask,
     getTasksGrouped,
     pollTaskWithBackoff,
-    
+
     // Constants
     POLLING_CONFIG
 };

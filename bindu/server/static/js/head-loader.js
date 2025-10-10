@@ -6,17 +6,17 @@
     const meta = document.createElement('meta');
     meta.charset = 'UTF-8';
     document.head.appendChild(meta);
-    
+
     const viewport = document.createElement('meta');
     viewport.name = 'viewport';
     viewport.content = 'width=device-width, initial-scale=1.0';
     document.head.appendChild(viewport);
-    
+
     // Add Tailwind CSS CDN with config
     const tailwindScript = document.createElement('script');
     tailwindScript.src = 'https://cdn.tailwindcss.com';
     document.head.appendChild(tailwindScript);
-    
+
     // Add Tailwind config - wait for tailwind to load
     tailwindScript.onload = function() {
         const configScript = document.createElement('script');
@@ -37,12 +37,12 @@
         `;
         document.head.appendChild(configScript);
     };
-    
+
     // Add Iconify
     const iconifyScript = document.createElement('script');
     iconifyScript.src = 'https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js';
     document.head.appendChild(iconifyScript);
-    
+
     // Add custom CSS
     const customCSS = document.createElement('link');
     customCSS.rel = 'stylesheet';

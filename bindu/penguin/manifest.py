@@ -29,27 +29,27 @@ logger = get_logger("bindu.penguin.manifest")
 
 def validate_agent_function(agent_function: Callable) -> None:
     """Validate that the function has the correct signature for protocol compliance.
-    
+
     Args:
         agent_function: The function to validate
-        
+
     Raises:
         ValueError: If function signature is invalid
     """
     func_name = agent_function.__name__
     logger.debug(f"Validating agent function: {func_name}")
-    
+
     params = list(inspect.signature(agent_function).parameters.values())
-    
+
     if not params:
         raise ValueError("Agent function must have at least 'messages' parameter of type list[binduMessage]")
-    
+
     if len(params) > 1:
         raise ValueError("Agent function must have only 'messages' parameter")
-    
+
     if params[0].name != "messages":
         raise ValueError(f"First parameter must be named 'messages', got '{params[0].name}'")
-    
+
     logger.debug(f"Agent function '{func_name}' validated successfully")
 
 
@@ -206,7 +206,7 @@ def create_manifest(
     param_names = list(sig.parameters.keys())
     has_context_param = "context" in param_names
     has_execution_state = "execution_state" in param_names
-    
+
     logger.debug(
         f"Function parameters: {param_names}, has_context={has_context_param}, "
         f"has_execution_state={has_execution_state}"
@@ -214,12 +214,8 @@ def create_manifest(
 
     # Prepare manifest metadata
     manifest_name = name or agent_function.__name__.replace("_", "-")
-    manifest_description = (
-        description 
-        or inspect.getdoc(agent_function) 
-        or f"Agent: {manifest_name}"
-    )
-    
+    manifest_description = description or inspect.getdoc(agent_function) or f"Agent: {manifest_name}"
+
     logger.info(f"Creating agent manifest: name='{manifest_name}', version={version}, kind={kind}")
 
     # Create base manifest
@@ -251,17 +247,17 @@ def create_manifest(
     # Create execution method based on function type
     def _create_run_method():
         """Factory function to create the appropriate run method based on function type."""
-        
+
         def _resolve_params(input_msg: str, **kwargs) -> tuple:
             """Resolve function parameters based on signature analysis.
 
             Note: Context is managed at session level via context_id in the architecture.
             Each session IS a context, so no separate context parameter needed.
-            
+
             Args:
                 input_msg: The input message to process
                 **kwargs: Additional keyword arguments
-                
+
             Returns:
                 Tuple of parameters to pass to the agent function
             """
@@ -276,6 +272,7 @@ def create_manifest(
         # Async generator function (streaming)
         if inspect.isasyncgenfunction(agent_function):
             logger.debug(f"Creating async generator run method for '{manifest_name}'")
+
             async def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 try:
@@ -289,6 +286,7 @@ def create_manifest(
         # Coroutine function (async single/multi result)
         elif inspect.iscoroutinefunction(agent_function):
             logger.debug(f"Creating coroutine run method for '{manifest_name}'")
+
             async def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 result = await agent_function(*params)
@@ -306,6 +304,7 @@ def create_manifest(
         # Sync generator function
         elif inspect.isgeneratorfunction(agent_function):
             logger.debug(f"Creating sync generator run method for '{manifest_name}'")
+
             def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 yield from agent_function(*params)
@@ -313,6 +312,7 @@ def create_manifest(
         # Regular sync function
         else:
             logger.debug(f"Creating sync function run method for '{manifest_name}'")
+
             def run(input_msg: str, **kwargs):
                 params = _resolve_params(input_msg, **kwargs)
                 return agent_function(*params)

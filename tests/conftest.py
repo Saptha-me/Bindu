@@ -47,28 +47,19 @@ def mock_agent() -> MockAgent:
 @pytest.fixture
 def mock_agent_input_required() -> MockAgent:
     """Create a mock agent that requires input."""
-    return MockAgent(
-        response="What is your name?",
-        response_type="input-required"
-    )
+    return MockAgent(response="What is your name?", response_type="input-required")
 
 
 @pytest.fixture
 def mock_agent_auth_required() -> MockAgent:
     """Create a mock agent that requires authentication."""
-    return MockAgent(
-        response="Please provide API key",
-        response_type="auth-required"
-    )
+    return MockAgent(response="Please provide API key", response_type="auth-required")
 
 
 @pytest.fixture
 def mock_agent_error() -> MockAgent:
     """Create a mock agent that raises an error."""
-    return MockAgent(
-        response="Agent execution failed",
-        response_type="error"
-    )
+    return MockAgent(response="Agent execution failed", response_type="error")
 
 
 @pytest.fixture
@@ -80,9 +71,7 @@ def mock_manifest(mock_agent: MockAgent) -> MockManifest:
 @pytest.fixture
 def mock_manifest_with_push() -> MockManifest:
     """Create a mock manifest with push notifications enabled."""
-    return MockManifest(
-        capabilities={"push_notifications": True}
-    )
+    return MockManifest(capabilities={"push_notifications": True})
 
 
 @pytest.fixture
@@ -105,7 +94,7 @@ async def task_manager(
     """Create a TaskManager for unit testing (without worker)."""
     # Import here to avoid circular import
     from bindu.server.task_manager import TaskManager
-    
+
     # Create TaskManager without manifest to avoid worker startup issues in unit tests
     tm = TaskManager(
         scheduler=scheduler,
@@ -125,7 +114,7 @@ async def task_manager_with_push(
     """Create a TaskManager with push notifications enabled."""
     # Import here to avoid circular import
     from bindu.server.task_manager import TaskManager
-    
+
     tm = TaskManager(
         scheduler=scheduler,
         storage=storage,
@@ -146,7 +135,7 @@ async def bindu_app(
     """Create a BinduApplication for endpoint testing."""
     # Import here to avoid circular import
     from bindu.server.applications import BinduApplication
-    
+
     app = BinduApplication(
         manifest=mock_manifest,
         storage=storage,
@@ -154,7 +143,7 @@ async def bindu_app(
         url="http://localhost:8030",
         version="1.0.0",
     )
-    
+
     async with app:
         yield app
 
@@ -183,10 +172,7 @@ def sample_task_with_history(sample_message):
     """Create a task with message history."""
     msg1 = create_test_message(text="First message")
     msg2 = create_test_message(text="Second message")
-    return create_test_task(
-        state="working",
-        history=[msg1, msg2]
-    )
+    return create_test_task(state="working", history=[msg1, msg2])
 
 
 # Deterministic UUIDs for testing

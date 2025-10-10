@@ -10,10 +10,10 @@ from starlette.responses import JSONResponse
 
 def get_client_ip(request: Request) -> str:
     """Extract client IP address from request.
-    
+
     Args:
         request: Starlette request object
-        
+
     Returns:
         Client IP address or "unknown" if not available
     """
@@ -25,35 +25,31 @@ def extract_error_fields(err_alias: Any) -> Tuple[int, str]:
     Given a JSONRPCError[Literal[code], Literal[message]] typing alias,
     return (code, message) as runtime values.
     """
-    code_lit, msg_lit = get_args(err_alias)           
-    (code,) = get_args(code_lit)                      
-    (message,) = get_args(msg_lit)                    
+    code_lit, msg_lit = get_args(err_alias)
+    (code,) = get_args(code_lit)
+    (message,) = get_args(msg_lit)
     return int(code), str(message)
 
 
 def jsonrpc_error(
-    code: int, 
-    message: str, 
-    data: str | None = None, 
-    request_id: str | None = None, 
-    status: int = 400
+    code: int, message: str, data: str | None = None, request_id: str | None = None, status: int = 400
 ) -> JSONResponse:
     """Create a JSON-RPC error response.
-    
+
     Args:
         code: JSON-RPC error code
         message: Error message
         data: Optional additional error data
         request_id: Optional JSON-RPC request ID
         status: HTTP status code (default: 400)
-        
+
     Returns:
         JSONResponse with JSON-RPC error format
     """
     error_dict: dict[str, Any] = {"code": code, "message": message}
     if data:
         error_dict["data"] = data
-    
+
     return JSONResponse(
         content={
             "jsonrpc": "2.0",

@@ -36,38 +36,38 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
     """
     client_ip = get_client_ip(request)
     request_id = None
-    
+
     try:
         data = await request.body()
-        
+
         try:
             a2a_request = a2a_request_ta.validate_json(data)
         except Exception as e:
             logger.warning(f"Invalid A2A request from {client_ip}: {e}")
             code, message = extract_error_fields(JSONParseError)
             return jsonrpc_error(code, message, str(e))
-        
+
         method = a2a_request.get("method")
         request_id = a2a_request.get("id")
-        
+
         logger.debug(f"A2A request from {client_ip}: method={method}, id={request_id}")
-        
+
         handler_name = app_settings.agent.method_handlers.get(method)
         if handler_name is None:
             logger.warning(f"Unsupported A2A method '{method}' from {client_ip}")
             code, message = extract_error_fields(MethodNotFoundError)
             return jsonrpc_error(code, message, f"Method '{method}' is not implemented", request_id, 404)
-        
+
         handler = getattr(app.task_manager, handler_name)
         jsonrpc_response = await handler(a2a_request)
-        
+
         logger.debug(f"A2A response to {client_ip}: method={method}, id={request_id}")
-        
+
         return Response(
             content=a2a_response_ta.dump_json(jsonrpc_response, by_alias=True, serialize_as_any=True),
             media_type="application/json",
         )
-        
+
     except Exception as e:
         logger.error(f"Error processing A2A request from {client_ip}: {e}", exc_info=True)
         code, message = extract_error_fields(InternalError)

@@ -244,7 +244,7 @@ export OTEL_RESOURCE_ATTRIBUTES="deployment.environment=production,service.versi
 **`schedule_delay_millis`**: How often to export spans
 - **Too low**: Frequent small exports (overhead)
 - **Too high**: Delayed visibility in UI
-- **Recommendation**: 
+- **Recommendation**:
   - Dev: 1000-2000ms (fast feedback)
   - Prod: 5000-10000ms (efficiency)
 
@@ -341,10 +341,10 @@ export OTEL_BSP_EXPORT_TIMEOUT="60000"  # 60 seconds
 
 The tracing system is highly configurable via environment variables:
 
-✅ **Service identification** via `OTEL_SERVICE_NAME`, `OTEL_SERVICE_VERSION`  
-✅ **Environment separation** via `DEPLOYMENT_ENV`  
-✅ **Performance tuning** via batch processor parameters  
-✅ **Custom metadata** via `OTEL_RESOURCE_ATTRIBUTES`  
-✅ **Backend flexibility** via endpoint and headers configuration  
+✅ **Service identification** via `OTEL_SERVICE_NAME`, `OTEL_SERVICE_VERSION`
+✅ **Environment separation** via `DEPLOYMENT_ENV`
+✅ **Performance tuning** via batch processor parameters
+✅ **Custom metadata** via `OTEL_RESOURCE_ATTRIBUTES`
+✅ **Backend flexibility** via endpoint and headers configuration
 
 All configuration is done through environment variables—no code changes needed!

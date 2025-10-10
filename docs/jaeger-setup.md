@@ -151,7 +151,7 @@ services:
       - "4318:4318"    # OTLP HTTP
     depends_on:
       - elasticsearch
-  
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     environment:

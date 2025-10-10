@@ -14,18 +14,14 @@ from bindu.utils.request_utils import extract_error_fields, jsonrpc_error
 logger = get_logger("bindu.server.endpoints.static_files")
 
 
-def _serve_static_file(
-    file_path: Path, 
-    media_type: str, 
-    request: Request
-) -> Response:
+def _serve_static_file(file_path: Path, media_type: str, request: Request) -> Response:
     """Serve a static file with error handling and logging.
-    
+
     Args:
         file_path: Path to the file to serve
         media_type: MIME type of the file
         request: Starlette request object
-        
+
     Returns:
         FileResponse or JSONResponse with error
     """
@@ -34,10 +30,10 @@ def _serve_static_file(
             logger.warning(f"Static file not found: {file_path} (requested by {request.client.host})")
             code, message = extract_error_fields(TaskNotFoundError)
             return jsonrpc_error(code, message, f"File not found: {file_path.name}", status=404)
-        
+
         logger.debug(f"Serving static file: {file_path.name} to {request.client.host}")
         return FileResponse(file_path, media_type=media_type)
-        
+
     except Exception as e:
         logger.error(f"Error serving static file {file_path}: {e}", exc_info=True)
         code, message = extract_error_fields(InternalError)
@@ -46,18 +42,19 @@ def _serve_static_file(
 
 def _create_static_endpoint(relative_path: str, media_type: str) -> Callable:
     """Create a static file endpoint handler.
-    
+
     Args:
         relative_path: Relative path to the file from static directory
         media_type: MIME type of the file
-        
+
     Returns:
         Async endpoint function
     """
+
     async def endpoint(request: Request, static_dir: Optional[Path] = None) -> Response:
         file_path = static_dir / relative_path
         return _serve_static_file(file_path, media_type, request)
-    
+
     return endpoint
 
 

@@ -73,7 +73,7 @@ class TestConfigValidator:
     def test_validate_minimal_config(self, minimal_config):
         """Test validation of minimal configuration."""
         result = ConfigValidator.validate_and_process(minimal_config)
-        
+
         assert result["author"] == "test@example.com"
         assert "capabilities" in result
         assert result["capabilities"]["streaming"] is True
@@ -85,7 +85,7 @@ class TestConfigValidator:
     def test_validate_full_config(self, full_config):
         """Test validation of full configuration."""
         result = ConfigValidator.validate_and_process(full_config)
-        
+
         assert result["author"] == "test@example.com"
         assert result["name"] == "test_agent"
         assert result["version"] == "2.0.0"
@@ -101,7 +101,7 @@ class TestConfigValidator:
             "author": "test@example.com",
             # Missing capabilities, deployment, storage, scheduler
         }
-        
+
         with pytest.raises(ValueError, match="Missing required fields"):
             ConfigValidator.validate_and_process(config)
 
@@ -110,10 +110,10 @@ class TestConfigValidator:
         config = {
             "author": "test@example.com",
         }
-        
+
         with pytest.raises(ValueError) as exc_info:
             ConfigValidator.validate_and_process(config)
-        
+
         error_msg = str(exc_info.value)
         assert "capabilities" in error_msg
         assert "deployment" in error_msg
@@ -126,9 +126,9 @@ class TestConfigValidator:
             {"name": "skill1", "description": "First skill"},
             {"name": "skill2", "description": "Second skill"},
         ]
-        
+
         result = ConfigValidator.validate_and_process(minimal_config)
-        
+
         assert len(result["skills"]) == 2
         assert result["skills"][0]["name"] == "skill1"
         assert result["skills"][1]["name"] == "skill2"
@@ -136,7 +136,7 @@ class TestConfigValidator:
     def test_process_capabilities_from_dict(self, minimal_config):
         """Test processing capabilities from dictionary."""
         result = ConfigValidator.validate_and_process(minimal_config)
-        
+
         assert "capabilities" in result
         assert result["capabilities"]["streaming"] is True
 
@@ -146,59 +146,59 @@ class TestConfigValidator:
             "level": "verified",
             "issuer": "test-issuer",
         }
-        
+
         result = ConfigValidator.validate_and_process(minimal_config)
-        
+
         assert "agent_trust" in result
         assert result["agent_trust"]["level"] == "verified"
 
     def test_key_password_none(self, minimal_config):
         """Test that key_password can be None."""
         minimal_config["key_password"] = None
-        
+
         result = ConfigValidator.validate_and_process(minimal_config)
-        
+
         assert result["key_password"] is None
 
     def test_validate_string_fields(self, minimal_config):
         """Test validation of string field types."""
         minimal_config["name"] = 123  # Should be string
-        
+
         with pytest.raises(ValueError, match="Field 'name' must be a string"):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_validate_boolean_fields(self, minimal_config):
         """Test validation of boolean field types."""
         minimal_config["recreate_keys"] = "true"  # Should be boolean
-        
+
         with pytest.raises(ValueError, match="Field 'recreate_keys' must be a boolean"):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_validate_debug_level(self, minimal_config):
         """Test validation of debug_level field."""
         minimal_config["debug_level"] = 3  # Should be 1 or 2
-        
+
         with pytest.raises(ValueError, match="Field 'debug_level' must be 1 or 2"):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_validate_debug_level_string(self, minimal_config):
         """Test validation rejects string debug_level."""
         minimal_config["debug_level"] = "1"  # Should be int
-        
+
         with pytest.raises(ValueError, match="Field 'debug_level' must be 1 or 2"):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_validate_num_history_sessions_negative(self, minimal_config):
         """Test validation rejects negative num_history_sessions."""
         minimal_config["num_history_sessions"] = -1
-        
+
         with pytest.raises(ValueError, match="Field 'num_history_sessions' must be a non-negative integer"):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_validate_kind_invalid(self, minimal_config):
         """Test validation of kind field."""
         minimal_config["kind"] = "invalid"
-        
+
         with pytest.raises(ValueError, match="Field 'kind' must be one of: agent, team, workflow"):
             ConfigValidator.validate_and_process(minimal_config)
 
@@ -214,7 +214,7 @@ class TestConfigValidator:
         minimal_config["auth"] = {
             "enabled": False,
         }
-        
+
         # Should not raise error even without domain/audience
         result = ConfigValidator.validate_and_process(minimal_config)
         assert result["auth"]["enabled"] is False
@@ -225,7 +225,7 @@ class TestConfigValidator:
             "enabled": True,
             # Missing domain and audience
         }
-        
+
         with pytest.raises(ValueError, match="Auth is enabled but missing required fields"):
             ConfigValidator.validate_and_process(minimal_config)
 
@@ -236,7 +236,7 @@ class TestConfigValidator:
             "domain": "tenant.auth0.com",
             "audience": "https://api.example.com",
         }
-        
+
         result = ConfigValidator.validate_and_process(minimal_config)
         assert result["auth"]["enabled"] is True
 
@@ -247,7 +247,7 @@ class TestConfigValidator:
             "domain": "invalid",  # No dot
             "audience": "https://api.example.com",
         }
-        
+
         with pytest.raises(ValueError, match="Invalid auth domain"):
             ConfigValidator.validate_and_process(minimal_config)
 
@@ -258,7 +258,7 @@ class TestConfigValidator:
             "domain": "tenant.auth0.com",
             "audience": "not-a-url",  # Not a URL
         }
-        
+
         with pytest.raises(ValueError, match="Invalid auth audience"):
             ConfigValidator.validate_and_process(minimal_config)
 
@@ -270,7 +270,7 @@ class TestConfigValidator:
             "audience": "https://api.example.com",
             "algorithms": ["RS256", "RS384"],
         }
-        
+
         result = ConfigValidator.validate_and_process(minimal_config)
         assert result["auth"]["algorithms"] == ["RS256", "RS384"]
 
@@ -282,7 +282,7 @@ class TestConfigValidator:
             "audience": "https://api.example.com",
             "algorithms": "RS256",  # Should be list
         }
-        
+
         with pytest.raises(ValueError, match="Field 'auth.algorithms' must be a list"):
             ConfigValidator.validate_and_process(minimal_config)
 
@@ -294,21 +294,21 @@ class TestConfigValidator:
             "audience": "https://api.example.com",
             "algorithms": ["RS256", "INVALID"],
         }
-        
+
         with pytest.raises(ValueError, match="Invalid algorithms in auth config"):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_auth_not_dict(self, minimal_config):
         """Test auth validation when not a dictionary."""
         minimal_config["auth"] = "invalid"
-        
+
         with pytest.raises(ValueError, match="Field 'auth' must be a dictionary"):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_create_bindufy_config(self, minimal_config):
         """Test creating bindufy-ready config."""
         result = ConfigValidator.create_bindufy_config(minimal_config)
-        
+
         assert "deployment" in result
         assert "storage" in result
         assert "scheduler" in result
@@ -321,7 +321,7 @@ class TestConfigValidator:
             "capabilities": {"streaming": True},
             # Missing deployment, storage, scheduler - should be added
         }
-        
+
         # This should fail validation first
         with pytest.raises(ValueError, match="Missing required fields"):
             ConfigValidator.create_bindufy_config(config)
@@ -351,20 +351,20 @@ class TestLoadAndValidateConfig:
                 "type": "memory",
             },
         }
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config, f)
             temp_path = f.name
-        
+
         yield temp_path
-        
+
         # Cleanup
         Path(temp_path).unlink()
 
     def test_load_and_validate_config(self, temp_config_file):
         """Test loading and validating config from file."""
         result = load_and_validate_config(temp_config_file)
-        
+
         assert result["author"] == "test@example.com"
         assert result["name"] == "test_agent"
         assert "capabilities" in result
@@ -376,10 +376,10 @@ class TestLoadAndValidateConfig:
 
     def test_load_invalid_json(self):
         """Test loading invalid JSON file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("invalid json {")
             temp_path = f.name
-        
+
         try:
             with pytest.raises(json.JSONDecodeError):
                 load_and_validate_config(temp_path)
@@ -392,11 +392,11 @@ class TestLoadAndValidateConfig:
             "author": "test@example.com",
             # Missing required fields
         }
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config, f)
             temp_path = f.name
-        
+
         try:
             with pytest.raises(ValueError, match="Missing required fields"):
                 load_and_validate_config(temp_path)

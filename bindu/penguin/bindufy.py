@@ -21,12 +21,7 @@ from uuid import uuid4
 
 import uvicorn
 
-from bindu.common.models import (
-    AgentManifest,
-    DeploymentConfig, 
-    SchedulerConfig, 
-    StorageConfig
-)
+from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
@@ -39,15 +34,14 @@ logger = get_logger("bindu.penguin.bindufy")
 
 
 def _update_capabilities_with_did(
-    capabilities: AgentCapabilities | Dict[str, Any] | None,
-    did_extension_obj: Any
+    capabilities: AgentCapabilities | Dict[str, Any] | None, did_extension_obj: Any
 ) -> AgentCapabilities:
     """Update capabilities to include DID extension.
-    
+
     Args:
         capabilities: Existing capabilities (dict or AgentCapabilities object)
         did_extension_obj: DID extension object to add
-        
+
     Returns:
         AgentCapabilities object with DID extension included
     """
@@ -59,7 +53,7 @@ def _update_capabilities_with_did(
         return AgentCapabilities(**capabilities)
     elif capabilities:
         # capabilities is already an AgentCapabilities object
-        if hasattr(capabilities, 'extensions') and capabilities.extensions:
+        if hasattr(capabilities, "extensions") and capabilities.extensions:
             capabilities.extensions.append(did_extension_obj)
         else:
             capabilities.extensions = [did_extension_obj]
@@ -70,50 +64,48 @@ def _update_capabilities_with_did(
 
 def _parse_deployment_url(deployment_config: DeploymentConfig | None) -> tuple[str, int]:
     """Parse deployment URL to extract host and port.
-    
+
     Args:
         deployment_config: Deployment configuration object
-        
+
     Returns:
         Tuple of (host, port)
     """
     if not deployment_config:
         return app_settings.network.default_host, app_settings.network.default_port
-    
+
     parsed_url = urlparse(deployment_config.url)
     host = parsed_url.hostname or app_settings.network.default_host
     port = parsed_url.port or app_settings.network.default_port
-    
+
     return host, port
 
 
 def _create_storage_instance(storage_config: StorageConfig | None):
     """Factory function to create storage instance based on configuration.
-    
+
     Note: Currently only InMemoryStorage is supported.
     Future implementations will support PostgreSQL and other backends.
     """
     from bindu.server import InMemoryStorage
+
     # TODO: Implement PostgreSQL and other storage backends
     return InMemoryStorage()
 
 
 def _create_scheduler_instance(scheduler_config: SchedulerConfig | None):
     """Factory function to create scheduler instance based on configuration.
-    
+
     Note: Currently only InMemoryScheduler is supported.
     Future implementations will support Redis and other backends.
     """
     from bindu.server import InMemoryScheduler
+
     # TODO: Implement Redis and other scheduler backends
     return InMemoryScheduler()
 
 
-def bindufy(
-    agent: Any,
-    config: Dict[str, Any],
-    handler: Callable[[str], str]
-) -> AgentManifest:
+def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -> AgentManifest:
     """Transform an agent instance and handler into a bindu-compatible agent.
 
     Args:
@@ -144,17 +136,17 @@ def bindufy(
 
     Returns:
         AgentManifest: The manifest for the bindufied agent
-    
+
     Example:
         agent = Agent(
             instructions="You are a helpful assistant",
             model=OpenAIChat(id="gpt-4")
         )
-        
+
         def my_handler(messages: str) -> str:
             result = agent.run(input=messages)
             return result.to_dict()["content"]
-        
+
         config = {
             "author": "user@example.com",
             "name": "my-agent",
@@ -164,15 +156,15 @@ def bindufy(
             "storage": {"type": "memory"},
             "scheduler": {"type": "memory"}
         }
-        
+
         manifest = bindufy(agent, config, my_handler)
     """
 
     # Validate and process configuration
     from .config_validator import ConfigValidator
-    
+
     validated_config = ConfigValidator.validate_and_process(config)
-    
+
     # Update app_settings.auth if auth config is provided
     if "auth" in validated_config and validated_config["auth"].get("enabled"):
         auth_config = validated_config["auth"]
@@ -185,29 +177,21 @@ def bindufy(
         app_settings.auth.public_endpoints = auth_config.get("public_endpoints", app_settings.auth.public_endpoints)
         app_settings.auth.require_permissions = auth_config.get("require_permissions", False)
         app_settings.auth.permissions = auth_config.get("permissions", app_settings.auth.permissions)
-        
+
         logger.info(
-            f"Auth0 configuration loaded: domain={auth_config.get('domain')}, "
-            f"audience={auth_config.get('audience')}"
+            f"Auth0 configuration loaded: domain={auth_config.get('domain')}, audience={auth_config.get('audience')}"
         )
-    
+
     # Generate agent_id if not provided
     agent_id = validated_config.get("id", uuid4().hex)
-    
+
     # Create config objects if dictionaries provided
     deployment_config = (
-        DeploymentConfig(**validated_config["deployment"]) 
-        if validated_config.get("deployment") else None
+        DeploymentConfig(**validated_config["deployment"]) if validated_config.get("deployment") else None
     )
-    storage_config = (
-        StorageConfig(**validated_config["storage"]) 
-        if validated_config.get("storage") else None
-    )
-    scheduler_config = (
-        SchedulerConfig(**validated_config["scheduler"]) 
-        if validated_config.get("scheduler") else None
-    )
-    
+    storage_config = StorageConfig(**validated_config["storage"]) if validated_config.get("storage") else None
+    scheduler_config = SchedulerConfig(**validated_config["scheduler"]) if validated_config.get("scheduler") else None
+
     # Validate that this is a protocol-compliant function
     logger.info(f"Validating handler function: {handler.__name__}")
     validate_agent_function(handler)
@@ -217,7 +201,7 @@ def bindufy(
     frame = inspect.currentframe()
     if not frame or not frame.f_back:
         raise RuntimeError("Unable to determine caller file path")
-    
+
     caller_file = inspect.getframeinfo(frame.f_back).filename
     caller_dir = Path(os.path.abspath(caller_file)).parent
 
@@ -229,7 +213,7 @@ def bindufy(
             author=validated_config.get("author"),
             agent_name=validated_config.get("name"),
             agent_id=str(agent_id),
-            key_password=validated_config.get("key_password")
+            key_password=validated_config.get("key_password"),
         )
         did_extension.generate_and_save_key_pair()
     except Exception as exc:
@@ -237,14 +221,13 @@ def bindufy(
         raise
 
     logger.info(f"DID extension initialized: {did_extension.did}")
-    
+
     # Set agent metadata for DID document
     agent_url = deployment_config.url if deployment_config else app_settings.network.default_url
     skills_data = [
-        skill.dict() if hasattr(skill, 'dict') else skill 
-        for skill in (validated_config.get("skills") or [])
+        skill.dict() if hasattr(skill, "dict") else skill for skill in (validated_config.get("skills") or [])
     ]
-    
+
     did_extension.set_agent_metadata(
         description=validated_config["description"],
         version=validated_config["version"],
@@ -262,10 +245,7 @@ def bindufy(
     logger.info("Creating agent manifest...")
 
     # Update capabilities to include DID extension
-    capabilities = _update_capabilities_with_did(
-        validated_config["capabilities"], 
-        did_extension.agent_extension
-    )
+    capabilities = _update_capabilities_with_did(validated_config["capabilities"], did_extension.agent_extension)
 
     # Create agent manifest
     _manifest = create_manifest(
@@ -298,15 +278,14 @@ def bindufy(
     skill_count = len(_manifest.skills) if _manifest.skills else 0
     logger.info(f"Agent '{did_extension.did}' successfully bindufied!")
     logger.debug(
-        f"Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | "
-        f"{skill_count} skills | {_manifest.url}"
+        f"Manifest: {_manifest.name} v{_manifest.version} | {_manifest.kind} | {skill_count} skills | {_manifest.url}"
     )
 
     logger.info(f"Starting deployment for agent: {agent_id}")
 
     # Import server components (deferred to avoid circular import)
     from bindu.server import BinduApplication
-    
+
     # Create server components
     storage_instance = _create_storage_instance(storage_config)
     scheduler_instance = _create_scheduler_instance(scheduler_config)
@@ -314,10 +293,10 @@ def bindufy(
     # Create the Bindu application
     # Use bindu's built-in static directory from the package
     bindu_static_dir = Path(__file__).parent.parent / "server" / "static"
-    
+
     # Check if auth is enabled in config
     auth_enabled = validated_config.get("auth", {}).get("enabled", False)
-    
+
     # Create Bindu application with telemetry config
     # Telemetry will be initialized in the application lifespan context
     bindu_app = BinduApplication(
@@ -344,12 +323,7 @@ def bindufy(
     host, port = _parse_deployment_url(deployment_config)
 
     # Display server startup banner and run
-    logger.info(prepare_server_display(
-        host=host,
-        port=port,
-        agent_id=agent_id,
-        agent_did=did_extension.did
-    ))
+    logger.info(prepare_server_display(host=host, port=port, agent_id=agent_id, agent_did=did_extension.did))
     uvicorn.run(bindu_app, host=host, port=port)
 
     return _manifest

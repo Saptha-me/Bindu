@@ -82,7 +82,7 @@ class BinduApplication(Starlette):
         oltp_batch_max_queue_size: int = 2048,
         oltp_batch_schedule_delay_millis: int = 5000,
         oltp_batch_max_export_batch_size: int = 512,
-        oltp_batch_export_timeout_millis: int = 30000
+        oltp_batch_export_timeout_millis: int = 30000,
     ):
         """Initialize Bindu application.
 
@@ -114,7 +114,7 @@ class BinduApplication(Starlette):
         # Generate penguin_id if not provided
         if penguin_id is None:
             penguin_id = uuid4()
-        
+
         # Store telemetry config for lifespan
         self._telemetry_enabled = telemetry_enabled
         self._oltp_endpoint = oltp_endpoint
@@ -126,7 +126,7 @@ class BinduApplication(Starlette):
         self._oltp_batch_schedule_delay_millis = oltp_batch_schedule_delay_millis
         self._oltp_batch_max_export_batch_size = oltp_batch_max_export_batch_size
         self._oltp_batch_export_timeout_millis = oltp_batch_export_timeout_millis
-        
+
         # Create default lifespan if none provided
         if lifespan is None:
             lifespan = self._create_default_lifespan(storage, scheduler, manifest)
@@ -135,17 +135,19 @@ class BinduApplication(Starlette):
         middleware_list = list(middleware) if middleware else []
         if auth_enabled and app_settings.auth.enabled:
             from bindu.utils.logging import get_logger
+
             logger = get_logger("bindu.server.applications")
-            
+
             # Select middleware based on provider
             provider = app_settings.auth.provider.lower()
-            
+
             if provider == "auth0":
                 logger.info("Auth0 authentication enabled")
                 auth_middleware = Middleware(Auth0Middleware, auth_config=app_settings.auth)
             elif provider == "cognito":
                 logger.info("AWS Cognito authentication enabled")
                 from .middleware.auth_cognito import CognitoMiddleware
+
                 auth_middleware = Middleware(CognitoMiddleware, auth_config=app_settings.auth)
             elif provider == "azure":
                 logger.warning("Azure AD authentication not yet implemented")
@@ -162,10 +164,9 @@ class BinduApplication(Starlette):
             else:
                 logger.error(f"Unknown authentication provider: {provider}")
                 raise ValueError(
-                    f"Unknown authentication provider: '{provider}'. "
-                    f"Supported providers: auth0, cognito, azure, custom"
+                    f"Unknown authentication provider: '{provider}'. Supported providers: auth0, cognito, azure, custom"
                 )
-            
+
             # Add auth middleware to the beginning of middleware chain
             middleware_list.insert(0, auth_middleware)
 
@@ -272,9 +273,9 @@ class BinduApplication(Starlette):
             if self._telemetry_enabled:
                 from bindu.observability import setup as setup_observability
                 from bindu.utils.logging import get_logger
-                
+
                 logger = get_logger("bindu.server.applications")
-                
+
                 try:
                     setup_observability(
                         oltp_endpoint=self._oltp_endpoint,
@@ -285,17 +286,17 @@ class BinduApplication(Starlette):
                         batch_max_queue_size=self._oltp_batch_max_queue_size,
                         batch_schedule_delay_millis=self._oltp_batch_schedule_delay_millis,
                         batch_max_export_batch_size=self._oltp_batch_max_export_batch_size,
-                        batch_export_timeout_millis=self._oltp_batch_export_timeout_millis
+                        batch_export_timeout_millis=self._oltp_batch_export_timeout_millis,
                     )
                     if self._oltp_verbose_logging:
                         logger.info(
                             "OpenInference telemetry initialized in lifespan",
                             endpoint=self._oltp_endpoint or "console",
-                            service_name=self._oltp_service_name or "bindu-agent"
+                            service_name=self._oltp_service_name or "bindu-agent",
                         )
                 except Exception as exc:
                     logger.warning("OpenInference telemetry setup failed", error=str(exc))
-            
+
             # Start TaskManager
             task_manager = TaskManager(scheduler=scheduler, storage=storage, manifest=manifest)
             async with task_manager:

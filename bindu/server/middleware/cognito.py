@@ -23,7 +23,7 @@ logger = get_logger("bindu.server.middleware.cognito")
 
 class CognitoMiddleware(AuthMiddleware):
     """AWS Cognito authentication middleware.
-    
+
     This middleware implements AWS Cognito JWT token validation.
     It validates:
     - Token signature using Cognito public keys (JWKS)
@@ -31,9 +31,9 @@ class CognitoMiddleware(AuthMiddleware):
     - Token issuer (iss claim - Cognito User Pool)
     - Token audience (aud/client_id claim)
     - Token use (access vs id token)
-    
+
     Supports both user authentication and custom scopes.
-    
+
     Configuration example:
     {
         "auth": {
@@ -49,12 +49,12 @@ class CognitoMiddleware(AuthMiddleware):
 
     def _initialize_provider(self) -> None:
         """Initialize AWS Cognito-specific components.
-        
+
         Sets up:
         - Cognito JWKS URL from region and user pool ID
         - JWT validator for Cognito tokens
         - Boto3 client (optional, for advanced features)
-        
+
         TODO: Implement Cognito initialization
         """
         # Example implementation:
@@ -63,24 +63,23 @@ class CognitoMiddleware(AuthMiddleware):
         # self.jwks_url = f"https://cognito-idp.{region}.amazonaws.com/{user_pool_id}/.well-known/jwks.json"
         # self.issuer = f"https://cognito-idp.{region}.amazonaws.com/{user_pool_id}"
         # self.validator = CognitoJWTValidator(self.config)
-        
+
         raise NotImplementedError(
-            "AWS Cognito authentication is not yet implemented. "
-            "This is a template for future implementation."
+            "AWS Cognito authentication is not yet implemented. This is a template for future implementation."
         )
-    
+
     def _validate_token(self, token: str) -> dict[str, Any]:
         """Validate AWS Cognito JWT token.
-        
+
         Args:
             token: JWT access or ID token from Cognito
-            
+
         Returns:
             Decoded token payload with claims
-            
+
         Raises:
             Exception: If token validation fails
-            
+
         TODO: Implement Cognito token validation
         """
         # Example implementation:
@@ -93,15 +92,15 @@ class CognitoMiddleware(AuthMiddleware):
         #    - exp: not expired
         #    - aud/client_id: matches app client
         # 5. Return decoded payload
-        
+
         raise NotImplementedError("Cognito token validation not implemented")
-    
+
     def _extract_user_info(self, token_payload: dict[str, Any]) -> dict[str, Any]:
         """Extract user information from Cognito token.
-        
+
         Args:
             token_payload: Decoded and validated JWT payload
-            
+
         Returns:
             Dictionary with standardized user information:
             {
@@ -116,7 +115,7 @@ class CognitoMiddleware(AuthMiddleware):
                 "scope": "...",  # Custom scopes
                 ... other Cognito claims
             }
-            
+
         TODO: Implement Cognito user info extraction
         """
         # Example implementation:
@@ -124,7 +123,7 @@ class CognitoMiddleware(AuthMiddleware):
         # username = token_payload.get("username") or token_payload.get("cognito:username")
         # email = token_payload.get("email")
         # groups = token_payload.get("cognito:groups", [])
-        # 
+        #
         # return {
         #     "sub": sub,
         #     "is_m2m": False,
@@ -135,22 +134,20 @@ class CognitoMiddleware(AuthMiddleware):
         #     "token_use": token_payload.get("token_use"),
         #     "scope": token_payload.get("scope", ""),
         # }
-        
+
         raise NotImplementedError("Cognito user info extraction not implemented")
-    
+
     def _handle_validation_error(self, error: Exception, path: str) -> Any:
         """Handle Cognito-specific token validation errors.
-        
+
         Args:
             error: Validation exception
             path: Request path
-            
+
         Returns:
             Appropriate JSON-RPC error response
-            
+
         TODO: Implement Cognito-specific error handling
         """
         # Can use base class implementation or customize for Cognito
         return super()._handle_validation_error(error, path)
-
-

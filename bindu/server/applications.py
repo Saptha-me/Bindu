@@ -72,7 +72,17 @@ class BinduApplication(Starlette):
         lifespan: Lifespan | None = None,
         routes: Sequence[Route] | None = None,
         middleware: Sequence[Middleware] | None = None,
-        auth_enabled: bool = False
+        auth_enabled: bool = False,
+        telemetry_enabled: bool = False,
+        oltp_endpoint: str | None = None,
+        oltp_service_name: str | None = None,
+        oltp_verbose_logging: bool = False,
+        oltp_service_version: str = "1.0.0",
+        oltp_deployment_environment: str = "production",
+        oltp_batch_max_queue_size: int = 2048,
+        oltp_batch_schedule_delay_millis: int = 5000,
+        oltp_batch_max_export_batch_size: int = 512,
+        oltp_batch_export_timeout_millis: int = 30000
     ):
         """Initialize Bindu application.
 
@@ -90,10 +100,32 @@ class BinduApplication(Starlette):
             routes: Optional custom routes
             middleware: Optional middleware
             auth_enabled: Enable Auth0 authentication middleware
+            telemetry_enabled: Enable OpenTelemetry observability
+            oltp_endpoint: OTLP endpoint URL for telemetry
+            oltp_service_name: Service name for telemetry traces
+            oltp_verbose_logging: Enable verbose telemetry logging
+            oltp_service_version: Service version for traces
+            oltp_deployment_environment: Deployment environment (dev/staging/production)
+            oltp_batch_max_queue_size: Max queue size for batch processor
+            oltp_batch_schedule_delay_millis: Schedule delay for batch processor
+            oltp_batch_max_export_batch_size: Max export batch size
+            oltp_batch_export_timeout_millis: Export timeout in milliseconds
         """
         # Generate penguin_id if not provided
         if penguin_id is None:
             penguin_id = uuid4()
+        
+        # Store telemetry config for lifespan
+        self._telemetry_enabled = telemetry_enabled
+        self._oltp_endpoint = oltp_endpoint
+        self._oltp_service_name = oltp_service_name
+        self._oltp_verbose_logging = oltp_verbose_logging
+        self._oltp_service_version = oltp_service_version
+        self._oltp_deployment_environment = oltp_deployment_environment
+        self._oltp_batch_max_queue_size = oltp_batch_max_queue_size
+        self._oltp_batch_schedule_delay_millis = oltp_batch_schedule_delay_millis
+        self._oltp_batch_max_export_batch_size = oltp_batch_max_export_batch_size
+        self._oltp_batch_export_timeout_millis = oltp_batch_export_timeout_millis
         
         # Create default lifespan if none provided
         if lifespan is None:
@@ -232,17 +264,37 @@ class BinduApplication(Starlette):
         scheduler: InMemoryScheduler,
         manifest: AgentManifest,
     ) -> Lifespan:
-        """Create default lifespan that manages TaskManager lifecycle and observability."""
+        """Create default Lifespan that manages TaskManager lifecycle and observability."""
 
         @asynccontextmanager
         async def lifespan(app: Starlette) -> AsyncIterator[None]:
-            # Initialize OpenTelemetry observability
-            from bindu.observability import setup as setup_observability
-            from bindu.utils.logging import get_logger
-            
-            logger = get_logger("bindu.server.applications")
-            logger.info("Initializing observability...")
-            setup_observability()
+            # Setup observability if enabled
+            if self._telemetry_enabled:
+                from bindu.observability import setup as setup_observability
+                from bindu.utils.logging import get_logger
+                
+                logger = get_logger("bindu.server.applications")
+                
+                try:
+                    setup_observability(
+                        oltp_endpoint=self._oltp_endpoint,
+                        oltp_service_name=self._oltp_service_name,
+                        verbose_logging=self._oltp_verbose_logging,
+                        service_version=self._oltp_service_version,
+                        deployment_environment=self._oltp_deployment_environment,
+                        batch_max_queue_size=self._oltp_batch_max_queue_size,
+                        batch_schedule_delay_millis=self._oltp_batch_schedule_delay_millis,
+                        batch_max_export_batch_size=self._oltp_batch_max_export_batch_size,
+                        batch_export_timeout_millis=self._oltp_batch_export_timeout_millis
+                    )
+                    if self._oltp_verbose_logging:
+                        logger.info(
+                            "OpenInference telemetry initialized in lifespan",
+                            endpoint=self._oltp_endpoint or "console",
+                            service_name=self._oltp_service_name or "bindu-agent"
+                        )
+                except Exception as exc:
+                    logger.warning("OpenInference telemetry setup failed", error=str(exc))
             
             # Start TaskManager
             task_manager = TaskManager(scheduler=scheduler, storage=storage, manifest=manifest)

@@ -7,7 +7,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""Observability: AI Agent Tracing & Monitoring
+"""Observability: AI Agent Tracing & Monitoring.
 
 This package provides automatic instrumentation for AI observability using OpenInference
 and OpenTelemetry standards. It enables you to trace, monitor, and debug your AI agents

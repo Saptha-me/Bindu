@@ -78,8 +78,7 @@ def create_manifest(
     documentation_url: str | None = None,
     extra_metadata: dict[str, Any] | None = None,
 ) -> AgentManifest:
-    """
-    Create a protocol-compliant AgentManifest from any Python function.
+    """Create a protocol-compliant AgentManifest from any Python function.
 
     This function is the core of the bindu framework's agent creation system. It analyzes
     user-defined functions and transforms them into fully-featured agents that can be deployed,
@@ -143,7 +142,6 @@ def create_manifest(
            - Use case: Simple agents with synchronous processing
 
     Examples:
-
         # Async Generator Agent (Streaming Weather Forecast)
         @bindufy(name="Weather Agent", version="1.0.0")
         async def weather_agent(input: str, context=None):
@@ -191,26 +189,41 @@ def create_manifest(
     Security Integration:
         When security and identity parameters are provided:
         - Integrates with DID-based authentication system
-        - Supports JWT token generation and verification
         - Enables secure agent-to-agent communication
         - Works with Hibiscus registry for agent discovery
 
     Note:
         Agent names automatically convert underscores to hyphens since underscores
         are not allowed in agent names in the bindu protocol.
-    """
 
+    Examples:
+        # Create agent manifest
+        agent = my_agent_function
+        config = {
+            "name": "My Agent",
+            "version": "1.0.0",
+            "description": "My agent description",
+            "url": "https://example.com/my-agent",
+            "protocol_version": "1.0.0",
+            "kind": "agent",
+            "debug_mode": False,
+            "debug_level": 1,
+            "monitoring": False,
+            "telemetry": True,
+            "num_history_sessions": 10,
+            "enable_system_message": True,
+            "enable_context_based_history": False,
+            "extra_metadata": {},
+        }
+        manifest = bindufy(agent, config, my_handler)
+    """
     # Analyze function signature for parameter detection
     logger.debug(f"Creating manifest for agent function: {agent_function.__name__}")
     sig = inspect.signature(agent_function)
     param_names = list(sig.parameters.keys())
     has_context_param = "context" in param_names
-    has_execution_state = "execution_state" in param_names
 
-    logger.debug(
-        f"Function parameters: {param_names}, has_context={has_context_param}, "
-        f"has_execution_state={has_execution_state}"
-    )
+    logger.debug(f"Function parameters: {param_names}, has_context={has_context_param}")
 
     # Prepare manifest metadata
     manifest_name = name or agent_function.__name__.replace("_", "-")
@@ -246,7 +259,7 @@ def create_manifest(
 
     # Create execution method based on function type
     def _create_run_method():
-        """Factory function to create the appropriate run method based on function type."""
+        """Create the appropriate run method based on function type."""
 
         def _resolve_params(input_msg: str, **kwargs) -> tuple:
             """Resolve function parameters based on signature analysis.
@@ -261,9 +274,7 @@ def create_manifest(
             Returns:
                 Tuple of parameters to pass to the agent function
             """
-            if has_execution_state:
-                return (input_msg, kwargs.get("execution_state"))
-            elif has_context_param:
+            if has_context_param:
                 session_context = kwargs.get("session_context", {})
                 return (input_msg, session_context)
             else:

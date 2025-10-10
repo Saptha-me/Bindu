@@ -8,9 +8,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""
-bindufy decorator for transforming regular agents into secure, networked agents.
-"""
+"""bindufy decorator for transforming regular agents into secure, networked agents."""
 
 import inspect
 import os
@@ -82,7 +80,7 @@ def _parse_deployment_url(deployment_config: DeploymentConfig | None) -> tuple[s
 
 
 def _create_storage_instance(storage_config: StorageConfig | None):
-    """Factory function to create storage instance based on configuration.
+    """Create storage instance based on configuration.
 
     Note: Currently only InMemoryStorage is supported.
     Future implementations will support PostgreSQL and other backends.
@@ -94,7 +92,7 @@ def _create_storage_instance(storage_config: StorageConfig | None):
 
 
 def _create_scheduler_instance(scheduler_config: SchedulerConfig | None):
-    """Factory function to create scheduler instance based on configuration.
+    """Create scheduler instance based on configuration.
 
     Note: Currently only InMemoryScheduler is supported.
     Future implementations will support Redis and other backends.
@@ -159,7 +157,6 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
 
         manifest = bindufy(agent, config, my_handler)
     """
-
     # Validate and process configuration
     from .config_validator import ConfigValidator
 

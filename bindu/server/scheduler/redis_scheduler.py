@@ -1,4 +1,4 @@
-# """Redis scheduler implementation."""
+"""Redis scheduler implementation (placeholder)."""
 
 # from __future__ import annotations as _annotations
 

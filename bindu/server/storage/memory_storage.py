@@ -44,6 +44,10 @@ class InMemoryStorage(Storage[ContextT]):
     """
 
     def __init__(self):
+        """Initialize in-memory storage.
+
+        Note: This is an __init__ method.
+        """
         self.tasks: dict[UUID, Task] = {}
         self.contexts: dict[UUID, list[UUID]] = {}
         self.task_feedback: dict[UUID, list[dict[str, Any]]] = {}

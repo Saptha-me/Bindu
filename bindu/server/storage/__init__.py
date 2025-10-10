@@ -7,8 +7,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""
-STORAGE MODULE EXPORTS:
+"""STORAGE MODULE EXPORTS.
 
 This module provides the storage layer for the bindu framework.
 It exposes different storage implementations for tasks and contexts.

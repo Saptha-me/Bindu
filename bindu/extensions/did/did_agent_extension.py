@@ -397,6 +397,7 @@ class DIDAgentExtension:
 
     @cached_property
     def agent_extension(self) -> AgentExtension:
+        """Get agent extension configuration for capabilities."""
         return AgentExtension(
             uri=app_settings.did.extension_uri,
             description=app_settings.did.extension_description,

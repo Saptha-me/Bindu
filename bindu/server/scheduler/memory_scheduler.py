@@ -27,6 +27,7 @@ class InMemoryScheduler(Scheduler):
     """A scheduler that schedules tasks in memory."""
 
     async def __aenter__(self):
+        """Enter async context manager."""
         self.aexit_stack = AsyncExitStack()
         await self.aexit_stack.__aenter__()
 
@@ -37,21 +38,26 @@ class InMemoryScheduler(Scheduler):
         return self
 
     async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any):
+        """Exit async context manager."""
         await self.aexit_stack.__aexit__(exc_type, exc_value, traceback)
 
     async def run_task(self, params: TaskSendParams) -> None:
+        """Schedule a task for execution."""
         logger.debug(f"Running task: {params}")
         await self._write_stream.send(_RunTask(operation="run", params=params, _current_span=get_current_span()))
 
     async def cancel_task(self, params: TaskIdParams) -> None:
+        """Cancel a scheduled task."""
         logger.debug(f"Canceling task: {params}")
         await self._write_stream.send(_CancelTask(operation="cancel", params=params, _current_span=get_current_span()))
 
     async def pause_task(self, params: TaskIdParams) -> None:
+        """Pause a running task."""
         logger.debug(f"Pausing task: {params}")
         await self._write_stream.send(_PauseTask(operation="pause", params=params, _current_span=get_current_span()))
 
     async def resume_task(self, params: TaskIdParams) -> None:
+        """Resume a paused task."""
         logger.debug(f"Resuming task: {params}")
         await self._write_stream.send(_ResumeTask(operation="resume", params=params, _current_span=get_current_span()))
 

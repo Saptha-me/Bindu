@@ -7,8 +7,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""
-SCHEDULER MODULE EXPORTS:
+"""SCHEDULER MODULE EXPORTS.
 
 This module provides the scheduler layer for the bindu framework.
 It exposes different scheduler implementations for task queue management.

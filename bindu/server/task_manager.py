@@ -7,8 +7,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""
-The bindu Task Manager: A Burger Restaurant Architecture
+"""The bindu Task Manager: A Burger Restaurant Architecture.
 
 This module defines the TaskManager - the Restaurant Manager of our AI agent ecosystem.
 Think of it like running a high-end burger restaurant where customers place orders,
@@ -355,7 +354,7 @@ class TaskManager:
         task: Task = await self.storage.submit_task(context_id, message)
 
         async def stream_generator():
-            """Generates a consumable stream based on the function which was decorated using pebblify"""
+            """Generate a consumable stream based on the function which was decorated using pebblify."""
             try:
                 await self.storage.update_task(task["id"], state="working")
                 # yield the initial status update event to indicate processing of the task has started
@@ -507,6 +506,7 @@ class TaskManager:
     async def list_task_push_notifications(
         self, request: ListTaskPushNotificationConfigRequest
     ) -> ListTaskPushNotificationConfigResponse:
+        """List push notification configurations for a task."""
         if not self._push_supported():
             return self._push_not_supported_response(ListTaskPushNotificationConfigResponse, request["id"])
 
@@ -527,6 +527,7 @@ class TaskManager:
     async def delete_task_push_notification(
         self, request: DeleteTaskPushNotificationConfigRequest
     ) -> DeleteTaskPushNotificationConfigResponse:
+        """Delete a push notification configuration for a task."""
         if not self._push_supported():
             return self._push_not_supported_response(DeleteTaskPushNotificationConfigResponse, request["id"])
 

@@ -1,3 +1,5 @@
+"""Push notification delivery service for agent task events."""
+
 from __future__ import annotations
 
 import asyncio
@@ -17,6 +19,12 @@ class NotificationDeliveryError(Exception):
     """Raised when a push notification cannot be delivered."""
 
     def __init__(self, status: int | None, message: str):
+        """Initialize notification delivery error.
+
+        Args:
+            status: HTTP status code if available
+            message: Error message
+        """
         super().__init__(message)
         self.status = status
 

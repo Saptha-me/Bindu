@@ -92,7 +92,7 @@ class Worker(ABC):
             tg.cancel_scope.cancel()
 
     async def _loop(self) -> None:
-        """Main worker loop that continuously processes task operations.
+        """Process task operations continuously.
 
         Receives task operations from scheduler and dispatches them to handlers.
         Runs until cancelled by the task group.

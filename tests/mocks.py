@@ -11,6 +11,8 @@ class MockAgent:
     def __init__(self, response: str = "Test response", response_type: str = "normal"):
         """Initialize mock agent.
 
+        Note: This is an __init__ method for a mock test object.
+
         Args:
             response: The response text to return
             response_type: Type of response - "normal", "input-required", "auth-required", "error"
@@ -48,6 +50,10 @@ class MockManifest:
         version: str = "1.0.0",
         capabilities: Optional[Dict[str, Any]] = None,
     ):
+        """Initialize mock manifest.
+
+        Note: This is an __init__ method for a mock test object.
+        """
         self.id = UUID("550e8400-e29b-41d4-a716-446655440000")
         self.name = name
         self.description = description
@@ -109,6 +115,10 @@ class MockDIDExtension:
         did: str = "did:bindu:test_user:test_agent:550e8400e29b41d4a716446655440000",
         public_key: str = "test_public_key",
     ):
+        """Initialize mock DID extension.
+
+        Note: This is an __init__ method for a mock test object.
+        """
         self.did = did
         self.public_key = public_key
         self.created = "2025-01-01T00:00:00Z"
@@ -164,6 +174,10 @@ class MockNotificationService:
     """Mock notification service for testing."""
 
     def __init__(self):
+        """Initialize mock notification service.
+
+        Note: This is an __init__ method for a mock test object.
+        """
         self.notifications = []
         self.delivery_failures = []
 

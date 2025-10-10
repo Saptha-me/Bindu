@@ -1,5 +1,5 @@
 """
-Bindu Agent Handler Examples - User Control Patterns
+Bindu Agent Handler Examples - User Control Patterns.
 
 The bindufy function takes three arguments:
 1. agent: The agent instance (created once, reused for all requests)
@@ -11,7 +11,7 @@ Benefits:
 - Clear separation of concerns
 - Easy to test handlers independently
 - Can swap agents or configs without changing handler logic
-- Framework agnostic (works with Agno, LangChain, custom agents)
+- Framework agnostic (works with Agno, LangChain, custom agents).
 """
 
 import json
@@ -46,7 +46,7 @@ simple_agent = Agent(instructions="Provide helpful responses to user messages", 
 
 # Define the handler function that uses the agent
 def simple_handler(messages: list[dict[str, str]]) -> Any:
-    """Simple stateless agent handler - receives message history.
+    """Handle agent messages in a stateless manner.
 
     Args:
         messages: List of message dicts with 'role' and 'content' keys

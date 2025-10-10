@@ -1,3 +1,5 @@
+"""Utility script to obtain Auth0 access tokens for testing."""
+
 #!/usr/bin/env python3
 import json
 from urllib.request import Request, urlopen

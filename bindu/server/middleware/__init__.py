@@ -7,8 +7,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""
-MIDDLEWARE MODULE EXPORTS:
+"""MIDDLEWARE MODULE EXPORTS.
 
 This module provides the authentication middleware layer for the bindu framework.
 It exposes different authentication provider implementations.

@@ -128,7 +128,7 @@ class Worker(ABC):
             with use_span(task_operation["_current_span"]):
                 with tracer.start_as_current_span(
                     f"{task_operation['operation']} task", 
-                    attributes={"logfire.tags": ["pebble"]}
+                    attributes={"logfire.tags": ["bindu"]}
                 ):
                     handler = operation_handlers.get(task_operation["operation"])
                     if handler:

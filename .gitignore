@@ -174,11 +174,11 @@ cython_debug/
 .pypirc
 .DS_Store
 
-# pebble project files
-pebble-project/*
-pebble-project_private_key.json
-pebble_project_certificates/*
-pebble_project_private_key.json
+# bindu project files
+bindu-project/*
+bindu-project_private_key.json
+bindu_project_certificates/*
+bindu_project_private_key.json
 
 # Examples directory - exclude all generated files
 examples/*

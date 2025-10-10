@@ -29,15 +29,20 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 from uuid import UUID
+
+from opentelemetry.trace import Status, StatusCode, get_tracer
 
 from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams, TaskState
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
 from bindu.settings import app_settings
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
+
+tracer = get_tracer("bindu.server.workers.manifest_worker")
 
 
 @dataclass
@@ -101,6 +106,15 @@ class ManifestWorker(Worker):
         await TaskStateManager.validate_task_state(task)
         await self.storage.update_task(task["id"], state="working")
         await self._notify_lifecycle(task["id"], task["context_id"], "working", False)
+        
+        # Add span event for state transition
+        from opentelemetry.trace import get_current_span
+        current_span = get_current_span()
+        if current_span.is_recording():
+            current_span.add_event(
+                "task.state_changed",
+                attributes={"to_state": "working"}
+            )
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
@@ -114,14 +128,43 @@ class ManifestWorker(Worker):
                     # Create new list to avoid mutating original message_history
                     message_history = [{"role": "system", "content": system_prompt}] + (message_history or [])
             
-            # Pass message history as structured list of dicts
-            raw_results = self.manifest.run(message_history or [])
-            
-            # Handle generator/async generator responses
-            collected_results = await self._collect_results(raw_results)
-            
-            # Normalize result to extract final response (intelligent extraction)
-            results = self._normalize_result(collected_results)
+            # Step 3.1: Execute agent with tracing
+            with tracer.start_as_current_span("agent.execute") as agent_span:
+                start_time = time.time()
+                
+                # Set agent-specific attributes
+                agent_span.set_attributes({
+                    "bindu.agent.name": self.manifest.name,
+                    "bindu.agent.did": str(self.manifest.did_extension.did),
+                    "bindu.agent.message_count": len(message_history or []),
+                    "bindu.component": "agent_execution"
+                })
+                
+                try:
+                    # Pass message history as structured list of dicts
+                    raw_results = self.manifest.run(message_history or [])
+                    
+                    # Handle generator/async generator responses
+                    collected_results = await self._collect_results(raw_results)
+                    
+                    # Normalize result to extract final response (intelligent extraction)
+                    results = self._normalize_result(collected_results)
+                    
+                    # Record successful execution
+                    execution_time = time.time() - start_time
+                    agent_span.set_attribute("bindu.agent.execution_time", execution_time)
+                    agent_span.set_status(Status(StatusCode.OK))
+                    
+                except Exception as agent_error:
+                    # Record agent execution failure
+                    execution_time = time.time() - start_time
+                    agent_span.set_attributes({
+                        "bindu.agent.execution_time": execution_time,
+                        "bindu.agent.error_type": type(agent_error).__name__,
+                        "bindu.agent.error_message": str(agent_error)
+                    })
+                    agent_span.set_status(Status(StatusCode.ERROR, str(agent_error)))
+                    raise
 
             # Step 4: Parse response and detect state
             structured_response = self._parse_structured_response(results)
@@ -133,13 +176,44 @@ class ManifestWorker(Worker):
             
             if state in ("input-required", "auth-required"):
                 # Hybrid Pattern: Return Message only, keep task open
+                # Add span event for state transition
+                current_span = get_current_span()
+                if current_span.is_recording():
+                    current_span.add_event(
+                        "task.state_changed",
+                        attributes={
+                            "from_state": "working",
+                            "to_state": state
+                        }
+                    )
                 await self._handle_intermediate_state(task, state, message_content)
             else:
                 # Hybrid Pattern: Task complete - generate Message + Artifacts
+                # Add span event for state transition
+                current_span = get_current_span()
+                if current_span.is_recording():
+                    current_span.add_event(
+                        "task.state_changed",
+                        attributes={
+                            "from_state": "working",
+                            "to_state": state
+                        }
+                    )
                 await self._handle_terminal_state(task, results, state)
 
         except Exception as e:
             # Handle task failure with error message
+            # Add span event for failure
+            current_span = get_current_span()
+            if current_span.is_recording():
+                current_span.add_event(
+                    "task.state_changed",
+                    attributes={
+                        "from_state": "working",
+                        "to_state": "failed",
+                        "error": str(e)
+                    }
+                )
             await self._handle_task_failure(task, str(e))
             raise
 
@@ -151,6 +225,17 @@ class ManifestWorker(Worker):
         """
         task = await self.storage.load_task(params["task_id"])
         if task:
+            # Add span event for cancellation
+            from opentelemetry.trace import get_current_span
+            current_span = get_current_span()
+            if current_span.is_recording():
+                current_span.add_event(
+                    "task.state_changed",
+                    attributes={
+                        "from_state": task["status"]["state"],
+                        "to_state": "canceled"
+                    }
+                )
             await self.storage.update_task(params["task_id"], state="canceled")
             await self._notify_lifecycle(params["task_id"], task["context_id"], "canceled", True)
 

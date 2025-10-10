@@ -8,15 +8,17 @@ CLIENT_SECRET = "zXcdPIQRAM9iHzABZtcfaN_2iICW4pfuoyUChIcVDF5488ejtyKG_U_PyWj9kpJ
 
 request = Request(
     f"https://{DOMAIN}/oauth/token",
-    data=json.dumps({
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "audience": f"https://{DOMAIN}/api/v2/",
-        "grant_type": "client_credentials"
-    }).encode('utf-8'),
+    data=json.dumps(
+        {
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "audience": f"https://{DOMAIN}/api/v2/",
+            "grant_type": "client_credentials",
+        }
+    ).encode("utf-8"),
     headers={"Content-Type": "application/json"},
-    method='POST'
+    method="POST",
 )
 
 with urlopen(request) as response:
-    print(json.loads(response.read().decode('utf-8'))["access_token"])
+    print(json.loads(response.read().decode("utf-8"))["access_token"])

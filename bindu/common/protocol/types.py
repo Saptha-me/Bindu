@@ -9,16 +9,16 @@
 
 """The Language of Agents: A2A and AP2 Protocol Types.
 
-In the constellation of autonomous agents, communication is everything. Just as humans developed 
-languages to share ideas, agents need a precise vocabulary to understand each other. This is 
+In the constellation of autonomous agents, communication is everything. Just as humans developed
+languages to share ideas, agents need a precise vocabulary to understand each other. This is
 where A2A (Agent-to-Agent) and AP2 (Agent Protocol 2) come alive.
 
-Think of this module as the Rosetta Stone for agent communication - every message, every task, 
-every handshake between agents is defined here. These aren't just data structures; they're the 
+Think of this module as the Rosetta Stone for agent communication - every message, every task,
+every handshake between agents is defined here. These aren't just data structures; they're the
 building blocks of trust, the grammar of collaboration, and the syntax of emergent intelligence.
 
-When an agent asks for help, requests authentication, or shares its discoveries, it speaks in 
-these types. When agents form swarms and orchestrate complex workflows, they dance to this 
+When an agent asks for help, requests authentication, or shares its discoveries, it speaks in
+these types. When agents form swarms and orchestrate complex workflows, they dance to this
 protocol's rhythm.
 
 Official Specifications:
@@ -115,6 +115,7 @@ PAYMENT_MANDATE_DATA_KEY = "ap2.mandates.PaymentMandate"
 # Content & Message Parts
 # -----------------------------------------------------------------------------
 
+
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class TextPart(TypedDict):
     """Represents a text segment within parts."""
@@ -130,6 +131,7 @@ class TextPart(TypedDict):
 
     embeddings: NotRequired[list[float]]
     """The embeddings of Text. <NotPartOfA2A>"""
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class FileWithBytes(TypedDict):
@@ -159,7 +161,7 @@ class FileWithUri(FileWithBytes):
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class FilePart(TextPart):
     """Represents a file segment within a message or artifact.
-    
+
     The file content can be provided either directly as bytes or as a URI.
     """
 
@@ -191,6 +193,7 @@ Part = Annotated[Union[TextPart, FilePart, DataPart], Field(discriminator="kind"
 # -----------------------------------------------------------------------------
 # Artifacts
 # -----------------------------------------------------------------------------
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class Artifact(TypedDict):
@@ -229,7 +232,6 @@ class Artifact(TypedDict):
     """Array of extensions."""
 
 
-
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class Message(TypedDict):
     """Communication content exchanged between agents, users, and systems.
@@ -256,16 +258,16 @@ class Message(TypedDict):
 
     message_id: Required[UUID]
     """Identifier created by the message creator."""
-    
+
     context_id: Required[UUID]
     """The context the message is associated with."""
-    
+
     task_id: Required[UUID]
     """Identifier of task the message is related to."""
-    
+
     reference_task_ids: NotRequired[list[UUID]]
     """List of identifiers of tasks that this message is related to."""
-    
+
     kind: Required[Literal["message"]]
     """The type of the message."""
 
@@ -275,7 +277,7 @@ class Message(TypedDict):
     parts: Required[list[Part]]
     """The parts of the message."""
 
-    role: Required[Literal['user', 'agent', 'system']]
+    role: Required[Literal["user", "agent", "system"]]
     """The role of the message."""
 
     extensions: NotRequired[list[str]]
@@ -293,13 +295,13 @@ class HTTPAuthSecurityScheme(TypedDict):
 
     type: Required[Literal["http"]]
     """The type of the security scheme."""
-    
+
     scheme: Required[str]
     """The scheme of the security scheme."""
-    
+
     bearer_format: NotRequired[str]
     """The bearer format of the security scheme."""
-    
+
     description: NotRequired[str]
     """The description of the security scheme."""
 
@@ -310,13 +312,13 @@ class APIKeySecurityScheme(TypedDict):
 
     type: Required[Literal["apiKey"]]
     """The type of the security scheme."""
-    
+
     name: Required[str]
     """The name of the security scheme."""
-    
+
     in_: Required[Literal["query", "header", "cookie"]]
     """The location of the security scheme."""
-    
+
     description: NotRequired[str]
     """The description of the security scheme."""
 
@@ -327,10 +329,10 @@ class OAuth2SecurityScheme(TypedDict):
 
     type: Required[Literal["oauth2"]]
     """The type of the security scheme."""
-    
+
     flows: Required[dict[str, Any]]
     """The flows of the security scheme."""
-    
+
     description: NotRequired[str]
     """The description of the security scheme."""
 
@@ -341,10 +343,10 @@ class OpenIdConnectSecurityScheme(TypedDict):
 
     type: Required[Literal["openIdConnect"]]
     """The type of the security scheme."""
-    
+
     open_id_connect_url: Required[str]
     """The OpenID Connect URL of the security scheme."""
-    
+
     description: NotRequired[str]
     """The description of the security scheme."""
 
@@ -355,7 +357,7 @@ class MutualTLSSecurityScheme(TypedDict):
 
     type: Required[Literal["mutualTLS"]]
     """The type of the security scheme."""
-    
+
     description: NotRequired[str]
     """The description of the security scheme."""
 
@@ -386,13 +388,13 @@ class PushNotificationConfig(TypedDict):
 
     id: Required[UUID]
     """The ID of the push notification configuration."""
-    
+
     url: Required[str]
     """The URL of the push notification configuration."""
-    
+
     token: NotRequired[str]
     """The token of the push notification configuration."""
-    
+
     authentication: NotRequired[SecurityScheme]
     """The authentication of the push notification configuration."""
 
@@ -403,7 +405,7 @@ class PushNotificationAuthenticationInfo(TypedDict):
 
     schemes: list[str]
     """A list of supported authentication schemes (e.g., 'Basic', 'Bearer')."""
-    
+
     credentials: NotRequired[str]
     """Optional credentials required by the push notification endpoint."""
 
@@ -414,7 +416,7 @@ class TaskPushNotificationConfig(TypedDict):
 
     id: Required[UUID]
     """The ID of the task push notification configuration."""
-    
+
     push_notification_config: Required[PushNotificationConfig]
     """The push notification configuration of the task push notification configuration."""
 
@@ -422,6 +424,7 @@ class TaskPushNotificationConfig(TypedDict):
 # -----------------------------------------------------------------------------
 # Task
 # -----------------------------------------------------------------------------
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class TaskStatus(TypedDict):
@@ -470,22 +473,22 @@ class Task(TypedDict):
 
     id: Required[UUID]
     """The ID of the task."""
-    
+
     context_id: Required[UUID]
     """The ID of the context the task is associated with."""
-    
+
     kind: Required[Literal["task"]]
     """The type of the task."""
-    
+
     status: Required[TaskStatus]
     """The status of the task."""
 
     artifacts: NotRequired[list[Artifact]]
     """The artifacts of the task."""
-    
+
     history: NotRequired[list[Message]]
     """The history of the task."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """The metadata of the task."""
 
@@ -499,52 +502,51 @@ class TaskStatusUpdateEvent(TypedDict):
 
     task_id: Required[UUID]
     """The ID of the task."""
-    
+
     context_id: Required[UUID]
     """The ID of the context the task is associated with."""
-    
+
     final: Required[bool]
     """Indicates if this is the final status update."""
-    
+
     kind: Required[Literal["status-update"]]
     """The type of the event."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
-    
+
     status: Required[TaskStatus]
     """The status of the task."""
-    
 
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class TaskArtifactUpdateEvent(TypedDict):
     """Event sent by the agent to notify the client that an artifact has been generated or updated.
-    
+
     This is typically used in streaming models.
     """
 
     task_id: Required[UUID]
     """The ID of the task."""
-    
+
     append: NotRequired[bool]
     """Indicates if this is an append operation."""
-    
+
     artifact: Required[Artifact]
     """The artifact that has been generated or updated."""
-    
+
     context_id: Required[UUID]
     """The ID of the context the task is associated with."""
-    
+
     kind: Required[Literal["artifact-update"]]
     """The type of the event."""
-    
+
     last_chunk: NotRequired[bool]
     """Indicates if this is the last chunk of the artifact."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
-    
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class TaskSendParams(TypedDict):
@@ -552,16 +554,16 @@ class TaskSendParams(TypedDict):
 
     task_id: Required[UUID]
     """The ID of the task."""
-    
+
     context_id: Required[UUID]
     """The ID of the context the task is associated with."""
-    
+
     message: NotRequired[Message]
     """The message to send."""
-    
+
     history_length: NotRequired[int]
     """The length of the history."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -572,7 +574,7 @@ class TaskIdParams(TypedDict):
 
     task_id: Required[UUID]
     """The ID of the task."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -591,7 +593,7 @@ class ListTasksParams(TypedDict):
 
     history_length: NotRequired[int]
     """The length of the history."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -602,13 +604,13 @@ class TaskFeedbackParams(TypedDict):
 
     task_id: Required[UUID]
     """The ID of the task."""
-    
+
     feedback: Required[str]
     """The feedback to provide."""
-    
+
     rating: NotRequired[int]  # Optional rating 1(lowest)-5(highest)
     """The rating to provide."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -619,13 +621,13 @@ class MessageSendConfiguration(TypedDict):
 
     accepted_output_modes: Required[list[str]]
     """The accepted output modes."""
-    
+
     blocking: NotRequired[bool]
     """The blocking mode."""
-    
+
     history_length: NotRequired[int]
     """The history length."""
-    
+
     push_notification_config: NotRequired[PushNotificationConfig]
     """The push notification configuration."""
 
@@ -636,10 +638,10 @@ class MessageSendParams(TypedDict):
 
     configuration: Required[MessageSendConfiguration]
     """The configuration for message sending."""
-    
+
     message: Required[Message]
     """The message to send."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -650,7 +652,7 @@ class ListTaskPushNotificationConfigParams(TypedDict):
 
     id: Required[UUID]
     """The ID of the task."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -661,10 +663,10 @@ class DeleteTaskPushNotificationConfigParams(TypedDict):
 
     id: Required[UUID]
     """The ID of the task."""
-    
+
     push_notification_config_id: Required[UUID]
     """The ID of the push notification configuration."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -711,7 +713,7 @@ class Context(TypedDict):
 
     context_id: Required[UUID]
     """The ID of the context."""
-    
+
     kind: Required[Literal["context"]]
     """The type of the context."""
 
@@ -720,13 +722,13 @@ class Context(TypedDict):
 
     name: NotRequired[str]
     """Human-readable context name."""
-    
+
     description: NotRequired[str]
     """Context purpose or summary."""
-    
+
     role: Required[str]
     """Role of the context."""
-    
+
     created_at: Required[str] = Field(
         examples=["2023-10-27T10:00:00Z"], description="ISO datetime when context was created"
     )
@@ -736,19 +738,19 @@ class Context(TypedDict):
 
     status: NotRequired[Literal["active", "paused", "completed", "archived"]]
     """Context status."""
-    
+
     tags: NotRequired[list[str]]
     """Organizational tags."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Custom context metadata."""
 
     parent_context_id: NotRequired[UUID]
     """For nested or related contexts."""
-    
+
     reference_context_ids: NotRequired[list[UUID]]
     """Related contexts."""
-    
+
     extensions: NotRequired[dict[str, Any]]
     """Additional extensions."""
 
@@ -764,7 +766,7 @@ class ContextIdParams(TypedDict):
 
     context_id: Required[UUID]
     """The ID of the context."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -783,7 +785,7 @@ class ListContextsParams(TypedDict):
 
     history_length: NotRequired[int]
     """The length of the list."""
-    
+
     metadata: NotRequired[dict[str, Any]]
     """Additional metadata."""
 
@@ -799,19 +801,19 @@ class NegotiationProposal(TypedDict):
 
     proposal_id: Required[UUID]
     """The ID of the proposal."""
-    
+
     from_agent: Required[UUID]
     """The ID of the agent making the proposal."""
-    
+
     to_agent: Required[UUID]
     """The ID of the agent receiving the proposal."""
-    
+
     terms: Required[Dict[str, Any]]
     """The terms of the proposal."""
-    
+
     timestamp: Required[str]
     """The timestamp of the proposal."""
-    
+
     status: Required[NegotiationStatus]
     """The status of the proposal."""
 
@@ -822,13 +824,13 @@ class NegotiationContext(TypedDict):
 
     context_id: Required[UUID]
     """The ID of the context."""
-    
+
     status: Required[NegotiationStatus]
     """The status of the context."""
-    
+
     participants: Required[List[str]]
     """The participants in the context."""
-    
+
     proposals: Required[List[NegotiationProposal]]
     """The proposals in the context."""
 
@@ -837,39 +839,41 @@ class NegotiationContext(TypedDict):
 # Payment Models - Mainly Agent Payments Protocol AP2
 # -----------------------------------------------------------------------------
 
+
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class ContactAddress(TypedDict):
     """The ContactAddress interface represents a physical address."""
 
     city: NotRequired[str]
     """The city."""
-    
+
     country: NotRequired[str]
     """The country."""
-    
+
     dependent_locality: NotRequired[str]
     """The dependent locality."""
-    
+
     organization: NotRequired[str]
     """The organization."""
-    
+
     phone_number: NotRequired[str]
     """The phone number."""
-    
+
     postal_code: NotRequired[str]
     """The postal code."""
-    
+
     recipient: NotRequired[str]
     """The recipient."""
-    
+
     region: NotRequired[str]
     """The region."""
-    
+
     sorting_code: NotRequired[str]
     """The sorting code."""
-    
+
     address_line: NotRequired[list[str]]
     """The address line."""
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentCurrencyAmount(TypedDict):
@@ -877,7 +881,7 @@ class PaymentCurrencyAmount(TypedDict):
 
     currency: Required[str]
     """The three-letter ISO 4217 currency code."""
-    
+
     value: Required[float]
     """The monetary value."""
 
@@ -885,16 +889,16 @@ class PaymentCurrencyAmount(TypedDict):
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentItem(TypedDict):
     """An item for purchase and the value asked for it."""
-    
+
     label: Required[str]
     """A human-readable description of the item."""
-    
+
     amount: Required[PaymentCurrencyAmount]
     """The monetary amount of the item."""
-    
+
     pending: NotRequired[bool]
     """If true, indicates the amount is not final."""
-    
+
     refund_period: NotRequired[int]
     """The refund duration for this item, in days."""
 
@@ -902,16 +906,16 @@ class PaymentItem(TypedDict):
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentShippingOption(TypedDict):
     """Describes a shipping option."""
-    
+
     id: Required[str]
     """A unique identifier for the shipping option."""
-    
+
     label: Required[str]
     """A human-readable description of the shipping option."""
-    
+
     amount: Required[PaymentCurrencyAmount]
     """The cost of this shipping option."""
-    
+
     selected: NotRequired[bool]
     """If true, indicates this as the default option."""
 
@@ -919,30 +923,30 @@ class PaymentShippingOption(TypedDict):
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentOptions(TypedDict):
     """Information about the eligible payment options for the payment request."""
-    
+
     request_payer_name: NotRequired[bool]
     """Indicates if the payer's name should be collected."""
-    
+
     request_payer_email: NotRequired[bool]
     """Indicates if the payer's email should be collected."""
-    
+
     request_payer_phone: NotRequired[bool]
     """Indicates if the payer's phone number should be collected."""
-    
+
     request_shipping: NotRequired[bool]
     """Indicates if the payer's shipping address should be collected."""
-    
+
     shipping_type: NotRequired[str]
     """Can be `shipping`, `delivery`, or `pickup`."""
-    
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentMethodData(TypedDict):
     """Indicates a payment method and associated data specific to the method."""
-    
+
     supported_methods: Required[str]
     """A string identifying the payment method."""
-    
+
     data: NotRequired[Dict[str, Any]]
     """Payment method specific details."""
 
@@ -950,56 +954,56 @@ class PaymentMethodData(TypedDict):
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentDetailsModifier(TypedDict):
     """Provides details that modify the payment details based on a payment method."""
-    
+
     supported_methods: Required[str]
     """The payment method ID that this modifier applies to."""
-    
+
     total: NotRequired[PaymentItem]
     """A PaymentItem value that overrides the original item total."""
-    
+
     additional_display_items: NotRequired[list[PaymentItem]]
     """Additional PaymentItems applicable for this payment method."""
-    
+
     data: NotRequired[Any]
     """Payment method specific data for the modifier."""
-    
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentDetailsInit(TypedDict):
     """Contains the details of the payment being requested."""
-    
+
     id: Required[str]
     """A unique identifier for the payment request."""
-    
+
     display_items: Required[list[PaymentItem]]
     """A list of payment items to be displayed to the user."""
-    
+
     shipping_options: NotRequired[list[PaymentShippingOption]]
     """A list of available shipping options."""
-    
+
     modifiers: NotRequired[list[PaymentDetailsModifier]]
     """A list of price modifiers for particular payment methods."""
-    
+
     total: Required[PaymentItem]
     """The total payment amount."""
-    
+
     description: NotRequired[str]
     """A description of the payment request."""
-    
-    
+
+
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentRequest(TypedDict):
     """A request for payment."""
 
     method_data: list[PaymentMethodData]
     """A list of supported payment methods."""
-    
+
     details: PaymentDetailsInit
     """The financial details of the transaction."""
-    
+
     options: NotRequired[PaymentOptions]
     """Information about the eligible payment options for the payment request."""
-    
+
     shipping_address: NotRequired[ContactAddress]
     """The user's provided shipping address."""
 
@@ -1007,30 +1011,30 @@ class PaymentRequest(TypedDict):
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentResponse(TypedDict):
     """Indicates a user has chosen a payment method & approved a payment request."""
-    
+
     request_id: Required[str]
     """The unique ID from the original PaymentRequest."""
-    
+
     method_name: Required[str]
     """The payment method chosen by the user."""
-    
+
     details: NotRequired[Dict[str, Any]]
     """A dictionary generated by a payment method that a merchant can use to process a transaction.
     The contents will depend upon the payment method.
     """
-    
+
     shipping_address: NotRequired[ContactAddress]
     """The user's provided shipping address."""
-    
+
     shipping_option: NotRequired[PaymentShippingOption]
     """The selected shipping option."""
-    
+
     payer_name: NotRequired[str]
     """The name of the payer."""
-    
+
     payer_email: NotRequired[str]
     """The email of the payer."""
-    
+
     payer_phone: NotRequired[str]
     """The phone number of the payer."""
 
@@ -1049,13 +1053,13 @@ class IntentMandate(TypedDict):
     purchase conditions have been satisfied. This must be true if the
     intent mandate is not signed by the user.
     """
-    
+
     natural_language_description: Required[str]
     """
     The natural language description of the user's intent. This is
     generated by the shopping agent, and confirmed by the user. The
     goal is to have informed consent by the user."""
-    
+
     merchants: NotRequired[list[str]]
     """
     Merchants allowed to fulfill the intent. If not set, the shopping
@@ -1064,11 +1068,11 @@ class IntentMandate(TypedDict):
     skus: NotRequired[list[str]]
     """
     A list of specific product SKUs. If not set, any SKU is allowed."""
-    
+
     requires_refundability: NotRequired[bool]
     """
     If true, items must be refundable."""
-    
+
     intent_expiry: Required[str]
     """
     When the intent mandate expires, in ISO 8601 format."""
@@ -1083,22 +1087,22 @@ class CartContents(TypedDict):
 
     id: Required[str]
     """A unique identifier for this cart."""
-    
+
     user_cart_confirmation_required: Required[bool]
     """
     If true, the merchant requires the user to confirm the cart before
     the purchase can be completed."""
-    
+
     payment_request: Required[PaymentRequest]
     """
     The W3C PaymentRequest object to initiate payment. This contains the
     items being purchased, prices, and the set of payment methods
     accepted by the merchant for this cart."""
-    
+
     cart_expiry: Required[str]
     """
     When this cart expires, in ISO 8601 format."""
-    
+
     merchant_name: Required[str]
     """
     The name of the merchant."""
@@ -1113,7 +1117,7 @@ class CartMandate(TypedDict):
 
     contents: Required[CartContents]
     """The contents of the cart."""
-    
+
     merchant_authorization: NotRequired[str]
     """ A base64url-encoded JSON Web Token (JWT) that digitally
         signs the cart contents, guaranteeing its authenticity and integrity:
@@ -1133,25 +1137,26 @@ class CartMandate(TypedDict):
         The entire JWT is base64url encoded to ensure safe transmission.
         """
 
+
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class PaymentMandateContents(TypedDict):
     """The data contents of a PaymentMandate."""
 
     payment_mandate_id: Required[str]
     """A unique identifier for this payment mandate."""
-    
+
     payment_details_id: Required[str]
     """A unique identifier for the payment request."""
 
     payment_details_total: Required[PaymentItem]
     """The total payment amount."""
-    
+
     payment_response: Required[PaymentResponse]
     """The payment response containing details of the payment method chosen by the user."""
-    
+
     merchant_agent: Required[str]
     """Identifier for the merchant."""
-    
+
     timestamp: Required[str]
     """The date and time the mandate was created, in ISO 8601 format."""
 
@@ -1171,7 +1176,7 @@ class PaymentMandate(TypedDict):
 
     payment_mandate_contents: Required[PaymentMandateContents]
     """The data contents of the payment mandate."""
-    
+
     user_authorization: NotRequired[str]
     """This is a base64_url-encoded verifiable presentation of a verifiable
         credential signing over the cart_mandate and payment_mandate_hashes.
@@ -1182,7 +1187,7 @@ class PaymentMandate(TypedDict):
             "aud": ...
             "nonce": ...
             "sd_hash": hash of the issuer-signed jwt
-            "transaction_data": an array containing the secure hashes of 
+            "transaction_data": an array containing the secure hashes of
               CartMandate and PaymentMandateContents.
 
         """
@@ -1192,22 +1197,23 @@ class PaymentMandate(TypedDict):
 # Credit System for Hibiscus Centralized Management <NotPartOfA2A>
 # -----------------------------------------------------------------------------
 
+
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class AgentExecutionCost(TypedDict):
     """Defines the credit cost for executing an agent."""
 
     agent_id: Required[str]
     """The unique identifier of the agent."""
-    
+
     agent_name: Required[str]
     """The name of the agent."""
-    
+
     credits_per_request: Required[int]
     """The number of credits required to execute the agent."""
-    
+
     creator_did: Required[str]
     """The DID of the creator of the agent."""
-    
+
     minimum_trust_level: Required[TrustLevel]
     """The minimum trust level required to execute the agent."""
 
@@ -1218,19 +1224,19 @@ class ExecutionRequest(TypedDict):
 
     request_id: Required[UUID]
     """The unique identifier of the request."""
-    
+
     executor_did: Required[str]
     """The DID of the executor."""
-    
+
     agent_id: Required[str]
     """The unique identifier of the agent."""
-    
+
     input_data: Required[str]
     """The input data for the agent execution."""
-    
+
     estimated_credits: Required[int]
     """The estimated number of credits required for the execution."""
-    
+
     trust_level: Required[TrustLevel]
     """The trust level of the executor."""
 
@@ -1241,25 +1247,25 @@ class ExecutionResponse(TypedDict):
 
     request_id: Required[UUID]
     """The unique identifier of the request."""
-    
+
     execution_id: Required[UUID]
     """The unique identifier of the execution."""
-    
+
     success: Required[bool]
     """Indicates whether the execution was successful."""
-    
+
     credits_charged: Required[int]
     """The number of credits charged for the execution."""
-    
+
     transaction_id: NotRequired[UUID]
     """The unique identifier of the transaction."""
-    
+
     output_data: NotRequired[str]
     """The output data from the agent execution."""
-    
+
     error_message: NotRequired[str]
     """The error message if the execution failed."""
-    
+
     execution_time: Required[str]
     """The time the execution was completed."""
 
@@ -1377,16 +1383,12 @@ ContentTypeNotSupportedError = JSONRPCError[
 ]
 InvalidAgentResponseError = JSONRPCError[
     Literal[-32006],
-    Literal[
-        "The agent returned an invalid or malformed response. "
-        "This may indicate an agent implementation issue."
-    ],
+    Literal["The agent returned an invalid or malformed response. This may indicate an agent implementation issue."],
 ]
 AuthenticatedExtendedCardNotConfiguredError = JSONRPCError[
     Literal[-32007],
     Literal[
-        "The authenticated extended agent card is not configured on this server. "
-        "See agent configuration documentation."
+        "The authenticated extended agent card is not configured on this server. See agent configuration documentation."
     ],
 ]
 
@@ -1411,23 +1413,16 @@ AuthenticationRequiredError = JSONRPCError[
 ]
 InvalidTokenError = JSONRPCError[
     Literal[-32010],
-    Literal[
-        "The provided authentication token is invalid or malformed. "
-        "Verify token format and signature."
-    ],
+    Literal["The provided authentication token is invalid or malformed. Verify token format and signature."],
 ]
 TokenExpiredError = JSONRPCError[
     Literal[-32011],
-    Literal[
-        "The authentication token has expired. "
-        "Request a new token from your authentication provider."
-    ],
+    Literal["The authentication token has expired. Request a new token from your authentication provider."],
 ]
 InvalidTokenSignatureError = JSONRPCError[
     Literal[-32012],
     Literal[
-        "Token signature verification failed. "
-        "The token may have been tampered with or signed with an incorrect key."
+        "Token signature verification failed. The token may have been tampered with or signed with an incorrect key."
     ],
 ]
 InsufficientPermissionsError = JSONRPCError[
@@ -1551,28 +1546,29 @@ stream_message_response_ta: TypeAdapter[StreamMessageResponse] = TypeAdapter(Str
 # Trust
 # -----------------------------------------------------------------------------
 
+
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class KeycloakRole(TypedDict):
     """Keycloak role model."""
 
     role_id: Required[UUID]
     """The ID of the role."""
-    
+
     role_name: Required[str]
     """The name of the role."""
-    
+
     permissions: Required[List[str]]
     """The permissions of the role."""
-    
+
     trust_level: Required[TrustLevel]
     """The trust level of the role."""
-    
+
     realm_name: Required[str]
     """The realm name of the role."""
-    
+
     external_mappings: NotRequired[Dict[str, str]] = {}
     """The external mappings of the role."""
-    
+
     operation_permissions: NotRequired[Dict[str, TrustLevel]] = {}
     """The operation permissions of the role."""
 
@@ -1583,19 +1579,19 @@ class AgentTrust(TypedDict):
 
     identity_provider: Required[IdentityProvider]
     """The identity provider of the agent."""
-    
+
     inherited_roles: Required[List[KeycloakRole]]
     """The roles inherited by the agent."""
-    
+
     certificate: NotRequired[str]
     """The certificate of the agent."""
-    
+
     certificate_fingerprint: NotRequired[str]
     """The fingerprint of the certificate of the agent."""
-    
+
     creator_id: Union[UUID, int, str]
     """The creator ID of the agent."""
-    
+
     creation_timestamp: int
     """The creation timestamp of the agent."""
     trust_verification_required: bool
@@ -1702,13 +1698,13 @@ class AgentCapabilities(TypedDict):
 
     extensions: NotRequired[list[AgentExtension]]
     """List of extensions supported by the agent."""
-    
+
     push_notifications: NotRequired[bool]
     """Whether the agent supports push notifications."""
-    
+
     state_transition_history: NotRequired[bool]
     """Whether the agent supports state transition history."""
-    
+
     streaming: NotRequired[bool]
     """Whether the agent supports streaming."""
 
@@ -1719,25 +1715,25 @@ class AgentCard(TypedDict):
 
     id: Required[UUID]
     """Unique identifier for the agent."""
-    
+
     name: Required[str]
     """Human readable name of the agent."""
-    
+
     description: Required[str]
     """A human-readable description of the agent.
 
     It will be used by the client or a human as a hint to understand the agent.
     """
-    
+
     url: Required[str]
     """URL of the agent."""
-    
+
     version: Required[str]
     """Version of the agent."""
-    
+
     protocol_version: Required[str]
     """Version of the protocol used by the agent."""
-    
+
     documentation_url: NotRequired[str]
     """URL of the documentation of the agent."""
 
@@ -1749,7 +1745,7 @@ class AgentCard(TypedDict):
 
     capabilities: Required[AgentCapabilities]
     """Capabilities of the agent."""
-    
+
     skills: Required[List[Skill]]
     """Skills of the agent."""
 
@@ -1764,19 +1760,19 @@ class AgentCard(TypedDict):
 
     preferred_transport: NotRequired[str]
     """The transport of the preferred endpoint. If empty, defaults to JSONRPC."""
-    
+
     extra_data: Required[Dict[str, Any]]
     """Extra data about the agent."""
 
     debug_mode: Required[bool]
     """Debug mode of the agent."""
-    
+
     debug_level: Required[Literal[1, 2]]
     """Debug level of the agent."""
 
     monitoring: Required[bool]
     """Monitoring of the agent."""
-    
+
     telemetry: Required[bool]
     """Telemetry of the agent."""
 
@@ -1794,6 +1790,7 @@ class AgentCard(TypedDict):
 
     default_output_modes: list[str]
     """Supported mime types for output data."""
+
 
 agent_card_ta = pydantic.TypeAdapter(AgentCard)
 

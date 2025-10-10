@@ -44,12 +44,12 @@ from .auth0 import Auth0Middleware
 # Export the base authentication interface
 from .base import AuthMiddleware
 
-#from .cognito import CognitoMiddleware # TODO: Implement Cognito authentication
+# from .cognito import CognitoMiddleware # TODO: Implement Cognito authentication
 
 __all__ = [
     # Base interface
     "AuthMiddleware",
     # Authentication implementations
     "Auth0Middleware",
-    #"CognitoMiddleware",
+    # "CognitoMiddleware",
 ]

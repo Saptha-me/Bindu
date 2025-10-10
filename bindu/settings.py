@@ -154,17 +154,17 @@ class LoggingSettings(BaseSettings):
     # Log Directory and File
     log_dir: str = "logs"
     log_filename: str = "bindu_server.log"
-    
+
     # Log Rotation and Retention
     log_rotation: str = "10 MB"
     log_retention: str = "1 week"
-    
+
     # Log Format
     log_format: str = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {module}:{function}:{line} | {message}"
-    
+
     # Log Levels
     default_level: str = "INFO"
-    
+
     # Rich Theme Colors
     theme_info: str = "bold cyan"
     theme_warning: str = "bold yellow"
@@ -174,7 +174,7 @@ class LoggingSettings(BaseSettings):
     theme_did: str = "bold green"
     theme_security: str = "bold magenta"
     theme_agent: str = "bold blue"
-    
+
     # Rich Console Settings
     traceback_width: int = 120
     show_locals: bool = True
@@ -245,21 +245,25 @@ class AgentSettings(BaseSettings):
 
     # Task State Configuration (A2A Protocol)
     # Non-terminal states: Task is mutable, can receive new messages
-    non_terminal_states: frozenset[str] = frozenset({
-        "submitted",       # Task submitted, awaiting execution
-        "working",         # Agent actively processing
-        "input-required",  # Waiting for user input
-        "auth-required",   # Waiting for authentication
-        "payment-required" # Waiting for payment (Bindu extension)
-    })
-    
+    non_terminal_states: frozenset[str] = frozenset(
+        {
+            "submitted",  # Task submitted, awaiting execution
+            "working",  # Agent actively processing
+            "input-required",  # Waiting for user input
+            "auth-required",  # Waiting for authentication
+            "payment-required",  # Waiting for payment (Bindu extension)
+        }
+    )
+
     # Terminal states: Task is immutable, no further changes allowed
-    terminal_states: frozenset[str] = frozenset({
-        "completed",  # Successfully completed with artifacts
-        "failed",     # Failed due to error
-        "canceled",   # Canceled by user
-        "rejected"    # Rejected by agent
-    })
+    terminal_states: frozenset[str] = frozenset(
+        {
+            "completed",  # Successfully completed with artifacts
+            "failed",  # Failed due to error
+            "canceled",  # Canceled by user
+            "rejected",  # Rejected by agent
+        }
+    )
 
     # Structured Response System Prompt
     # This prompt instructs LLMs to return structured JSON responses for state transitions
@@ -280,10 +284,10 @@ Strict Output Rule for Clarification
   "prompt": "Your specific question here"
 }
 Underspecification Heuristics (ask if any of these matter and are missing)
-- Platform / channel 
-- Audience 
-- Purpose / goal 
-- Tone / voice 
+- Platform / channel
+- Audience
+- Purpose / goal
+- Tone / voice
 - Format
 - Length constraint
 - Style constraints
@@ -341,7 +345,7 @@ Defaults (use only if user says 'any/you pick/default' or prior context establis
 
 CRITICAL
 - When returning the state JSON, return ONLY the JSON object with no additional text before or after.
-    
+
    """
 
     # Enable/disable structured response system
@@ -350,7 +354,7 @@ CRITICAL
 
 class AuthSettings(BaseSettings):
     """Authentication and authorization configuration settings.
-    
+
     Supports multiple authentication providers:
     - auth0: Auth0 (default)
     - cognito: AWS Cognito (future)
@@ -366,7 +370,7 @@ class AuthSettings(BaseSettings):
 
     # Enable/disable authentication
     enabled: bool = False
-    
+
     # Authentication provider
     provider: str = "auth0"  # Options: auth0, cognito, azure, custom
 
@@ -379,19 +383,19 @@ class AuthSettings(BaseSettings):
     # JWKS Configuration
     jwks_uri: str = ""
     jwks_cache_ttl: int = 3600  # Cache JWKS for 1 hour
-    
+
     # Token Validation
     leeway: int = 10  # Clock skew tolerance in seconds
-    
+
     # AWS Cognito Configuration (future use)
     region: str = ""  # e.g., "us-east-1"
     user_pool_id: str = ""  # e.g., "us-east-1_XXXXXXXXX"
     app_client_id: str = ""  # Cognito app client ID
-    
+
     # Azure AD Configuration (future use)
     tenant_id: str = ""  # Azure AD tenant ID
     client_id: str = ""  # Azure AD application ID
-    
+
     # Public Endpoints (no authentication required)
     public_endpoints: list[str] = [
         "/.well-known/agent.json",
@@ -403,7 +407,7 @@ class AuthSettings(BaseSettings):
         "/js/*",
         "/css/*",
     ]
-    
+
     # Permission-based access control
     require_permissions: bool = False
     permissions: dict[str, list[str]] = {

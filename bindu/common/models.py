@@ -165,7 +165,4 @@ class AgentManifest:
 
     def __repr__(self) -> str:
         """Human-readable representation of the agent."""
-        return (
-            f"AgentManifest(name='{self.name}', id='{self.id}', "
-            f"version='{self.version}', kind='{self.kind}')"
-        )
+        return f"AgentManifest(name='{self.name}', id='{self.id}', version='{self.version}', kind='{self.kind}')"

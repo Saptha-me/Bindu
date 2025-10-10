@@ -196,18 +196,18 @@ class BinduM2MClient:
         self.client_secret = os.getenv("AUTH0_CLIENT_SECRET")
         self.audience = os.getenv("AUTH0_AUDIENCE")
         self.agent_url = os.getenv("BINDU_AGENT_URL", "http://localhost:8030")
-        
+
         self._token: Optional[str] = None
         self._token_expires_at: float = 0
-    
+
     def _get_token(self) -> str:
         """Get valid access token, refreshing if needed."""
         current_time = time.time()
-        
+
         # Return cached token if still valid (5 min buffer)
         if self._token and self._token_expires_at > (current_time + 300):
             return self._token
-        
+
         # Request new token
         token_url = f"https://{self.auth0_domain}/oauth/token"
         payload = {
@@ -216,20 +216,20 @@ class BinduM2MClient:
             "audience": self.audience,
             "grant_type": "client_credentials"
         }
-        
+
         response = requests.post(token_url, json=payload)
         response.raise_for_status()
-        
+
         token_data = response.json()
         self._token = token_data["access_token"]
         self._token_expires_at = current_time + token_data["expires_in"]
-        
+
         return self._token
-    
+
     def send_message(self, message: str, context_id: str = None):
         """Send message to Bindu agent."""
         token = self._get_token()
-        
+
         payload = {
             "jsonrpc": "2.0",
             "method": "message/send",
@@ -242,15 +242,15 @@ class BinduM2MClient:
             },
             "id": f"req-{int(time.time())}"
         }
-        
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
-        
+
         response = requests.post(self.agent_url, json=payload, headers=headers)
         response.raise_for_status()
-        
+
         return response.json()
 
 # Usage
@@ -283,18 +283,18 @@ class BinduM2MClient {
     this.clientSecret = process.env.AUTH0_CLIENT_SECRET;
     this.audience = process.env.AUTH0_AUDIENCE;
     this.agentUrl = process.env.BINDU_AGENT_URL || 'http://localhost:8030';
-    
+
     this.token = null;
     this.tokenExpiresAt = 0;
   }
-  
+
   async getToken() {
     const currentTime = Date.now() / 1000;
-    
+
     if (this.token && this.tokenExpiresAt > (currentTime + 300)) {
       return this.token;
     }
-    
+
     const tokenUrl = `https://${this.auth0Domain}/oauth/token`;
     const response = await axios.post(tokenUrl, {
       client_id: this.clientId,
@@ -302,16 +302,16 @@ class BinduM2MClient {
       audience: this.audience,
       grant_type: 'client_credentials'
     });
-    
+
     this.token = response.data.access_token;
     this.tokenExpiresAt = currentTime + response.data.expires_in;
-    
+
     return this.token;
   }
-  
+
   async sendMessage(message, contextId = null) {
     const token = await this.getToken();
-    
+
     const payload = {
       jsonrpc: '2.0',
       method: 'message/send',
@@ -324,14 +324,14 @@ class BinduM2MClient {
       },
       id: `req-${Date.now()}`
     };
-    
+
     const response = await axios.post(this.agentUrl, payload, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
-    
+
     return response.data;
   }
 }

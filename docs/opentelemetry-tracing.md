@@ -12,11 +12,11 @@ Bindu implements comprehensive distributed tracing using OpenTelemetry to provid
 1. API Request (TaskManager)
    └─ Span: "task_manager.{operation}"
       └─ Captures: request_id, task_id, context_id
-      
+
 2. Scheduler Dispatch
    └─ Captures current span via get_current_span()
    └─ Stores in _TaskOperation._current_span
-   
+
 3. Worker Execution
    └─ Restores span via use_span()
    └─ Span: "{operation} task"

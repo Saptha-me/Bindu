@@ -118,12 +118,12 @@ function formatRelativeTime(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
-    
+
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
-    
+
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
@@ -151,28 +151,28 @@ async function copyToClipboard(text) {
 function showToast(message, type = 'info') {
     // Get or create toast container using stored reference
     const toastContainer = domRefs.getToastContainer();
-    
+
     // Create toast element
     const toast = document.createElement('div');
     toast.className = `px-6 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${getToastClass(type)}`;
     toast.textContent = message;
     toastContainer.appendChild(toast);
-    
+
     // Track timers for cleanup
     let fadeTimer = null;
     let removeTimer = null;
-    
+
     // Auto-remove after 3 seconds
     const removeToast = () => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(100%)';
-        
+
         removeTimer = setTimeout(() => {
             toast.remove();
             // Clean up timer references
             if (fadeTimer) cleanupRegistry.clearTimeout(fadeTimer);
             if (removeTimer) cleanupRegistry.clearTimeout(removeTimer);
-            
+
             // Remove container if empty and clear reference
             if (toastContainer.children.length === 0) {
                 toastContainer.remove();
@@ -181,10 +181,10 @@ function showToast(message, type = 'info') {
         }, 300);
         cleanupRegistry.registerTimeout(removeTimer);
     };
-    
+
     fadeTimer = setTimeout(removeToast, 3000);
     cleanupRegistry.registerTimeout(fadeTimer);
-    
+
     // Return cleanup function
     return () => {
         if (fadeTimer) {
@@ -203,10 +203,10 @@ function showToast(message, type = 'info') {
 function toggleDropdown(dropdownId) {
     const content = domCache.get(dropdownId);
     if (!content) return;
-    
+
     const isExpanded = content.classList.contains('expanded');
     content.classList.toggle('expanded', !isExpanded);
-    
+
     // Cache icon query
     const iconCacheKey = `dropdown-icon-${dropdownId}`;
     let icon = domCache.query(iconCacheKey);
@@ -229,33 +229,33 @@ const escapeHtml = memoize(function(text) {
 // Parse markdown to HTML (memoized for performance)
 const parseMarkdownMemo = createMemoized(function(text) {
     if (!text) return '';
-    
+
     // Use marked.js if available, otherwise basic parsing
     if (typeof marked !== 'undefined') {
         return marked.parse(text);
     }
-    
+
     // Basic markdown parsing
     let html = escapeHtml(text);
-    
+
     // Code blocks
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
-    
+
     // Inline code
     html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
-    
+
     // Bold
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
+
     // Italic
     html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    
+
     // Links
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline" target="_blank">$1</a>');
-    
+
     // Line breaks
     html = html.replace(/\n/g, '<br>');
-    
+
     return html;
 }, 200); // Cache up to 200 parsed markdown strings
 
@@ -265,19 +265,19 @@ const parseMarkdown = parseMarkdownMemo.fn;
 // Debounce function (with cleanup support)
 function debounce(func, wait) {
     let timeout;
-    
+
     const debounced = function executedFunction(...args) {
         const later = () => {
             if (timeout) cleanupRegistry.clearTimeout(timeout);
             timeout = null;
             func(...args);
         };
-        
+
         if (timeout) cleanupRegistry.clearTimeout(timeout);
         timeout = setTimeout(later, wait);
         cleanupRegistry.registerTimeout(timeout);
     };
-    
+
     // Add cancel method for manual cleanup
     debounced.cancel = () => {
         if (timeout) {
@@ -285,7 +285,7 @@ function debounce(func, wait) {
             timeout = null;
         }
     };
-    
+
     return debounced;
 }
 
@@ -298,28 +298,28 @@ function debounce(func, wait) {
  */
 function memoize(fn, maxSize = 100) {
     const cache = new Map();
-    
+
     return function memoized(...args) {
         // Create cache key from arguments
         const key = JSON.stringify(args);
-        
+
         // Return cached result if exists
         if (cache.has(key)) {
             return cache.get(key);
         }
-        
+
         // Compute result
         const result = fn.apply(this, args);
-        
+
         // Store in cache
         cache.set(key, result);
-        
+
         // Implement LRU: remove oldest entry if cache is full
         if (cache.size > maxSize) {
             const firstKey = cache.keys().next().value;
             cache.delete(firstKey);
         }
-        
+
         return result;
     };
 }
@@ -332,25 +332,25 @@ function memoize(fn, maxSize = 100) {
  */
 function createMemoized(fn, maxSize = 100) {
     const cache = new Map();
-    
+
     const memoized = function(...args) {
         const key = JSON.stringify(args);
-        
+
         if (cache.has(key)) {
             return cache.get(key);
         }
-        
+
         const result = fn.apply(this, args);
         cache.set(key, result);
-        
+
         if (cache.size > maxSize) {
             const firstKey = cache.keys().next().value;
             cache.delete(firstKey);
         }
-        
+
         return result;
     };
-    
+
     return {
         fn: memoized,
         clear: () => cache.clear(),
@@ -379,39 +379,39 @@ async function loadComponent(componentName, targetId) {
         console.warn(`Container ${targetId} not found`);
         return;
     }
-    
+
     // Create unique key for deduplication
     const requestKey = `component:${componentName}:${targetId}`;
-    
+
     // Use request deduplication
     return requestDeduplicator.dedupe(requestKey, async () => {
         // Create abort controller for request cleanup
         const abortController = new AbortController();
-        
+
         try {
             const response = await fetch(`/components/${componentName}.html`, {
                 signal: abortController.signal
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to load ${componentName}: ${response.statusText}`);
             }
-            
+
             const content = await response.text();
-            
+
             // Only update DOM if container still exists
             if (document.body.contains(container)) {
                 container.innerHTML = content;
-                
+
                 // Invalidate cache after DOM change
                 domCache.clear();
-                
+
                 // Special handling for header
                 if (componentName === 'header') {
                     highlightActivePage();
                 }
             }
-            
+
             return content;
         } catch (error) {
             if (error.name === 'AbortError') {
@@ -437,13 +437,13 @@ async function loadCommonHead() {
         if (!response.ok) {
             throw new Error(`Failed to load head: ${response.statusText}`);
         }
-        
+
         const headContent = await response.text();
-        
+
         // Create a temporary div to parse the HTML
         const temp = document.createElement('div');
         temp.innerHTML = headContent;
-        
+
         // Append all elements to document head
         Array.from(temp.children).forEach(element => {
             document.head.appendChild(element);
@@ -494,23 +494,23 @@ async function loadHeader() {
         console.warn('Header placeholder not found');
         return;
     }
-    
+
     // Use request deduplication for header loading
     const requestKey = 'header:load';
-    
+
     return requestDeduplicator.dedupe(requestKey, async () => {
         // Inject header HTML
         container.innerHTML = buildHeader();
-        
+
         // Refresh header-specific references
         domRefs.refreshHeader();
-        
+
         // Invalidate nav-related cache after DOM change
         domCache.clear();
-        
+
         // Highlight active page
         highlightActivePage();
-        
+
         return true;
     });
 }
@@ -519,7 +519,7 @@ async function loadHeader() {
 function highlightActivePage() {
     const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'chat';
     const navLinks = domCache.queryAll('nav a[data-page]');
-    
+
     for (const link of navLinks) {
         if (link.getAttribute('data-page') === currentPage) {
             link.classList.remove('text-gray-600', 'hover:text-gray-900');
@@ -540,14 +540,14 @@ function buildFooter() {
                         <h3 class="text-lg font-semibold text-gray-900">Bindu Protocol</h3>
                     </div>
                     <p class="text-gray-600 max-w-3xl mx-auto mb-4">
-                        Bindu is a decentralized agent-to-agent communication protocol. 
-                        <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform 
+                        Bindu is a decentralized agent-to-agent communication protocol.
+                        <strong>Hibiscus</strong> is our registry and <strong>Imagine</strong> is the multi-orchestrator platform
                         where you can bindufy your agent and be part of the agent economy.
                     </p>
                     <p class="text-sm text-gray-500 mb-6">
-                        This is the local version. For production deployment, please follow the 
-                        <a href="https://docs.bindu.ai" 
-                           target="_blank" 
+                        This is the local version. For production deployment, please follow the
+                        <a href="https://docs.bindu.ai"
+                           target="_blank"
                            rel="noopener noreferrer"
                            class="text-yellow-600 hover:text-yellow-700 underline transition-colors">
                             documentation
@@ -571,14 +571,14 @@ async function loadFooter() {
         console.warn('Footer placeholder not found');
         return;
     }
-    
+
     // Use request deduplication for footer loading
     const requestKey = 'footer:load';
-    
+
     return requestDeduplicator.dedupe(requestKey, async () => {
         // Inject footer HTML
         container.innerHTML = buildFooter();
-        
+
         return true;
     });
 }
@@ -636,7 +636,7 @@ const createIcon = memoize(function(iconName, className = 'w-5 h-5') {
 // Create page structure helper
 function createPageStructure(config) {
     const { title, description } = config;
-    
+
     // Update title and description if provided
     if (title) {
         document.title = title;
@@ -694,7 +694,7 @@ function yesNo(value) {
 function createDOMCache() {
     const cache = {};
     const queryCache = {};
-    
+
     return {
         get: (id) => {
             if (!cache[id]) {
@@ -734,7 +734,7 @@ const domCache = createDOMCache();
  */
 const requestDeduplicator = {
     pendingRequests: new Map(),
-    
+
     /**
      * Get or create a request for a resource
      * @param {string} key - Unique key for the request
@@ -746,20 +746,20 @@ const requestDeduplicator = {
         if (this.pendingRequests.has(key)) {
             return this.pendingRequests.get(key);
         }
-        
+
         // Create new request
         const promise = requestFn()
             .finally(() => {
                 // Clean up after request completes (success or failure)
                 this.pendingRequests.delete(key);
             });
-        
+
         // Store pending request
         this.pendingRequests.set(key, promise);
-        
+
         return promise;
     },
-    
+
     /**
      * Cancel a pending request
      * @param {string} key - Request key to cancel
@@ -767,14 +767,14 @@ const requestDeduplicator = {
     cancel(key) {
         this.pendingRequests.delete(key);
     },
-    
+
     /**
      * Cancel all pending requests
      */
     cancelAll() {
         this.pendingRequests.clear();
     },
-    
+
     /**
      * Check if a request is pending
      * @param {string} key - Request key
@@ -793,7 +793,7 @@ const cleanupRegistry = {
     timers: new Set(),
     intervals: new Set(),
     eventListeners: new Map(),
-    
+
     /**
      * Register a timeout for cleanup
      */
@@ -801,7 +801,7 @@ const cleanupRegistry = {
         this.timers.add(id);
         return id;
     },
-    
+
     /**
      * Register an interval for cleanup
      */
@@ -809,7 +809,7 @@ const cleanupRegistry = {
         this.intervals.add(id);
         return id;
     },
-    
+
     /**
      * Register an event listener for cleanup
      */
@@ -820,7 +820,7 @@ const cleanupRegistry = {
         }
         this.eventListeners.get(key).push({ element, event, handler, options });
     },
-    
+
     /**
      * Clear a specific timeout
      */
@@ -828,7 +828,7 @@ const cleanupRegistry = {
         clearTimeout(id);
         this.timers.delete(id);
     },
-    
+
     /**
      * Clear a specific interval
      */
@@ -836,7 +836,7 @@ const cleanupRegistry = {
         clearInterval(id);
         this.intervals.delete(id);
     },
-    
+
     /**
      * Clear all registered resources
      */
@@ -844,11 +844,11 @@ const cleanupRegistry = {
         // Clear all timers
         this.timers.forEach(id => clearTimeout(id));
         this.timers.clear();
-        
+
         // Clear all intervals
         this.intervals.forEach(id => clearInterval(id));
         this.intervals.clear();
-        
+
         // Remove all event listeners
         this.eventListeners.forEach(listeners => {
             listeners.forEach(({ element, event, handler, options }) => {
@@ -870,7 +870,7 @@ const domRefs = {
     footerPlaceholder: null,
     headerAgentName: null,
     headerAgentSubtitle: null,
-    
+
     /**
      * Initialize DOM references
      * Call this after DOM is ready or after dynamic content loads
@@ -880,7 +880,7 @@ const domRefs = {
         this.headerPlaceholder = document.getElementById('header-placeholder');
         this.footerPlaceholder = document.getElementById('footer-placeholder');
     },
-    
+
     /**
      * Refresh header-specific references
      * Call after header is loaded
@@ -889,7 +889,7 @@ const domRefs = {
         this.headerAgentName = document.getElementById('header-agent-name');
         this.headerAgentSubtitle = document.getElementById('header-agent-subtitle');
     },
-    
+
     /**
      * Get or create toast container with reference caching
      */
@@ -905,14 +905,14 @@ const domRefs = {
         }
         return this.toastContainer;
     },
-    
+
     /**
      * Clear toast container reference
      */
     clearToastContainer() {
         this.toastContainer = null;
     },
-    
+
     /**
      * Clear all DOM references
      */
@@ -945,11 +945,11 @@ const createMessageIcon = memoize(function(iconName, className = 'w-4 h-4') {
  */
 function extractAgentResponse(result) {
     if (!result) return null;
-    
+
     // Try different response formats (ordered by most common)
     if (result.reply) return result.reply;
     if (result.content) return result.content;
-    
+
     // Check messages array (use findLast for better performance - get latest message)
     if (result.messages?.length > 0) {
         // Use reverse iteration for better performance (latest message first)
@@ -960,7 +960,7 @@ function extractAgentResponse(result) {
             }
         }
     }
-    
+
     return null;
 }
 
@@ -972,7 +972,7 @@ function extractAgentResponse(result) {
  */
 function extractTaskResponse(task) {
     if (!task?.history?.length) return null;
-    
+
     // Reverse iterate without creating new array (more efficient)
     for (let i = task.history.length - 1; i >= 0; i--) {
         const msg = task.history[i];
@@ -983,7 +983,7 @@ function extractTaskResponse(task) {
             }
         }
     }
-    
+
     return null;
 }
 
@@ -1007,12 +1007,12 @@ function toggleReaction(messageId, type) {
     const isLike = type === 'like';
     const primaryBtn = domCache.query(`.${type}-btn[data-message-id="${messageId}"]`);
     const oppositeBtn = domCache.query(`.${isLike ? 'dislike' : 'like'}-btn[data-message-id="${messageId}"]`);
-    
+
     if (!primaryBtn || !oppositeBtn) return;
-    
+
     const activeClass = `${type}d`;
     const colorClass = isLike ? 'text-green-500' : 'text-red-500';
-    
+
     if (primaryBtn.classList.contains(activeClass)) {
         // Remove reaction
         primaryBtn.classList.remove(activeClass, colorClass);
@@ -1069,7 +1069,7 @@ function createInfoRow(config) {
         colorClass = 'text-gray-900',
         badgeType = 'neutral'
     } = config;
-    
+
     if (type === 'card') {
         return `
             <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -1081,7 +1081,7 @@ function createInfoRow(config) {
             </div>
         `;
     }
-    
+
     if (type === 'setting') {
         const badgeClass = getBadgeClass(badgeType);
         return `
@@ -1093,7 +1093,7 @@ function createInfoRow(config) {
             </div>
         `;
     }
-    
+
     // Default: stat row
     return `
         <div class="flex justify-between items-center py-2 border-b border-gray-200">
@@ -1129,7 +1129,7 @@ function createDropdown(id, title, isAvailable, content) {
     const badgeType = isAvailable ? 'success' : 'error';
     const statusBadge = getBadgeClass(badgeType);
     const statusText = isAvailable ? 'Available' : 'Not available';
-    
+
     return `
         <div class="border border-gray-200 rounded-lg overflow-hidden">
             <div class="p-3 bg-gray-50 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition-colors" onclick="utils.toggleDropdown('${id}')">
@@ -1179,7 +1179,7 @@ function createSkillCard(skill) {
 function createTechnicalDetail(label, value, isMonospace = false) {
     const valueClass = isMonospace ? 'font-mono text-sm' : 'font-mono text-xs';
     const extraClass = isMonospace ? '' : ' break-all text-gray-600';
-    
+
     return `
         <div>
             <div class="text-sm font-medium text-gray-500 mb-2">${label}</div>
@@ -1206,7 +1206,7 @@ function createTaskCard(task, isCompact = false, truncateLength = 100) {
     const statusIcon = getStatusIcon(task.status?.state);
     const latestMessage = task.history?.[task.history.length - 1]?.parts?.[0]?.text || 'No content';
     const truncatedMessage = truncateText(latestMessage, truncateLength);
-    
+
     return `
         <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200">
             <div class="flex items-start justify-between">
@@ -1220,26 +1220,26 @@ function createTaskCard(task, isCompact = false, truncateLength = 100) {
                             ${task.task_id?.substring(0, 8)}...
                         </span>
                     </div>
-                    
+
                     <div class="text-sm text-gray-600 mb-2">
                         <strong>Context:</strong> ${task.context_id?.substring(0, 8)}...
                     </div>
-                    
+
                     ${task.history?.length > 0 ? `
                         <div class="text-sm text-gray-900">
                             <strong>Latest Message:</strong> ${truncatedMessage}
                         </div>
                     ` : ''}
                 </div>
-                
+
                 <div class="flex-shrink-0 ml-4">
-                    <button data-action="view-task" data-task-id="${task.task_id}" 
+                    <button data-action="view-task" data-task-id="${task.task_id}"
                             class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                         ${isCompact ? 'View' : 'View Details'}
                     </button>
                 </div>
             </div>
-            
+
             ${task.status?.error ? `
                 <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <p class="text-sm text-red-800">
@@ -1261,7 +1261,7 @@ function createTaskCard(task, isCompact = false, truncateLength = 100) {
 function createContextCard(contextData) {
     const contextId = contextData.context_id;
     const taskCount = contextData.task_count || 0;
-    
+
     return `
         <div class="border border-gray-200 rounded-lg overflow-hidden">
             <div class="bg-gray-50 p-4 border-b border-gray-200">
@@ -1278,18 +1278,18 @@ function createContextCard(contextData) {
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button data-action="toggle-context" data-context-id="${contextId}" 
+                        <button data-action="toggle-context" data-context-id="${contextId}"
                                 class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                             <span id="toggle-${contextId}">Show Tasks</span>
                         </button>
-                        <button data-action="clear-context" data-context-id="${contextId}" 
+                        <button data-action="clear-context" data-context-id="${contextId}"
                                 class="text-red-600 hover:text-red-800 text-sm font-medium">
                             Clear
                         </button>
                     </div>
                 </div>
             </div>
-            
+
             <div id="context-tasks-${contextId}" class="hidden">
                 <div class="p-4 text-center text-gray-500">
                     Loading tasks...
@@ -1308,7 +1308,7 @@ window.utils = {
     escapeHtml,
     parseMarkdown,
     parseMarkdownMemo, // Expose memoized version with cache control
-    
+
     // Interaction utilities
     copyToClipboard,
     showToast,
@@ -1316,16 +1316,16 @@ window.utils = {
     debounce,
     memoize,
     createMemoized,
-    
+
     // Theme utilities
     initTheme,
     toggleTheme,
-    
+
     // Component loaders
     loadComponent,
     loadHeader,
     loadFooter,
-    
+
     // UI component creators
     createIcon,
     createMessageIcon,
@@ -1339,7 +1339,7 @@ window.utils = {
     createTechnicalDetail,
     createTaskCard,
     createContextCard,
-    
+
     // Badge and status utilities
     getStyleClass, // Generic style mapper
     getBadgeClass,
@@ -1348,7 +1348,7 @@ window.utils = {
     getTrustLabel,
     getStatusColor,
     getStatusIcon,
-    
+
     // Helper utilities
     createPageStructure,
     generateUUID, // Used by api.js generateId() as fallback
@@ -1362,7 +1362,7 @@ window.utils = {
     extractTaskResponse,
     scrollToBottom,
     toggleReaction,
-    
+
     // Constants (exposed for reference)
     STYLE_MAPS, // Consolidated style mappings
     ICON_MAP,
@@ -1380,13 +1380,13 @@ function loadCommonScripts() {
         const apiScript = document.createElement('script');
         apiScript.id = 'common-api-script';
         apiScript.src = 'js/api.js';
-        
+
         // Add error handler to prevent memory leaks
         const errorHandler = (e) => {
             console.error('Failed to load api.js:', e);
             apiScript.remove();
         };
-        
+
         apiScript.addEventListener('error', errorHandler, { once: true });
         document.body.appendChild(apiScript);
     }
@@ -1396,13 +1396,13 @@ function loadCommonScripts() {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize DOM references
     domRefs.init();
-    
+
     // Theme initialization disabled for now (white background only)
     // initTheme();
-    
+
     // Load common scripts
     loadCommonScripts();
-    
+
     // Load components if placeholders exist (using stored references)
     if (domRefs.footerPlaceholder) {
         loadFooter();

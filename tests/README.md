@@ -110,16 +110,16 @@ from tests.utils import create_test_task, assert_task_state
 
 class TestFeatureName:
     """Test specific feature."""
-    
+
     @pytest.mark.asyncio
     async def test_specific_behavior(self, storage):
         """Test description."""
         # Arrange
         message = create_test_message(text="Test request")
-        
+
         # Act - Use submit_task to create tasks
         task = await storage.submit_task(message["context_id"], message)
-        
+
         # Assert
         loaded = await storage.load_task(task["id"])
         assert_task_state(loaded, "submitted")

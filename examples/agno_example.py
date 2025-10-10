@@ -24,7 +24,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
+
 from bindu.penguin.bindufy import bindufy
+
 
 # Load configuration
 def load_config(config_path: str):
@@ -34,30 +36,29 @@ def load_config(config_path: str):
     with open(full_path, "r") as f:
         return json.load(f)
 
+
 simple_config = load_config("simple_agent_config.json")
 
 # 1. SIMPLE STATELESS AGENT - Direct response
 # Create the agent instance once
-simple_agent = Agent(
-    instructions="Provide helpful responses to user messages",
-    model=OpenAIChat(id="gpt-4o")
-)
+simple_agent = Agent(instructions="Provide helpful responses to user messages", model=OpenAIChat(id="gpt-4o"))
+
 
 # Define the handler function that uses the agent
 def simple_handler(messages: list[dict[str, str]]) -> Any:
     """Simple stateless agent handler - receives message history.
-    
+
     Args:
         messages: List of message dicts with 'role' and 'content' keys
                   e.g., [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
-    
+
     Returns:
         Agent result in any format - ManifestWorker will intelligently extract the response.
         Can return:
         - Raw agent output (list of Messages, Message object, etc.)
         - Pre-extracted string
         - Structured dict with {"state": "input-required", ...}
-    
+
     A2A Protocol: Each message creates a new task.
     Context continuity maintained via contextId and referenceTaskIds.
     """

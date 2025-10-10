@@ -45,15 +45,16 @@ logger = get_logger("bindu.did_extension")
 
 class DIDAgentExtension:
     """DID extension for agent identity management.
-    
+
     This class manages the complete lifecycle of an agent's decentralized identity,
     including cryptographic key generation, DID creation, and digital signatures.
     Each agent gets a unique, self-sovereign identity that can be verified without
     relying on centralized authorities.
     """
 
-    def __init__(self, 
-        recreate_keys: bool, 
+    def __init__(
+        self,
+        recreate_keys: bool,
         key_dir: Path,
         author: Optional[str] = None,
         agent_name: Optional[str] = None,
@@ -61,7 +62,7 @@ class DIDAgentExtension:
         key_password: Optional[str] = None,
     ):
         """Initialize the DID extension with cryptographic identity.
-        
+
         Args:
             recreate_keys: If True, regenerate keys even if they already exist.
                           Useful for key rotation or testing. Use with caution in production.
@@ -74,13 +75,13 @@ class DIDAgentExtension:
             key_password: Optional password to encrypt the private key at rest.
                          Can be a direct password, environment variable reference (env:VAR_NAME),
                          or 'prompt' for interactive entry. None means unencrypted.
-        
+
         Attributes:
             private_key_path (str): Full path to the private key PEM file
             public_key_path (str): Full path to the public key PEM file
             did (str): The agent's Decentralized Identifier (computed from public key)
             metadata (dict): Additional metadata included in the DID document
-        
+
         Example:
             >>> from pathlib import Path
             >>> from uuid import uuid4
@@ -106,13 +107,13 @@ class DIDAgentExtension:
         self.agent_id = agent_id  # The unique agent identifier
         self.key_password = key_password.encode() if key_password else None
         self._created_at = datetime.now(timezone.utc).isoformat()  # Cache creation timestamp
-        
+
         # Store additional metadata that will be included in DID document
         self.metadata: Dict[str, Any] = {}
 
     def _generate_key_pair_data(self) -> tuple[bytes, bytes]:
         """Generate key pair and return PEM data.
-        
+
         Returns:
             Tuple of (private_pem, public_pem) as bytes
         """
@@ -125,7 +126,7 @@ class DIDAgentExtension:
             if self.key_password
             else serialization.NoEncryption()
         )
-        
+
         private_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
@@ -133,18 +134,14 @@ class DIDAgentExtension:
         )
 
         public_pem = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
-        
+
         return private_pem, public_pem
 
     def _get_key_paths(self) -> dict[str, str]:
         """Get KeyPaths object from current paths."""
-        return {
-            "private_key_path": str(self.private_key_path),
-            "public_key_path": str(self.public_key_path)
-        }
+        return {"private_key_path": str(self.private_key_path), "public_key_path": str(self.public_key_path)}
 
     def generate_and_save_key_pair(self) -> dict[str, str]:
         """Generate and save key pair to files if they don't exist.
@@ -171,20 +168,19 @@ class DIDAgentExtension:
         # Set appropriate file permissions (owner read/write only for private key)
         self.private_key_path.chmod(0o600)
         self.public_key_path.chmod(0o644)
-        
+
         return self._get_key_paths()
-    
 
     def _load_key_from_file(self, key_path: Path, key_type: str) -> bytes:
         """Load key PEM data from file.
-        
+
         Args:
             key_path: Path to the key file
             key_type: Type of key ('private' or 'public') for error messages
-            
+
         Returns:
             Key PEM data as bytes
-            
+
         Raises:
             FileNotFoundError: If key file does not exist
         """
@@ -206,10 +202,7 @@ class DIDAgentExtension:
         private_key_pem = self._load_key_from_file(self.private_key_path, "private")
 
         try:
-            private_key = serialization.load_pem_private_key(
-                private_key_pem, 
-                password=self.key_password
-            )
+            private_key = serialization.load_pem_private_key(private_key_pem, password=self.key_password)
         except TypeError as e:
             if "Password was not given but private key is encrypted" in str(e):
                 raise ValueError(
@@ -217,7 +210,7 @@ class DIDAgentExtension:
                     "Please provide the key password in the configuration."
                 ) from e
             raise
-        
+
         if not isinstance(private_key, ed25519.Ed25519PrivateKey):
             raise ValueError("Private key is not an Ed25519 key")
 
@@ -236,7 +229,7 @@ class DIDAgentExtension:
         """
         public_key_pem = self._load_key_from_file(self.public_key_path, "public")
         public_key = serialization.load_pem_public_key(public_key_pem)
-        
+
         if not isinstance(public_key, ed25519.Ed25519PublicKey):
             raise ValueError("Public key is not an Ed25519 key")
 
@@ -283,12 +276,7 @@ class DIDAgentExtension:
     @staticmethod
     def _sanitize_did_component(component: str) -> str:
         """Sanitize a component for use in DID."""
-        return (
-            component.lower()
-            .replace(' ', '_')
-            .replace('@', '_at_')
-            .replace('.', '_')
-        )
+        return component.lower().replace(" ", "_").replace("@", "_at_").replace(".", "_")
 
     @cached_property
     def did(self) -> str:
@@ -303,24 +291,24 @@ class DIDAgentExtension:
             sanitized_author = self._sanitize_did_component(self.author)
             sanitized_agent_name = self._sanitize_did_component(self.agent_name)
             return f"did:{app_settings.did.method_bindu}:{sanitized_author}:{sanitized_agent_name}:{self.agent_id}"
-        
+
         # Fallback to did:key format with multibase encoding
         public_key_bytes = self._get_public_key_raw_bytes()
-        encoded = base58.b58encode(public_key_bytes).decode(
-            app_settings.did.base58_encoding
-        )
+        encoded = base58.b58encode(public_key_bytes).decode(app_settings.did.base58_encoding)
         multibase_encoded = app_settings.did.multibase_prefix + encoded
         return f"did:{app_settings.did.method_key}:{multibase_encoded}"
 
-    def set_agent_metadata(self, 
-                          skills: Optional[List[Any]] = None,
-                          capabilities: Optional[Dict[str, Any]] = None,
-                          description: Optional[str] = None,
-                          version: Optional[str] = None,
-                          author: Optional[str] = None,
-                          **extra_metadata) -> None:
+    def set_agent_metadata(
+        self,
+        skills: Optional[List[Any]] = None,
+        capabilities: Optional[Dict[str, Any]] = None,
+        description: Optional[str] = None,
+        version: Optional[str] = None,
+        author: Optional[str] = None,
+        **extra_metadata,
+    ) -> None:
         """Set metadata that will be included in the DID document.
-        
+
         Args:
             skills: List of agent skills
             capabilities: Agent capabilities dictionary
@@ -339,13 +327,10 @@ class DIDAgentExtension:
         }
         self.metadata.update({k: v for k, v in updates.items() if v is not None})
         self.metadata.update(extra_metadata)
-    
+
     def _get_public_key_raw_bytes(self) -> bytes:
         """Get raw bytes of public key."""
-        return self.public_key.public_bytes(
-            encoding=serialization.Encoding.Raw,
-            format=serialization.PublicFormat.Raw
-        )
+        return self.public_key.public_bytes(encoding=serialization.Encoding.Raw, format=serialization.PublicFormat.Raw)
 
     @cached_property
     def public_key_base58(self) -> str:
@@ -354,7 +339,7 @@ class DIDAgentExtension:
 
     def get_did_document(self) -> Dict[str, Any]:
         """Generate a complete DID document with all agent information.
-        
+
         Returns:
             Dictionary containing the full DID document with agent metadata
         """
@@ -362,36 +347,38 @@ class DIDAgentExtension:
             "@context": [app_settings.did.w3c_context, app_settings.did.bindu_context],
             "id": self.did,
             "created": self._created_at,
-            
             # Authentication method
-            "authentication": [{
-                "id": f"{self.did}#{app_settings.did.key_fragment}",
-                "type": app_settings.did.verification_key_type,
-                "controller": self.did,
-                "publicKeyBase58": self.public_key_base58
-            }],
-            
+            "authentication": [
+                {
+                    "id": f"{self.did}#{app_settings.did.key_fragment}",
+                    "type": app_settings.did.verification_key_type,
+                    "controller": self.did,
+                    "publicKeyBase58": self.public_key_base58,
+                }
+            ],
             # bindu-specific metadata
             "bindu": {
                 "agentName": self.agent_name,
                 "author": self.author,
-                **self.metadata  # Include all metadata
-            }
+                **self.metadata,  # Include all metadata
+            },
         }
-        
+
         # Add service endpoints if URL is available
         if "url" in self.metadata:
-            did_doc["service"] = [{
-                "id": f"{self.did}#{app_settings.did.service_fragment}",
-                "type": app_settings.did.service_type,
-                "serviceEndpoint": self.metadata["url"]
-            }]
-        
+            did_doc["service"] = [
+                {
+                    "id": f"{self.did}#{app_settings.did.service_fragment}",
+                    "type": app_settings.did.service_type,
+                    "serviceEndpoint": self.metadata["url"],
+                }
+            ]
+
         return did_doc
-    
+
     def get_agent_info(self) -> Dict[str, Any]:
         """Get a simplified agent info JSON (more readable than full DID document).
-        
+
         Returns:
             Dictionary with agent information in a user-friendly format
         """
@@ -402,12 +389,12 @@ class DIDAgentExtension:
             "publicKey": self.public_key_base58,
             "created": self._created_at,
         }
-        
+
         # Add all metadata fields
         info.update(self.metadata)
-        
+
         return info
-    
+
     @cached_property
     def agent_extension(self) -> AgentExtension:
         return AgentExtension(
@@ -417,6 +404,6 @@ class DIDAgentExtension:
             params={
                 "did": self.did,
                 "resolver_endpoint": app_settings.did.resolver_endpoint,
-                "info_endpoint": app_settings.did.info_endpoint
+                "info_endpoint": app_settings.did.info_endpoint,
             },
         )

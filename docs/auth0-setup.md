@@ -202,7 +202,7 @@ python examples/get_auth0_token.py
 
 **Problem:** Token signature verification failed.
 
-**Solution:** 
+**Solution:**
 1. Check that `domain` and `jwks_uri` are correct
 2. Ensure token is from the correct Auth0 tenant
 3. Verify `algorithms` includes `RS256`

@@ -63,7 +63,7 @@ class Worker(ABC):
 
     scheduler: Scheduler
     """Scheduler that provides task operations to execute."""
-    
+
     storage: Storage[Any]
     """Storage backend for task and context persistence."""
 
@@ -93,7 +93,7 @@ class Worker(ABC):
 
     async def _loop(self) -> None:
         """Main worker loop that continuously processes task operations.
-        
+
         Receives task operations from scheduler and dispatches them to handlers.
         Runs until cancelled by the task group.
         """
@@ -127,8 +127,7 @@ class Worker(ABC):
             # Preserve trace context from scheduler
             with use_span(task_operation["_current_span"]):
                 with tracer.start_as_current_span(
-                    f"{task_operation['operation']} task", 
-                    attributes={"logfire.tags": ["bindu"]}
+                    f"{task_operation['operation']} task", attributes={"logfire.tags": ["bindu"]}
                 ):
                     handler = operation_handlers.get(task_operation["operation"])
                     if handler:
@@ -215,7 +214,7 @@ class Worker(ABC):
 
     async def _handle_pause(self, params: TaskIdParams) -> None:
         """Handle pause operation.
-        
+
         TODO: Implement task pause functionality
         - Save current execution state
         - Update task to 'suspended' state
@@ -225,7 +224,7 @@ class Worker(ABC):
 
     async def _handle_resume(self, params: TaskIdParams) -> None:
         """Handle resume operation.
-        
+
         TODO: Implement task resume functionality
         - Restore execution state
         - Update task to 'resumed' state

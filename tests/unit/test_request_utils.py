@@ -16,7 +16,7 @@ class TestGetClientIP:
         request = Mock()
         request.client = Mock()
         request.client.host = "192.168.1.1"
-        
+
         ip = get_client_ip(request)
         assert ip == "192.168.1.1"
 
@@ -24,7 +24,7 @@ class TestGetClientIP:
         """Test getting client IP when client is None."""
         request = Mock()
         request.client = None
-        
+
         ip = get_client_ip(request)
         assert ip == "unknown"
 
@@ -35,7 +35,7 @@ class TestJsonRpcError:
     def test_basic_error(self):
         """Test creating basic JSON-RPC error."""
         response = jsonrpc_error(code=-32600, message="Invalid Request")
-        
+
         assert response.status_code == 400
         content = response.body.decode()
         assert "-32600" in content
@@ -48,7 +48,7 @@ class TestJsonRpcError:
             message="Invalid params",
             data="Missing required field",
         )
-        
+
         content = response.body.decode()
         assert "Missing required field" in content
 
@@ -59,7 +59,7 @@ class TestJsonRpcError:
             message="Method not found",
             request_id="123",
         )
-        
+
         content = response.body.decode()
         assert '"id":"123"' in content or '"id": "123"' in content
 
@@ -70,13 +70,13 @@ class TestJsonRpcError:
             message="Server error",
             status=500,
         )
-        
+
         assert response.status_code == 500
 
     def test_error_response_format(self):
         """Test that error response has correct JSON-RPC format."""
         response = jsonrpc_error(code=-32600, message="Invalid Request")
-        
+
         content = response.body.decode()
         assert '"jsonrpc"' in content and '"2.0"' in content
         assert '"error"' in content

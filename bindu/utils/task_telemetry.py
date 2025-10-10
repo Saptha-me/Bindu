@@ -22,17 +22,13 @@ meter = metrics.get_meter("bindu.server.task_manager")
 # Metrics
 task_counter = meter.create_counter("bindu_tasks_total", description="Total number of tasks processed", unit="1")
 
-task_duration = meter.create_histogram(
-    "bindu_task_duration_seconds", description="Task processing duration", unit="s"
-)
+task_duration = meter.create_histogram("bindu_task_duration_seconds", description="Task processing duration", unit="s")
 
 active_tasks = meter.create_up_down_counter(
     "bindu_active_tasks", description="Number of currently active tasks", unit="1"
 )
 
-context_counter = meter.create_counter(
-    "bindu_contexts_total", description="Total number of contexts managed", unit="1"
-)
+context_counter = meter.create_counter("bindu_contexts_total", description="Total number of contexts managed", unit="1")
 
 logger = get_logger()
 
@@ -233,9 +229,7 @@ def trace_context_operation(operation_name: str):
 def create_task_span(task_id: UUID, operation: str, context_id: UUID | None = None):
     """Create a task-specific span with standard attributes."""
     span = tracer.start_span(f"task.{operation}")
-    span.set_attributes(
-        {"bindu.task_id": str(task_id), "bindu.operation": operation, "bindu.component": "task"}
-    )
+    span.set_attributes({"bindu.task_id": str(task_id), "bindu.operation": operation, "bindu.component": "task"})
 
     if context_id:
         span.set_attribute("bindu.context_id", str(context_id))

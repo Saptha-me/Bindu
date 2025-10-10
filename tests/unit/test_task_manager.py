@@ -24,12 +24,12 @@ async def test_get_existing_task():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         # Create task via submit_task
         message = create_test_message(text="Test message")
         context_id = message["context_id"]
         await storage.submit_task(context_id, message)
-        
+
         request: GetTaskRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -38,9 +38,9 @@ async def test_get_existing_task():
                 "task_id": message["task_id"],
             },
         }
-        
+
         response = await tm.get_task(request)
-        
+
         assert_jsonrpc_success(response)
         retrieved_task = response["result"]
         assert retrieved_task["id"] == message["task_id"]
@@ -52,7 +52,7 @@ async def test_get_nonexistent_task():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         request: GetTaskRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -61,9 +61,9 @@ async def test_get_nonexistent_task():
                 "task_id": uuid4(),  # Non-existent
             },
         }
-        
+
         response = await tm.get_task(request)
-        
+
         # Should return TaskNotFoundError (-32001)
         assert_jsonrpc_error(response, -32001)
 
@@ -74,17 +74,17 @@ async def test_get_task_with_history_limit():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         # Create task with long history
         messages = [create_test_message(text=f"Message {i}") for i in range(20)]
         context_id = messages[0]["context_id"]
         task_id = messages[0]["task_id"]
-        
+
         # Submit first message to create task
         await storage.submit_task(context_id, messages[0])
         # Update task with more messages
         await storage.update_task(task_id, state="working", new_messages=messages[1:])
-        
+
         request: GetTaskRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -94,9 +94,9 @@ async def test_get_task_with_history_limit():
                 "history_length": 5,
             },
         }
-        
+
         response = await tm.get_task(request)
-        
+
         retrieved_task = response["result"]
         # History should be limited
         if "history" in retrieved_task:
@@ -109,16 +109,16 @@ async def test_list_empty_tasks():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         request: ListTasksRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
             "method": "tasks/list",
             "params": {},
         }
-        
+
         response = await tm.list_tasks(request)
-        
+
         assert_jsonrpc_success(response)
         assert response["result"] == []
 
@@ -129,21 +129,21 @@ async def test_list_multiple_tasks():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         # Create tasks via submit_task
         for i in range(5):
             message = create_test_message(text=f"Message {i}")
             await storage.submit_task(message["context_id"], message)
-        
+
         request: ListTasksRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
             "method": "tasks/list",
             "params": {},
         }
-        
+
         response = await tm.list_tasks(request)
-        
+
         task_list = response["result"]
         assert len(task_list) == 5
 
@@ -154,7 +154,7 @@ async def test_cancel_nonexistent_task():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         request: CancelTaskRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -163,9 +163,9 @@ async def test_cancel_nonexistent_task():
                 "task_id": uuid4(),
             },
         }
-        
+
         response = await tm.cancel_task(request)
-        
+
         # Should return TaskNotFoundError (-32001)
         assert_jsonrpc_error(response, -32001)
 
@@ -176,12 +176,12 @@ async def test_submit_feedback():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         # Create task and update to completed state
         message = create_test_message(text="Test message")
         task = await storage.submit_task(message["context_id"], message)
         await storage.update_task(task["id"], state="completed")
-        
+
         request: TaskFeedbackRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -193,9 +193,9 @@ async def test_submit_feedback():
                 "metadata": {"helpful": True},
             },
         }
-        
+
         response = await tm.task_feedback(request)
-        
+
         assert_jsonrpc_success(response)
 
 
@@ -205,7 +205,7 @@ async def test_feedback_for_nonexistent_task():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         request: TaskFeedbackRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -215,9 +215,9 @@ async def test_feedback_for_nonexistent_task():
                 "feedback": "Test feedback",
             },
         }
-        
+
         response = await tm.task_feedback(request)
-        
+
         # Should return TaskNotFoundError
         assert_jsonrpc_error(response, -32001)
 
@@ -228,16 +228,16 @@ async def test_list_empty_contexts():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         request: ListContextsRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
             "method": "contexts/list",
             "params": {},
         }
-        
+
         response = await tm.list_contexts(request)
-        
+
         assert_jsonrpc_success(response)
         assert response["result"] == []
 
@@ -248,21 +248,21 @@ async def test_list_multiple_contexts():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         # Create contexts by submitting tasks with different context_ids
         for i in range(3):
             message = create_test_message(text=f"Session {i}")
             await storage.submit_task(message["context_id"], message)
-        
+
         request: ListContextsRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
             "method": "contexts/list",
             "params": {},
         }
-        
+
         response = await tm.list_contexts(request)
-        
+
         context_list = response["result"]
         assert len(context_list) == 3
 
@@ -273,12 +273,12 @@ async def test_clear_context():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         # Create a context by submitting a task
         message = create_test_message(text="To Clear")
         context_id = message["context_id"]
         await storage.submit_task(context_id, message)
-        
+
         request: ClearContextsRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -287,9 +287,9 @@ async def test_clear_context():
                 "context_id": context_id,
             },
         }
-        
+
         response = await tm.clear_context(request)
-        
+
         # Should succeed
         assert "result" in response or "error" in response
 
@@ -300,7 +300,7 @@ async def test_clear_nonexistent_context():
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         request: ClearContextsRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -309,9 +309,9 @@ async def test_clear_nonexistent_context():
                 "context_id": uuid4(),
             },
         }
-        
+
         response = await tm.clear_context(request)
-        
+
         # Should return error
         assert "error" in response
 
@@ -320,11 +320,11 @@ async def test_clear_nonexistent_context():
 async def test_push_not_supported():
     """Test push notification when not supported."""
     from bindu.common.protocol.types import SetTaskPushNotificationRequest
-    
+
     storage = InMemoryStorage()
     async with InMemoryScheduler() as scheduler:
         tm = TaskManager(scheduler=scheduler, storage=storage, manifest=None)
-        
+
         request: SetTaskPushNotificationRequest = {
             "jsonrpc": "2.0",
             "id": uuid4(),
@@ -337,9 +337,9 @@ async def test_push_not_supported():
                 },
             },
         }
-        
+
         response = await tm.set_task_push_notification(request)
-        
+
         # Should return PushNotificationNotSupportedError (-32005)
         if not tm._push_supported():
             assert_jsonrpc_error(response, -32005)

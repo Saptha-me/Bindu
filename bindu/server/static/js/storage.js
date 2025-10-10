@@ -116,7 +116,7 @@ async function loadContexts() {
 function updateStats() {
     const totalContexts = contexts.length;
     const totalTasks = tasks.length;
-    
+
     // Single pass through tasks array for better performance
     const stats = tasks.reduce((acc, task) => {
         const state = task.status?.state;
@@ -126,7 +126,7 @@ function updateStats() {
         else if (state === 'canceled') acc.canceled++;
         return acc;
     }, { active: 0, completed: 0, failed: 0, canceled: 0 });
-    
+
     const storageStats = getElement('storage-stats');
     if (storageStats) {
         storageStats.innerHTML = `
@@ -153,12 +153,12 @@ function updateStats() {
 function renderList(elementId, items, renderFn, emptyMessage, emptyIcon) {
     const element = getElement(elementId);
     if (!element) return;
-    
+
     if (items.length === 0) {
         element.innerHTML = utils.createEmptyState(emptyMessage, emptyIcon, 'w-16 h-16');
         return;
     }
-    
+
     element.innerHTML = items.map(renderFn).join('');
 }
 
@@ -218,17 +218,17 @@ function switchView(view) {
     const tasksBtn = getElement('tasks-view-btn');
 
     const isContextsView = view === 'contexts';
-    
+
     // Toggle container visibility
     contextsContainer.classList.toggle('hidden', !isContextsView);
     tasksContainer.classList.toggle('hidden', isContextsView);
-    
+
     // Toggle button states
     toggleButtonState(
         isContextsView ? contextsBtn : tasksBtn,
         isContextsView ? tasksBtn : contextsBtn
     );
-    
+
     // Display appropriate content
     isContextsView ? displayContexts() : displayTasks();
 }
@@ -241,19 +241,19 @@ function switchView(view) {
 function toggleContext(contextId) {
     const tasksDiv = document.getElementById(`context-tasks-${contextId}`);
     const toggleSpan = document.getElementById(`toggle-${contextId}`);
-    
+
     if (tasksDiv.classList.contains('hidden')) {
         // Load and display tasks for this context
         const contextTasks = tasks.filter(t => t.context_id === contextId);
         if (contextTasks.length > 0) {
             // Use centralized task card component with compact mode
-            tasksDiv.innerHTML = contextTasks.map(task => 
+            tasksDiv.innerHTML = contextTasks.map(task =>
                 `<div class="border-b border-gray-100 last:border-b-0">${utils.createTaskCard(task, true, CONFIG.TRUNCATE_LENGTH)}</div>`
             ).join('');
         } else {
             tasksDiv.innerHTML = '<div class="p-4 text-center text-gray-500">No tasks in this context</div>';
         }
-        
+
         tasksDiv.classList.remove('hidden');
         toggleSpan.textContent = 'Hide Tasks';
     } else {
@@ -287,7 +287,7 @@ async function clearStorage() {
         } else {
             displayTasks();
         }
-        
+
         utils.showToast('All tasks and contexts cleared successfully', 'success');
     } catch (error) {
         console.error('Error clearing storage:', error);
@@ -324,14 +324,14 @@ async function clearContextById(contextId) {
 function viewTask(taskId) {
     const task = tasks.find(t => t.task_id === taskId);
     if (!task) return;
-    
+
     const details = [
         `ID: ${task.task_id}`,
         `Status: ${task.status?.state || 'unknown'}`,
         `Context: ${task.context_id}`,
         `History: ${task.history?.length || 0} messages`
     ].join('\n');
-    
+
     alert(`Task Details:\n\n${details}`);
 }
 
@@ -360,7 +360,7 @@ function initializeIcons() {
             element.innerHTML = utils.createIcon(icon, size);
         }
     });
-    
+
     // Initialize header icons
     ICON_CONFIG.headers.forEach(({ id, icon, size }) => {
         const element = getElement(id);
@@ -378,11 +378,11 @@ function initializeIcons() {
 function handleGlobalClick(e) {
     const target = e.target.closest('[data-action]');
     if (!target) return;
-    
+
     const action = target.dataset.action;
     const taskId = target.dataset.taskId;
     const contextId = target.dataset.contextId;
-    
+
     switch(action) {
         case 'view-task':
             if (taskId) viewTask(taskId);
@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         switchView('contexts');
     }, CONFIG.REFRESH_DELAY);
-    
+
     // Event delegation for better performance
     document.addEventListener('click', handleGlobalClick);
 });

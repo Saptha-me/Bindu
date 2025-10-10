@@ -53,11 +53,11 @@ function getElement(id) {
 async function loadAndDisplayAgent() {
     try {
         agentCard = await api.loadAgentCard();
-        
+
         if (!agentCard) {
             throw new Error('Agent card data is empty');
         }
-        
+
         // Execute all display functions with individual error handling
         const displayFunctions = [
             { fn: displayAgentCard, name: 'Agent Card' },
@@ -67,7 +67,7 @@ async function loadAndDisplayAgent() {
             { fn: displayIdentityTrust, name: 'Identity & Trust' },
             { fn: displayExtensions, name: 'Extensions' }
         ];
-        
+
         displayFunctions.forEach(({ fn, name }) => {
             try {
                 fn();
@@ -113,7 +113,7 @@ function createSettingsSection() {
     const debugValue = agentCard.debugMode ? `Level ${agentCard.debugLevel}` : 'Disabled';
     const monitoringValue = agentCard.monitoring ? 'Enabled' : 'Disabled';
     const telemetryValue = agentCard.telemetry ? 'Enabled' : 'Disabled';
-    
+
     return `
         <div class="space-y-3">
             ${utils.createSettingRow('Debug', debugValue)}
@@ -144,20 +144,20 @@ function displayTechnicalDetails() {
  */
 function displayCapabilities() {
     const capabilities = agentCard.capabilities;
-    
+
     if (!capabilities || Object.keys(capabilities).length === 0) {
         getElement(ELEMENT_IDS.CAPABILITIES_SECTION).style.display = 'none';
         return;
     }
 
     getElement(ELEMENT_IDS.CAPABILITIES_SECTION).style.display = 'block';
-    
+
     const capabilitiesHtml = [
         utils.createSettingRow('Streaming', utils.yesNo(capabilities.streaming), capabilities.streaming),
         utils.createSettingRow('Push Notifications', utils.yesNo(capabilities.pushNotifications), capabilities.pushNotifications),
         utils.createSettingRow('State History', utils.yesNo(capabilities.stateTransitionHistory), capabilities.stateTransitionHistory)
     ].join('');
-    
+
     getElement(ELEMENT_IDS.CAPABILITIES_LIST).innerHTML = capabilitiesHtml;
 }
 
@@ -167,7 +167,7 @@ function displayCapabilities() {
 function displaySkills() {
     const skills = agentCard.skills;
     const skillsElement = getElement(ELEMENT_IDS.SKILLS_LIST);
-    
+
     if (!skills || skills.length === 0) {
         skillsElement.innerHTML = utils.createEmptyState('No skills defined', 'puzzle-piece', 'w-8 h-8');
         return;
@@ -182,7 +182,7 @@ function displaySkills() {
 function displayIdentityTrust() {
     const identityTrustElement = getElement(ELEMENT_IDS.IDENTITY_TRUST_LIST);
     const identity = agentCard.identity;
-    
+
     if (!identity) {
         identityTrustElement.innerHTML = utils.createEmptyState('No identity information available', 'shield-check', 'w-8 h-8');
         return;
@@ -203,7 +203,7 @@ function createIdentitySection(identity) {
     const publicKeyContent = createPublicKeyContent(publicKeyPem);
     const csrContent = createCsrContent(identity.csr);
     const trustBadge = createTrustBadge(agentTrust);
-    
+
     return `
         <div class="space-y-3">
             ${utils.createDropdown('public-key-dropdown', 'Public Key', !!publicKeyPem, publicKeyContent)}
@@ -232,7 +232,7 @@ function createPublicKeyContent(publicKeyPem) {
     if (!publicKeyPem) {
         return '<div class="text-sm text-gray-500">No public key available</div>';
     }
-    
+
     return `
         <div class="space-y-2">
             <div class="text-xs text-gray-500 font-medium">Full Public Key:</div>
@@ -254,7 +254,7 @@ function createCsrContent(csr) {
     if (!csr) {
         return '<div class="text-sm text-gray-500">No CSR path available</div>';
     }
-    
+
     return `
         <div class="space-y-2">
             <div class="text-xs text-gray-500 font-medium">Certificate Signing Request Path:</div>
@@ -276,7 +276,7 @@ function createTrustBadge(agentTrust) {
     const trustBadgeType = utils.getTrustBadgeType(agentTrust);
     const trustBadgeClass = utils.getBadgeClass(trustBadgeType);
     const trustLabel = utils.getTrustLabel(agentTrust);
-    
+
     return `
         <div class="p-3 border border-gray-200 rounded-lg">
             <div class="text-sm font-medium text-gray-500 mb-1">Trust Level</div>
@@ -297,7 +297,7 @@ function createTrustBadge(agentTrust) {
  */
 function createDidDocumentInfo(identity) {
     const methodCount = identity.didDocument?.verificationMethod?.length || 0;
-    
+
     return `
         <div class="p-3 border border-gray-200 rounded-lg">
             <div class="text-sm font-medium text-gray-500 mb-1">DID Document</div>
@@ -324,7 +324,7 @@ function initializeSectionIcons() {
         { id: 'identity-header', icon: 'shield-check' },
         { id: 'extensions-header', icon: 'puzzle-piece' }
     ];
-    
+
     sections.forEach(({ id, icon }) => {
         const header = document.getElementById(id);
         if (header) {

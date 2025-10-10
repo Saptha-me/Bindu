@@ -85,7 +85,7 @@ async function sendMessage() {
     try {
         const messageId = api.generateId();
         const taskId = api.generateId();
-        
+
         // Initialize context if needed
         if (!chatState.contextId) {
             chatState.contextId = api.generateId();
@@ -110,7 +110,7 @@ async function sendMessage() {
             addMessage(agentResponse, SENDER.AGENT, chatState.currentTaskId);
             chatState.currentTaskId = null;
         }
-        
+
         // Start polling if task is still active
         if (chatState.currentTaskId) {
             addProcessingMessage();
@@ -131,7 +131,7 @@ async function sendMessage() {
  */
 function startTaskPolling() {
     if (!chatState.currentTaskId) return;
-    
+
     // Cancel any existing polling
     if (chatState.pollingController) {
         chatState.pollingController.cancel();
@@ -154,7 +154,7 @@ function handleTaskUpdate(task, isTerminal) {
     removeProcessingMessage();
 
     const state = task.status.state;
-    
+
     if (state === TASK_STATE.COMPLETED) {
         // Extract and display agent response
         const responseText = utils.extractTaskResponse(task);
@@ -163,17 +163,17 @@ function handleTaskUpdate(task, isTerminal) {
         }
         chatState.currentTaskId = null;
         chatState.pollingController = null;
-        
+
     } else if (state === TASK_STATE.FAILED) {
         addMessage('Task failed: ' + (task.status.error || 'Unknown error'), SENDER.STATUS);
         chatState.currentTaskId = null;
         chatState.pollingController = null;
-        
+
     } else if (state === TASK_STATE.CANCELED) {
         addMessage('Task was canceled', SENDER.STATUS);
         chatState.currentTaskId = null;
         chatState.pollingController = null;
-        
+
     } else {
         // Still processing, show indicator
         addProcessingMessage();
@@ -205,7 +205,7 @@ function handleTaskError(error) {
 function addMessage(content, sender, taskId = null) {
     const messagesDiv = domCache.get('messages');
     const messageDiv = document.createElement('div');
-    
+
     if (sender === SENDER.USER) {
         messageDiv.className = 'flex justify-end';
         messageDiv.innerHTML = `
@@ -254,7 +254,7 @@ function addMessage(content, sender, taskId = null) {
  */
 function addProcessingMessage() {
     removeProcessingMessage();
-    
+
     const messagesDiv = domCache.get('messages');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'flex justify-start';
@@ -266,7 +266,7 @@ function addProcessingMessage() {
           </div>
         </div>
       `;
-    
+
     messagesDiv.appendChild(messageDiv);
     utils.scrollToBottom(messagesDiv);
 }
@@ -385,7 +385,7 @@ function toggleSidebar() {
     const sidebar = domCache.get('sidebar');
     const toggleIcon = domCache.get('toggle-icon');
     const isCollapsed = sidebar.classList.contains('collapsed');
-    
+
     if (isCollapsed) {
         sidebar.classList.remove('collapsed');
         sidebar.style.width = '320px';
@@ -420,26 +420,26 @@ function initializeIcons() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize context ID using API's ID generator for consistency
     chatState.contextId = api.generateId();
-    
+
     // Initialize UI
     initializeIcons();
     renderContexts();
-    
+
     // Set up event listeners
     domCache.get('send-btn').addEventListener('click', sendMessage);
     domCache.get('message-input').addEventListener('keypress', handleKeyPress);
     domCache.get('clear-chat').addEventListener('click', clearChat);
     domCache.get('new-context').addEventListener('click', newContext);
     domCache.get('toggle-sidebar').addEventListener('click', toggleSidebar);
-    
+
     // Event delegation for message action buttons
     domCache.get('messages').addEventListener('click', function(event) {
         const target = event.target.closest('button');
         if (!target) return;
-        
+
         const messageId = target.getAttribute('data-message-id');
         if (!messageId) return;
-        
+
         if (target.classList.contains('copy-btn')) {
             copyMessage(messageId);
         } else if (target.classList.contains('like-btn')) {

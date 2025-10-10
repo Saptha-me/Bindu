@@ -18,10 +18,10 @@ from typing import NamedTuple
 
 class KeyPaths(NamedTuple):
     """Cryptographic key file paths for agent identity.
-    
+
     These paths point to the agent's digital fingerprint - the keys that prove
     who they are in the decentralized constellation.
     """
-    
+
     private_key_path: str
     public_key_path: str

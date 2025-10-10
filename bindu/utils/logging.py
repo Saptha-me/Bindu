@@ -64,7 +64,7 @@ def configure_logger(
 
     logger.remove()
     console = _get_console()
-    
+
     # Use settings default if log_level not provided
     level = log_level or app_settings.logging.default_level
 
@@ -73,7 +73,7 @@ def configure_logger(
         log_dir = Path(app_settings.logging.log_dir)
         log_file = log_dir / app_settings.logging.log_filename
         log_dir.mkdir(exist_ok=True)
-        
+
         logger.add(
             log_file,
             rotation=app_settings.logging.log_rotation,

@@ -232,9 +232,9 @@ Task2 → HypothesisAgent: "Generate therapeutic hypotheses from literature revi
   referenceTaskIds: [Task1]
   State: working
   State: input-required → "Should we focus on small molecules or biologics?"
-  
+
 Sapthami provides: "Small molecules"
-  
+
   State: completed
   Artifact: hypotheses.json (10 candidate mechanisms identified)
 ```
@@ -246,9 +246,9 @@ Task3 → ExperimentAgent: "Design screening assay for candidate molecules"
   referenceTaskIds: [Task2]
   State: working
   State: input-required → "What cell line should we use?"
-  
+
 Sapthami provides: "Primary RPE cells"
-  
+
   State: completed
   Artifact: experimental-protocol.pdf
 

@@ -194,7 +194,7 @@ def _setup_tracer_provider(
     batch_max_export_batch_size: int = 512,
     batch_export_timeout_millis: int = 30000,
 ) -> Any:
-    """Setup and configure OpenTelemetry tracer provider.
+    """Set up and configure OpenTelemetry tracer provider.
 
     Args:
         oltp_endpoint: OTLP endpoint URL
@@ -279,7 +279,7 @@ def setup(
     batch_max_export_batch_size: int = 512,
     batch_export_timeout_millis: int = 30000,
 ) -> None:
-    """Setup OpenInference instrumentation for AI observability.
+    """Set up OpenInference instrumentation for AI observability.
 
     This function:
     1. Sets up OpenTelemetry tracer provider (always)

@@ -20,14 +20,14 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def extract_error_fields(err_alias: Any) -> Tuple[int, str]:
-    """
+def extract_error_fields(err_alias: Type[Any]) -> Tuple[int, str]:
+    """Extract error code and message from JSONRPCError type alias.
+
     Given a JSONRPCError[Literal[code], Literal[message]] typing alias,
     return (code, message) as runtime values.
     """
     code_lit, msg_lit = get_args(err_alias)
     (code,) = get_args(code_lit)
-    (message,) = get_args(msg_lit)
     return int(code), str(message)
 
 

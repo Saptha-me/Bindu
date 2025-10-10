@@ -36,8 +36,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def trace_task_operation(operation_name: str, include_params: bool = True):
-    """
-    Decorator to trace TaskManager operations with comprehensive telemetry.
+    """Trace TaskManager operations with comprehensive telemetry.
 
     Args:
         operation_name: Name of the operation for span naming
@@ -153,7 +152,7 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
 
 
 def track_active_task(func: F) -> F:
-    """Decorator to track active task count for operations that create/destroy tasks."""
+    """Track active task count for operations that create/destroy tasks."""
 
     @functools.wraps(func)
     async def wrapper(self, request, *args, **kwargs):
@@ -182,7 +181,7 @@ def track_active_task(func: F) -> F:
 
 
 def trace_context_operation(operation_name: str):
-    """Decorator specifically for context management operations."""
+    """Trace context management operations."""
 
     def decorator(func: F) -> F:
         @functools.wraps(func)

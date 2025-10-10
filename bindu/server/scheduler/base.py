@@ -1,4 +1,4 @@
-"""base scheduler module"""
+"""Base scheduler module."""
 
 from __future__ import annotations as _annotations
 
@@ -43,10 +43,14 @@ class Scheduler(ABC):
         raise NotImplementedError("send_resume_task is not implemented yet.")
 
     @abstractmethod
-    async def __aenter__(self) -> Self: ...
+    async def __aenter__(self) -> Self:
+        """Enter async context manager."""
+        ...
 
     @abstractmethod
-    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any): ...
+    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any):
+        """Exit async context manager."""
+        ...
 
     @abstractmethod
     def receive_task_operations(self) -> AsyncIterator[TaskOperation]:

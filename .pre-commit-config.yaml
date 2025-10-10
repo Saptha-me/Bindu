@@ -15,14 +15,15 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
-    hooks:
-      - id: mypy
-        additional_dependencies: ["types-requests"]
-
   - repo: local
     hooks:
+      - id: ty
+        name: ty type checker
+        entry: ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+
       - id: pytest
         name: pytest
         entry: pytest
@@ -40,7 +41,7 @@ repos:
     rev: '1.8.3'
     hooks:
       - id: bandit
-        args: ["-c", "bandit.yaml", "-r", "pebbling"]
+        args: ["-c", "bandit.yaml", "-r", "bindu"]
 
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0

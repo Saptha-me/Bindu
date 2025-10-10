@@ -105,7 +105,12 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
                             if "task_id" in result_data:
                                 span.set_attribute("bindu.result_task_id", str(result_data["task_id"]))
                             if "status" in result_data:
-                                span.set_attribute("bindu.task_status", result_data["status"])
+                                # Extract state from status dict (status is a dict with 'state' and 'timestamp')
+                                status = result_data["status"]
+                                if isinstance(status, dict) and "state" in status:
+                                    span.set_attribute("bindu.task_status", status["state"])
+                                elif isinstance(status, str):
+                                    span.set_attribute("bindu.task_status", status)
 
                     logger.info(
                         f"TaskManager.{operation_name} completed successfully",

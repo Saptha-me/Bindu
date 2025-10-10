@@ -232,10 +232,19 @@ class BinduApplication(Starlette):
         scheduler: InMemoryScheduler,
         manifest: AgentManifest,
     ) -> Lifespan:
-        """Create default lifespan that manages TaskManager lifecycle."""
+        """Create default lifespan that manages TaskManager lifecycle and observability."""
 
         @asynccontextmanager
         async def lifespan(app: Starlette) -> AsyncIterator[None]:
+            # Initialize OpenTelemetry observability
+            from bindu.observability import setup as setup_observability
+            from bindu.utils.logging import get_logger
+            
+            logger = get_logger("bindu.server.applications")
+            logger.info("Initializing observability...")
+            setup_observability()
+            
+            # Start TaskManager
             task_manager = TaskManager(scheduler=scheduler, storage=storage, manifest=manifest)
             async with task_manager:
                 app.task_manager = task_manager

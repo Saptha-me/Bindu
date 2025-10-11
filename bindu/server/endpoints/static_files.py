@@ -27,15 +27,17 @@ def _serve_static_file(file_path: Path, media_type: str, request: Request) -> Re
     """
     try:
         if not file_path.exists():
+            client_host = request.client.host if request.client else "unknown"
             logger.warning(
-                f"Static file not found: {file_path} (requested by {request.client.host})"
+                f"Static file not found: {file_path} (requested by {client_host})"
             )
             code, message = extract_error_fields(TaskNotFoundError)
             return jsonrpc_error(
                 code, message, f"File not found: {file_path.name}", status=404
             )
 
-        logger.debug(f"Serving static file: {file_path.name} to {request.client.host}")
+        client_host = request.client.host if request.client else "unknown"
+        logger.debug(f"Serving static file: {file_path.name} to {client_host}")
         return FileResponse(file_path, media_type=media_type)
 
     except Exception as e:
@@ -56,6 +58,8 @@ def _create_static_endpoint(relative_path: str, media_type: str) -> Callable:
     """
 
     async def endpoint(request: Request, static_dir: Optional[Path] = None) -> Response:
+        if static_dir is None:
+            raise ValueError("static_dir must be provided")
         file_path = static_dir / relative_path
         return _serve_static_file(file_path, media_type, request)
 

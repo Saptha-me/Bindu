@@ -241,10 +241,10 @@ class TaskManager:
         config = self._push_notification_configs.get(task_id)
         if config is None:
             raise KeyError("No push notification configuration for task")
-        return {
-            "id": task_id,
-            "push_notification_config": self._sanitize_push_config(config),
-        }
+        return TaskPushNotificationConfig(
+            id=task_id,
+            push_notification_config=self._sanitize_push_config(config),
+        )
 
     def _next_sequence(self, task_id: uuid.UUID) -> int:
         current = self._notification_sequences.get(task_id, 0) + 1
@@ -320,11 +320,11 @@ class TaskManager:
 
         task: Task = await self.storage.submit_task(context_id, message)
 
-        scheduler_params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": context_id,
-            "message": message,
-        }
+        scheduler_params: TaskSendParams = TaskSendParams(
+            task_id=task["id"],
+            context_id=context_id,
+            message=message,
+        )
 
         # Add optional configuration parameters
         config = request["params"].get("configuration", {})

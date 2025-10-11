@@ -53,14 +53,14 @@ def _update_capabilities_with_did(
         caps_dict = {}
     elif isinstance(capabilities, dict):
         caps_dict = capabilities.copy()
-    
+
     # Update extensions list
     extensions = caps_dict.get("extensions", [])
     if extensions:
         caps_dict["extensions"] = [*extensions, did_extension_obj]
     else:
         caps_dict["extensions"] = [did_extension_obj]
-    
+
     return AgentCapabilities(**caps_dict)
 
 
@@ -109,23 +109,27 @@ def _create_scheduler_instance(scheduler_config: SchedulerConfig | None):
     return InMemoryScheduler()
 
 
-def _create_deployment_config(validated_config: Dict[str, Any]) -> DeploymentConfig | None:
+def _create_deployment_config(
+    validated_config: Dict[str, Any],
+) -> DeploymentConfig | None:
     """Create deployment config from validated config dict.
-    
+
     Args:
         validated_config: Validated configuration dictionary
-        
+
     Returns:
         DeploymentConfig instance or None if invalid/missing
     """
     deploy_dict = validated_config.get("deployment")
     if not deploy_dict:
         return None
-    
+
     if "url" not in deploy_dict or "expose" not in deploy_dict:
-        logger.warning("Deployment config missing required fields (url, expose), using defaults")
+        logger.warning(
+            "Deployment config missing required fields (url, expose), using defaults"
+        )
         return None
-    
+
     return DeploymentConfig(
         url=deploy_dict["url"],
         expose=deploy_dict["expose"],
@@ -138,44 +142,46 @@ def _create_deployment_config(validated_config: Dict[str, Any]) -> DeploymentCon
 
 def _create_storage_config(validated_config: Dict[str, Any]) -> StorageConfig | None:
     """Create storage config from validated config dict.
-    
+
     Args:
         validated_config: Validated configuration dictionary
-        
+
     Returns:
         StorageConfig instance or None if invalid/missing
     """
     storage_dict = validated_config.get("storage")
     if not storage_dict:
         return None
-    
+
     if "type" not in storage_dict:
         logger.warning("Storage config missing required field 'type', using defaults")
         return None
-    
+
     return StorageConfig(
         type=storage_dict["type"],
         connection_string=storage_dict.get("connection_string"),
     )
 
 
-def _create_scheduler_config(validated_config: Dict[str, Any]) -> SchedulerConfig | None:
+def _create_scheduler_config(
+    validated_config: Dict[str, Any],
+) -> SchedulerConfig | None:
     """Create scheduler config from validated config dict.
-    
+
     Args:
         validated_config: Validated configuration dictionary
-        
+
     Returns:
         SchedulerConfig instance or None if invalid/missing
     """
     scheduler_dict = validated_config.get("scheduler")
     if not scheduler_dict:
         return None
-    
+
     if "type" not in scheduler_dict:
         logger.warning("Scheduler config missing required field 'type', using defaults")
         return None
-    
+
     return SchedulerConfig(type=scheduler_dict["type"])
 
 

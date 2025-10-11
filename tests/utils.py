@@ -1,7 +1,7 @@
 """Test utilities for creating test data and assertions."""
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from uuid import UUID, uuid4
 
 from bindu.common.protocol.types import (
@@ -25,19 +25,25 @@ def create_test_message(
     metadata: Optional[Dict[str, Any]] = None,
 ) -> Message:
     """Create a test Message object with sensible defaults."""
-    text_part: TextPart = {
-        "kind": "text",
-        "text": text,
-    }
+    text_part = cast(
+        TextPart,
+        {
+            "kind": "text",
+            "text": text,
+        },
+    )
 
-    message: Message = {
-        "message_id": message_id or uuid4(),
-        "context_id": context_id or uuid4(),
-        "task_id": task_id or uuid4(),
-        "kind": "message",
-        "parts": [text_part],
-        "role": role,  # type: ignore
-    }
+    message = cast(
+        Message,
+        {
+            "message_id": message_id or uuid4(),
+            "context_id": context_id or uuid4(),
+            "task_id": task_id or uuid4(),
+            "kind": "message",
+            "parts": [text_part],
+            "role": role,
+        },
+    )
 
     if reference_task_ids:
         message["reference_task_ids"] = reference_task_ids
@@ -61,20 +67,26 @@ def create_test_task(
     tid = task_id or uuid4()
     cid = context_id or uuid4()
 
-    status: TaskStatus = {
-        "state": state,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
+    status = cast(
+        TaskStatus,
+        {
+            "state": state,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
+    )
 
     if message:
         status["message"] = message
 
-    task: Task = {
-        "id": tid,
-        "context_id": cid,
-        "kind": "task",
-        "status": status,
-    }
+    task = cast(
+        Task,
+        {
+            "id": tid,
+            "context_id": cid,
+            "kind": "task",
+            "status": status,
+        },
+    )
 
     if artifacts:
         task["artifacts"] = artifacts
@@ -95,16 +107,22 @@ def create_test_artifact(
     metadata: Optional[Dict[str, Any]] = None,
 ) -> Artifact:
     """Create a test Artifact object."""
-    text_part: TextPart = {
-        "kind": "text",
-        "text": text,
-    }
+    text_part = cast(
+        TextPart,
+        {
+            "kind": "text",
+            "text": text,
+        },
+    )
 
-    artifact: Artifact = {
-        "artifact_id": artifact_id or uuid4(),
-        "name": name,
-        "parts": [text_part],
-    }
+    artifact = cast(
+        Artifact,
+        {
+            "artifact_id": artifact_id or uuid4(),
+            "name": name,
+            "parts": [text_part],
+        },
+    )
 
     if metadata:
         artifact["metadata"] = metadata
@@ -123,13 +141,16 @@ def create_test_context(
     """Create a test Context object."""
     now = datetime.now(timezone.utc).isoformat()
 
-    context: Context = {
-        "context_id": context_id or uuid4(),
-        "kind": "context",
-        "role": role,
-        "created_at": now,
-        "updated_at": now,
-    }
+    context = cast(
+        Context,
+        {
+            "context_id": context_id or uuid4(),
+            "kind": "context",
+            "role": role,
+            "created_at": now,
+            "updated_at": now,
+        },
+    )
 
     if tasks:
         context["tasks"] = tasks

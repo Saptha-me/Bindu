@@ -32,15 +32,6 @@ repos:
         always_run: true
         verbose: true
 
-  - repo: local
-    hooks:
-      - id: init-secrets-baseline
-        name: Initialize secrets baseline if missing
-        entry: bash -c 'test -f .secrets.baseline || detect-secrets scan > .secrets.baseline'
-        language: system
-        pass_filenames: false
-        always_run: true
-
   # - repo: https://github.com/PyCQA/bandit
   #   rev: '1.8.3'
   #   hooks:
@@ -52,26 +43,35 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+        name: Check for secrets using baseline
         args: ['--baseline', '.secrets.baseline']
-        exclude: package.lock.json
+        exclude: 'package.lock.json'
 
   - repo: local
     hooks:
-      - id: audit-secrets-baseline
-        name: Audit secrets baseline (manual)
-        entry: detect-secrets audit .secrets.baseline
+      - id: init-secrets-baseline
+        name: Initialize secrets baseline (manual)
+        entry: bash -c 'detect-secrets scan > .secrets.baseline && detect-secrets audit .secrets.baseline'
         language: system
         pass_filenames: false
         stages: [manual]
+
       - id: verify-secrets-audited
-        name: Verify all secrets have been audited
-        entry: bash -c 'detect-secrets audit --report .secrets.baseline | grep -q "results.*{}" || (echo "ERROR - Unaudited secrets found. Run - pre-commit run audit-secrets-baseline --hook-stage manual" && exit 1)'
+        name: Verify audited secrets before push
+        entry: >
+          bash -c 'python3 -c "import json, sys;
+          data=json.load(open(\".secrets.baseline\"));
+          unaudited=[k for k,v in data[\"results\"].items()
+          if any(i.get(\"is_secret\") is None for i in v.values())];
+          sys.exit(1 if unaudited else 0)" ||
+          (echo "ERROR: unaudited secrets. Run: pre-commit run init-secrets-baseline --hook-stage manual" && exit 1)'
         language: system
         pass_filenames: false
-        stages: [push]
+        stages: [pre-push]
+
       - id: update-secrets-baseline
         name: Update secrets baseline (manual)
-        entry: detect-secrets scan --baseline .secrets.baseline
+        entry: bash -c 'detect-secrets scan --update .secrets.baseline && detect-secrets audit .secrets.baseline'
         language: system
         pass_filenames: false
         stages: [manual]

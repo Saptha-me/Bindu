@@ -1,9 +1,11 @@
 """Unit tests for ManifestWorker and hybrid agent pattern."""
 
+from typing import cast
 from uuid import uuid4
 
 import pytest
 
+from bindu.common.models import AgentManifest
 from bindu.common.protocol.types import TaskSendParams
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 from bindu.server.storage.memory_storage import InMemoryStorage
@@ -29,7 +31,7 @@ class TestNormalCompletionFlow:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         # Create task via submit_task
@@ -37,11 +39,14 @@ class TestNormalCompletionFlow:
         task = await storage.submit_task(message["context_id"], message)
 
         # Run task
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -66,17 +71,20 @@ class TestNormalCompletionFlow:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         message = create_test_message(text="Test")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -107,17 +115,20 @@ class TestInputRequiredFlow:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         message = create_test_message(text="Help me")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -140,17 +151,20 @@ class TestInputRequiredFlow:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         message = create_test_message(text="Test")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -177,17 +191,20 @@ class TestInputRequiredFlow:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         message = create_test_message(text="Test")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -220,17 +237,20 @@ class TestAuthRequiredFlow:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         message = create_test_message(text="Access API")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -251,17 +271,20 @@ class TestAuthRequiredFlow:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         message = create_test_message(text="Test")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -290,7 +313,7 @@ class TestConversationHistory:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         # Create task with history via submit_task
@@ -304,11 +327,14 @@ class TestConversationHistory:
         task = await storage.submit_task(task["context_id"], msg2)
 
         new_message = create_test_message(text="Third message")
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": new_message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": new_message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -328,7 +354,7 @@ class TestConversationHistory:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         # Create previous task
@@ -345,11 +371,14 @@ class TestConversationHistory:
         )
         new_task = await storage.submit_task(prev_task["context_id"], new_message)
 
-        params: TaskSendParams = {
-            "task_id": new_task["id"],
-            "context_id": new_task["context_id"],
-            "message": new_message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": new_task["id"],
+                "context_id": new_task["context_id"],
+                "message": new_message,
+            },
+        )
 
         await worker.run_task(params)
 
@@ -378,17 +407,20 @@ class TestErrorHandling:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
         )
 
         message = create_test_message(text="Test")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         # Should raise exception but also mark task as failed
         with pytest.raises(ValueError, match="Something went wrong"):
@@ -408,13 +440,16 @@ class TestErrorHandling:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=mock_manifest,
+            manifest=cast(AgentManifest, mock_manifest),
         )
 
-        params: TaskSendParams = {
-            "task_id": uuid4(),  # Non-existent
-            "context_id": uuid4(),
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": uuid4(),  # Non-existent
+                "context_id": uuid4(),
+            },
+        )
 
         # Should raise ValueError
         with pytest.raises(ValueError, match="not found"):
@@ -449,18 +484,21 @@ class TestLifecycleNotifications:
         worker = ManifestWorker(
             scheduler=scheduler,
             storage=storage,
-            manifest=manifest,
+            manifest=cast(AgentManifest, manifest),
             lifecycle_notifier=notifier,
         )
 
         message = create_test_message(text="Test")
         task = await storage.submit_task(message["context_id"], message)
 
-        params: TaskSendParams = {
-            "task_id": task["id"],
-            "context_id": task["context_id"],
-            "message": message,
-        }
+        params = cast(
+            TaskSendParams,
+            {
+                "task_id": task["id"],
+                "context_id": task["context_id"],
+                "message": message,
+            },
+        )
 
         await worker.run_task(params)
 

@@ -1,12 +1,13 @@
 """Pytest configuration and fixtures for Bindu tests."""
 
 import asyncio
-from typing import AsyncGenerator
+from typing import AsyncGenerator, cast
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 
+from bindu.common.models import AgentManifest
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 
 # Import directly from submodules to avoid circular imports
@@ -123,9 +124,9 @@ async def task_manager_with_push(
     tm = TaskManager(
         scheduler=scheduler,
         storage=storage,
-        manifest=mock_manifest_with_push,
+        manifest=cast(AgentManifest, mock_manifest_with_push),
     )
-    tm.notification_service = mock_notification_service
+    tm.notification_service = cast(MockNotificationService, mock_notification_service)  # type: ignore[assignment]
     await tm.__aenter__()
     yield tm
     await tm.__aexit__(None, None, None)
@@ -142,7 +143,7 @@ async def bindu_app(
     from bindu.server.applications import BinduApplication
 
     app = BinduApplication(
-        manifest=mock_manifest,
+        manifest=cast(AgentManifest, mock_manifest),
         storage=storage,
         scheduler=scheduler,
         url="http://localhost:8030",

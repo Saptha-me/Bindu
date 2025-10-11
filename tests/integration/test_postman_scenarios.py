@@ -1,9 +1,11 @@
 """Integration tests replicating Postman collection scenarios - Simplified version."""
 
+from typing import cast
 from uuid import uuid4
 
 from starlette.testclient import TestClient
 
+from bindu.common.models import AgentManifest
 from bindu.server.applications import BinduApplication
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 
@@ -22,7 +24,7 @@ def create_test_app(agent_response="Test response", did_extension=None):
     scheduler = InMemoryScheduler()
 
     return BinduApplication(
-        manifest=manifest,
+        manifest=cast(AgentManifest, manifest),
         storage=storage,
         scheduler=scheduler,
         url="http://localhost:8030",

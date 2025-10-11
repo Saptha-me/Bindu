@@ -1,5 +1,6 @@
 """Unit tests for A2A protocol type definitions and validation."""
 
+from typing import cast
 from uuid import uuid4
 
 from bindu.common.protocol.types import (
@@ -36,17 +37,20 @@ class TestMessageValidation:
 
     def test_message_with_multiple_parts(self):
         """Test message with multiple parts."""
-        text_part: TextPart = {"kind": "text", "text": "Hello"}
-        data_part: DataPart = {"kind": "data", "data": {"key": "value"}}
+        text_part = cast(TextPart, {"kind": "text", "text": "Hello"})
+        data_part = cast(DataPart, {"kind": "data", "data": {"key": "value"}})
 
-        message: Message = {
-            "message_id": uuid4(),
-            "context_id": uuid4(),
-            "task_id": uuid4(),
-            "kind": "message",
-            "parts": [text_part, data_part],
-            "role": "user",
-        }
+        message = cast(
+            Message,
+            {
+                "message_id": uuid4(),
+                "context_id": uuid4(),
+                "task_id": uuid4(),
+                "kind": "message",
+                "parts": [text_part, data_part],
+                "role": "user",
+            },
+        )
 
         assert len(message["parts"]) == 2
         assert message["parts"][0]["kind"] == "text"
@@ -137,36 +141,45 @@ class TestArtifactValidation:
 
     def test_artifact_with_multiple_parts(self):
         """Test artifact with multiple parts."""
-        text_part: TextPart = {"kind": "text", "text": "Content"}
-        data_part: DataPart = {"kind": "data", "data": {"result": 42}}
+        text_part = cast(TextPart, {"kind": "text", "text": "Content"})
+        data_part = cast(DataPart, {"kind": "data", "data": {"result": 42}})
 
-        artifact: Artifact = {
-            "artifact_id": uuid4(),
-            "name": "multi_part",
-            "parts": [text_part, data_part],
-        }
+        artifact = cast(
+            Artifact,
+            {
+                "artifact_id": uuid4(),
+                "name": "multi_part",
+                "parts": [text_part, data_part],
+            },
+        )
 
         assert len(artifact["parts"]) == 2
 
     def test_artifact_append_flag(self):
         """Test artifact with append flag."""
-        artifact: Artifact = {
-            "artifact_id": uuid4(),
-            "name": "streaming",
-            "parts": [{"kind": "text", "text": "chunk"}],
-            "append": True,
-        }
+        artifact = cast(
+            Artifact,
+            {
+                "artifact_id": uuid4(),
+                "name": "streaming",
+                "parts": [{"kind": "text", "text": "chunk"}],
+                "append": True,
+            },
+        )
 
         assert artifact["append"] is True
 
     def test_artifact_last_chunk(self):
         """Test artifact with last_chunk flag."""
-        artifact: Artifact = {
-            "artifact_id": uuid4(),
-            "name": "streaming",
-            "parts": [{"kind": "text", "text": "final chunk"}],
-            "last_chunk": True,
-        }
+        artifact = cast(
+            Artifact,
+            {
+                "artifact_id": uuid4(),
+                "name": "streaming",
+                "parts": [{"kind": "text", "text": "final chunk"}],
+                "last_chunk": True,
+            },
+        )
 
         assert artifact["last_chunk"] is True
 
@@ -215,17 +228,20 @@ class TestJSONRPCRequests:
         """Test SendMessageRequest structure."""
         message = create_test_message()
 
-        request: SendMessageRequest = {
-            "jsonrpc": "2.0",
-            "id": uuid4(),
-            "method": "message/send",
-            "params": {
-                "message": message,
-                "configuration": {
-                    "accepted_output_modes": ["application/json"],
+        request = cast(
+            SendMessageRequest,
+            {
+                "jsonrpc": "2.0",
+                "id": uuid4(),
+                "method": "message/send",
+                "params": {
+                    "message": message,
+                    "configuration": {
+                        "accepted_output_modes": ["application/json"],
+                    },
                 },
             },
-        }
+        )
 
         assert request["method"] == "message/send"
         assert request["jsonrpc"] == "2.0"
@@ -234,14 +250,17 @@ class TestJSONRPCRequests:
         """Test GetTaskRequest structure."""
         task_id = uuid4()
 
-        request: GetTaskRequest = {
-            "jsonrpc": "2.0",
-            "id": uuid4(),
-            "method": "tasks/get",
-            "params": {
-                "task_id": task_id,
+        request = cast(
+            GetTaskRequest,
+            {
+                "jsonrpc": "2.0",
+                "id": uuid4(),
+                "method": "tasks/get",
+                "params": {
+                    "task_id": task_id,
+                },
             },
-        }
+        )
 
         assert request["method"] == "tasks/get"
         assert request["params"]["task_id"] == task_id
@@ -280,62 +299,77 @@ class TestPartTypes:
 
     def test_text_part(self):
         """Test TextPart creation."""
-        part: TextPart = {
-            "kind": "text",
-            "text": "Hello world",
-        }
+        part = cast(
+            TextPart,
+            {
+                "kind": "text",
+                "text": "Hello world",
+            },
+        )
 
         assert part["kind"] == "text"
         assert part["text"] == "Hello world"
 
     def test_text_part_with_metadata(self):
         """Test TextPart with metadata."""
-        part: TextPart = {
-            "kind": "text",
-            "text": "Content",
-            "metadata": {"language": "en"},
-        }
+        part = cast(
+            TextPart,
+            {
+                "kind": "text",
+                "text": "Content",
+                "metadata": {"language": "en"},
+            },
+        )
 
         assert "metadata" in part
         assert part["metadata"]["language"] == "en"
 
     def test_file_part_with_bytes(self):
         """Test FilePart with bytes."""
-        part: FilePart = {
-            "kind": "file",
-            "file": {
-                "bytes": "base64encodedcontent",
-                "mimeType": "text/plain",
-                "name": "test.txt",
+        part = cast(
+            FilePart,
+            {
+                "kind": "file",
+                "file": {
+                    "bytes": "base64encodedcontent",
+                    "mimeType": "text/plain",
+                    "name": "test.txt",
+                },
             },
-        }
+        )
 
         assert part["kind"] == "file"
         assert part["file"]["name"] == "test.txt"
 
     def test_file_part_with_uri(self):
         """Test FilePart with URI."""
-        part: FilePart = {
-            "kind": "file",
-            "file": {
-                "bytes": "",
-                "uri": "https://example.com/file.pdf",
-                "mimeType": "application/pdf",
+        part = cast(
+            FilePart,
+            {
+                "kind": "file",
+                "file": {
+                    "bytes": "",
+                    "uri": "https://example.com/file.pdf",
+                    "mimeType": "application/pdf",
+                },
             },
-        }
+        )
 
         assert part["file"]["uri"] == "https://example.com/file.pdf"
 
     def test_data_part(self):
         """Test DataPart with structured data."""
-        part: DataPart = {
-            "kind": "data",
-            "data": {
-                "result": 42,
-                "status": "success",
-                "items": [1, 2, 3],
+        part = cast(
+            DataPart,
+            {
+                "kind": "data",
+                "data": {
+                    "result": 42,
+                    "status": "success",
+                    "items": [1, 2, 3],
+                },
             },
-        }
+        )
 
         assert part["kind"] == "data"
         assert part["data"]["result"] == 42
@@ -356,46 +390,61 @@ class TestErrorCodes:
         )
 
         # Create instances and verify code values
-        json_parse_error: JSONParseError = {
-            "code": -32700,
-            "message": "Failed to parse JSON payload. Please ensure the request body contains valid JSON syntax. See: https://www.jsonrpc.org/specification#error_object",
-        }
+        json_parse_error = cast(
+            JSONParseError,
+            {
+                "code": -32700,
+                "message": "Failed to parse JSON payload. Please ensure the request body contains valid JSON syntax. See: https://www.jsonrpc.org/specification#error_object",
+            },
+        )
         assert json_parse_error["code"] == -32700
 
-        invalid_request_error: InvalidRequestError = {
-            "code": -32600,
-            "message": (
-                "Request payload validation failed. The request structure does not conform to "
-                "JSON-RPC 2.0 specification. See: https://www.jsonrpc.org/specification#error_object"
-            ),
-        }
+        invalid_request_error = cast(
+            InvalidRequestError,
+            {
+                "code": -32600,
+                "message": (
+                    "Request payload validation failed. The request structure does not conform to "
+                    "JSON-RPC 2.0 specification. See: https://www.jsonrpc.org/specification#error_object"
+                ),
+            },
+        )
         assert invalid_request_error["code"] == -32600
 
-        method_not_found_error: MethodNotFoundError = {
-            "code": -32601,
-            "message": (
-                "The requested method is not available on this server. Please check the method "
-                "name and try again. See API docs: /docs"
-            ),
-        }
+        method_not_found_error = cast(
+            MethodNotFoundError,
+            {
+                "code": -32601,
+                "message": (
+                    "The requested method is not available on this server. Please check the method "
+                    "name and try again. See API docs: /docs"
+                ),
+            },
+        )
         assert method_not_found_error["code"] == -32601
 
-        invalid_params_error: InvalidParamsError = {
-            "code": -32602,
-            "message": (
-                "Invalid or missing parameters for the requested method. Please verify parameter "
-                "types and required fields. See API docs: /docs"
-            ),
-        }
+        invalid_params_error = cast(
+            InvalidParamsError,
+            {
+                "code": -32602,
+                "message": (
+                    "Invalid or missing parameters for the requested method. Please verify parameter "
+                    "types and required fields. See API docs: /docs"
+                ),
+            },
+        )
         assert invalid_params_error["code"] == -32602
 
-        internal_error: InternalError = {
-            "code": -32603,
-            "message": (
-                "An internal server error occurred while processing the request. Please try again "
-                "or contact support if the issue persists. See: /health"
-            ),
-        }
+        internal_error = cast(
+            InternalError,
+            {
+                "code": -32603,
+                "message": (
+                    "An internal server error occurred while processing the request. Please try again "
+                    "or contact support if the issue persists. See: /health"
+                ),
+            },
+        )
         assert internal_error["code"] == -32603
 
     def test_a2a_error_codes(self):
@@ -407,31 +456,40 @@ class TestErrorCodes:
         )
 
         # Create instances and verify code values
-        task_not_found_error: TaskNotFoundError = {
-            "code": -32001,
-            "message": (
-                "The specified task ID was not found. The task may have been completed, canceled, "
-                "or expired. Check task status: GET /tasks/{id}"
-            ),
-        }
+        task_not_found_error = cast(
+            TaskNotFoundError,
+            {
+                "code": -32001,
+                "message": (
+                    "The specified task ID was not found. The task may have been completed, canceled, "
+                    "or expired. Check task status: GET /tasks/{id}"
+                ),
+            },
+        )
         assert task_not_found_error["code"] == -32001
 
-        task_not_cancelable_error: TaskNotCancelableError = {
-            "code": -32002,
-            "message": (
-                "This task cannot be canceled in its current state. Tasks can only be canceled "
-                "while pending or running. See task lifecycle: /docs/tasks"
-            ),
-        }
+        task_not_cancelable_error = cast(
+            TaskNotCancelableError,
+            {
+                "code": -32002,
+                "message": (
+                    "This task cannot be canceled in its current state. Tasks can only be canceled "
+                    "while pending or running. See task lifecycle: /docs/tasks"
+                ),
+            },
+        )
         assert task_not_cancelable_error["code"] == -32002
 
-        push_notification_not_supported_error: PushNotificationNotSupportedError = {
-            "code": -32003,
-            "message": (
-                "Push notifications are not supported by this server configuration. Please use "
-                "polling to check task status. See: GET /tasks/{id}"
-            ),
-        }
+        push_notification_not_supported_error = cast(
+            PushNotificationNotSupportedError,
+            {
+                "code": -32003,
+                "message": (
+                    "Push notifications are not supported by this server configuration. Please use "
+                    "polling to check task status. See: GET /tasks/{id}"
+                ),
+            },
+        )
         assert push_notification_not_supported_error["code"] == -32003
 
     def test_bindu_error_codes(self):
@@ -442,20 +500,26 @@ class TestErrorCodes:
         )
 
         # Create instances and verify code values
-        task_immutable_error: TaskImmutableError = {
-            "code": -32008,
-            "message": (
-                "This task is in a terminal state and cannot be modified. Create a new task with "
-                "referenceTaskIds to continue the conversation."
-            ),
-        }
+        task_immutable_error = cast(
+            TaskImmutableError,
+            {
+                "code": -32008,
+                "message": (
+                    "This task is in a terminal state and cannot be modified. Create a new task with "
+                    "referenceTaskIds to continue the conversation."
+                ),
+            },
+        )
         assert task_immutable_error["code"] == -32008
 
-        context_not_found_error: ContextNotFoundError = {
-            "code": -32020,
-            "message": (
-                "The specified context ID was not found. The context may have been deleted or "
-                "expired. Check context status: GET /contexts/{id}"
-            ),
-        }
+        context_not_found_error = cast(
+            ContextNotFoundError,
+            {
+                "code": -32020,
+                "message": (
+                    "The specified context ID was not found. The context may have been deleted or "
+                    "expired. Check context status: GET /contexts/{id}"
+                ),
+            },
+        )
         assert context_not_found_error["code"] == -32020

@@ -281,7 +281,7 @@ class BinduApplication(Starlette):
         """Create default Lifespan that manages TaskManager lifecycle and observability."""
 
         @asynccontextmanager
-        async def lifespan(app: Starlette) -> AsyncIterator[None]:
+        async def lifespan(app: BinduApplication) -> AsyncIterator[None]:
             # Setup observability if enabled
             if self._telemetry_enabled:
                 from bindu.observability import setup as setup_observability

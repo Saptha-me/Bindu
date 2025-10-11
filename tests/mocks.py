@@ -81,7 +81,7 @@ class MockManifest:
             "allowed_operations": {},
         }
         self.agent_fn = agent_fn or MockAgent()
-        self.did_extension = None
+        self.did_extension = MockDIDExtension()
 
         # Manifest configuration attributes
         self.enable_system_message = True
@@ -173,6 +173,10 @@ class MockDIDExtension:
             "version": "1.0.0",
             "url": "http://localhost:8030",
         }
+
+    def sign_text(self, text: str) -> str:
+        """Mock sign_text method that returns a fake signature."""
+        return "mock_signature_" + str(hash(text))[:16]
 
 
 class MockNotificationService:

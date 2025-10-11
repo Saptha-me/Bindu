@@ -46,6 +46,7 @@ def get_auth0_token(domain: str, client_id: str, client_secret: str) -> str:
 
 
 def main():
+    """Obtain Auth0 access token for testing and optionally copy to clipboard."""
     parser = argparse.ArgumentParser(
         description="Obtain Auth0 access tokens for testing",
         formatter_class=argparse.RawDescriptionHelpFormatter,

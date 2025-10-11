@@ -146,25 +146,25 @@ class BinduApplication(Starlette):
                 auth_middleware = Middleware(
                     Auth0Middleware, auth_config=app_settings.auth
                 )
-            elif provider == "cognito":
-                logger.info("AWS Cognito authentication enabled")
-                from .middleware.auth_cognito import CognitoMiddleware
+            # elif provider == "cognito": # TODO: Implement Cognito authentication
+            #     logger.info("AWS Cognito authentication enabled")
+            #     from .middleware.auth_cognito import CognitoMiddleware
 
-                auth_middleware = Middleware(
-                    CognitoMiddleware, auth_config=app_settings.auth
-                )
-            elif provider == "azure":
-                logger.warning("Azure AD authentication not yet implemented")
-                raise NotImplementedError(
-                    "Azure AD authentication is not yet implemented. "
-                    "Use 'auth0' provider or implement AzureADMiddleware."
-                )
-            elif provider == "custom":
-                logger.warning("Custom JWT authentication not yet implemented")
-                raise NotImplementedError(
-                    "Custom JWT authentication is not yet implemented. "
-                    "Use 'auth0' provider or implement CustomJWTMiddleware."
-                )
+            #     auth_middleware = Middleware(
+            #         CognitoMiddleware, auth_config=app_settings.auth
+            #     )
+            # elif provider == "azure":
+            #     logger.warning("Azure AD authentication not yet implemented")
+            #     raise NotImplementedError(
+            #         "Azure AD authentication is not yet implemented. "
+            #         "Use 'auth0' provider or implement AzureADMiddleware."
+            #     )
+            # elif provider == "custom":
+            #     logger.warning("Custom JWT authentication not yet implemented")
+            #     raise NotImplementedError(
+            #         "Custom JWT authentication is not yet implemented. "
+            #         "Use 'auth0' provider or implement CustomJWTMiddleware."
+            #     )
             else:
                 logger.error(f"Unknown authentication provider: {provider}")
                 raise ValueError(

@@ -3,7 +3,7 @@
   "name": "first Agent",
   "description": "A basic AI agent for simple question answering",
   "version": "1.0.0",
-  "recreate_keys": true,
+  "recreate_keys": false,
   "skills": [
     {
       "name": "question-answering",

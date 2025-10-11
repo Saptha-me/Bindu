@@ -186,7 +186,7 @@ def _create_scheduler_config(
 
 
 def bindufy(
-    agent: Any, config: Dict[str, Any], handler: Callable[[str], str]
+    agent: Any, config: Dict[str, Any], handler: Callable[[list[dict[str, str]]], Any]
 ) -> AgentManifest:
     """Transform an agent instance and handler into a bindu-compatible agent.
 

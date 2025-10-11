@@ -165,13 +165,13 @@ def _check_missing_packages(
 class _LoggingSpanExporter:
     """Wrapper exporter that logs when spans are exported."""
 
-    def __init__(self, exporter, endpoint: str, verbose: bool = False):
+    def __init__(self, exporter: Any, endpoint: str, verbose: bool = False):
         self._exporter = exporter
         self._endpoint = endpoint
         self._span_count = 0
         self._verbose = verbose
 
-    def export(self, spans):
+    def export(self, spans: Any) -> Any:
         """Export spans and log the operation."""
         from opentelemetry.sdk.trace.export import SpanExportResult
 
@@ -194,11 +194,11 @@ class _LoggingSpanExporter:
 
         return result
 
-    def shutdown(self):
+    def shutdown(self) -> Any:
         """Shutdown the underlying exporter."""
         return self._exporter.shutdown()
 
-    def force_flush(self, timeout_millis: int = 30000):
+    def force_flush(self, timeout_millis: int = 30000) -> Any:
         """Force flush the underlying exporter."""
         return self._exporter.force_flush(timeout_millis)
 
@@ -265,7 +265,8 @@ def _setup_tracer_provider(
             "max_export_batch_size": batch_max_export_batch_size,
             "export_timeout_millis": batch_export_timeout_millis,
         }
-        processor = BatchSpanProcessor(logging_exporter, **batch_config)
+        # Type ignore: _LoggingSpanExporter implements SpanExporter protocol
+        processor = BatchSpanProcessor(logging_exporter, **batch_config)  # type: ignore[arg-type]
         if verbose_logging:
             logger.info(
                 "Configured OTLP exporter with batch processing",

@@ -16,6 +16,7 @@ and validating protocol compliance for agents and workflows.
 """
 
 import inspect
+from datetime import UTC, datetime
 from typing import Any, Callable, Literal
 from uuid import UUID
 
@@ -27,6 +28,23 @@ from bindu.utils.logging import get_logger
 logger = get_logger("bindu.penguin.manifest")
 
 
+def _create_default_agent_trust() -> AgentTrust:
+    """Create a default AgentTrust configuration with minimal required fields.
+
+    Returns:
+        AgentTrust: A minimal valid AgentTrust instance for agents without
+                    explicit trust configuration.
+    """
+    return AgentTrust(
+        identity_provider="custom",
+        inherited_roles=[],
+        creator_id="system",
+        creation_timestamp=int(datetime.now(UTC).timestamp()),
+        trust_verification_required=False,
+        allowed_operations={},
+    )
+
+
 def validate_agent_function(agent_function: Callable) -> None:
     """Validate that the function has the correct signature for protocol compliance.
 
@@ -36,7 +54,7 @@ def validate_agent_function(agent_function: Callable) -> None:
     Raises:
         ValueError: If function signature is invalid
     """
-    func_name = agent_function.__name__
+    func_name = getattr(agent_function, "__name__", "<unknown>")
     logger.debug(f"Validating agent function: {func_name}")
 
     params = list(inspect.signature(agent_function).parameters.values())
@@ -222,7 +240,8 @@ def create_manifest(
         manifest = bindufy(agent, config, my_handler)
     """
     # Analyze function signature for parameter detection
-    logger.debug(f"Creating manifest for agent function: {agent_function.__name__}")
+    func_name = getattr(agent_function, "__name__", "<unknown>")
+    logger.debug(f"Creating manifest for agent function: {func_name}")
     sig = inspect.signature(agent_function)
     param_names = list(sig.parameters.keys())
     has_context_param = "context" in param_names
@@ -230,7 +249,9 @@ def create_manifest(
     logger.debug(f"Function parameters: {param_names}, has_context={has_context_param}")
 
     # Prepare manifest metadata
-    manifest_name = name or agent_function.__name__.replace("_", "-")
+    manifest_name = name or getattr(agent_function, "__name__", "agent").replace(
+        "_", "-"
+    )
     manifest_description = (
         description or inspect.getdoc(agent_function) or f"Agent: {manifest_name}"
     )
@@ -238,6 +259,12 @@ def create_manifest(
     logger.info(
         f"Creating agent manifest: name='{manifest_name}', version={version}, kind={kind}"
     )
+
+    _agent_trust = (
+        agent_trust if agent_trust is not None else _create_default_agent_trust()
+    )
+    _capabilities = capabilities if capabilities is not None else AgentCapabilities()
+    _skills = skills if skills is not None else []
 
     # Create base manifest
     manifest = AgentManifest(
@@ -248,9 +275,9 @@ def create_manifest(
         version=version,
         protocol_version=protocol_version,
         did_extension=did_extension,
-        agent_trust=agent_trust,
-        capabilities=capabilities,
-        skills=skills,
+        agent_trust=_agent_trust,
+        capabilities=_capabilities,
+        skills=_skills,
         kind=kind,
         num_history_sessions=num_history_sessions,
         enable_system_message=enable_system_message,

@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from loguru import Logger
 
 from loguru import logger
 from rich.console import Console
@@ -42,6 +45,7 @@ def _get_console() -> Console:
             show_locals=app_settings.logging.show_locals,
             width=app_settings.logging.traceback_width,
         )
+    assert _console is not None  # Type narrowing
     return _console
 
 
@@ -101,7 +105,7 @@ def configure_logger(
     _is_logging_configured = True
 
 
-def get_logger(name: Optional[str] = None) -> logger.__class__:
+def get_logger(name: Optional[str] = None) -> "Logger":
     """Get a configured logger instance with automatic name inference.
 
     Args:

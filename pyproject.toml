@@ -47,6 +47,7 @@ dependencies = [
     "requests>=2.31.0",
     "pytest-asyncio>=0.26.0",
     "pyperclip>=1.11.0",
+    "x402>=0.2.1",
 ]
 
 [project.optional-dependencies]

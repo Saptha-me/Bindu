@@ -53,6 +53,7 @@ dev = [
     "pytest-asyncio>=0.26.0",
     "pytest-cov>=4.1.0",
     "pytest-timeout>=2.2.0",
+    "pre-commit>=3.0.0",
 ]
 examples = [
     "pyperclip>=1.8.2",

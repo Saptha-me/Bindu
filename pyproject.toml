@@ -7,7 +7,7 @@ name = "bindu"
 version = "0.1.0"
 description = "A protocol framework for agent-to-agent communication"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "Raahul Dutta", email = "raahul@saptha.me" }]
 classifiers = [

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Utility script to obtain Auth0 access tokens for testing."""
 
 import argparse
@@ -8,20 +7,17 @@ import sys
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-try:
-    from rich.console import Console
-    from rich.panel import Panel
-except ImportError:
-    print("Error: rich is required. Install with: pip install rich", file=sys.stderr)
-    sys.exit(1)
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Confirm
+import pyperclip
 
 console = Console()
 
 
-def get_auth0_token(domain: str, client_id: str, client_secret: str, audience: str | None = None) -> str:
+def get_auth0_token(domain: str, client_id: str, client_secret: str) -> str:
     """Get Auth0 access token using client credentials flow."""
-    if audience is None:
-        audience = f"https://{domain}/api/v2/"
+    audience = f"https://{domain}/api/v2/"
 
     request = Request(
         f"https://{domain}/oauth/token",
@@ -53,21 +49,7 @@ def get_auth0_token(domain: str, client_id: str, client_secret: str, audience: s
 def main():
     parser = argparse.ArgumentParser(
         description="Obtain Auth0 access tokens for testing",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Using command-line arguments
-  %(prog)s --domain dev-xxx.us.auth0.com --client-id YOUR_ID --client-secret YOUR_SECRET
-
-  # Using environment variables
-  export AUTH0_DOMAIN="dev-xxx.us.auth0.com"
-  export AUTH0_CLIENT_ID="YOUR_ID"
-  export AUTH0_CLIENT_SECRET="YOUR_SECRET"
-  %(prog)s
-
-  # Custom audience
-  %(prog)s --audience https://api.example.com
-        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     parser.add_argument(
@@ -86,14 +68,10 @@ Examples:
         help="Auth0 client secret. Can also use AUTH0_CLIENT_SECRET env var.",
     )
     parser.add_argument(
-        "--audience",
-        default=os.getenv("AUTH0_AUDIENCE"),
-        help="Auth0 API audience. Defaults to https://{domain}/api/v2/. Can also use AUTH0_AUDIENCE env var.",
-    )
-    parser.add_argument(
-        "--json",
+        "--copy",
+        default=True,
         action="store_true",
-        help="Output token in JSON format",
+        help="Automatically copy token to clipboard (requires pyperclip)",
     )
 
     args = parser.parse_args()
@@ -114,20 +92,18 @@ Examples:
 
     # Get token
     with console.status("[bold green]Requesting Auth0 token..."):
-        token = get_auth0_token(args.domain, args.client_id, args.client_secret, args.audience)
+        token = get_auth0_token(args.domain, args.client_id, args.client_secret)
 
     # Output token
-    if args.json:
-        print(json.dumps({"access_token": token}))
-    else:
-        console.print(
-            Panel(
-                token,
-                title="[bold green]✓ Auth0 Access Token[/bold green]",
-                border_style="green",
-            )
-        )
-        console.print("\n[dim]Tip: Use --json flag for machine-readable output[/dim]")
+    console.print(Panel(
+        token,
+        title="[bold green]✓ Auth0 Access Token[/bold green]",
+            border_style="green",
+        ))
+        
+    if args.copy:
+        pyperclip.copy(token)
+        console.print("\n[green]✓ Token copied to clipboard![/green]")
 
 
 if __name__ == "__main__":

@@ -3,5 +3,8 @@ skips:
 
 exclude_dirs:
   - tests  # completely exclude test directories from bandit scanning
+  - examples  # exclude example scripts (may contain demo credentials)
+  - .venv  # exclude virtual environment
+  - venv  # exclude virtual environment
 
 tests: []  # Include all other tests

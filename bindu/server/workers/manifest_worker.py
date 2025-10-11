@@ -40,9 +40,11 @@ from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, T
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
 from bindu.settings import app_settings
+from bindu.utils.logging import get_logger
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
 tracer = get_tracer("bindu.server.workers.manifest_worker")
+logger = get_logger("bindu.server.workers.manifest_worker")
 
 
 @dataclass
@@ -515,8 +517,8 @@ class ManifestWorker(Worker):
                 if "content" in result_dict:
                     return result_dict["content"]
                 return result_dict
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to extract content from .to_dict() method", error=str(e))
 
         # Strategy 6: Fallback to string conversion
         return str(result) if result is not None else ""
@@ -645,6 +647,12 @@ class ManifestWorker(Worker):
                 # Handle both sync and async notifiers
                 if hasattr(result, "__await__"):
                     await result
-            except Exception:
-                # Silently ignore notification errors to not disrupt task execution
-                pass
+            except Exception as e:
+                # Log but don't disrupt task execution on notification errors
+                logger.warning(
+                    "Lifecycle notification failed",
+                    task_id=str(task_id),
+                    context_id=str(context_id),
+                    state=state,
+                    error=str(e),
+                )

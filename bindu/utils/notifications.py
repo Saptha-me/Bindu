@@ -114,7 +114,8 @@ class NotificationService:
             req.add_header(key, value)
 
         try:
-            with request.urlopen(req, timeout=self.timeout) as response:
+            # URL scheme is validated in validate_config() to only allow http/https
+            with request.urlopen(req, timeout=self.timeout) as response:  # nosec B310
                 status = response.getcode()
                 if 200 <= status < 300:
                     return status

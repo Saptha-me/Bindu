@@ -35,7 +35,7 @@ jobs:
         run: uv run pre-commit run --all-files
 
       - name: Run tests with coverage
-        run: uv run pytest --cov=pebbling --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=80
+        run: uv run pytest --cov=bindu --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=80
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
@@ -55,7 +55,7 @@ jobs:
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pebble-dist
+          name: bindu-dist
           path: dist/
 
       - name: Publish package to PyPI

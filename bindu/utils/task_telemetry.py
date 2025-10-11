@@ -7,7 +7,7 @@ with comprehensive tracing, metrics, and logging.
 
 import functools
 import time
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, Callable, ParamSpec, TypeVar, cast
 from uuid import UUID
 
 from opentelemetry import metrics, trace
@@ -39,6 +39,7 @@ context_counter = meter.create_counter(
 logger = get_logger()
 
 F = TypeVar("F", bound=Callable[..., Any])
+P = ParamSpec("P")
 
 
 def trace_task_operation(operation_name: str, include_params: bool = True):
@@ -187,7 +188,7 @@ def track_active_task(func: F) -> F:
 
     @functools.wraps(func)
     async def wrapper(self, request, *args, **kwargs):
-        operation = func.__name__
+        operation = getattr(func, "__name__", "unknown")
 
         # Increment active tasks for creation operations
         if operation in ["send_message"]:

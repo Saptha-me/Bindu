@@ -5,16 +5,16 @@
 <h1 align="center"> bindu </h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Hits](https://hits.sh/github.com/bindu-ai/pebble.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/bindu-ai/pebble/)
+[![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/Saptha-me/Bindu/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://github.com/bindu-ai/pebble/actions/workflows/release.yml/badge.svg)](https://github.com/bindu-ai/pebble/actions/workflows/release.yml)
-[![Coverage Status](https://coveralls.io/repos/github/bindu-ai/pebble/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/bindu-ai/pebble?branch=v0.1.0.5)
+[![Tests](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml/badge.svg)](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml)
+[![Coverage Status](https://coveralls.io/repos/github/Saptha-me/Bindu/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Saptha-me/Bindu?branch=v0.1.0.5)
 [![PyPI version](https://badge.fury.io/py/bindu.svg)](https://badge.fury.io/py/bindu)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/bindu)](https://pypi.org/project/bindu/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/bindu-ai/pebble/pulls)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Saptha-me/Bindu/pulls)
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/Fr6rcRJa)
-[![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.bindu.ai)
-[![GitHub stars](https://img.shields.io/github/stars/bindu-ai/pebble)](https://github.com/bindu-ai/pebble/stargazers)
+[![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.saptha.me)
+[![GitHub stars](https://img.shields.io/github/stars/Saptha-me/Bindu)](https://github.com/Saptha-me/Bindu/stargazers)
 
 ✨ Imagine a world where AI agents collaborate effortlessly and securely—no passport 🚫, no boundaries 🌐.
 

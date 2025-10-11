@@ -1,0 +1,24 @@
+# Bandit security scanner configuration
+# https://bandit.readthedocs.io/en/latest/config.html
+
+# Tests to skip (if needed)
+skips:
+  # B101: assert_used - common in tests
+  # B601: paramiko_calls - if you use paramiko
+  # B603: subprocess_without_shell_equals_true - if you use subprocess safely
+
+# Tests to run (empty = run all)
+tests: []
+
+# Exclude paths
+exclude_dirs:
+  - /tests/
+  - /test_*.py
+  - /.venv/
+  - /venv/
+  - /.tox/
+  - /build/
+  - /dist/
+
+# Severity level: low, medium, high
+# Confidence level: low, medium, high

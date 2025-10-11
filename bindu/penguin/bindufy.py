@@ -48,21 +48,20 @@ def _update_capabilities_with_did(
     Returns:
         AgentCapabilities object with DID extension included
     """
-    if capabilities and isinstance(capabilities, dict):
-        if "extensions" in capabilities:
-            capabilities["extensions"].append(did_extension_obj)
-        else:
-            capabilities["extensions"] = [did_extension_obj]
-        return AgentCapabilities(**capabilities)
-    elif capabilities:
-        # capabilities is already an AgentCapabilities object
-        if hasattr(capabilities, "extensions") and capabilities.extensions:
-            capabilities.extensions.append(did_extension_obj)
-        else:
-            capabilities.extensions = [did_extension_obj]
-        return capabilities
+    # Convert to dict if needed
+    if capabilities is None:
+        caps_dict = {}
+    elif isinstance(capabilities, dict):
+        caps_dict = capabilities.copy()
+    
+    # Update extensions list
+    extensions = caps_dict.get("extensions", [])
+    if extensions:
+        caps_dict["extensions"] = [*extensions, did_extension_obj]
     else:
-        return AgentCapabilities(extensions=[did_extension_obj])
+        caps_dict["extensions"] = [did_extension_obj]
+    
+    return AgentCapabilities(**caps_dict)
 
 
 def _parse_deployment_url(
@@ -108,6 +107,76 @@ def _create_scheduler_instance(scheduler_config: SchedulerConfig | None):
 
     # TODO: Implement Redis and other scheduler backends
     return InMemoryScheduler()
+
+
+def _create_deployment_config(validated_config: Dict[str, Any]) -> DeploymentConfig | None:
+    """Create deployment config from validated config dict.
+    
+    Args:
+        validated_config: Validated configuration dictionary
+        
+    Returns:
+        DeploymentConfig instance or None if invalid/missing
+    """
+    deploy_dict = validated_config.get("deployment")
+    if not deploy_dict:
+        return None
+    
+    if "url" not in deploy_dict or "expose" not in deploy_dict:
+        logger.warning("Deployment config missing required fields (url, expose), using defaults")
+        return None
+    
+    return DeploymentConfig(
+        url=deploy_dict["url"],
+        expose=deploy_dict["expose"],
+        protocol_version=deploy_dict.get("protocol_version", "1.0.0"),
+        proxy_urls=deploy_dict.get("proxy_urls"),
+        cors_origins=deploy_dict.get("cors_origins"),
+        openapi_schema=deploy_dict.get("openapi_schema"),
+    )
+
+
+def _create_storage_config(validated_config: Dict[str, Any]) -> StorageConfig | None:
+    """Create storage config from validated config dict.
+    
+    Args:
+        validated_config: Validated configuration dictionary
+        
+    Returns:
+        StorageConfig instance or None if invalid/missing
+    """
+    storage_dict = validated_config.get("storage")
+    if not storage_dict:
+        return None
+    
+    if "type" not in storage_dict:
+        logger.warning("Storage config missing required field 'type', using defaults")
+        return None
+    
+    return StorageConfig(
+        type=storage_dict["type"],
+        connection_string=storage_dict.get("connection_string"),
+    )
+
+
+def _create_scheduler_config(validated_config: Dict[str, Any]) -> SchedulerConfig | None:
+    """Create scheduler config from validated config dict.
+    
+    Args:
+        validated_config: Validated configuration dictionary
+        
+    Returns:
+        SchedulerConfig instance or None if invalid/missing
+    """
+    scheduler_dict = validated_config.get("scheduler")
+    if not scheduler_dict:
+        return None
+    
+    if "type" not in scheduler_dict:
+        logger.warning("Scheduler config missing required field 'type', using defaults")
+        return None
+    
+    return SchedulerConfig(type=scheduler_dict["type"])
 
 
 def bindufy(
@@ -197,22 +266,10 @@ def bindufy(
     # Generate agent_id if not provided
     agent_id = validated_config.get("id", uuid4().hex)
 
-    # Create config objects if dictionaries provided
-    deployment_config = (
-        DeploymentConfig(**validated_config["deployment"])
-        if validated_config.get("deployment")
-        else None
-    )
-    storage_config = (
-        StorageConfig(**validated_config["storage"])
-        if validated_config.get("storage") and "type" in validated_config["storage"]
-        else None
-    )
-    scheduler_config = (
-        SchedulerConfig(**validated_config["scheduler"])
-        if validated_config.get("scheduler") and "type" in validated_config["scheduler"]
-        else None
-    )
+    # Create config objects from validated config
+    deployment_config = _create_deployment_config(validated_config)
+    storage_config = _create_storage_config(validated_config)
+    scheduler_config = _create_scheduler_config(validated_config)
 
     # Validate that this is a protocol-compliant function
     handler_name = getattr(handler, "__name__", "<unknown>")

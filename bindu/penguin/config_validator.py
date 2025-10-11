@@ -97,9 +97,7 @@ class ConfigValidator:
 
         # Process key password - support environment variable and prompt
         if config.get("key_password"):
-            from bindu.utils.security import get_key_password
-
-            config["key_password"] = get_key_password(config)
+            config["key_password"] = config["key_password"]
 
         # Validate auth configuration if provided
         if config.get("auth"):

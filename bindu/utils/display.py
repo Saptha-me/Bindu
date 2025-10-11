@@ -10,10 +10,10 @@ from rich.text import Text
 
 
 def prepare_server_display(
-    host: str = None,
-    port: int = None,
-    agent_id: str = None,
-    agent_did: str = None,
+    host: str | None = None,
+    port: int | None = None,
+    agent_id: str | None = None,
+    agent_did: str | None = None,
 ) -> None:
     """Prepare a beautiful display for the server using rich.
 

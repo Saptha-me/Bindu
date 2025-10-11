@@ -205,17 +205,18 @@ def bindufy(
     )
     storage_config = (
         StorageConfig(**validated_config["storage"])
-        if validated_config.get("storage")
+        if validated_config.get("storage") and "type" in validated_config["storage"]
         else None
     )
     scheduler_config = (
         SchedulerConfig(**validated_config["scheduler"])
-        if validated_config.get("scheduler")
+        if validated_config.get("scheduler") and "type" in validated_config["scheduler"]
         else None
     )
 
     # Validate that this is a protocol-compliant function
-    logger.info(f"Validating handler function: {handler.__name__}")
+    handler_name = getattr(handler, "__name__", "<unknown>")
+    logger.info(f"Validating handler function: {handler_name}")
     validate_agent_function(handler)
     logger.info(f"Agent ID: {agent_id}")
 

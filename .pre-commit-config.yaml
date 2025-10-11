@@ -15,14 +15,14 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
-  # - repo: local
-  #   hooks:
-  #     - id: ty
-  #       name: ty type checker
-  #       entry: ty check
-  #       language: system
-  #       types: [python]
-  #       pass_filenames: false
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty type checker
+        entry: ty check
+        language: system
+        types: [python]
+        pass_filenames: false
 
   #     - id: pytest
   #       name: pytest

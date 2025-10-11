@@ -196,23 +196,50 @@ class ObservabilitySettings(BaseSettings):
         # Agent Frameworks
         "agno": ("openinference.instrumentation.agno", "AgnoInstrumentor"),
         "crewai": ("openinference.instrumentation.crewai", "CrewAIInstrumentor"),
-        "langchain": ("openinference.instrumentation.langchain", "LangChainInstrumentor"),
-        "llama-index": ("openinference.instrumentation.llama_index", "LlamaIndexInstrumentor"),
+        "langchain": (
+            "openinference.instrumentation.langchain",
+            "LangChainInstrumentor",
+        ),
+        "llama-index": (
+            "openinference.instrumentation.llama_index",
+            "LlamaIndexInstrumentor",
+        ),
         "dspy": ("openinference.instrumentation.dspy", "DSPyInstrumentor"),
         "haystack": ("openinference.instrumentation.haystack", "HaystackInstrumentor"),
-        "instructor": ("openinference.instrumentation.instructor", "InstructorInstrumentor"),
-        "pydantic-ai": ("openinference.instrumentation.pydantic_ai", "PydanticAIInstrumentor"),
-        "autogen": ("openinference.instrumentation.autogen_agentchat", "AutogenAgentChatInstrumentor"),
-        "smolagents": ("openinference.instrumentation.smolagents", "SmolAgentsInstrumentor"),
+        "instructor": (
+            "openinference.instrumentation.instructor",
+            "InstructorInstrumentor",
+        ),
+        "pydantic-ai": (
+            "openinference.instrumentation.pydantic_ai",
+            "PydanticAIInstrumentor",
+        ),
+        "autogen": (
+            "openinference.instrumentation.autogen_agentchat",
+            "AutogenAgentChatInstrumentor",
+        ),
+        "smolagents": (
+            "openinference.instrumentation.smolagents",
+            "SmolAgentsInstrumentor",
+        ),
         # LLM Providers
         "litellm": ("openinference.instrumentation.litellm", "LiteLLMInstrumentor"),
         "openai": ("openinference.instrumentation.openai", "OpenAIInstrumentor"),
-        "anthropic": ("openinference.instrumentation.anthropic", "AnthropicInstrumentor"),
-        "mistralai": ("openinference.instrumentation.mistralai", "MistralAIInstrumentor"),
+        "anthropic": (
+            "openinference.instrumentation.anthropic",
+            "AnthropicInstrumentor",
+        ),
+        "mistralai": (
+            "openinference.instrumentation.mistralai",
+            "MistralAIInstrumentor",
+        ),
         "groq": ("openinference.instrumentation.groq", "GroqInstrumentor"),
         "bedrock": ("openinference.instrumentation.bedrock", "BedrockInstrumentor"),
         "vertexai": ("openinference.instrumentation.vertexai", "VertexAIInstrumentor"),
-        "google-genai": ("openinference.instrumentation.google_genai", "GoogleGenAIInstrumentor"),
+        "google-genai": (
+            "openinference.instrumentation.google_genai",
+            "GoogleGenAIInstrumentor",
+        ),
     }
 
     # OpenTelemetry Base Packages

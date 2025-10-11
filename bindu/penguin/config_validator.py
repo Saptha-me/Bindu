@@ -115,9 +115,20 @@ class ConfigValidator:
     def _validate_field_types(cls, config: Dict[str, Any]) -> None:
         """Validate that fields have correct types."""
         # Validate string fields
-        string_fields = ["author", "name", "description", "version", "kind", "key_password"]
+        string_fields = [
+            "author",
+            "name",
+            "description",
+            "version",
+            "kind",
+            "key_password",
+        ]
         for field in string_fields:
-            if field in config and config[field] is not None and not isinstance(config[field], str):
+            if (
+                field in config
+                and config[field] is not None
+                and not isinstance(config[field], str)
+            ):
                 raise ValueError(f"Field '{field}' must be a string")
 
         # Validate boolean fields
@@ -128,12 +139,19 @@ class ConfigValidator:
 
         # Validate numeric fields
         if "debug_level" in config:
-            if not isinstance(config["debug_level"], int) or config["debug_level"] not in [1, 2]:
+            if not isinstance(config["debug_level"], int) or config[
+                "debug_level"
+            ] not in [1, 2]:
                 raise ValueError("Field 'debug_level' must be 1 or 2")
 
         if "num_history_sessions" in config:
-            if not isinstance(config["num_history_sessions"], int) or config["num_history_sessions"] < 0:
-                raise ValueError("Field 'num_history_sessions' must be a non-negative integer")
+            if (
+                not isinstance(config["num_history_sessions"], int)
+                or config["num_history_sessions"] < 0
+            ):
+                raise ValueError(
+                    "Field 'num_history_sessions' must be a non-negative integer"
+                )
 
         # Validate kind
         if config.get("kind") not in ["agent", "team", "workflow"]:
@@ -158,7 +176,9 @@ class ConfigValidator:
 
         # Required fields when auth is enabled
         required_auth_fields = ["domain", "audience"]
-        missing = [field for field in required_auth_fields if not auth_config.get(field)]
+        missing = [
+            field for field in required_auth_fields if not auth_config.get(field)
+        ]
         if missing:
             raise ValueError(
                 f"Auth is enabled but missing required fields: {', '.join(missing)}. Required: domain, audience"
@@ -174,7 +194,9 @@ class ConfigValidator:
 
         # Validate audience format (should be a URL)
         audience = auth_config.get("audience", "")
-        if not audience or not (audience.startswith("http://") or audience.startswith("https://")):
+        if not audience or not (
+            audience.startswith("http://") or audience.startswith("https://")
+        ):
             raise ValueError(
                 f"Invalid auth audience: '{audience}'. "
                 f"Expected format: 'https://api.your-domain.com' or 'https://your-api-identifier'"

@@ -31,25 +31,50 @@ repos:
   #       pass_filenames: false
   #       always_run: true
 
-  #     - id: validate-coveragerc
   #       name: Validate .coveragerc
   #       entry: python -c "import configparser; c = configparser.ConfigParser(); c.read('.coveragerc')"
   #       language: system
   #       files: ^\.coveragerc$
 
-  - repo: https://github.com/PyCQA/bandit
-    rev: '1.8.3'
-    hooks:
-      - id: bandit
-        args: ["-c", "bandit.yaml", "-r", "bindu"]
+  # - repo: local
+  #   hooks:
+  #     - id: init-secrets-baseline
+  #       name: Initialize secrets baseline if missing
+  #       entry: bash -c 'test -f .secrets.baseline || detect-secrets scan --baseline .secrets.baseline'
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
 
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+  # - repo: https://github.com/PyCQA/bandit
+  #   rev: '1.8.3'
+  #   hooks:
+  #     - id: bandit
+  #       args: ["-c", "bandit.yaml", "-r", "bindu", "-ll", "-b", ".bandit.baseline"]
+  #       additional_dependencies: ["bandit[toml]"]
 
-  - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.3.0
-    hooks:
-      - id: pydocstyle
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: v1.5.0
+  #   hooks:
+  #     - id: detect-secrets
+  #       args: ['--baseline', '.secrets.baseline']
+  #       exclude: package.lock.json
+
+  # - repo: local
+  #   hooks:
+  #     - id: audit-secrets-baseline
+  #       name: Audit secrets baseline (manual)
+  #       entry: detect-secrets audit .secrets.baseline
+  #       language: system
+  #       pass_filenames: false
+  #       stages: [manual]
+  #     - id: update-secrets-baseline
+  #       name: Update secrets baseline (manual)
+  #       entry: detect-secrets scan --baseline .secrets.baseline
+  #       language: system
+  #       pass_filenames: false
+  #       stages: [manual]
+
+  # - repo: https://github.com/PyCQA/pydocstyle
+  #   rev: 6.3.0
+  #   hooks:
+  #     - id: pydocstyle

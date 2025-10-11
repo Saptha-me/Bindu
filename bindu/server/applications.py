@@ -143,12 +143,16 @@ class BinduApplication(Starlette):
 
             if provider == "auth0":
                 logger.info("Auth0 authentication enabled")
-                auth_middleware = Middleware(Auth0Middleware, auth_config=app_settings.auth)
+                auth_middleware = Middleware(
+                    Auth0Middleware, auth_config=app_settings.auth
+                )
             elif provider == "cognito":
                 logger.info("AWS Cognito authentication enabled")
                 from .middleware.auth_cognito import CognitoMiddleware
 
-                auth_middleware = Middleware(CognitoMiddleware, auth_config=app_settings.auth)
+                auth_middleware = Middleware(
+                    CognitoMiddleware, auth_config=app_settings.auth
+                )
             elif provider == "azure":
                 logger.warning("Azure AD authentication not yet implemented")
                 raise NotImplementedError(
@@ -195,11 +199,18 @@ class BinduApplication(Starlette):
     def _register_routes(self) -> None:
         """Register all application routes."""
         # Protocol endpoints
-        self._add_route("/.well-known/agent.json", agent_card_endpoint, ["HEAD", "GET", "OPTIONS"], with_app=True)
+        self._add_route(
+            "/.well-known/agent.json",
+            agent_card_endpoint,
+            ["HEAD", "GET", "OPTIONS"],
+            with_app=True,
+        )
         self._add_route("/", agent_run_endpoint, ["POST"], with_app=True)
 
         # DID endpoints
-        self._add_route("/did/resolve", did_resolve_endpoint, ["GET", "POST"], with_app=True)
+        self._add_route(
+            "/did/resolve", did_resolve_endpoint, ["GET", "POST"], with_app=True
+        )
 
         # HTML pages
         html_routes = [
@@ -223,7 +234,9 @@ class BinduApplication(Starlette):
             self._add_route(path, endpoint, ["GET"], with_static=True)
 
         # CSS files
-        self._add_route("/css/custom.css", custom_css_endpoint, ["GET"], with_static=True)
+        self._add_route(
+            "/css/custom.css", custom_css_endpoint, ["GET"], with_static=True
+        )
 
     def _add_route(
         self,
@@ -295,10 +308,14 @@ class BinduApplication(Starlette):
                             service_name=self._oltp_service_name or "bindu-agent",
                         )
                 except Exception as exc:
-                    logger.warning("OpenInference telemetry setup failed", error=str(exc))
+                    logger.warning(
+                        "OpenInference telemetry setup failed", error=str(exc)
+                    )
 
             # Start TaskManager
-            task_manager = TaskManager(scheduler=scheduler, storage=storage, manifest=manifest)
+            task_manager = TaskManager(
+                scheduler=scheduler, storage=storage, manifest=manifest
+            )
             async with task_manager:
                 app.task_manager = task_manager
                 yield
@@ -307,6 +324,8 @@ class BinduApplication(Starlette):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Handle ASGI requests with TaskManager validation."""
-        if scope["type"] == "http" and (self.task_manager is None or not self.task_manager.is_running):
+        if scope["type"] == "http" and (
+            self.task_manager is None or not self.task_manager.is_running
+        ):
             raise RuntimeError("TaskManager was not properly initialized.")
         await super().__call__(scope, receive, send)

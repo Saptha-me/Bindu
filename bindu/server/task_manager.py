@@ -109,7 +109,11 @@ from bindu.settings import app_settings
 
 from ..utils.logging import get_logger
 from ..utils.notifications import NotificationDeliveryError, NotificationService
-from ..utils.task_telemetry import trace_context_operation, trace_task_operation, track_active_task
+from ..utils.task_telemetry import (
+    trace_context_operation,
+    trace_task_operation,
+    track_active_task,
+)
 from .scheduler import Scheduler
 from .storage import Storage
 from .workers import ManifestWorker
@@ -132,9 +136,15 @@ class TaskManager:
 
     _aexit_stack: AsyncExitStack | None = field(default=None, init=False)
     _workers: list[ManifestWorker] = field(default_factory=list, init=False)
-    notification_service: NotificationService = field(default_factory=NotificationService)
-    _push_notification_configs: dict[uuid.UUID, PushNotificationConfig] = field(default_factory=dict, init=False)
-    _notification_sequences: dict[uuid.UUID, int] = field(default_factory=dict, init=False)
+    notification_service: NotificationService = field(
+        default_factory=NotificationService
+    )
+    _push_notification_configs: dict[uuid.UUID, PushNotificationConfig] = field(
+        default_factory=dict, init=False
+    )
+    _notification_sequences: dict[uuid.UUID, int] = field(
+        default_factory=dict, init=False
+    )
 
     async def __aenter__(self) -> TaskManager:
         """Initialize the task manager and start all components."""
@@ -166,9 +176,15 @@ class TaskManager:
         await self._aexit_stack.__aexit__(exc_type, exc_value, traceback)
         self._aexit_stack = None
 
-    def _create_error_response(self, response_class: type, request_id: str, error_class: type, message: str) -> Any:
+    def _create_error_response(
+        self, response_class: type, request_id: str, error_class: type, message: str
+    ) -> Any:
         """Create a standardized error response."""
-        return response_class(jsonrpc="2.0", id=request_id, error=error_class(code=-32001, message=message))
+        return response_class(
+            jsonrpc="2.0",
+            id=request_id,
+            error=error_class(code=-32001, message=message),
+        )
 
     def _parse_context_id(self, context_id: Any) -> uuid.UUID:
         """Parse and validate context_id, generating a new one if needed."""
@@ -197,7 +213,9 @@ class TaskManager:
             error={"code": -32005, "message": PUSH_NOT_SUPPORTED_MESSAGE},
         )
 
-    def _sanitize_push_config(self, config: PushNotificationConfig) -> PushNotificationConfig:
+    def _sanitize_push_config(
+        self, config: PushNotificationConfig
+    ) -> PushNotificationConfig:
         sanitized: dict[str, Any] = {"id": config["id"], "url": config["url"]}
         token = config.get("token")
         if token is not None:
@@ -207,7 +225,9 @@ class TaskManager:
             sanitized["authentication"] = authentication
         return cast(PushNotificationConfig, sanitized)
 
-    def _register_push_config(self, task_id: uuid.UUID, config: PushNotificationConfig) -> None:
+    def _register_push_config(
+        self, task_id: uuid.UUID, config: PushNotificationConfig
+    ) -> None:
         config_copy = self._sanitize_push_config(config)
         self.notification_service.validate_config(config_copy)
         self._push_notification_configs[task_id] = config_copy
@@ -221,7 +241,10 @@ class TaskManager:
         config = self._push_notification_configs.get(task_id)
         if config is None:
             raise KeyError("No push notification configuration for task")
-        return {"id": task_id, "push_notification_config": self._sanitize_push_config(config)}
+        return {
+            "id": task_id,
+            "push_notification_config": self._sanitize_push_config(config),
+        }
 
     def _next_sequence(self, task_id: uuid.UUID) -> int:
         current = self._notification_sequences.get(task_id, 0) + 1
@@ -243,7 +266,9 @@ class TaskManager:
             "final": final,
         }
 
-    async def _notify_lifecycle(self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool) -> None:
+    async def _notify_lifecycle(
+        self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool
+    ) -> None:
         if not self._push_supported():
             return
         config = self._push_notification_configs.get(task_id)
@@ -270,15 +295,21 @@ class TaskManager:
                 error=str(exc),
             )
 
-    def _schedule_notification(self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool) -> None:
+    def _schedule_notification(
+        self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool
+    ) -> None:
         if not self._push_supported():
             return
         if task_id not in self._push_notification_configs:
             return
         asyncio.create_task(self._notify_lifecycle(task_id, context_id, state, final))
 
-    def _jsonrpc_error(self, response_class: type, request_id: Any, message: str, code: int = -32001):
-        return response_class(jsonrpc="2.0", id=request_id, error={"code": code, "message": message})
+    def _jsonrpc_error(
+        self, response_class: type, request_id: Any, message: str, code: int = -32001
+    ):
+        return response_class(
+            jsonrpc="2.0", id=request_id, error={"code": code, "message": message}
+        )
 
     @trace_task_operation("send_message")
     @track_active_task
@@ -289,7 +320,11 @@ class TaskManager:
 
         task: Task = await self.storage.submit_task(context_id, message)
 
-        scheduler_params: TaskSendParams = {"task_id": task["id"], "context_id": context_id, "message": message}
+        scheduler_params: TaskSendParams = {
+            "task_id": task["id"],
+            "context_id": context_id,
+            "message": message,
+        }
 
         # Add optional configuration parameters
         config = request["params"].get("configuration", {})
@@ -307,7 +342,9 @@ class TaskManager:
         task = await self.storage.load_task(task_id, history_length)
 
         if task is None:
-            return self._create_error_response(GetTaskResponse, request["id"], TaskNotFoundError, "Task not found")
+            return self._create_error_response(
+                GetTaskResponse, request["id"], TaskNotFoundError, "Task not found"
+            )
 
         return GetTaskResponse(jsonrpc="2.0", id=request["id"], result=task)
 
@@ -319,7 +356,9 @@ class TaskManager:
         task = await self.storage.load_task(task_id)
 
         if task is None:
-            return self._create_error_response(CancelTaskResponse, request["id"], TaskNotFoundError, "Task not found")
+            return self._create_error_response(
+                CancelTaskResponse, request["id"], TaskNotFoundError, "Task not found"
+            )
 
         # Check if task is in a cancelable state
         current_state = task["status"]["state"]
@@ -362,7 +401,10 @@ class TaskManager:
                     "kind": "status-update",
                     "task_id": str(task["id"]),
                     "context_id": str(context_id),
-                    "status": {"state": "working", "timestamp": datetime.now(timezone.utc).isoformat()},
+                    "status": {
+                        "state": "working",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    },
                     "final": False,
                 }
                 yield f"data: {json.dumps(status_event)}\n\n"
@@ -415,7 +457,9 @@ class TaskManager:
                                 "artifact": {
                                     "artifact_id": str(uuid.uuid4()),
                                     "name": "response",
-                                    "parts": [{"kind": "text", "text": str(manifest_result)}],
+                                    "parts": [
+                                        {"kind": "text", "text": str(manifest_result)}
+                                    ],
                                 },
                                 "last_chunk": True,
                             }
@@ -426,7 +470,10 @@ class TaskManager:
                     "kind": "status-update",
                     "task_id": str(task["id"]),
                     "context_id": str(context_id),
-                    "status": {"state": "completed", "timestamp": datetime.now(timezone.utc).isoformat()},
+                    "status": {
+                        "state": "completed",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    },
                     "final": True,
                 }
                 yield f"data: {json.dumps(completion_event)}\n\n"
@@ -438,7 +485,10 @@ class TaskManager:
                     "kind": "status-update",
                     "task_id": str(task["id"]),
                     "context_id": str(context_id),
-                    "status": {"state": "failed", "timestamp": datetime.now(timezone.utc).isoformat()},
+                    "status": {
+                        "state": "failed",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    },
                     "final": True,
                     "error": str(e),
                 }
@@ -452,16 +502,23 @@ class TaskManager:
     ) -> SetTaskPushNotificationResponse:
         """Set push notification settings for a task."""
         if not self._push_supported():
-            return self._push_not_supported_response(SetTaskPushNotificationResponse, request["id"])
+            return self._push_not_supported_response(
+                SetTaskPushNotificationResponse, request["id"]
+            )
 
         params = request["params"]
         task_id = params["id"]
-        push_config = cast(PushNotificationConfig, dict(params["push_notification_config"]))
+        push_config = cast(
+            PushNotificationConfig, dict(params["push_notification_config"])
+        )
 
         task = await self.storage.load_task(task_id)
         if task is None:
             return self._create_error_response(
-                SetTaskPushNotificationResponse, request["id"], TaskNotFoundError, "Task not found"
+                SetTaskPushNotificationResponse,
+                request["id"],
+                TaskNotFoundError,
+                "Task not found",
             )
 
         try:
@@ -474,7 +531,9 @@ class TaskManager:
             )
 
         logger.debug(
-            "Registered push notification subscriber", task_id=str(task_id), subscriber=str(push_config.get("id"))
+            "Registered push notification subscriber",
+            task_id=str(task_id),
+            subscriber=str(push_config.get("id")),
         )
         return SetTaskPushNotificationResponse(
             jsonrpc="2.0",
@@ -487,7 +546,9 @@ class TaskManager:
     ) -> GetTaskPushNotificationResponse:
         """Get push notification settings for a task."""
         if not self._push_supported():
-            return self._push_not_supported_response(GetTaskPushNotificationResponse, request["id"])
+            return self._push_not_supported_response(
+                GetTaskPushNotificationResponse, request["id"]
+            )
 
         task_id = request["params"]["task_id"]
         if task_id not in self._push_notification_configs:
@@ -508,7 +569,9 @@ class TaskManager:
     ) -> ListTaskPushNotificationConfigResponse:
         """List push notification configurations for a task."""
         if not self._push_supported():
-            return self._push_not_supported_response(ListTaskPushNotificationConfigResponse, request["id"])
+            return self._push_not_supported_response(
+                ListTaskPushNotificationConfigResponse, request["id"]
+            )
 
         task_id = request["params"]["id"]
         if task_id not in self._push_notification_configs:
@@ -529,7 +592,9 @@ class TaskManager:
     ) -> DeleteTaskPushNotificationConfigResponse:
         """Delete a push notification configuration for a task."""
         if not self._push_supported():
-            return self._push_not_supported_response(DeleteTaskPushNotificationConfigResponse, request["id"])
+            return self._push_not_supported_response(
+                DeleteTaskPushNotificationConfigResponse, request["id"]
+            )
 
         params = request["params"]
         task_id = params["id"]
@@ -558,12 +623,19 @@ class TaskManager:
                 "Push notification configuration not found for task.",
             )
 
-        logger.debug("Removed push notification subscriber", task_id=str(task_id), subscriber=str(config_id))
+        logger.debug(
+            "Removed push notification subscriber",
+            task_id=str(task_id),
+            subscriber=str(config_id),
+        )
 
         return DeleteTaskPushNotificationConfigResponse(
             jsonrpc="2.0",
             id=request["id"],
-            result={"id": task_id, "push_notification_config": self._sanitize_push_config(removed)},
+            result={
+                "id": task_id,
+                "push_notification_config": self._sanitize_push_config(removed),
+            },
         )
 
     @trace_task_operation("list_tasks", include_params=False)
@@ -572,7 +644,9 @@ class TaskManager:
         tasks = await self.storage.list_tasks(request["params"].get("length"))
 
         if tasks is None:
-            return self._create_error_response(ListTasksResponse, request["id"], TaskNotFoundError, "No tasks found")
+            return self._create_error_response(
+                ListTasksResponse, request["id"], TaskNotFoundError, "No tasks found"
+            )
 
         return ListTasksResponse(jsonrpc="2.0", id=request["id"], result=tasks)
 
@@ -583,13 +657,18 @@ class TaskManager:
 
         if contexts is None:
             return self._create_error_response(
-                ListContextsResponse, request["id"], ContextNotFoundError, "No contexts found"
+                ListContextsResponse,
+                request["id"],
+                ContextNotFoundError,
+                "No contexts found",
             )
 
         return ListContextsResponse(jsonrpc="2.0", id=request["id"], result=contexts)
 
     @trace_context_operation("clear_context")
-    async def clear_context(self, request: ClearContextsRequest) -> ClearContextsResponse:
+    async def clear_context(
+        self, request: ClearContextsRequest
+    ) -> ClearContextsResponse:
         """Clear a context from storage."""
         context_id = request["params"].get("context_id")
 
@@ -597,12 +676,16 @@ class TaskManager:
             await self.storage.clear_context(context_id)
         except ValueError as e:
             # Context not found
-            return self._create_error_response(ClearContextsResponse, request["id"], ContextNotFoundError, str(e))
+            return self._create_error_response(
+                ClearContextsResponse, request["id"], ContextNotFoundError, str(e)
+            )
 
         return ClearContextsResponse(
             jsonrpc="2.0",
             id=request["id"],
-            result={"message": f"Context {context_id} and all associated tasks cleared successfully"},
+            result={
+                "message": f"Context {context_id} and all associated tasks cleared successfully"
+            },
         )
 
     @trace_task_operation("task_feedback")
@@ -612,7 +695,9 @@ class TaskManager:
         task = await self.storage.load_task(task_id)
 
         if task is None:
-            return self._create_error_response(TaskFeedbackResponse, request["id"], TaskNotFoundError, "Task not found")
+            return self._create_error_response(
+                TaskFeedbackResponse, request["id"], TaskNotFoundError, "Task not found"
+            )
 
         feedback_data = {
             "task_id": task_id,
@@ -628,7 +713,10 @@ class TaskManager:
         return TaskFeedbackResponse(
             jsonrpc="2.0",
             id=request["id"],
-            result={"message": "Feedback submitted successfully", "task_id": str(task_id)},
+            result={
+                "message": "Feedback submitted successfully",
+                "task_id": str(task_id),
+            },
         )
 
     async def resubscribe_task(self, request: ResubscribeTaskRequest) -> None:

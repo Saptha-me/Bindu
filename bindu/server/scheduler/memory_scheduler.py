@@ -31,7 +31,9 @@ class InMemoryScheduler(Scheduler):
         self.aexit_stack = AsyncExitStack()
         await self.aexit_stack.__aenter__()
 
-        self._write_stream, self._read_stream = anyio.create_memory_object_stream[TaskOperation]()
+        self._write_stream, self._read_stream = anyio.create_memory_object_stream[
+            TaskOperation
+        ]()
         await self.aexit_stack.enter_async_context(self._read_stream)
         await self.aexit_stack.enter_async_context(self._write_stream)
 
@@ -44,22 +46,36 @@ class InMemoryScheduler(Scheduler):
     async def run_task(self, params: TaskSendParams) -> None:
         """Schedule a task for execution."""
         logger.debug(f"Running task: {params}")
-        await self._write_stream.send(_RunTask(operation="run", params=params, _current_span=get_current_span()))
+        await self._write_stream.send(
+            _RunTask(operation="run", params=params, _current_span=get_current_span())
+        )
 
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Cancel a scheduled task."""
         logger.debug(f"Canceling task: {params}")
-        await self._write_stream.send(_CancelTask(operation="cancel", params=params, _current_span=get_current_span()))
+        await self._write_stream.send(
+            _CancelTask(
+                operation="cancel", params=params, _current_span=get_current_span()
+            )
+        )
 
     async def pause_task(self, params: TaskIdParams) -> None:
         """Pause a running task."""
         logger.debug(f"Pausing task: {params}")
-        await self._write_stream.send(_PauseTask(operation="pause", params=params, _current_span=get_current_span()))
+        await self._write_stream.send(
+            _PauseTask(
+                operation="pause", params=params, _current_span=get_current_span()
+            )
+        )
 
     async def resume_task(self, params: TaskIdParams) -> None:
         """Resume a paused task."""
         logger.debug(f"Resuming task: {params}")
-        await self._write_stream.send(_ResumeTask(operation="resume", params=params, _current_span=get_current_span()))
+        await self._write_stream.send(
+            _ResumeTask(
+                operation="resume", params=params, _current_span=get_current_span()
+            )
+        )
 
     async def receive_task_operations(self) -> AsyncIterator[TaskOperation]:
         """Receive task operations from the scheduler."""

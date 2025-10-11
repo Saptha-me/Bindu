@@ -186,3 +186,7 @@ examples/.pebbling/*
 
 examples/.pebbling/private.pem
 examples/.pebbling/public.pem
+
+# Security scanning baselines (tracked for audit)
+# .secrets.baseline
+# .bandit.baseline

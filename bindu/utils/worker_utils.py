@@ -5,7 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional, Union
 from uuid import UUID, uuid4
 
-from bindu.common.protocol.types import Artifact, DataPart, FilePart, Message, Part, TextPart
+from bindu.common.protocol.types import (
+    Artifact,
+    DataPart,
+    FilePart,
+    Message,
+    Part,
+    TextPart,
+)
 from bindu.settings import app_settings
 
 if TYPE_CHECKING:
@@ -33,7 +40,10 @@ class MessageConverter:
             List of chat messages with role and content fields
         """
         return [
-            {"role": MessageConverter.ROLE_MAP.get(msg.get("role", "user"), "user"), "content": content}
+            {
+                "role": MessageConverter.ROLE_MAP.get(msg.get("role", "user"), "user"),
+                "content": content,
+            }
             for msg in history
             if (content := MessageConverter._extract_text_content(msg))
         ]
@@ -76,7 +86,11 @@ class MessageConverter:
             return ""
 
         # Use generator for memory efficiency
-        text_parts = (part["text"] for part in parts if part.get("kind") == "text" and "text" in part)
+        text_parts = (
+            part["text"]
+            for part in parts
+            if part.get("kind") == "text" and "text" in part
+        )
         return " ".join(text_parts)
 
 
@@ -164,7 +178,11 @@ class ArtifactBuilder:
         # Convert result to appropriate part type
         if isinstance(results, str):
             parts = [{"kind": "text", "text": results}]
-        elif isinstance(results, (list, tuple)) and results and all(isinstance(item, str) for item in results):
+        elif (
+            isinstance(results, (list, tuple))
+            and results
+            and all(isinstance(item, str) for item in results)
+        ):
             # Join streaming results efficiently
             parts = [{"kind": "text", "text": "\n".join(results)}]
         else:
@@ -176,7 +194,9 @@ class ArtifactBuilder:
             metadata_key = app_settings.did.agent_extension_metadata
             for part in parts:
                 if part.get("kind") == "text" and "text" in part:
-                    part.setdefault("metadata", {})[metadata_key] = did_extension.sign_text(part["text"])
+                    part.setdefault("metadata", {})[metadata_key] = (
+                        did_extension.sign_text(part["text"])
+                    )
 
         return [Artifact(artifact_id=uuid4(), name=artifact_name, parts=parts)]
 
@@ -185,7 +205,9 @@ class TaskStateManager:
     """Optimized manager for task state transitions and validation."""
 
     @staticmethod
-    async def validate_task_state(task: dict[str, Any], expected_state: str = "submitted") -> None:
+    async def validate_task_state(
+        task: dict[str, Any], expected_state: str = "submitted"
+    ) -> None:
         """Validate task is in expected state.
 
         Args:

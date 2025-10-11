@@ -40,13 +40,23 @@ SUPPORTED_FRAMEWORKS = [
     AgentFrameworkSpec("agno", "openinference-instrumentation-agno", "1.5.2"),
     AgentFrameworkSpec("crewai", "openinference-instrumentation-crewai", "0.41.1"),
     AgentFrameworkSpec("langchain", "openinference-instrumentation-langchain", "0.1.0"),
-    AgentFrameworkSpec("llama-index", "openinference-instrumentation-llama-index", "0.1.0"),
+    AgentFrameworkSpec(
+        "llama-index", "openinference-instrumentation-llama-index", "0.1.0"
+    ),
     AgentFrameworkSpec("dspy", "openinference-instrumentation-dspy", "2.0.0"),
     AgentFrameworkSpec("haystack", "openinference-instrumentation-haystack", "2.0.0"),
-    AgentFrameworkSpec("instructor", "openinference-instrumentation-instructor", "1.0.0"),
-    AgentFrameworkSpec("pydantic-ai", "openinference-instrumentation-pydantic-ai", "0.1.0"),
-    AgentFrameworkSpec("autogen", "openinference-instrumentation-autogen-agentchat", "0.4.0"),
-    AgentFrameworkSpec("smolagents", "openinference-instrumentation-smolagents", "1.0.0"),
+    AgentFrameworkSpec(
+        "instructor", "openinference-instrumentation-instructor", "1.0.0"
+    ),
+    AgentFrameworkSpec(
+        "pydantic-ai", "openinference-instrumentation-pydantic-ai", "0.1.0"
+    ),
+    AgentFrameworkSpec(
+        "autogen", "openinference-instrumentation-autogen-agentchat", "0.4.0"
+    ),
+    AgentFrameworkSpec(
+        "smolagents", "openinference-instrumentation-smolagents", "1.0.0"
+    ),
     # LLM Providers (Lower Priority)
     AgentFrameworkSpec("litellm", "openinference-instrumentation-litellm", "1.43.0"),
     AgentFrameworkSpec("openai", "openinference-instrumentation-openai", "1.69.0"),
@@ -55,7 +65,9 @@ SUPPORTED_FRAMEWORKS = [
     AgentFrameworkSpec("groq", "openinference-instrumentation-groq", "0.1.0"),
     AgentFrameworkSpec("bedrock", "openinference-instrumentation-bedrock", "0.1.0"),
     AgentFrameworkSpec("vertexai", "openinference-instrumentation-vertexai", "1.0.0"),
-    AgentFrameworkSpec("google-genai", "openinference-instrumentation-google-genai", "0.1.0"),
+    AgentFrameworkSpec(
+        "google-genai", "openinference-instrumentation-google-genai", "0.1.0"
+    ),
 ]
 
 
@@ -66,7 +78,9 @@ def _get_package_manager() -> tuple[list[str], str]:
         Tuple of (command_prefix, package_manager_name)
     """
     current_directory = Path.cwd()
-    has_uv = (current_directory / "uv.lock").exists() or (current_directory / "pyproject.toml").exists()
+    has_uv = (current_directory / "uv.lock").exists() or (
+        current_directory / "pyproject.toml"
+    ).exists()
 
     if has_uv:
         return ["uv", "add"], "uv"
@@ -115,7 +129,9 @@ def _detect_framework(installed_dists: dict[str, Any]) -> AgentFrameworkSpec | N
     )
 
 
-def _validate_framework_version(framework_spec: AgentFrameworkSpec, installed_version: str) -> bool:
+def _validate_framework_version(
+    framework_spec: AgentFrameworkSpec, installed_version: str
+) -> bool:
     """Validate that installed framework version meets minimum requirements.
 
     Args:
@@ -128,7 +144,9 @@ def _validate_framework_version(framework_spec: AgentFrameworkSpec, installed_ve
     return version.parse(installed_version) >= version.parse(framework_spec.min_version)
 
 
-def _check_missing_packages(framework_spec: AgentFrameworkSpec, installed_dists: dict[str, Any]) -> list[str]:
+def _check_missing_packages(
+    framework_spec: AgentFrameworkSpec, installed_dists: dict[str, Any]
+) -> list[str]:
     """Check for missing OpenTelemetry packages.
 
     Args:
@@ -138,7 +156,9 @@ def _check_missing_packages(framework_spec: AgentFrameworkSpec, installed_dists:
     Returns:
         List of missing package names
     """
-    required_packages = app_settings.observability.base_packages + [framework_spec.instrumentation_package]
+    required_packages = app_settings.observability.base_packages + [
+        framework_spec.instrumentation_package
+    ]
     return [pkg for pkg in required_packages if pkg not in installed_dists]
 
 
@@ -214,7 +234,11 @@ def _setup_tracer_provider(
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.sdk import trace as trace_sdk
     from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, Resource
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export import (
+        BatchSpanProcessor,
+        ConsoleSpanExporter,
+        SimpleSpanProcessor,
+    )
 
     # Create resource with service metadata for better trace organization
     resource_attrs = {
@@ -230,7 +254,9 @@ def _setup_tracer_provider(
     if oltp_endpoint:
         # Create OTLP exporter with logging wrapper
         otlp_exporter = OTLPSpanExporter(endpoint=oltp_endpoint)
-        logging_exporter = _LoggingSpanExporter(otlp_exporter, oltp_endpoint, verbose_logging)
+        logging_exporter = _LoggingSpanExporter(
+            otlp_exporter, oltp_endpoint, verbose_logging
+        )
 
         # Use batch processor configuration from parameters
         batch_config = {
@@ -355,7 +381,9 @@ def setup(
             install_command=install_cmd,
         )
         if verbose_logging:
-            logger.info("Bindu framework tracing is active, but LLM-level tracing requires instrumentation packages")
+            logger.info(
+                "Bindu framework tracing is active, but LLM-level tracing requires instrumentation packages"
+            )
         return
 
     if verbose_logging:
@@ -363,13 +391,17 @@ def setup(
 
     # Step 4: Setup framework instrumentation
     if verbose_logging:
-        logger.info("Starting OpenInference framework instrumentation", framework=framework_spec.framework)
+        logger.info(
+            "Starting OpenInference framework instrumentation",
+            framework=framework_spec.framework,
+        )
 
     try:
         _instrument_framework(framework_spec.framework, tracer_provider)
         if verbose_logging:
             logger.info(
-                "OpenInference framework instrumentation completed successfully", framework=framework_spec.framework
+                "OpenInference framework instrumentation completed successfully",
+                framework=framework_spec.framework,
             )
     except ImportError as e:
         logger.error(

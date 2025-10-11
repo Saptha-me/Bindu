@@ -192,14 +192,19 @@ class TestConfigValidator:
         """Test validation rejects negative num_history_sessions."""
         minimal_config["num_history_sessions"] = -1
 
-        with pytest.raises(ValueError, match="Field 'num_history_sessions' must be a non-negative integer"):
+        with pytest.raises(
+            ValueError,
+            match="Field 'num_history_sessions' must be a non-negative integer",
+        ):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_validate_kind_invalid(self, minimal_config):
         """Test validation of kind field."""
         minimal_config["kind"] = "invalid"
 
-        with pytest.raises(ValueError, match="Field 'kind' must be one of: agent, team, workflow"):
+        with pytest.raises(
+            ValueError, match="Field 'kind' must be one of: agent, team, workflow"
+        ):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_validate_kind_valid_values(self, minimal_config):
@@ -226,7 +231,9 @@ class TestConfigValidator:
             # Missing domain and audience
         }
 
-        with pytest.raises(ValueError, match="Auth is enabled but missing required fields"):
+        with pytest.raises(
+            ValueError, match="Auth is enabled but missing required fields"
+        ):
             ConfigValidator.validate_and_process(minimal_config)
 
     def test_auth_enabled_valid(self, minimal_config):
@@ -417,5 +424,11 @@ class TestConfigValidatorDefaults:
 
     def test_required_fields(self):
         """Test that required fields list is correct."""
-        expected_required = ["author", "capabilities", "deployment", "storage", "scheduler"]
+        expected_required = [
+            "author",
+            "capabilities",
+            "deployment",
+            "storage",
+            "scheduler",
+        ]
         assert ConfigValidator.REQUIRED_FIELDS == expected_required

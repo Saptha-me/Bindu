@@ -36,7 +36,14 @@ from uuid import UUID
 
 from opentelemetry.trace import Status, StatusCode, get_tracer
 
-from bindu.common.protocol.types import Artifact, Message, Task, TaskIdParams, TaskSendParams, TaskState
+from bindu.common.protocol.types import (
+    Artifact,
+    Message,
+    Task,
+    TaskIdParams,
+    TaskSendParams,
+    TaskState,
+)
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
 from bindu.settings import app_settings
@@ -73,7 +80,9 @@ class ManifestWorker(Worker):
     manifest: AgentManifest
     """The agent manifest containing execution logic and DID identity."""
 
-    lifecycle_notifier: Optional[Callable[[UUID, UUID, str, bool], Any]] = field(default=None)
+    lifecycle_notifier: Optional[Callable[[UUID, UUID, str, bool], Any]] = field(
+        default=None
+    )
     """Optional callback for task lifecycle notifications (task_id, context_id, state, final)."""
 
     # -------------------------------------------------------------------------
@@ -114,19 +123,26 @@ class ManifestWorker(Worker):
 
         current_span = get_current_span()
         if current_span.is_recording():
-            current_span.add_event("task.state_changed", attributes={"to_state": "working"})
+            current_span.add_event(
+                "task.state_changed", attributes={"to_state": "working"}
+            )
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
 
         try:
             # Step 3: Execute manifest with system prompt (if enabled)
-            if self.manifest.enable_system_message and app_settings.agent.enable_structured_responses:
+            if (
+                self.manifest.enable_system_message
+                and app_settings.agent.enable_structured_responses
+            ):
                 # Inject structured response system prompt as first message
                 system_prompt = app_settings.agent.structured_response_system_prompt
                 if system_prompt:
                     # Create new list to avoid mutating original message_history
-                    message_history = [{"role": "system", "content": system_prompt}] + (message_history or [])
+                    message_history = [{"role": "system", "content": system_prompt}] + (
+                        message_history or []
+                    )
 
             # Step 3.1: Execute agent with tracing
             with tracer.start_as_current_span("agent.execute") as agent_span:
@@ -154,7 +170,9 @@ class ManifestWorker(Worker):
 
                     # Record successful execution
                     execution_time = time.time() - start_time
-                    agent_span.set_attribute("bindu.agent.execution_time", execution_time)
+                    agent_span.set_attribute(
+                        "bindu.agent.execution_time", execution_time
+                    )
                     agent_span.set_status(Status(StatusCode.OK))
 
                 except Exception as agent_error:
@@ -174,7 +192,9 @@ class ManifestWorker(Worker):
             structured_response = self._parse_structured_response(results)
 
             # Determine task state based on response
-            state, message_content = self._determine_task_state(results, structured_response)
+            state, message_content = self._determine_task_state(
+                results, structured_response
+            )
 
             if state in ("input-required", "auth-required"):
                 # Hybrid Pattern: Return Message only, keep task open
@@ -182,7 +202,8 @@ class ManifestWorker(Worker):
                 current_span = get_current_span()
                 if current_span.is_recording():
                     current_span.add_event(
-                        "task.state_changed", attributes={"from_state": "working", "to_state": state}
+                        "task.state_changed",
+                        attributes={"from_state": "working", "to_state": state},
                     )
                 await self._handle_intermediate_state(task, state, message_content)
             else:
@@ -191,7 +212,8 @@ class ManifestWorker(Worker):
                 current_span = get_current_span()
                 if current_span.is_recording():
                     current_span.add_event(
-                        "task.state_changed", attributes={"from_state": "working", "to_state": state}
+                        "task.state_changed",
+                        attributes={"from_state": "working", "to_state": state},
                     )
                 await self._handle_terminal_state(task, results, state)
 
@@ -201,7 +223,12 @@ class ManifestWorker(Worker):
             current_span = get_current_span()
             if current_span.is_recording():
                 current_span.add_event(
-                    "task.state_changed", attributes={"from_state": "working", "to_state": "failed", "error": str(e)}
+                    "task.state_changed",
+                    attributes={
+                        "from_state": "working",
+                        "to_state": "failed",
+                        "error": str(e),
+                    },
                 )
             await self._handle_task_failure(task, str(e))
             raise
@@ -220,10 +247,16 @@ class ManifestWorker(Worker):
             current_span = get_current_span()
             if current_span.is_recording():
                 current_span.add_event(
-                    "task.state_changed", attributes={"from_state": task["status"]["state"], "to_state": "canceled"}
+                    "task.state_changed",
+                    attributes={
+                        "from_state": task["status"]["state"],
+                        "to_state": "canceled",
+                    },
                 )
             await self.storage.update_task(params["task_id"], state="canceled")
-            await self._notify_lifecycle(params["task_id"], task["context_id"], "canceled", True)
+            await self._notify_lifecycle(
+                params["task_id"], task["context_id"], "canceled", True
+            )
 
     # -------------------------------------------------------------------------
     # Protocol Conversion
@@ -298,7 +331,9 @@ class ManifestWorker(Worker):
         elif self.manifest.enable_context_based_history:
             # Strategy 2: Context-based history (implicit continuation)
             # Only enabled if configured in manifest
-            tasks_by_context = await self.storage.list_tasks_by_context(task["context_id"])
+            tasks_by_context = await self.storage.list_tasks_by_context(
+                task["context_id"]
+            )
             previous_tasks = [t for t in tasks_by_context if t["id"] != task["id"]]
 
             all_previous_messages: list[Message] = []
@@ -319,7 +354,9 @@ class ManifestWorker(Worker):
     # Message Normalization
     # -------------------------------------------------------------------------
 
-    async def _handle_intermediate_state(self, task: dict[str, Any], state: TaskState, message_content: Any) -> None:
+    async def _handle_intermediate_state(
+        self, task: dict[str, Any], state: TaskState, message_content: Any
+    ) -> None:
         """Handle intermediate task states (input-required, auth-required).
 
         A2A Protocol Compliance:
@@ -332,17 +369,23 @@ class ManifestWorker(Worker):
             state: Task state to set
             message_content: Content for agent message (any type: str, dict, list, etc.)
         """
-        agent_messages = MessageConverter.to_protocol_messages(message_content, task["id"], task["context_id"])
+        agent_messages = MessageConverter.to_protocol_messages(
+            message_content, task["id"], task["context_id"]
+        )
 
         # Update task with state and append agent messages to history
-        await self.storage.update_task(task["id"], state=state, new_messages=agent_messages)
+        await self.storage.update_task(
+            task["id"], state=state, new_messages=agent_messages
+        )
         await self._notify_lifecycle(task["id"], task["context_id"], state, False)
 
     # -------------------------------------------------------------------------
     # Terminal State Handling
     # -------------------------------------------------------------------------
 
-    async def _handle_terminal_state(self, task: dict[str, Any], results: Any, state: TaskState = "completed") -> None:
+    async def _handle_terminal_state(
+        self, task: dict[str, Any], results: Any, state: TaskState = "completed"
+    ) -> None:
         """Handle terminal task states (completed/failed).
 
         Hybrid Pattern - Terminal States:
@@ -365,23 +408,34 @@ class ManifestWorker(Worker):
         """
         # Validate that state is terminal
         if state not in app_settings.agent.terminal_states:
-            raise ValueError(f"Invalid terminal state '{state}'. Must be one of: {app_settings.agent.terminal_states}")
+            raise ValueError(
+                f"Invalid terminal state '{state}'. Must be one of: {app_settings.agent.terminal_states}"
+            )
 
         # Handle different terminal states
         if state == "completed":
             # Success: Add both Message and Artifacts
-            agent_messages = MessageConverter.to_protocol_messages(results, task["id"], task["context_id"])
+            agent_messages = MessageConverter.to_protocol_messages(
+                results, task["id"], task["context_id"]
+            )
             artifacts = self.build_artifacts(results)
 
             await self.storage.update_task(
-                task["id"], state=state, new_artifacts=artifacts, new_messages=agent_messages
+                task["id"],
+                state=state,
+                new_artifacts=artifacts,
+                new_messages=agent_messages,
             )
             await self._notify_lifecycle(task["id"], task["context_id"], state, True)
 
         elif state in ("failed", "rejected"):
             # Failure/Rejection: Message only (explanation), NO artifacts
-            error_message = MessageConverter.to_protocol_messages(results, task["id"], task["context_id"])
-            await self.storage.update_task(task["id"], state=state, new_messages=error_message)
+            error_message = MessageConverter.to_protocol_messages(
+                results, task["id"], task["context_id"]
+            )
+            await self.storage.update_task(
+                task["id"], state=state, new_messages=error_message
+            )
             await self._notify_lifecycle(task["id"], task["context_id"], state, True)
 
         elif state == "canceled":
@@ -405,7 +459,9 @@ class ManifestWorker(Worker):
         error_message = MessageConverter.to_protocol_messages(
             f"Task execution failed: {error}", task["id"], task["context_id"]
         )
-        await self.storage.update_task(task["id"], state="failed", new_messages=error_message)
+        await self.storage.update_task(
+            task["id"], state="failed", new_messages=error_message
+        )
         await self._notify_lifecycle(task["id"], task["context_id"], "failed", True)
 
     # -------------------------------------------------------------------------
@@ -518,7 +574,9 @@ class ManifestWorker(Worker):
                     return result_dict["content"]
                 return result_dict
             except Exception as e:
-                logger.debug("Failed to extract content from .to_dict() method", error=str(e))
+                logger.debug(
+                    "Failed to extract content from .to_dict() method", error=str(e)
+                )
 
         # Strategy 6: Fallback to string conversion
         return str(result) if result is not None else ""
@@ -582,7 +640,9 @@ class ManifestWorker(Worker):
         # Strategy 3: Other types (list, bytes, etc.) - no state transition
         return None
 
-    def _determine_task_state(self, result: Any, structured: Optional[dict[str, Any]]) -> tuple[TaskState, Any]:
+    def _determine_task_state(
+        self, result: Any, structured: Optional[dict[str, Any]]
+    ) -> tuple[TaskState, Any]:
         """Determine task state from agent response.
 
         Handles multiple response types:
@@ -632,7 +692,9 @@ class ManifestWorker(Worker):
     # Lifecycle Notifications
     # -------------------------------------------------------------------------
 
-    async def _notify_lifecycle(self, task_id: UUID, context_id: UUID, state: str, final: bool) -> None:
+    async def _notify_lifecycle(
+        self, task_id: UUID, context_id: UUID, state: str, final: bool
+    ) -> None:
         """Notify lifecycle changes if notifier is configured.
 
         Args:

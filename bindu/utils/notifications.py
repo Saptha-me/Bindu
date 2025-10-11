@@ -37,7 +37,9 @@ class NotificationService:
     max_retries: int = 2
     base_backoff: float = 0.5
 
-    async def send_event(self, config: PushNotificationConfig, event: dict[str, Any]) -> None:
+    async def send_event(
+        self, config: PushNotificationConfig, event: dict[str, Any]
+    ) -> None:
         """Send an event to the configured HTTP webhook."""
         self.validate_config(config)
 
@@ -73,7 +75,11 @@ class NotificationService:
                 return
             except NotificationDeliveryError as exc:
                 last_error = exc
-                if exc.status is not None and 400 <= exc.status < 500 and exc.status != 429:
+                if (
+                    exc.status is not None
+                    and 400 <= exc.status < 500
+                    and exc.status != 429
+                ):
                     logger.warning(
                         "Dropping push notification due to client error",
                         event_id=event.get("event_id"),
@@ -119,7 +125,9 @@ class NotificationService:
                 status = response.getcode()
                 if 200 <= status < 300:
                     return status
-                raise NotificationDeliveryError(status, f"Unexpected status code: {status}")
+                raise NotificationDeliveryError(
+                    status, f"Unexpected status code: {status}"
+                )
         except error.HTTPError as exc:
             status = exc.code
             body = b""
@@ -128,9 +136,13 @@ class NotificationService:
             except Exception:
                 body = b""
             message = body.decode("utf-8", errors="ignore").strip()
-            raise NotificationDeliveryError(status, message or f"HTTP error {status}") from exc
+            raise NotificationDeliveryError(
+                status, message or f"HTTP error {status}"
+            ) from exc
         except error.URLError as exc:
-            raise NotificationDeliveryError(None, f"Connection error: {exc.reason}") from exc
+            raise NotificationDeliveryError(
+                None, f"Connection error: {exc.reason}"
+            ) from exc
 
     def _build_headers(self, config: PushNotificationConfig) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}

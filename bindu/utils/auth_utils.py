@@ -65,7 +65,9 @@ class JWTValidator:
         # Initialize PyJWKClient for fetching signing keys
         self._jwks_client: Optional[PyJWKClient] = None
         if self.config.jwks_uri:
-            self._jwks_client = PyJWKClient(self.config.jwks_uri, cache_keys=True, max_cached_keys=16)
+            self._jwks_client = PyJWKClient(
+                self.config.jwks_uri, cache_keys=True, max_cached_keys=16
+            )
 
     def validate_token(self, token: str) -> dict[str, Any]:
         """Validate JWT token and return decoded payload.
@@ -103,17 +105,23 @@ class JWTValidator:
                 },
             )
 
-            logger.debug(f"Token validated successfully for subject: {payload.get('sub')}")
+            logger.debug(
+                f"Token validated successfully for subject: {payload.get('sub')}"
+            )
             return payload
 
         except jwt.ExpiredSignatureError:
             logger.warning("Token validation failed: Token has expired")
             raise
         except jwt.InvalidAudienceError:
-            logger.warning(f"Token validation failed: Invalid audience (expected: {self.config.audience})")
+            logger.warning(
+                f"Token validation failed: Invalid audience (expected: {self.config.audience})"
+            )
             raise
         except jwt.InvalidIssuerError:
-            logger.warning(f"Token validation failed: Invalid issuer (expected: {self.config.issuer})")
+            logger.warning(
+                f"Token validation failed: Invalid issuer (expected: {self.config.issuer})"
+            )
             raise
         except jwt.InvalidSignatureError:
             logger.warning("Token validation failed: Invalid signature")
@@ -125,7 +133,9 @@ class JWTValidator:
             logger.error(f"Token validation failed: Unexpected error - {e}")
             raise
 
-    def check_permissions(self, payload: dict[str, Any], required_permissions: list[str]) -> bool:
+    def check_permissions(
+        self, payload: dict[str, Any], required_permissions: list[str]
+    ) -> bool:
         """Check if token has required permissions.
 
         Args:
@@ -146,10 +156,14 @@ class JWTValidator:
             token_permissions = payload["scope"].split()
 
         # Check if all required permissions are present
-        has_permissions = all(perm in token_permissions for perm in required_permissions)
+        has_permissions = all(
+            perm in token_permissions for perm in required_permissions
+        )
 
         if not has_permissions:
-            logger.warning(f"Permission check failed. Required: {required_permissions}, Token has: {token_permissions}")
+            logger.warning(
+                f"Permission check failed. Required: {required_permissions}, Token has: {token_permissions}"
+            )
 
         return has_permissions
 

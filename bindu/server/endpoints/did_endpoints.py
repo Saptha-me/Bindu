@@ -49,19 +49,25 @@ async def did_resolve_endpoint(app: "BinduApplication", request: Request) -> Res
                 data = await request.json()
                 did = data.get("did")
             except (ValueError, TypeError) as e:
-                logger.warning(f"Invalid JSON in DID resolve request from {client_ip}: {e}")
+                logger.warning(
+                    f"Invalid JSON in DID resolve request from {client_ip}: {e}"
+                )
                 code, message = extract_error_fields(JSONParseError)
                 return jsonrpc_error(code, message, str(e))
 
         if not did:
-            logger.warning(f"DID resolve request missing 'did' parameter from {client_ip}")
+            logger.warning(
+                f"DID resolve request missing 'did' parameter from {client_ip}"
+            )
             code, message = extract_error_fields(InvalidParamsError)
             return jsonrpc_error(code, message, "Missing 'did' parameter")
 
         # Check if this is our DID
         did_extension = _get_did_extension(app)
         if not did_extension:
-            logger.warning(f"DID not found: {did} (requested by {client_ip}) - no DID extension")
+            logger.warning(
+                f"DID not found: {did} (requested by {client_ip}) - no DID extension"
+            )
             code, message = extract_error_fields(InternalError)
             return jsonrpc_error(code, message, f"DID '{did}' not found", status=404)
 

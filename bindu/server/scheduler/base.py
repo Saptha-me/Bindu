@@ -78,4 +78,6 @@ _CancelTask = _TaskOperation[Literal["cancel"], TaskIdParams]
 _PauseTask = _TaskOperation[Literal["pause"], TaskIdParams]
 _ResumeTask = _TaskOperation[Literal["resume"], TaskIdParams]
 
-TaskOperation = Annotated["_RunTask | _CancelTask | _PauseTask | _ResumeTask", Discriminator("operation")]
+TaskOperation = Annotated[
+    "_RunTask | _CancelTask | _PauseTask | _ResumeTask", Discriminator("operation")
+]

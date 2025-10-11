@@ -15,7 +15,11 @@ from bindu.common.protocol.types import (
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 from bindu.server.storage.memory_storage import InMemoryStorage
 from bindu.server.task_manager import TaskManager
-from tests.utils import assert_jsonrpc_error, assert_jsonrpc_success, create_test_message
+from tests.utils import (
+    assert_jsonrpc_error,
+    assert_jsonrpc_success,
+    create_test_message,
+)
 
 
 @pytest.mark.asyncio

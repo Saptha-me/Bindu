@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Tuple, get_args
+from typing import Any, Tuple, Type, get_args
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -28,11 +28,16 @@ def extract_error_fields(err_alias: Type[Any]) -> Tuple[int, str]:
     """
     code_lit, msg_lit = get_args(err_alias)
     (code,) = get_args(code_lit)
-    return int(code), str(message)
+    (msg,) = get_args(msg_lit)
+    return int(code), str(msg)
 
 
 def jsonrpc_error(
-    code: int, message: str, data: str | None = None, request_id: str | None = None, status: int = 400
+    code: int,
+    message: str,
+    data: str | None = None,
+    request_id: str | None = None,
+    status: int = 400,
 ) -> JSONResponse:
     """Create a JSON-RPC error response.
 

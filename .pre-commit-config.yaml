@@ -8,12 +8,12 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=1024']  # 1MB limit to prevent large files
 
-  # - repo: https://github.com/astral-sh/ruff-pre-commit
-  #   rev: v0.11.9
-  #   hooks:
-  #     - id: ruff
-  #       args: ["--fix"]
-  #     - id: ruff-format
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.9
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
 
   # - repo: local
   #   hooks:
@@ -43,11 +43,11 @@ repos:
       - id: bandit
         args: ["-c", "bandit.yaml", "-r", "bindu"]
 
-  # - repo: https://github.com/Yelp/detect-secrets
-  #   rev: v1.5.0
-  #   hooks:
-  #     - id: detect-secrets
-  #       args: ['--baseline', '.secrets.baseline']
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
 
   - repo: https://github.com/PyCQA/pydocstyle
     rev: 6.3.0

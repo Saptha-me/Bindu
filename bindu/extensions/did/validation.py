@@ -43,10 +43,16 @@ class DIDValidation:
     @staticmethod
     def _validate_parts(did: str) -> tuple[bool, str | None, list[str]]:
         """Split and validate DID parts."""
-        parts = did.split(":", app_settings.did.bindu_parts - 1)  # Max 4 parts for bindu DIDs
+        parts = did.split(
+            ":", app_settings.did.bindu_parts - 1
+        )  # Max 4 parts for bindu DIDs
 
         if len(parts) < app_settings.did.min_parts:
-            return False, f"DID must have at least {app_settings.did.min_parts} parts separated by ':'", []
+            return (
+                False,
+                f"DID must have at least {app_settings.did.min_parts} parts separated by ':'",
+                [],
+            )
 
         return True, None, parts
 
@@ -54,7 +60,10 @@ class DIDValidation:
     def _validate_bindu_did(did: str, parts: list[str]) -> tuple[bool, str | None]:
         """Validate Bindu-specific DID format."""
         if not DIDValidation._BINDU_DID_PATTERN.match(did):
-            return False, f"bindu DID must have format did:{app_settings.did.method_bindu}:author:agent_name"
+            return (
+                False,
+                f"bindu DID must have format did:{app_settings.did.method_bindu}:author:agent_name",
+            )
 
         # Validate non-empty components
         if len(parts) != app_settings.did.bindu_parts or not parts[2] or not parts[3]:
@@ -95,7 +104,9 @@ class DIDValidation:
         return True, None
 
     @staticmethod
-    def _validate_required_field(did_doc: dict[str, Any], field: str, errors: list[str]) -> None:
+    def _validate_required_field(
+        did_doc: dict[str, Any], field: str, errors: list[str]
+    ) -> None:
         """Validate a required field exists."""
         if field not in did_doc:
             errors.append(f"Missing {field} field")

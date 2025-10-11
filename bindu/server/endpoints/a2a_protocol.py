@@ -56,7 +56,9 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
         if handler_name is None:
             logger.warning(f"Unsupported A2A method '{method}' from {client_ip}")
             code, message = extract_error_fields(MethodNotFoundError)
-            return jsonrpc_error(code, message, f"Method '{method}' is not implemented", request_id, 404)
+            return jsonrpc_error(
+                code, message, f"Method '{method}' is not implemented", request_id, 404
+            )
 
         handler = getattr(app.task_manager, handler_name)
         jsonrpc_response = await handler(a2a_request)
@@ -64,11 +66,15 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
         logger.debug(f"A2A response to {client_ip}: method={method}, id={request_id}")
 
         return Response(
-            content=a2a_response_ta.dump_json(jsonrpc_response, by_alias=True, serialize_as_any=True),
+            content=a2a_response_ta.dump_json(
+                jsonrpc_response, by_alias=True, serialize_as_any=True
+            ),
             media_type="application/json",
         )
 
     except Exception as e:
-        logger.error(f"Error processing A2A request from {client_ip}: {e}", exc_info=True)
+        logger.error(
+            f"Error processing A2A request from {client_ip}: {e}", exc_info=True
+        )
         code, message = extract_error_fields(InternalError)
         return jsonrpc_error(code, message, str(e), request_id, 500)

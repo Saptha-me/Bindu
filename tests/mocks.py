@@ -33,7 +33,12 @@ class MockAgent:
             return json.dumps({"state": "input-required", "prompt": self.response})
         elif self.response_type == "auth-required":
             return json.dumps(
-                {"state": "auth-required", "prompt": self.response, "auth_type": "api_key", "service": "test_service"}
+                {
+                    "state": "auth-required",
+                    "prompt": self.response,
+                    "auth_type": "api_key",
+                    "service": "test_service",
+                }
             )
         else:
             return self.response

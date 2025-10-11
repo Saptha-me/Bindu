@@ -20,15 +20,21 @@ tracer = trace.get_tracer("bindu.server.task_manager")
 meter = metrics.get_meter("bindu.server.task_manager")
 
 # Metrics
-task_counter = meter.create_counter("bindu_tasks_total", description="Total number of tasks processed", unit="1")
+task_counter = meter.create_counter(
+    "bindu_tasks_total", description="Total number of tasks processed", unit="1"
+)
 
-task_duration = meter.create_histogram("bindu_task_duration_seconds", description="Task processing duration", unit="s")
+task_duration = meter.create_histogram(
+    "bindu_task_duration_seconds", description="Task processing duration", unit="s"
+)
 
 active_tasks = meter.create_up_down_counter(
     "bindu_active_tasks", description="Number of currently active tasks", unit="1"
 )
 
-context_counter = meter.create_counter("bindu_contexts_total", description="Total number of contexts managed", unit="1")
+context_counter = meter.create_counter(
+    "bindu_contexts_total", description="Total number of contexts managed", unit="1"
+)
 
 logger = get_logger()
 
@@ -70,14 +76,20 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
                     if "task_id" in params:
                         span.set_attribute("bindu.task_id", str(params["task_id"]))
                     if "context_id" in params:
-                        span.set_attribute("bindu.context_id", str(params["context_id"]))
+                        span.set_attribute(
+                            "bindu.context_id", str(params["context_id"])
+                        )
                     if "message" in params:
                         # Add message metadata without sensitive content
                         message = params["message"]
                         if isinstance(message, dict):
-                            span.set_attribute("bindu.message_type", message.get("type", "unknown"))
+                            span.set_attribute(
+                                "bindu.message_type", message.get("type", "unknown")
+                            )
                             if "parts" in message:
-                                span.set_attribute("bindu.message_parts_count", len(message["parts"]))
+                                span.set_attribute(
+                                    "bindu.message_parts_count", len(message["parts"])
+                                )
 
                 try:
                     # Execute the operation
@@ -85,9 +97,13 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
 
                     # Record success metrics
                     duration = time.time() - start_time
-                    task_duration.record(duration, {"operation": operation_name, "status": "success"})
+                    task_duration.record(
+                        duration, {"operation": operation_name, "status": "success"}
+                    )
 
-                    task_counter.add(1, {"operation": operation_name, "status": "success"})
+                    task_counter.add(
+                        1, {"operation": operation_name, "status": "success"}
+                    )
 
                     # Set success status
                     span.set_status(Status(StatusCode.OK))
@@ -98,18 +114,26 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
                         result_data = result["result"]
                         if isinstance(result_data, dict):
                             if "task_id" in result_data:
-                                span.set_attribute("bindu.result_task_id", str(result_data["task_id"]))
+                                span.set_attribute(
+                                    "bindu.result_task_id", str(result_data["task_id"])
+                                )
                             if "status" in result_data:
                                 # Extract state from status dict (status is a dict with 'state' and 'timestamp')
                                 status = result_data["status"]
                                 if isinstance(status, dict) and "state" in status:
-                                    span.set_attribute("bindu.task_status", status["state"])
+                                    span.set_attribute(
+                                        "bindu.task_status", status["state"]
+                                    )
                                 elif isinstance(status, str):
                                     span.set_attribute("bindu.task_status", status)
 
                     logger.info(
                         f"TaskManager.{operation_name} completed successfully",
-                        extra={"request_id": request_id, "duration": duration, "operation": operation_name},
+                        extra={
+                            "request_id": request_id,
+                            "duration": duration,
+                            "operation": operation_name,
+                        },
                     )
 
                     return result
@@ -117,10 +141,17 @@ def trace_task_operation(operation_name: str, include_params: bool = True):
                 except Exception as e:
                     # Record error metrics
                     duration = time.time() - start_time
-                    task_duration.record(duration, {"operation": operation_name, "status": "error"})
+                    task_duration.record(
+                        duration, {"operation": operation_name, "status": "error"}
+                    )
 
                     task_counter.add(
-                        1, {"operation": operation_name, "status": "error", "error_type": type(e).__name__}
+                        1,
+                        {
+                            "operation": operation_name,
+                            "status": "error",
+                            "error_type": type(e).__name__,
+                        },
                     )
 
                     # Set error status
@@ -189,7 +220,9 @@ def trace_context_operation(operation_name: str):
             request_id = str(request.get("id", "unknown"))
             params = request.get("params", {})
 
-            with tracer.start_as_current_span(f"context_manager.{operation_name}") as span:
+            with tracer.start_as_current_span(
+                f"context_manager.{operation_name}"
+            ) as span:
                 span.set_attributes(
                     {
                         "bindu.operation": operation_name,
@@ -205,14 +238,21 @@ def trace_context_operation(operation_name: str):
                     result = await func(self, request, *args, **kwargs)
 
                     # Record context metrics
-                    context_counter.add(1, {"operation": operation_name, "status": "success"})
+                    context_counter.add(
+                        1, {"operation": operation_name, "status": "success"}
+                    )
 
                     span.set_status(Status(StatusCode.OK))
                     return result
 
                 except Exception as e:
                     context_counter.add(
-                        1, {"operation": operation_name, "status": "error", "error_type": type(e).__name__}
+                        1,
+                        {
+                            "operation": operation_name,
+                            "status": "error",
+                            "error_type": type(e).__name__,
+                        },
                     )
 
                     span.set_status(Status(StatusCode.ERROR, str(e)))
@@ -228,7 +268,13 @@ def trace_context_operation(operation_name: str):
 def create_task_span(task_id: UUID, operation: str, context_id: UUID | None = None):
     """Create a task-specific span with standard attributes."""
     span = tracer.start_span(f"task.{operation}")
-    span.set_attributes({"bindu.task_id": str(task_id), "bindu.operation": operation, "bindu.component": "task"})
+    span.set_attributes(
+        {
+            "bindu.task_id": str(task_id),
+            "bindu.operation": operation,
+            "bindu.component": "task",
+        }
+    )
 
     if context_id:
         span.set_attribute("bindu.context_id", str(context_id))

@@ -149,7 +149,9 @@ def create_test_context(
 def assert_task_state(task: Task, expected_state: TaskState) -> None:
     """Assert that a task is in the expected state."""
     actual_state = task["status"]["state"]
-    assert actual_state == expected_state, f"Expected task state '{expected_state}', got '{actual_state}'"
+    assert actual_state == expected_state, (
+        f"Expected task state '{expected_state}', got '{actual_state}'"
+    )
 
 
 def assert_jsonrpc_error(response: Dict[str, Any], expected_code: int) -> None:
@@ -157,13 +159,17 @@ def assert_jsonrpc_error(response: Dict[str, Any], expected_code: int) -> None:
     assert "error" in response, "Response does not contain an error"
     assert "code" in response["error"], "Error does not contain a code"
     actual_code = response["error"]["code"]
-    assert actual_code == expected_code, f"Expected error code {expected_code}, got {actual_code}"
+    assert actual_code == expected_code, (
+        f"Expected error code {expected_code}, got {actual_code}"
+    )
 
 
 def assert_jsonrpc_success(response: Dict[str, Any]) -> None:
     """Assert that a JSON-RPC response is successful."""
     assert "result" in response, "Response does not contain a result"
-    assert "error" not in response, f"Response contains an error: {response.get('error')}"
+    assert "error" not in response, (
+        f"Response contains an error: {response.get('error')}"
+    )
 
 
 def get_deterministic_uuid(seed: int) -> UUID:

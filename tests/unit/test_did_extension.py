@@ -44,8 +44,12 @@ class TestDIDAgentExtension:
         assert ext.author == "alice@example.com"
         assert ext.agent_name == "travel_agent"
         assert ext.agent_id == agent_id
-        assert ext.private_key_path == temp_key_dir / app_settings.did.private_key_filename
-        assert ext.public_key_path == temp_key_dir / app_settings.did.public_key_filename
+        assert (
+            ext.private_key_path == temp_key_dir / app_settings.did.private_key_filename
+        )
+        assert (
+            ext.public_key_path == temp_key_dir / app_settings.did.public_key_filename
+        )
 
     def test_initialization_with_password(self, temp_key_dir):
         """Test DID extension initialization with password."""
@@ -191,7 +195,10 @@ class TestDIDAgentExtension:
     def test_sanitize_did_component(self):
         """Test DID component sanitization."""
         assert DIDAgentExtension._sanitize_did_component("Test Agent") == "test_agent"
-        assert DIDAgentExtension._sanitize_did_component("user@example.com") == "user_at_example_com"
+        assert (
+            DIDAgentExtension._sanitize_did_component("user@example.com")
+            == "user_at_example_com"
+        )
         assert DIDAgentExtension._sanitize_did_component("agent.name") == "agent_name"
 
     def test_fallback_did_format(self, temp_key_dir):
@@ -236,7 +243,9 @@ class TestDIDAgentExtension:
         assert "created" in doc
         assert "authentication" in doc
         assert len(doc["authentication"]) == 1
-        assert doc["authentication"][0]["type"] == app_settings.did.verification_key_type
+        assert (
+            doc["authentication"][0]["type"] == app_settings.did.verification_key_type
+        )
         assert "bindu" in doc
         assert doc["bindu"]["agentName"] == "test_agent"
         assert doc["bindu"]["skills"] == ["skill1"]

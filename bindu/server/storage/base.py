@@ -36,7 +36,9 @@ class Storage(ABC, Generic[ContextT]):
     # -------------------------------------------------------------------------
 
     @abstractmethod
-    async def load_task(self, task_id: UUID, history_length: int | None = None) -> Task | None:
+    async def load_task(
+        self, task_id: UUID, history_length: int | None = None
+    ) -> Task | None:
         """Load a task from storage.
 
         Args:
@@ -93,7 +95,9 @@ class Storage(ABC, Generic[ContextT]):
         """
 
     @abstractmethod
-    async def list_tasks_by_context(self, context_id: UUID, length: int | None = None) -> list[Task]:
+    async def list_tasks_by_context(
+        self, context_id: UUID, length: int | None = None
+    ) -> list[Task]:
         """List tasks belonging to a specific context.
 
         Args:
@@ -120,7 +124,9 @@ class Storage(ABC, Generic[ContextT]):
         """
 
     @abstractmethod
-    async def append_to_contexts(self, context_id: UUID, messages: list[Message]) -> None:
+    async def append_to_contexts(
+        self, context_id: UUID, messages: list[Message]
+    ) -> None:
         """Append messages to context history.
 
         Efficient operation that updates context without full rebuild.
@@ -175,7 +181,9 @@ class Storage(ABC, Generic[ContextT]):
     # Feedback Operations (Optional)
     # -------------------------------------------------------------------------
 
-    async def store_task_feedback(self, task_id: UUID, feedback_data: dict[str, Any]) -> None:
+    async def store_task_feedback(
+        self, task_id: UUID, feedback_data: dict[str, Any]
+    ) -> None:
         """Store user feedback for a task.
 
         Optional operation - implementations may choose to store feedback

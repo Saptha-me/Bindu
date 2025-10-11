@@ -13,7 +13,12 @@ from bindu.common.protocol.types import (
     TextPart,
     a2a_request_ta,
 )
-from tests.utils import create_test_artifact, create_test_context, create_test_message, create_test_task
+from tests.utils import (
+    create_test_artifact,
+    create_test_context,
+    create_test_message,
+    create_test_task,
+)
 
 
 class TestMessageValidation:

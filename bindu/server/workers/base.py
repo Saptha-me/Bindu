@@ -127,13 +127,16 @@ class Worker(ABC):
             # Preserve trace context from scheduler
             with use_span(task_operation["_current_span"]):
                 with tracer.start_as_current_span(
-                    f"{task_operation['operation']} task", attributes={"logfire.tags": ["bindu"]}
+                    f"{task_operation['operation']} task",
+                    attributes={"logfire.tags": ["bindu"]},
                 ):
                     handler = operation_handlers.get(task_operation["operation"])
                     if handler:
                         await handler(task_operation["params"])
                     else:
-                        logger.warning(f"Unknown operation: {task_operation['operation']}")
+                        logger.warning(
+                            f"Unknown operation: {task_operation['operation']}"
+                        )
         except Exception as e:
             # Update task status to failed on any exception
             task_id = task_operation["params"]["task_id"]

@@ -35,7 +35,9 @@ class TestPostmanScenarios:
 
     def test_scenario_1_first_send_message(self):
         """Test: first send message - creates new task and context."""
-        app, _ = create_test_app("Here's a beautiful sunset quote: 'Every sunset is an opportunity to reset.'")
+        app, _ = create_test_app(
+            "Here's a beautiful sunset quote: 'Every sunset is an opportunity to reset.'"
+        )
 
         with TestClient(app) as client:
             context_id = str(uuid4())
@@ -128,7 +130,12 @@ class TestPostmanScenarios:
         app, _ = create_test_app("Response")
 
         with TestClient(app) as client:
-            request_body = {"jsonrpc": "2.0", "method": "tasks/list", "params": {}, "id": str(uuid4())}
+            request_body = {
+                "jsonrpc": "2.0",
+                "method": "tasks/list",
+                "params": {},
+                "id": str(uuid4()),
+            }
 
             response = client.post("/", json=request_body)
 
@@ -142,7 +149,12 @@ class TestPostmanScenarios:
         app, _ = create_test_app("Response")
 
         with TestClient(app) as client:
-            request_body = {"jsonrpc": "2.0", "method": "contexts/list", "params": {"length": 10}, "id": str(uuid4())}
+            request_body = {
+                "jsonrpc": "2.0",
+                "method": "contexts/list",
+                "params": {"length": 10},
+                "id": str(uuid4()),
+            }
 
             response = client.post("/", json=request_body)
 
@@ -163,7 +175,11 @@ class TestPostmanScenarios:
                     "taskId": str(uuid4()),
                     "feedback": "Great job! The response was very helpful and accurate.",
                     "rating": 5,
-                    "metadata": {"category": "quality", "source": "user", "helpful": True},
+                    "metadata": {
+                        "category": "quality",
+                        "source": "user",
+                        "helpful": True,
+                    },
                 },
                 "id": str(uuid4()),
             }
@@ -250,7 +266,12 @@ class TestErrorScenarios:
         app, _ = create_test_app("Response")
 
         with TestClient(app) as client:
-            request_body = {"jsonrpc": "2.0", "method": "unsupported/method", "params": {}, "id": str(uuid4())}
+            request_body = {
+                "jsonrpc": "2.0",
+                "method": "unsupported/method",
+                "params": {},
+                "id": str(uuid4()),
+            }
 
             response = client.post("/", json=request_body)
 

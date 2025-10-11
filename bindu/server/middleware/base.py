@@ -162,7 +162,9 @@ class AuthMiddleware(BaseHTTPMiddleware, ABC):
         # Attach context to request state
         self._attach_user_context(request, user_info, token_payload)
 
-        logger.debug(f"Authenticated {path} - sub={user_info.get('sub')}, m2m={user_info.get('is_m2m', False)}")
+        logger.debug(
+            f"Authenticated {path} - sub={user_info.get('sub')}, m2m={user_info.get('is_m2m', False)}"
+        )
 
         return await call_next(request)
 
@@ -179,7 +181,9 @@ class AuthMiddleware(BaseHTTPMiddleware, ABC):
         """
         request_id = await self._extract_request_id(request)
         code, message = extract_error_fields(AuthenticationRequiredError)
-        return jsonrpc_error(code=code, message=message, request_id=request_id, status=401)
+        return jsonrpc_error(
+            code=code, message=message, request_id=request_id, status=401
+        )
 
     async def _extract_request_id(self, request: Request) -> Any:
         """Extract request ID from JSON-RPC request body.
@@ -198,7 +202,9 @@ class AuthMiddleware(BaseHTTPMiddleware, ABC):
         except Exception:
             return None
 
-    def _attach_user_context(self, request: Request, user_info: dict[str, Any], token_payload: dict[str, Any]) -> None:
+    def _attach_user_context(
+        self, request: Request, user_info: dict[str, Any], token_payload: dict[str, Any]
+    ) -> None:
         """Attach user context to request state.
 
         Args:

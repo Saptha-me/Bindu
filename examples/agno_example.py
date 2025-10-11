@@ -41,7 +41,10 @@ simple_config = load_config("simple_agent_config.json")
 
 # 1. SIMPLE STATELESS AGENT - Direct response
 # Create the agent instance once
-simple_agent = Agent(instructions="Provide helpful responses to user messages", model=OpenAIChat(id="gpt-4o"))
+simple_agent = Agent(
+    instructions="Provide helpful responses to user messages",
+    model=OpenAIChat(id="gpt-4o"),
+)
 
 
 # Define the handler function that uses the agent

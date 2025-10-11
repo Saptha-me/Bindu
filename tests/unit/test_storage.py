@@ -110,7 +110,9 @@ class TestTaskStorage:
         task = await storage.submit_task(msg1["context_id"], msg1)
 
         # Add more messages to history
-        msg2 = create_test_message(text="Second", task_id=task["id"], context_id=task["context_id"])
+        msg2 = create_test_message(
+            text="Second", task_id=task["id"], context_id=task["context_id"]
+        )
         await storage.update_task(task["id"], "working", new_messages=[msg2])
 
         loaded_task = await storage.load_task(task["id"])
@@ -182,9 +184,15 @@ class TestContextStorage:
         ctx2_id = uuid4()
         ctx3_id = uuid4()
 
-        await storage.submit_task(ctx1_id, create_test_message(context_id=ctx1_id, text="Session 1"))
-        await storage.submit_task(ctx2_id, create_test_message(context_id=ctx2_id, text="Session 2"))
-        await storage.submit_task(ctx3_id, create_test_message(context_id=ctx3_id, text="Session 3"))
+        await storage.submit_task(
+            ctx1_id, create_test_message(context_id=ctx1_id, text="Session 1")
+        )
+        await storage.submit_task(
+            ctx2_id, create_test_message(context_id=ctx2_id, text="Session 2")
+        )
+        await storage.submit_task(
+            ctx3_id, create_test_message(context_id=ctx3_id, text="Session 3")
+        )
 
         contexts = await storage.list_contexts()
         assert len(contexts) == 3
@@ -197,8 +205,12 @@ class TestContextStorage:
         context_id = uuid4()
 
         # Create context with tasks
-        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
-        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
+        await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 1")
+        )
+        await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 2")
+        )
 
         # Clear the context
         await storage.clear_context(context_id)
@@ -213,9 +225,15 @@ class TestContextStorage:
         context_id = uuid4()
 
         # Submit multiple tasks to the same context
-        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
-        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
-        await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 3"))
+        await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 1")
+        )
+        await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 2")
+        )
+        await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 3")
+        )
 
         loaded_context = await storage.load_context(context_id)
 
@@ -232,9 +250,15 @@ class TestTaskContextRelationship:
         context_id = uuid4()
 
         # Submit tasks to the same context
-        task1 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
-        task2 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
-        task3 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 3"))
+        task1 = await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 1")
+        )
+        task2 = await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 2")
+        )
+        task3 = await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 3")
+        )
 
         # Update states
         await storage.update_task(task2["id"], "working")
@@ -255,8 +279,12 @@ class TestTaskContextRelationship:
         context_id = uuid4()
 
         # Submit tasks to create context
-        task1 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 1"))
-        task2 = await storage.submit_task(context_id, create_test_message(context_id=context_id, text="Task 2"))
+        task1 = await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 1")
+        )
+        task2 = await storage.submit_task(
+            context_id, create_test_message(context_id=context_id, text="Task 2")
+        )
 
         loaded_context = await storage.load_context(context_id)
 
@@ -276,7 +304,9 @@ class TestConcurrentAccess:
         messages = [create_test_message(text=f"Task {i}") for i in range(10)]
 
         # Submit all tasks concurrently
-        await asyncio.gather(*[storage.submit_task(msg["context_id"], msg) for msg in messages])
+        await asyncio.gather(
+            *[storage.submit_task(msg["context_id"], msg) for msg in messages]
+        )
 
         # Verify all tasks were saved
         all_tasks = await storage.list_tasks()
@@ -308,7 +338,9 @@ class TestConcurrentAccess:
 
         # Update task state multiple times concurrently
         async def update_task_state(state_suffix: int):
-            await storage.update_task(task["id"], "working", metadata={"update": state_suffix})
+            await storage.update_task(
+                task["id"], "working", metadata={"update": state_suffix}
+            )
 
         await asyncio.gather(*[update_task_state(i) for i in range(5)])
 

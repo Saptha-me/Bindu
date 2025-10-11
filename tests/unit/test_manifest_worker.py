@@ -84,7 +84,11 @@ class TestNormalCompletionFlow:
         artifact = completed_task["artifacts"][0]
 
         # Check artifact contains response
-        assert any(part.get("text") == "Expected result text" for part in artifact["parts"] if part["kind"] == "text")
+        assert any(
+            part.get("text") == "Expected result text"
+            for part in artifact["parts"]
+            if part["kind"] == "text"
+        )
 
 
 class TestInputRequiredFlow:
@@ -128,7 +132,9 @@ class TestInputRequiredFlow:
         scheduler: InMemoryScheduler,
     ):
         """Test that input-required tasks don't generate artifacts."""
-        agent = MockAgent(response="Please provide details", response_type="input-required")
+        agent = MockAgent(
+            response="Please provide details", response_type="input-required"
+        )
         manifest = MockManifest(agent_fn=agent)
 
         worker = ManifestWorker(
@@ -151,7 +157,10 @@ class TestInputRequiredFlow:
         updated_task = await storage.load_task(task["id"])
 
         # Should have message but no artifacts
-        assert "artifacts" not in updated_task or len(updated_task.get("artifacts", [])) == 0
+        assert (
+            "artifacts" not in updated_task
+            or len(updated_task.get("artifacts", [])) == 0
+        )
 
     @pytest.mark.asyncio
     async def test_input_required_message_in_status(
@@ -160,7 +169,9 @@ class TestInputRequiredFlow:
         scheduler: InMemoryScheduler,
     ):
         """Test that input-required prompt is in status message."""
-        agent = MockAgent(response="What is your email?", response_type="input-required")
+        agent = MockAgent(
+            response="What is your email?", response_type="input-required"
+        )
         manifest = MockManifest(agent_fn=agent)
 
         worker = ManifestWorker(
@@ -201,7 +212,9 @@ class TestAuthRequiredFlow:
         scheduler: InMemoryScheduler,
     ):
         """Test agent returning structured auth-required response."""
-        agent = MockAgent(response="Please provide API key", response_type="auth-required")
+        agent = MockAgent(
+            response="Please provide API key", response_type="auth-required"
+        )
         manifest = MockManifest(agent_fn=agent)
 
         worker = ManifestWorker(
@@ -285,7 +298,9 @@ class TestConversationHistory:
         task = await storage.submit_task(msg1["context_id"], msg1)
 
         # Add second message to same task
-        msg2 = create_test_message(text="Second message", context_id=task["context_id"], task_id=task["id"])
+        msg2 = create_test_message(
+            text="Second message", context_id=task["context_id"], task_id=task["id"]
+        )
         task = await storage.submit_task(task["context_id"], msg2)
 
         new_message = create_test_message(text="Third message")
@@ -324,7 +339,9 @@ class TestConversationHistory:
 
         # Create new task referencing previous (same context)
         new_message = create_test_message(
-            text="Make it shorter", context_id=prev_task["context_id"], reference_task_ids=[prev_task["id"]]
+            text="Make it shorter",
+            context_id=prev_task["context_id"],
+            reference_task_ids=[prev_task["id"]],
         )
         new_task = await storage.submit_task(prev_task["context_id"], new_message)
 
@@ -338,7 +355,11 @@ class TestConversationHistory:
 
         # Task should complete
         completed = await storage.load_task(new_task["id"])
-        assert completed["status"]["state"] in ["completed", "input-required", "auth-required"]
+        assert completed["status"]["state"] in [
+            "completed",
+            "input-required",
+            "auth-required",
+        ]
 
 
 class TestErrorHandling:

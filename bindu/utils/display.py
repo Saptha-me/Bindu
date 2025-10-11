@@ -86,13 +86,20 @@ def prepare_server_display(
     table = Table(show_header=False, box=None, padding=(0, 2))
 
     if host and port:
-        table.add_row(Text("Server:", style="bold cyan"), Text(f"http://{host}:{port}", style="bold green"))
+        table.add_row(
+            Text("Server:", style="bold cyan"),
+            Text(f"http://{host}:{port}", style="bold green"),
+        )
 
     if agent_id:
-        table.add_row(Text("Agent:", style="bold cyan"), Text(agent_id, style="bold blue"))
+        table.add_row(
+            Text("Agent:", style="bold cyan"), Text(agent_id, style="bold blue")
+        )
 
     if agent_did:
-        table.add_row(Text("Agent DID:", style="bold cyan"), Text(agent_did, style="bold blue"))
+        table.add_row(
+            Text("Agent DID:", style="bold cyan"), Text(agent_did, style="bold blue")
+        )
 
     # Create tagline
     tagline = Text("a bindu, part of Saptha.me", style="italic magenta")
@@ -102,7 +109,9 @@ def prepare_server_display(
 
     # Print everything
     console.print()
-    console.print(Panel(panel_content, title=title, border_style="bright_cyan", padding=(1, 2)))
+    console.print(
+        Panel(panel_content, title=title, border_style="bright_cyan", padding=(1, 2))
+    )
     console.print()
 
     if host or agent_id:

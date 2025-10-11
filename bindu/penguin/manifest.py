@@ -42,13 +42,17 @@ def validate_agent_function(agent_function: Callable) -> None:
     params = list(inspect.signature(agent_function).parameters.values())
 
     if not params:
-        raise ValueError("Agent function must have at least 'messages' parameter of type list[binduMessage]")
+        raise ValueError(
+            "Agent function must have at least 'messages' parameter of type list[binduMessage]"
+        )
 
     if len(params) > 1:
         raise ValueError("Agent function must have only 'messages' parameter")
 
     if params[0].name != "messages":
-        raise ValueError(f"First parameter must be named 'messages', got '{params[0].name}'")
+        raise ValueError(
+            f"First parameter must be named 'messages', got '{params[0].name}'"
+        )
 
     logger.debug(f"Agent function '{func_name}' validated successfully")
 
@@ -227,9 +231,13 @@ def create_manifest(
 
     # Prepare manifest metadata
     manifest_name = name or agent_function.__name__.replace("_", "-")
-    manifest_description = description or inspect.getdoc(agent_function) or f"Agent: {manifest_name}"
+    manifest_description = (
+        description or inspect.getdoc(agent_function) or f"Agent: {manifest_name}"
+    )
 
-    logger.info(f"Creating agent manifest: name='{manifest_name}', version={version}, kind={kind}")
+    logger.info(
+        f"Creating agent manifest: name='{manifest_name}', version={version}, kind={kind}"
+    )
 
     # Create base manifest
     manifest = AgentManifest(
@@ -306,7 +314,9 @@ def create_manifest(
                 if hasattr(result, "__aiter__"):
                     async for chunk in result:
                         yield chunk
-                elif hasattr(result, "__iter__") and not isinstance(result, (str, bytes)):
+                elif hasattr(result, "__iter__") and not isinstance(
+                    result, (str, bytes)
+                ):
                     for chunk in result:
                         yield chunk
                 else:
@@ -336,7 +346,9 @@ def create_manifest(
 
     # Attach extra metadata attributes if provided
     if extra_metadata:
-        logger.debug(f"Attaching extra metadata to manifest '{manifest_name}': {list(extra_metadata.keys())}")
+        logger.debug(
+            f"Attaching extra metadata to manifest '{manifest_name}': {list(extra_metadata.keys())}"
+        )
         for key, value in extra_metadata.items():
             setattr(manifest, key, value)
 

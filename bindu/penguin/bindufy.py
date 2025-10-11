@@ -19,7 +19,12 @@ from uuid import uuid4
 
 import uvicorn
 
-from bindu.common.models import AgentManifest, DeploymentConfig, SchedulerConfig, StorageConfig
+from bindu.common.models import (
+    AgentManifest,
+    DeploymentConfig,
+    SchedulerConfig,
+    StorageConfig,
+)
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
@@ -60,7 +65,9 @@ def _update_capabilities_with_did(
         return AgentCapabilities(extensions=[did_extension_obj])
 
 
-def _parse_deployment_url(deployment_config: DeploymentConfig | None) -> tuple[str, int]:
+def _parse_deployment_url(
+    deployment_config: DeploymentConfig | None,
+) -> tuple[str, int]:
     """Parse deployment URL to extract host and port.
 
     Args:
@@ -103,7 +110,9 @@ def _create_scheduler_instance(scheduler_config: SchedulerConfig | None):
     return InMemoryScheduler()
 
 
-def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -> AgentManifest:
+def bindufy(
+    agent: Any, config: Dict[str, Any], handler: Callable[[str], str]
+) -> AgentManifest:
     """Transform an agent instance and handler into a bindu-compatible agent.
 
     Args:
@@ -171,9 +180,15 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
         app_settings.auth.algorithms = auth_config.get("algorithms", ["RS256"])
         app_settings.auth.issuer = auth_config.get("issuer", "")
         app_settings.auth.jwks_uri = auth_config.get("jwks_uri", "")
-        app_settings.auth.public_endpoints = auth_config.get("public_endpoints", app_settings.auth.public_endpoints)
-        app_settings.auth.require_permissions = auth_config.get("require_permissions", False)
-        app_settings.auth.permissions = auth_config.get("permissions", app_settings.auth.permissions)
+        app_settings.auth.public_endpoints = auth_config.get(
+            "public_endpoints", app_settings.auth.public_endpoints
+        )
+        app_settings.auth.require_permissions = auth_config.get(
+            "require_permissions", False
+        )
+        app_settings.auth.permissions = auth_config.get(
+            "permissions", app_settings.auth.permissions
+        )
 
         logger.info(
             f"Auth0 configuration loaded: domain={auth_config.get('domain')}, audience={auth_config.get('audience')}"
@@ -184,10 +199,20 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
 
     # Create config objects if dictionaries provided
     deployment_config = (
-        DeploymentConfig(**validated_config["deployment"]) if validated_config.get("deployment") else None
+        DeploymentConfig(**validated_config["deployment"])
+        if validated_config.get("deployment")
+        else None
     )
-    storage_config = StorageConfig(**validated_config["storage"]) if validated_config.get("storage") else None
-    scheduler_config = SchedulerConfig(**validated_config["scheduler"]) if validated_config.get("scheduler") else None
+    storage_config = (
+        StorageConfig(**validated_config["storage"])
+        if validated_config.get("storage")
+        else None
+    )
+    scheduler_config = (
+        SchedulerConfig(**validated_config["scheduler"])
+        if validated_config.get("scheduler")
+        else None
+    )
 
     # Validate that this is a protocol-compliant function
     logger.info(f"Validating handler function: {handler.__name__}")
@@ -220,9 +245,12 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
     logger.info(f"DID extension initialized: {did_extension.did}")
 
     # Set agent metadata for DID document
-    agent_url = deployment_config.url if deployment_config else app_settings.network.default_url
+    agent_url = (
+        deployment_config.url if deployment_config else app_settings.network.default_url
+    )
     skills_data = [
-        skill.dict() if hasattr(skill, "dict") else skill for skill in (validated_config.get("skills") or [])
+        skill.dict() if hasattr(skill, "dict") else skill
+        for skill in (validated_config.get("skills") or [])
     ]
 
     did_extension.set_agent_metadata(
@@ -242,7 +270,9 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
     logger.info("Creating agent manifest...")
 
     # Update capabilities to include DID extension
-    capabilities = _update_capabilities_with_did(validated_config["capabilities"], did_extension.agent_extension)
+    capabilities = _update_capabilities_with_did(
+        validated_config["capabilities"], did_extension.agent_extension
+    )
 
     # Create agent manifest
     _manifest = create_manifest(
@@ -256,7 +286,9 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
         agent_trust=validated_config["agent_trust"],
         version=validated_config["version"],
         url=agent_url,
-        protocol_version=deployment_config.protocol_version if deployment_config else "1.0.0",
+        protocol_version=deployment_config.protocol_version
+        if deployment_config
+        else "1.0.0",
         kind=validated_config["kind"],
         debug_mode=validated_config["debug_mode"],
         debug_level=validated_config["debug_level"],
@@ -266,7 +298,9 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
         oltp_service_name=validated_config.get("oltp_service_name"),
         num_history_sessions=validated_config["num_history_sessions"],
         enable_system_message=validated_config.get("enable_system_message", True),
-        enable_context_based_history=validated_config.get("enable_context_based_history", False),
+        enable_context_based_history=validated_config.get(
+            "enable_context_based_history", False
+        ),
         documentation_url=validated_config["documentation_url"],
         extra_metadata=validated_config["extra_metadata"],
     )
@@ -309,18 +343,32 @@ def bindufy(agent: Any, config: Dict[str, Any], handler: Callable[[str], str]) -
         oltp_service_name=validated_config.get("oltp_service_name"),
         oltp_verbose_logging=validated_config.get("oltp_verbose_logging", False),
         oltp_service_version=validated_config.get("oltp_service_version", "1.0.0"),
-        oltp_deployment_environment=validated_config.get("oltp_deployment_environment", "production"),
-        oltp_batch_max_queue_size=validated_config.get("oltp_batch_max_queue_size", 2048),
-        oltp_batch_schedule_delay_millis=validated_config.get("oltp_batch_schedule_delay_millis", 5000),
-        oltp_batch_max_export_batch_size=validated_config.get("oltp_batch_max_export_batch_size", 512),
-        oltp_batch_export_timeout_millis=validated_config.get("oltp_batch_export_timeout_millis", 30000),
+        oltp_deployment_environment=validated_config.get(
+            "oltp_deployment_environment", "production"
+        ),
+        oltp_batch_max_queue_size=validated_config.get(
+            "oltp_batch_max_queue_size", 2048
+        ),
+        oltp_batch_schedule_delay_millis=validated_config.get(
+            "oltp_batch_schedule_delay_millis", 5000
+        ),
+        oltp_batch_max_export_batch_size=validated_config.get(
+            "oltp_batch_max_export_batch_size", 512
+        ),
+        oltp_batch_export_timeout_millis=validated_config.get(
+            "oltp_batch_export_timeout_millis", 30000
+        ),
     )
 
     # Parse deployment URL
     host, port = _parse_deployment_url(deployment_config)
 
     # Display server startup banner and run
-    logger.info(prepare_server_display(host=host, port=port, agent_id=agent_id, agent_did=did_extension.did))
+    logger.info(
+        prepare_server_display(
+            host=host, port=port, agent_id=agent_id, agent_did=did_extension.did
+        )
+    )
     uvicorn.run(bindu_app, host=host, port=port)
 
     return _manifest

@@ -36,7 +36,8 @@ def _create_agent_card(app: "BinduApplication") -> AgentCard:
         capabilities=app.manifest.capabilities,
         kind=app.manifest.kind,
         num_history_sessions=app.manifest.num_history_sessions,
-        extra_data=app.manifest.extra_data or {"created": int(time()), "server_info": "bindu Agent Server"},
+        extra_data=app.manifest.extra_data
+        or {"created": int(time()), "server_info": "bindu Agent Server"},
         debug_mode=app.manifest.debug_mode,
         debug_level=app.manifest.debug_level,
         monitoring=app.manifest.monitoring,
@@ -57,10 +58,14 @@ async def agent_card_endpoint(app: "BinduApplication", request: Request) -> Resp
         if app._agent_card_json_schema is None:
             logger.debug("Generating agent card schema")
             agent_card = _create_agent_card(app)
-            app._agent_card_json_schema = agent_card_ta.dump_json(agent_card, by_alias=True)
+            app._agent_card_json_schema = agent_card_ta.dump_json(
+                agent_card, by_alias=True
+            )
 
         logger.debug(f"Serving agent card to {client_ip}")
-        return Response(content=app._agent_card_json_schema, media_type="application/json")
+        return Response(
+            content=app._agent_card_json_schema, media_type="application/json"
+        )
 
     except Exception as e:
         logger.error(f"Error serving agent card to {client_ip}: {e}", exc_info=True)

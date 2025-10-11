@@ -39,7 +39,9 @@ class Auth0Middleware(AuthMiddleware):
         """
         self.validator = JWTValidator(self.config)
 
-        logger.info(f"Auth0 middleware initialized. Domain: {self.config.domain}, Audience: {self.config.audience}")
+        logger.info(
+            f"Auth0 middleware initialized. Domain: {self.config.domain}, Audience: {self.config.audience}"
+        )
 
     def _validate_token(self, token: str) -> dict[str, Any]:
         """Validate Auth0 JWT token.

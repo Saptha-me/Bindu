@@ -11,7 +11,12 @@ from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 
 # Import directly from submodules to avoid circular imports
 from bindu.server.storage.memory_storage import InMemoryStorage
-from tests.mocks import MockAgent, MockDIDExtension, MockManifest, MockNotificationService
+from tests.mocks import (
+    MockAgent,
+    MockDIDExtension,
+    MockManifest,
+    MockNotificationService,
+)
 from tests.utils import create_test_context, create_test_message, create_test_task
 
 

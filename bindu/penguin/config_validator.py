@@ -8,7 +8,7 @@ ensuring they meet the required schema and have proper defaults.
 import os
 from typing import Any, Dict
 
-from bindu.common.protocol.types import AgentCapabilities, AgentTrust, Skill
+from bindu.common.protocol.types import AgentCapabilities, Skill
 
 
 class ConfigValidator:
@@ -91,9 +91,11 @@ class ConfigValidator:
         if isinstance(config.get("capabilities"), dict):
             config["capabilities"] = AgentCapabilities(**config["capabilities"])
 
-        # Process agent_trust if provided
+        # Process agent_trust if provided - keep as dict for now
+        # TypedDict will be validated when used, not at construction
+        # This allows partial configs during development
         if isinstance(config.get("agent_trust"), dict):
-            config["agent_trust"] = AgentTrust(**config["agent_trust"])
+            pass  # Keep as dict, don't construct TypedDict here
 
         # Process key password - support environment variable and prompt
         if config.get("key_password"):

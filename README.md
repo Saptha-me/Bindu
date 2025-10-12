@@ -25,7 +25,7 @@
 
 <br/>
 
-# 🌌 The Idea
+# The Idea
 
 Integration was the problem.
 And even today, it still is.
@@ -36,19 +36,20 @@ Each step made systems faster, smaller, and more distributed.
 Then, on <b>30th November 2022</b>, something changed.<br/>
 We entered the age of <b>Large Language Models</b>.<br/>
 Software began reasoning, planning, and calling tools.<br/>
-Suddenly, our code didn’t just execute, it <b>thought</b>.
+Suddenly, our code didn’t just execute, it started <b>thinking</b>.
 
 But the old problem stayed the same.<br/>
+
 <b>Connection.</b>
 
 Now we have the language protocols for this new world:<br/>
-[A2A](https://github.com/a2aproject/A2A), [AP2](https://github.com/google-agentic-commerce/AP2), and [X402](https://github.com/coinbase/x402) — ways for agents to talk, trust, and trade.<br/>
+[A2A](https://github.com/a2aproject/A2A), [AP2](https://github.com/google-agentic-commerce/AP2), and [X402](https://github.com/coinbase/x402), how the agents talk, trust, and trade.<br/>
 
 Yet, connecting them still takes time, code, and complexity.
 
 That’s why <b>Bindu exists.</b>
 
-<b>Bindu</b> is a Python package that turns your agent into a <b>living server</b>.One that can speak the language of <b>A2A, AP2, and X402</b>,
+<b>Bindu</b> is a wrapper that turns your agent into a A2A, AP2, and X402 schema-compliant <b>living server</b>,
 And communicate with other agents and microservices across the open web.
 
 Just write your agent in any framework you like, then use <b>Bindu</b>.
@@ -164,7 +165,7 @@ And the single tiny dot is Bindu, the origin point in the Internet of Agents.<br
 
 <br/>
 
-# The Saptha.me Connection
+# The Saptha.me Connection [In Progress]
 
 Saptha.me is the layer that makes swarms of agents.
 
@@ -228,7 +229,7 @@ For more details about maintainership, including how to become a maintainer, see
 
 ## License
 
-Bindu is proudly open-source and licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
+Bindu is proudly open-source and licensed under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/).
 
 <br/>
 

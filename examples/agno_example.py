@@ -16,11 +16,7 @@ Benefits:
 
 import json
 import os
-import sys
 from typing import Any
-
-# Add parent directory to path so we can import bindu
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat

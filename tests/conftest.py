@@ -5,7 +5,7 @@ from typing import AsyncGenerator, cast
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
+import pytest_asyncio  # type: ignore[import-untyped]
 
 from bindu.common.models import AgentManifest
 from bindu.server.scheduler.memory_scheduler import InMemoryScheduler

@@ -2,7 +2,7 @@
   <img src="assets/bindu-logo.svg" alt="bindu Logo" width="200">
 </p>
 
-<h1 align="center"> bindu </h1>
+<h1 align="center"> Bindu 🌻</h1>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/Saptha-me/Bindu/)
@@ -16,26 +16,52 @@
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.saptha.me)
 [![GitHub stars](https://img.shields.io/github/stars/Saptha-me/Bindu)](https://github.com/Saptha-me/Bindu/stargazers)
 
-✨ Imagine a world where AI agents collaborate effortlessly and securely—no passport 🚫, no boundaries 🌐.
+We imagine world of agents where they can communicate with each other seamlessly.
+and Bindu turns your agent into a living server - the dot(Bindu) in the Internet of Agents. 
 
-That’s bindu 🌻.An open source, secured protocol for agent-to-agent communication.
+# The Idea
 
-🚀 Powered by Decentralised Identifiers (DIDs) 🔑, secured conversations with mutual TLS (mTLS) 🔒, and a lightweight yet powerful communication protocol built on JSON-RPC 2.0 ⚡️—bindu is paving the way for the next generation of collaborative AI systems. 🌟🤖
+The integration was the problem and still is the problem in the world.
+We built monoliths, then APIs, then microservices, then cloud functions.
+Then after the 30th November, 2022, we have arrived the age of LLMs.
+Large language models started reasoning, planning, and calling tools.
+And suddenly, software wasn’t just executing, it was thinking.
+
+But the problem was still the same.
+
+We do have now the language protocol for communication between agents.A2A, AP2, x402. 
+
+How do we connect them?
+
+Thats why Bindu is here.
+
+Bindu is a python package that helps you turn your agent into a living server that can talk with other agents, microservices in the language of A2A, AP2, x402.
 
 
-## 🌟 Features
+```bash
+a peek into the night sky
+}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+{{            +             +                  +   @          {{
+}}   |                *           o     +                .    }}
+{{  -O-    o               .               .          +       {{
+}}   |                    _,.-----.,_         o    |          }}
+{{           +    *    .-'.         .'-.          -O-         {{
+}}      *            .'.-'   .---.   `'.'.         |     *    }}
+{{ .                /_.-'   /     \   .'-.\                   {{
+}}         ' -=*<  |-._.-  |   @   |   '-._|  >*=-    .     + }}
+{{ -- )--           \`-.    \     /    .-'/                   {{
+}}       *     +     `.'.    '---'    .'.'    +       o       }}
+{{                  .  '-._         _.-'  .                   {{
+}}         |               `~~~~~~~`       - --===D       @   }}
+{{   o    -O-      *   .                  *        +          {{
+}}         |                      +         .            +    }}
+{{ jgs          .     @      o                        *       {{
+}}       o                          *          o           .  }}
+{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+```
 
-bindu helps your AI agents talk to each other seamlessly:
+Each symbol is an agent - the Bindu, Dot in the Internet of Agents.
 
-🔒 **Super Secure** - Your agents exchange secrets safely (with built-in mTLS)
-
-🧩 **Plug-and-Play** - Just decorate your agent and it's ready to communicate
-
-⚡ **Lightning Fast** - Quick connections without the weight
-
-🌐 **Works Everywhere** - Connect any agents, regardless of their programming language
-
-🔄 **Reliable Communication** - Messages always arrive correctly and in order
 
 
 ## 📦 Installation

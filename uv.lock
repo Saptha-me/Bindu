@@ -209,7 +209,12 @@ examples = [
 [package.dev-dependencies]
 dev = [
     { name = "bindu" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "pytest-timeout" },
+    { name = "pytest-xdist" },
     { name = "ty" },
 ]
 
@@ -257,7 +262,12 @@ provides-extras = ["dev", "examples"]
 [package.metadata.requires-dev]
 dev = [
     { name = "bindu", editable = "." },
+    { name = "pre-commit", specifier = ">=3.0.0" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-timeout", specifier = ">=2.2.0" },
+    { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "ty", specifier = ">=0.0.1a14" },
 ]
 

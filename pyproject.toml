@@ -79,7 +79,12 @@ bindu = { workspace = true }
 [dependency-groups]
 dev = [
     "bindu",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.26.0",
     "pytest-cov>=7.0.0",
+    "pytest-timeout>=2.2.0",
+    "pytest-xdist>=3.0.0",
+    "pre-commit>=3.0.0",
     "ty>=0.0.1a14",
 ]
 

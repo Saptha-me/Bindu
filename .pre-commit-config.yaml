@@ -17,12 +17,13 @@ repos:
 
   - repo: local
     hooks:
-      # - id: ty
-      #   name: ty type checker
-      #   entry: ty check
-      #   language: system
-      #   types: [python]
-      #   pass_filenames: false
+      - id: ty
+        name: ty type checker
+        entry: uv run ty check bindu/ tests/
+        language: system
+        types: [python]
+        pass_filenames: false
+        exclude: ^examples/
 
       - id: pytest
         name: pytest with coverage

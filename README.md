@@ -15,7 +15,7 @@
 [![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/Saptha-me/Bindu/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml/badge.svg)](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml)
-[![Coverage Status](https://coveralls.io/repos/github/Saptha-me/Bindu/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Saptha-me/Bindu?branch=v0.1.0.5)
+[![Coverage Status](https://coveralls.io/repos/github/Saptha-me/Bindu/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Saptha-me/Bindu?)
 [![PyPI version](https://badge.fury.io/py/bindu.svg)](https://badge.fury.io/py/bindu)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/bindu)](https://pypi.org/project/bindu/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Saptha-me/Bindu/pulls)
@@ -219,13 +219,13 @@ uv sync --dev
 pre-commit run --all-files
 ```
 
-Please see our [Contributing Guidelines](.github/CONTRIBUTING.md) for more details.
+Please see our [Contributing Guidelines](.github/contributing.md) for more details.
 
 <br/>
 
 ## Maintainers
 
-For more details about maintainers, including how to become a maintainer, see our [MAINTAINERS.md](MAINTAINERS.md) file.
+For more details about maintainers, including how to become a maintainer, see our [maintainers](maintainers.md) file.
 
 <br/>
 

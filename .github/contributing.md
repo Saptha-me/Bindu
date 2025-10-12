@@ -251,14 +251,14 @@ async def test_agent_initialization():
     """Test that agent initializes correctly."""
     config = {"author": "test@example.com", "name": "test_agent"}
     agent = await bindufy(my_agent, config, handler)
-    
+
     assert agent.did is not None
     assert agent.name == "test_agent"
 
 def test_did_format():
     """Test DID format generation."""
     did = generate_did("user@example.com", "my_agent", "uuid-123")
-    
+
     assert did.startswith("did:bindu:")
     assert "my_agent" in did
 ```
@@ -321,7 +321,7 @@ We value all contributions! Contributors are:
 
 ## First-Time Contributors
 
-New to open source? We're here to help! 
+New to open source? We're here to help!
 
 1. Start with issues labeled `good first issue`
 2. Read through existing code and tests

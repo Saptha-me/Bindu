@@ -161,6 +161,8 @@ class AgentManifest:
             debug_level=self.debug_level,
             monitoring=self.monitoring,
             telemetry=self.telemetry,
+            default_input_modes=["text/plain", "application/json"],
+            default_output_modes=["text/plain", "application/json"],
         )
 
     def __repr__(self) -> str:

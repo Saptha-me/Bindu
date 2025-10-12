@@ -71,6 +71,12 @@ async def did_resolve_endpoint(app: "BinduApplication", request: Request) -> Res
             code, message = extract_error_fields(InternalError)
             return jsonrpc_error(code, message, f"DID '{did}' not found", status=404)
 
+        # Type narrowing: did_extension is not None here
+        if not hasattr(did_extension, "did"):
+            logger.error("DID extension missing 'did' attribute")
+            code, message = extract_error_fields(InternalError)
+            return jsonrpc_error(code, message, "Invalid DID extension", status=500)
+
         if did != did_extension.did:
             logger.warning(f"DID not found: {did} (requested by {client_ip})")
             code, message = extract_error_fields(InternalError)

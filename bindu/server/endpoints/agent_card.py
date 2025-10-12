@@ -43,6 +43,8 @@ def _create_agent_card(app: "BinduApplication") -> AgentCard:
         monitoring=app.manifest.monitoring,
         telemetry=app.manifest.telemetry,
         agent_trust=app.manifest.agent_trust,
+        default_input_modes=["text/plain", "application/json"],
+        default_output_modes=["text/plain", "application/json"],
     )
 
 

@@ -23,6 +23,7 @@
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.saptha.me)
 [![GitHub stars](https://img.shields.io/github/stars/Saptha-me/Bindu)](https://github.com/Saptha-me/Bindu/stargazers)
 
+<br/>
 
 # 🌌 The Idea
 

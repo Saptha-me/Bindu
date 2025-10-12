@@ -186,7 +186,7 @@ Bindu is Agent Framework agnostic.
 
 We did test with mainly Agno, CrewAI, LangChain, and LlamaIndex, FastAgent.
 
-Want integration with your favorite framework? Let us know on [Discord](https://discord.gg/Fr6rcRJa)!
+Want integration with your favorite framework? Let us know on [Discord](https://discord.gg/3w5zuYUuwt)!
 
 <br/>
 
@@ -211,6 +211,8 @@ git clone https://github.com/Saptha-me/Bindu.git
 cd Bindu
 
 # Install development dependencies
+uv venv --python 3.12.9
+source .venv/bin/activate
 uv sync --dev
 
 # Install pre-commit hooks
@@ -223,7 +225,7 @@ Please see our [Contributing Guidelines](.github/CONTRIBUTING.md) for more detai
 
 ## Maintainers
 
-For more details about maintainership, including how to become a maintainer, see our [MAINTAINERS.md](MAINTAINERS.md) file.
+For more details about maintainers, including how to become a maintainer, see our [MAINTAINERS.md](MAINTAINERS.md) file.
 
 <br/>
 

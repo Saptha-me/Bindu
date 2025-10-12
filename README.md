@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/bindu-logo.svg" alt="bindu Logo" width="200">
+  <img src="assets/light.svg" alt="bindu Logo" width="200">
 </p>
 
 <h1 align="center"> Bindu 🌻</h1>
@@ -252,6 +252,8 @@ We are grateful to the following projects for the development of bindu:
 - [A2A](https://github.com/a2aproject/A2A)
 - [AP2](https://github.com/google-agentic-commerce/AP2)
 - [X402](https://github.com/coinbase/x402)
+- The bindu logo : https://openmoji.org/library/emoji-1F33B/
+- The Ascii Space Art : https://www.asciiart.eu/space/other#google_vignette
 
 <br/>
 

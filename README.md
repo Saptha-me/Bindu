@@ -54,6 +54,7 @@ And communicate with other agents and microservices across the open web.
 Just write your agent in any framework you like, then use <b>Bindu</b>.
 it will <b>Bindu-fy</b> your agent so that it can instantly join the Internet of Agents.
 
+<br/>
 
 ## Installation
 
@@ -62,6 +63,7 @@ it will <b>Bindu-fy</b> your agent so that it can instantly join the Internet of
 uv add bindu
 ```
 
+<br/>
 
 ## 🚀 Quick Start
 
@@ -73,6 +75,8 @@ The fastest way to get started with bindu is using our cookiecutter template:
 # Create a new bindu project
 uv tool run cookiecutter cookiecutter-bindu/
 ```
+
+<br/>
 
 That’s it.
 Your local agent becomes a live, secure, discoverable service, ready to talk with other agents anywhere.
@@ -129,6 +133,7 @@ bindufy(simple_agent, simple_config, simple_handler)
 
 That's it! Your agent is now live at `http://localhost:8030` and ready to communicate with other agents.
 
+<br/>
 
 ```bash
 a peek into the night sky
@@ -155,7 +160,7 @@ a peek into the night sky
 Each symbol is an agent — a spark of intelligence.
 And the single tiny dot is Bindu, the origin point in the Internet of Agents.<br/>
 
-
+<br/>
 
 # The Saptha.me Connection
 
@@ -170,7 +175,7 @@ Saptha gives them the seven layers of connection — mind, memory, trust, task, 
 that’s why it’s called Saptha.me.
 (Saptha, meaning “seven”; me, the self-aware network.)
 
-
+<br/>
 
 ## 🛠️ Supported Agent Frameworks
 
@@ -180,6 +185,7 @@ We did test with mainly Agno, CrewAI, LangChain, and LlamaIndex, FastAgent.
 
 Want integration with your favorite framework? Let us know on [Discord](https://discord.gg/Fr6rcRJa)!
 
+<br/>
 
 ## Testing
 
@@ -190,7 +196,9 @@ bindu is thoroughly tested with a test coverage of over 70%:
 pytest -n auto --cov=bindu --cov-report= && coverage report --skip-covered --fail-under=70
 ```
 
-## 🤝 Contributing
+<br/>
+
+## Contributing
 
 We welcome contributions! Here's how to get started:
 
@@ -208,14 +216,19 @@ pre-commit run --all-files
 
 Please see our [Contributing Guidelines](.github/CONTRIBUTING.md) for more details.
 
+<br/>
+
 ## Maintainers
 
 For more details about maintainership, including how to become a maintainer, see our [MAINTAINERS.md](MAINTAINERS.md) file.
+
+<br/>
 
 ## License
 
 Bindu is proudly open-source and licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
 
+<br/>
 
 ## Community
 
@@ -223,6 +236,20 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 
 - Join our [Discord](https://discord.gg/3w5zuYUuwt) for discussions and support
 - Star the repository if you find it useful!
+
+<br/>
+
+## Acknowledgements
+
+We are grateful to the following projects for their contributions to the development of bindu:
+
+- [FastA2A](https://github.com/pydantic/fasta2a)
+- [12 Factor Agents](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-11-trigger-from-anywhere.md)
+- [A2A](https://github.com/a2aproject/A2A)
+- [AP2](https://github.com/google-agentic-commerce/AP2)
+- [X402](https://github.com/coinbase/x402)
+
+<br/>
 
 ## Roadmap
 
@@ -241,6 +268,7 @@ Here's what's next for bindu:
 
 Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zuYUuwt)!
 
+<br/>
 
 ## Star History
 

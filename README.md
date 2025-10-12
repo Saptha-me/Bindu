@@ -12,11 +12,10 @@
 <br/>
 
 [![GitHub License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg?style=flat-square&label=Hits%20%F0%9F%90%A7&extraCount=100&color=dfb317)](https://hits.sh/github.com/Saptha-me/Bindu/)
+[![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg)](https://hits.sh/github.com/Saptha-me/Bindu/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Tests](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml/badge.svg)](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml)
-[![Coverage Status](https://coveralls.io/repos/github/Saptha-me/Bindu/badge.svg?branch=v0.1.0.5)](https://coveralls.io/github/Saptha-me/Bindu?)
-[![PyPI version](https://badge.fury.io/py/bindu.svg)](https://badge.fury.io/py/bindu)
+[![PyPI version](https://badge.fury.io/py/bindu.svg?icon=si%3Apython&icon_color=%23fffc41)](https://badge.fury.io/py/bindu)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/bindu)](https://pypi.org/project/bindu/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Saptha-me/Bindu/pulls)
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/3w5zuYUuwt)
@@ -261,6 +260,7 @@ We are grateful to the following projects for the development of bindu:
 Here's what's next for bindu:
 
 - [ ] GRPC transport support
+- [ ] Sentry Error Tracking.
 - [ ] Static Webpage Beautification.
 - [ ] Increase Test Coverage to 80%.
 - [ ] Redis Scheduler Implementation.

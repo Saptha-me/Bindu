@@ -1,0 +1,87 @@
+{
+  "author": "raahul@saptha.me",
+  "name": "first Agent",
+  "description": "A basic AI agent for simple question answering",
+  "version": "1.0.0",
+  "recreate_keys": false,
+  "skills": [
+    {
+      "name": "question-answering",
+      "description": "Ability to answer basic questions",
+      "version": "1.0.0"
+    },
+    {
+      "name": "question-answering2",
+      "description": "Ability to answer basic questions",
+      "version": "1.0.0"
+    }
+  ],
+  "capabilities": {
+    "reasoning": true,
+    "code_execution": false,
+    "web_search": false,
+    "file_operations": false,
+    "multimodal": false
+  },
+  "agent_trust": "low",
+  "kind": "agent",
+  "debug_mode": true,
+  "debug_level": 2,
+  "monitoring": false,
+  "telemetry": true,
+  "num_history_sessions": 5,
+  "enable_system_message": true,
+  "enable_context_based_history": false,
+  "documentation_url": "https://docs.saptha.me/agents/simple",
+  "extra_metadata": {
+    "domain": "general",
+    "specialization": "basic_qa"
+  },
+  "auth": {
+    "enabled": true,
+    "provider": "auth0",
+    "domain": "dev-tlzrol0zsxw40ujx.us.auth0.com",
+    "audience": "https://dev-tlzrol0zsxw40ujx.us.auth0.com/api/v2/",
+    "algorithms": ["RS256"],
+    "issuer": "https://dev-tlzrol0zsxw40ujx.us.auth0.com/",
+    "jwks_uri": "https://dev-tlzrol0zsxw40ujx.us.auth0.com/.well-known/jwks.json",
+    "require_permissions": false,
+    "public_endpoints": [
+      "/health",
+      "/agent.html",
+      "/.well-known/*",
+      "/did/resolve*",
+      "/agent/info"
+    ],
+    "permissions": {
+      "message/send": ["agent:write"],
+      "tasks/get": ["agent:read"],
+      "tasks/cancel": ["agent:write"],
+      "tasks/list": ["agent:read"],
+      "contexts/list": ["agent:read"],
+      "tasks/feedback": ["agent:write"]
+    }
+  },
+  "deployment": {
+    "url": "http://localhost:8030",
+    "expose": true,
+    "protocol_version": "1.0.0",
+    "proxy_urls": ["https://simple.saptha.me"],
+    "cors_origins": ["*"]
+  },
+  "storage": {
+    "type": "memory"
+  },
+  "scheduler": {
+    "type": "memory"
+  },
+  "oltp_endpoint": "http://localhost:4318/v1/traces",
+  "oltp_service_name": "bindu-agent",
+  "oltp_verbose_logging": false,
+  "oltp_service_version": "1.0.0",
+  "oltp_deployment_environment": "production",
+  "oltp_batch_max_queue_size": 2048,
+  "oltp_batch_schedule_delay_millis": 5000,
+  "oltp_batch_max_export_batch_size": 512,
+  "oltp_batch_export_timeout_millis": 30000
+}

@@ -241,7 +241,7 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 
 ## Acknowledgements
 
-We are grateful to the following projects for their contributions to the development of bindu:
+We are grateful to the following projects for the development of bindu:
 
 - [FastA2A](https://github.com/pydantic/fasta2a)
 - [12 Factor Agents](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-11-trigger-from-anywhere.md)

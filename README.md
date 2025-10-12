@@ -62,7 +62,7 @@ a peek into the night sky
 
 Each symbol is an agent - the Bindu, Dot in the Internet of Agents.
 
-
+Saptha.me is a framework that buuld swarm of agents.where the bindu is the dot in the swarm. the bindu annonates the agents with the language of A2A, AP2, x402.the agents can be hosted from anywhere.and it will be 
 
 ## 📦 Installation
 

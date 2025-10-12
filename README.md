@@ -135,6 +135,8 @@ That's it! Your agent is now live at `http://localhost:8030` and ready to commun
 
 <br/>
 
+### The Vision
+
 ```bash
 a peek into the night sky
 }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}

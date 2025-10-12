@@ -8,22 +8,18 @@ version = "0.3.14"
 description = "A protocol framework for agent-to-agent communication"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [{ name = "Raahul Dutta", email = "raahul@saptha.me" }]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent"
 ]
 dependencies = [
     "uvicorn>=0.15.0",
     "pydantic>=1.8.2",
     "loguru>=0.7.3",
-    "uvx<2.0",
-    "pipreqs>=0.5.0",
-    "twine>=6.1.0",
     "rich>=13.0.0",
-    "types-requests>=2.32.0.20250328",
     "didkit>=0.3.3",
     "cryptography>=44.0.2",
     "orjson>=3.10.18",
@@ -44,48 +40,33 @@ dependencies = [
     "pyjwt[crypto]>=2.8.0",
     "requests>=2.31.0",
     "pyperclip>=1.11.0",
-    "x402>=0.2.1",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.26.0",
-    "pytest-cov>=4.1.0",
-    "pytest-timeout>=2.2.0",
-    "pytest-xdist>=3.0.0",
-    "pre-commit>=3.0.0",
-]
-examples = [
-    "pyperclip>=1.8.2",
+    "x402>=0.2.1"
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["bindu"]  # Changed from src/bindu to reflect actual directory structure
+packages = ["bindu"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "bindu",  # Changed from /src to bindu
-    "protocol_config.json",
-    "README.md"
+    "bindu",
+    "README.md",
+    "assets/*"
 ]
-
-[tool.uv.workspace]
-members = ["bindu-template/my_project", "bindu-template/project1"]
-
-[tool.uv.sources]
-bindu = { workspace = true }
 
 [dependency-groups]
 dev = [
     "bindu",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.26.0",
-    "pytest-cov>=7.0.0",
+    "pytest-cov>=4.1.0",
     "pytest-timeout>=2.2.0",
     "pytest-xdist>=3.0.0",
     "pre-commit>=3.0.0",
     "ty>=0.0.1a14",
+    "types-requests>=2.32.0.20250328",
+    "pipreqs>=0.5.0",
+    "twine>=6.1.0",
+    "uvx<2.0",
 ]
 
 [tool.coverage.run]

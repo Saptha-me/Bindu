@@ -7,6 +7,10 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from bindu.common.protocol.types import AgentCard, InternalError, agent_card_ta
+from bindu.extensions.x402.extension import (
+    is_activation_requested as x402_is_requested,
+    add_activation_header as x402_add_header,
+)
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 
@@ -65,9 +69,12 @@ async def agent_card_endpoint(app: "BinduApplication", request: Request) -> Resp
             )
 
         logger.debug(f"Serving agent card to {client_ip}")
-        return Response(
+        resp = Response(
             content=app._agent_card_json_schema, media_type="application/json"
         )
+        if x402_is_requested(request):
+            resp = x402_add_header(resp)
+        return resp
 
     except Exception as e:
         logger.error(f"Error serving agent card to {client_ip}: {e}", exc_info=True)

@@ -39,13 +39,13 @@ from opentelemetry.trace import Status, StatusCode, get_tracer
 # x402
 from x402.types import PaymentPayload, PaymentRequirements
 from x402.facilitator import FacilitatorClient
-from bindu.extensions.x402.constants import X402Metadata, X402Status
 from bindu.extensions.x402.utils import (
     build_payment_completed_metadata,
     build_payment_failed_metadata,
     build_payment_required_metadata,
     build_payment_verified_metadata,
 )
+from bindu.settings import app_settings
 
 from bindu.common.protocol.types import (
     Artifact,
@@ -146,12 +146,12 @@ class ManifestWorker(Worker):
         facilitator_client: FacilitatorClient | None = None
 
         try:
-            if latest_meta.get(X402Metadata.STATUS_KEY) == X402Status.PAYMENT_SUBMITTED and latest_meta.get(
-                X402Metadata.PAYLOAD_KEY
+            if latest_meta.get(app_settings.x402.meta_status_key) == app_settings.x402.status_submitted and latest_meta.get(
+                app_settings.x402.meta_payload_key
             ):
-                payload_data = latest_meta.get(X402Metadata.PAYLOAD_KEY)
-                required_data = (task.get("metadata") or {}).get(X402Metadata.REQUIRED_KEY) or latest_meta.get(
-                    X402Metadata.REQUIRED_KEY
+                payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
+                required_data = (task.get("metadata") or {}).get(app_settings.x402.meta_required_key) or latest_meta.get(
+                    app_settings.x402.meta_required_key
                 )
 
                 # Parse payload and select requirement
@@ -501,7 +501,7 @@ class ManifestWorker(Worker):
         # If this is an x402 payment-required structured object, attach metadata
         if isinstance(message_content, dict):
             st = message_content.get("state")
-            if st == X402Status.PAYMENT_REQUIRED or "required" in message_content:
+            if st == app_settings.x402.status_required or "required" in message_content:
                 required = message_content.get("required") or message_content
                 metadata = build_payment_required_metadata(required)
 
@@ -849,7 +849,7 @@ class ManifestWorker(Worker):
             elif state == "auth-required":
                 prompt = structured.get("prompt", self._serialize_result(result))
                 return ("auth-required", prompt)
-            elif state == X402Status.PAYMENT_REQUIRED:
+            elif state == app_settings.x402.status_required:
                 # Keep overall task state as input-required; carry structured info forward
                 return ("input-required", structured)
 

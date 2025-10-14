@@ -27,6 +27,7 @@ from bindu.common.models import (
 )
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
+from bindu.extensions.x402.extension import get_agent_extension as get_x402_agent_extension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
 from bindu.settings import app_settings
 from bindu.utils.display import prepare_server_display
@@ -61,6 +62,25 @@ def _update_capabilities_with_did(
     else:
         caps_dict["extensions"] = [did_extension_obj]
 
+    return AgentCapabilities(**caps_dict)
+
+
+def _update_capabilities_with_x402(
+    capabilities: AgentCapabilities | Dict[str, Any] | None,
+) -> AgentCapabilities:
+    """Append x402 extension declaration to capabilities.extensions."""
+    # Convert to dict if needed
+    if capabilities is None:
+        caps_dict: Dict[str, Any] = {}
+    elif isinstance(capabilities, dict):
+        caps_dict = capabilities.copy()
+    else:
+        # Convert AgentCapabilities to dict-like
+        caps_dict = dict(capabilities)
+
+    extensions = caps_dict.get("extensions", []) or []
+    extensions.append(get_x402_agent_extension(required=False))
+    caps_dict["extensions"] = extensions
     return AgentCapabilities(**caps_dict)
 
 
@@ -337,6 +357,8 @@ def bindufy(
     capabilities = _update_capabilities_with_did(
         validated_config["capabilities"], did_extension.agent_extension
     )
+    # Always advertise x402 extension capability (lean path)
+    capabilities = _update_capabilities_with_x402(capabilities)
 
     # Create agent manifest
     _manifest = create_manifest(

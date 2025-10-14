@@ -249,6 +249,22 @@ class ObservabilitySettings(BaseSettings):
     ]
 
 
+class X402Settings(BaseSettings):
+    """x402 payments configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="X402__",
+        extra="allow",
+    )
+
+    provider: str = "coinbase"
+    facilitator_url: str = ""
+    default_network: str = "base"
+    pay_to_env: str = "X402_PAY_TO"
+    max_timeout_seconds: int = 600
+
+
 class AgentSettings(BaseSettings):
     """Agent behavior and protocol configuration settings."""
 
@@ -462,6 +478,7 @@ class Settings(BaseSettings):
     deployment: DeploymentSettings = DeploymentSettings()
     logging: LoggingSettings = LoggingSettings()
     observability: ObservabilitySettings = ObservabilitySettings()
+    x402: X402Settings = X402Settings()
     agent: AgentSettings = AgentSettings()
     auth: AuthSettings = AuthSettings()
 

@@ -279,6 +279,10 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zu
 
 <br/>
 
+## Workshops
+
+- [AI Native in Action: Agent Symphony, AI Co-Authors & A Special Book Signing!](https://www.meetup.com/ai-native-amsterdam/events/311066899/?eventOrigin=group_upcoming_events): [Google Slides](https://docs.google.com/presentation/d/1SqGXI0Gv_KCWZ1Mw2SOx_kI0u-LLxwZq7lMSONdl8oQ/edit?slide=id.g36905aa74c1_0_3217#slide=id.g36905aa74c1_0_3217)
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Saptha-me/Bindu&type=Date)](https://www.star-history.com/#Saptha-me/Bindu&Date)

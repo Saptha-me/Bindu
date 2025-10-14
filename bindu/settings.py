@@ -264,6 +264,23 @@ class X402Settings(BaseSettings):
     pay_to_env: str = "X402_PAY_TO"
     max_timeout_seconds: int = 600
 
+    # Extension URI
+    extension_uri: str = "https://github.com/google-a2a/a2a-x402/v0.1"
+
+    # Metadata keys
+    meta_status_key: str = "x402.payment.status"
+    meta_required_key: str = "x402.payment.required"
+    meta_payload_key: str = "x402.payment.payload"
+    meta_receipts_key: str = "x402.payment.receipts"
+    meta_error_key: str = "x402.payment.error"
+
+    # Status values
+    status_required: str = "payment-required"
+    status_submitted: str = "payment-submitted"
+    status_verified: str = "payment-verified"
+    status_completed: str = "payment-completed"
+    status_failed: str = "payment-failed"
+
 
 class AgentSettings(BaseSettings):
     """Agent behavior and protocol configuration settings."""

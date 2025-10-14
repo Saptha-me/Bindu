@@ -6,8 +6,7 @@ These utilities keep metadata writes consistent and centralized.
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
-
-from ..x402.constants import X402Metadata
+from bindu.settings import app_settings
 
 
 def merge_task_metadata(task: dict, updates: Dict[str, Any]) -> dict:
@@ -20,24 +19,27 @@ def merge_task_metadata(task: dict, updates: Dict[str, Any]) -> dict:
 
 def build_payment_required_metadata(required: dict) -> dict:
     return {
-        X402Metadata.STATUS_KEY: "payment-required",
-        X402Metadata.REQUIRED_KEY: required,
+        app_settings.x402.meta_status_key: app_settings.x402.status_required,
+        app_settings.x402.meta_required_key: required,
     }
 
 
 def build_payment_verified_metadata() -> dict:
-    return {X402Metadata.STATUS_KEY: "payment-verified"}
+    return {app_settings.x402.meta_status_key: app_settings.x402.status_verified}
 
 
 def build_payment_completed_metadata(receipt: dict) -> dict:
     return {
-        X402Metadata.STATUS_KEY: "payment-completed",
-        X402Metadata.RECEIPTS_KEY: [receipt],
+        app_settings.x402.meta_status_key: app_settings.x402.status_completed,
+        app_settings.x402.meta_receipts_key: [receipt],
     }
 
 
 def build_payment_failed_metadata(error: str, receipt: Optional[dict] = None) -> dict:
-    md = {X402Metadata.STATUS_KEY: "payment-failed", X402Metadata.ERROR_KEY: error}
+    md = {
+        app_settings.x402.meta_status_key: app_settings.x402.status_failed,
+        app_settings.x402.meta_error_key: error,
+    }
     if receipt:
-        md[X402Metadata.RECEIPTS_KEY] = [receipt]
+        md[app_settings.x402.meta_receipts_key] = [receipt]
     return md

@@ -174,7 +174,6 @@ dependencies = [
     { name = "opentelemetry-instrumentation-httpx" },
     { name = "opentelemetry-sdk" },
     { name = "orjson" },
-    { name = "pipreqs" },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
     { name = "pyjwt", extra = ["crypto"] },
@@ -185,37 +184,25 @@ dependencies = [
     { name = "rich" },
     { name = "sqlalchemy" },
     { name = "starlette" },
-    { name = "twine" },
     { name = "ty" },
-    { name = "types-requests" },
     { name = "uvicorn" },
-    { name = "uvx" },
     { name = "x402" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-timeout" },
-    { name = "pytest-xdist" },
-]
-examples = [
-    { name = "pyperclip" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "bindu" },
+    { name = "pipreqs" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
+    { name = "twine" },
     { name = "ty" },
+    { name = "types-requests" },
+    { name = "uvx" },
 ]
 
 [package.metadata]
@@ -232,43 +219,35 @@ requires-dist = [
     { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.56b0" },
     { name = "opentelemetry-sdk", specifier = ">=1.35.0" },
     { name = "orjson", specifier = ">=3.10.18" },
-    { name = "pipreqs", specifier = ">=0.5.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=1.8.2" },
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.8.0" },
     { name = "pyperclip", specifier = ">=1.11.0" },
-    { name = "pyperclip", marker = "extra == 'examples'", specifier = ">=1.8.2" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.26.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
-    { name = "pytest-timeout", marker = "extra == 'dev'", specifier = ">=2.2.0" },
-    { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.0.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "redis", specifier = ">=6.4.0" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.43" },
     { name = "starlette", specifier = ">=0.48.0" },
-    { name = "twine", specifier = ">=6.1.0" },
     { name = "ty", specifier = ">=0.0.1a14" },
-    { name = "types-requests", specifier = ">=2.32.0.20250328" },
     { name = "uvicorn", specifier = ">=0.15.0" },
-    { name = "uvx", specifier = "<2.0" },
     { name = "x402", specifier = ">=0.2.1" },
 ]
-provides-extras = ["dev", "examples"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "bindu", editable = "." },
+    { name = "bindu" },
+    { name = "pipreqs", specifier = ">=0.5.0" },
     { name = "pre-commit", specifier = ">=3.0.0" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-cov", specifier = ">=4.1.0" },
     { name = "pytest-timeout", specifier = ">=2.2.0" },
     { name = "pytest-xdist", specifier = ">=3.0.0" },
+    { name = "twine", specifier = ">=6.1.0" },
     { name = "ty", specifier = ">=0.0.1a14" },
+    { name = "types-requests", specifier = ">=2.32.0.20250328" },
+    { name = "uvx", specifier = "<2.0" },
 ]
 
 [[package]]

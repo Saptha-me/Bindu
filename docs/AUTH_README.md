@@ -73,8 +73,6 @@ These endpoints are always accessible without authentication:
 - `/.well-known/agent.json` - Agent card (discovery)
 - `/did/resolve` - DID resolution
 - `/agent/info` - Agent information
-- `/agent.html`, `/chat.html`, `/storage.html` - UI pages
-- `/js/*`, `/css/*` - Static assets
 
 ## Protected Endpoints
 

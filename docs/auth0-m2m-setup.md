@@ -174,8 +174,6 @@ These endpoints are always public (no authentication required):
 - `/.well-known/agent.json` - Agent card
 - `/did/resolve` - DID resolution
 - `/agent/info` - Agent information
-- `/agent.html`, `/chat.html`, `/storage.html` - UI pages
-- `/js/*`, `/css/*` - Static assets
 
 ---
 

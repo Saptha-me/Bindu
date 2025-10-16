@@ -385,10 +385,6 @@ def bindufy(
     storage_instance = _create_storage_instance(storage_config)
     scheduler_instance = _create_scheduler_instance(scheduler_config)
 
-    # Create the Bindu application
-    # Use bindu's built-in static directory from the package
-    bindu_static_dir = Path(__file__).parent.parent / "server" / "static"
-
     # Check if auth is enabled in config
     auth_enabled = validated_config.get("auth", {}).get("enabled", False)
 
@@ -400,7 +396,6 @@ def bindufy(
         penguin_id=agent_id,
         manifest=_manifest,
         version=validated_config["version"],
-        static_dir=bindu_static_dir,
         auth_enabled=auth_enabled,
         telemetry_enabled=validated_config["telemetry"],
         oltp_endpoint=validated_config.get("oltp_endpoint"),

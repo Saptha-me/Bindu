@@ -105,13 +105,6 @@ class NetworkSettings(BaseSettings):
     request_timeout: int = 30
     connection_timeout: int = 10
 
-    # Media Types for Static Files
-    media_types: dict[str, str] = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".css": "text/css",
-    }
-
     @computed_field
     @property
     def default_url(self) -> str:

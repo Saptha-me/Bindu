@@ -68,7 +68,6 @@ class BinduApplication(Starlette):
         version: str = "1.0.0",
         description: str | None = None,
         debug: bool = False,
-        static_dir: Path | None = None,
         lifespan: Lifespan | None = None,
         routes: Sequence[Route] | None = None,
         middleware: Sequence[Middleware] | None = None,
@@ -95,7 +94,6 @@ class BinduApplication(Starlette):
             version: Server version
             description: Server description
             debug: Enable debug mode
-            static_dir: Optional custom static files directory (defaults to bindu's static dir)
             lifespan: Optional custom lifespan
             routes: Optional custom routes
             middleware: Optional middleware
@@ -186,7 +184,6 @@ class BinduApplication(Starlette):
         self.version = version
         self.description = description
         self.manifest = manifest
-        self.static_dir = static_dir
         self.default_input_modes = ["application/json"]
         self.task_manager: TaskManager | None = None
         self._storage = storage
@@ -212,39 +209,12 @@ class BinduApplication(Starlette):
             "/did/resolve", did_resolve_endpoint, ["GET", "POST"], with_app=True
         )
 
-        # HTML pages
-        html_routes = [
-            ("/agent.html", agent_page_endpoint),
-            ("/chat.html", chat_page_endpoint),
-            ("/storage.html", storage_page_endpoint),
-        ]
-        for path, endpoint in html_routes:
-            self._add_route(path, endpoint, ["GET"], with_static=True)
-
-        # JavaScript files
-        js_routes = [
-            ("/js/common.js", common_js_endpoint),
-            ("/js/api.js", api_js_endpoint),
-            ("/js/agent.js", agent_js_endpoint),
-            ("/js/chat.js", chat_js_endpoint),
-            ("/js/storage.js", storage_js_endpoint),
-            ("/js/head-loader.js", head_loader_js_endpoint),
-        ]
-        for path, endpoint in js_routes:
-            self._add_route(path, endpoint, ["GET"], with_static=True)
-
-        # CSS files
-        self._add_route(
-            "/css/custom.css", custom_css_endpoint, ["GET"], with_static=True
-        )
-
     def _add_route(
         self,
         path: str,
         endpoint: Callable,
         methods: list[str],
         with_app: bool = False,
-        with_static: bool = False,
     ) -> None:
         """Add a route with appropriate wrapper.
 
@@ -253,12 +223,9 @@ class BinduApplication(Starlette):
             endpoint: Endpoint function
             methods: HTTP methods
             with_app: Pass app instance to endpoint
-            with_static: Pass static_dir to endpoint
         """
         if with_app:
             handler = partial(self._wrap_with_app, endpoint)
-        elif with_static:
-            handler = partial(self._wrap_with_static, endpoint)
         else:
             handler = endpoint
 
@@ -268,9 +235,6 @@ class BinduApplication(Starlette):
         """Wrap endpoint that requires app instance."""
         return await endpoint(self, request)
 
-    async def _wrap_with_static(self, endpoint: Callable, request: Request) -> Response:
-        """Wrap endpoint that requires static_dir."""
-        return await endpoint(request, self.static_dir)
 
     def _create_default_lifespan(
         self,

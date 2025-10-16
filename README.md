@@ -266,7 +266,7 @@ Here's what's next for bindu:
 
 - [ ] GRPC transport support
 - [ ] Sentry Error Tracking.
-- [ ] Static Webpage Beautification.
+- [ ] Ag-Ui Integration.
 - [ ] Retry Mechanism add.
 - [ ] Increase Test Coverage to 80%.
 - [ ] Redis Scheduler Implementation.

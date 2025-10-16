@@ -36,6 +36,17 @@ from uuid import UUID
 
 from opentelemetry.trace import Status, StatusCode, get_tracer
 
+# x402
+from x402.types import PaymentPayload, PaymentRequirements
+from x402.facilitator import FacilitatorClient
+from bindu.extensions.x402.utils import (
+    build_payment_completed_metadata,
+    build_payment_failed_metadata,
+    build_payment_required_metadata,
+    build_payment_verified_metadata,
+)
+from bindu.settings import app_settings
+
 from bindu.common.protocol.types import (
     Artifact,
     Message,
@@ -115,8 +126,6 @@ class ManifestWorker(Worker):
             raise ValueError(f"Task {params['task_id']} not found")
 
         await TaskStateManager.validate_task_state(task)
-        await self.storage.update_task(task["id"], state="working")
-        await self._notify_lifecycle(task["id"], task["context_id"], "working", False)
 
         # Add span event for state transition
         from opentelemetry.trace import get_current_span
@@ -126,6 +135,68 @@ class ManifestWorker(Worker):
             current_span.add_event(
                 "task.state_changed", attributes={"to_state": "working"}
             )
+
+        # Detect x402 payment submission on the latest user message BEFORE setting state
+        latest_msg = (task.get("history") or [])[-1] if task.get("history") else None
+        latest_meta = (latest_msg or {}).get("metadata") or {}
+
+        is_paid_flow = False
+        payment_payload_obj: PaymentPayload | None = None
+        payment_requirements_obj: PaymentRequirements | None = None
+        facilitator_client: FacilitatorClient | None = None
+
+        try:
+            if latest_meta.get(app_settings.x402.meta_status_key) == app_settings.x402.status_submitted and latest_meta.get(
+                app_settings.x402.meta_payload_key
+            ):
+                payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
+                required_data = (task.get("metadata") or {}).get(app_settings.x402.meta_required_key) or latest_meta.get(
+                    app_settings.x402.meta_required_key
+                )
+
+                # Parse payload and select requirement
+                payment_payload_obj = self._parse_payment_payload(payload_data)
+                payment_requirements_obj = self._select_requirement_from_required(required_data, payment_payload_obj)
+                if payment_payload_obj and payment_requirements_obj:
+                    facilitator_client = FacilitatorClient()
+                    verify_response = await facilitator_client.verify(
+                        payment_payload_obj, payment_requirements_obj
+                    )
+                    if not verify_response.is_valid:
+                        # Record failure and finish task
+                        md = build_payment_failed_metadata(
+                            verify_response.invalid_reason or "verification_failed"
+                        )
+                        error_msg = MessageConverter.to_protocol_messages(
+                            f"Payment verification failed: {verify_response.invalid_reason or 'unknown'}",
+                            task["id"],
+                            task["context_id"],
+                        )
+                        # Keep state as input-required per design; only metadata reflects x402 failure
+                        await self.storage.update_task(
+                            task["id"], state="input-required", new_messages=error_msg, metadata=md
+                        )
+                        await self._notify_lifecycle(task["id"], task["context_id"], "input-required", False)
+                        return
+
+                    # Mark verified while continuing work
+                    is_paid_flow = True
+                    await self.storage.update_task(
+                        task["id"], state="input-required", metadata=build_payment_verified_metadata()
+                    )
+        except Exception as e:
+            # Defensive: if verification path errors, fail the task
+            error_msg = MessageConverter.to_protocol_messages(
+                f"Payment processing error: {e}", task["id"], task["context_id"]
+            )
+            await self.storage.update_task(task["id"], state="input-required", new_messages=error_msg)
+            await self._notify_lifecycle(task["id"], task["context_id"], "input-required", False)
+            return
+
+        # If not in payment-submitted flow, transition to working as usual
+        if not is_paid_flow:
+            await self.storage.update_task(task["id"], state="working")
+            await self._notify_lifecycle(task["id"], task["context_id"], "working", False)
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
@@ -215,7 +286,54 @@ class ManifestWorker(Worker):
                         "task.state_changed",
                         attributes={"from_state": "working", "to_state": state},
                     )
-                await self._handle_terminal_state(task, results, state)
+                if is_paid_flow and payment_payload_obj and payment_requirements_obj and facilitator_client:
+                    # Settle before final update so metadata includes receipt
+                    try:
+                        settle_response = await facilitator_client.settle(
+                            payment_payload_obj, payment_requirements_obj
+                        )
+                        if settle_response.success:
+                            md = build_payment_completed_metadata(
+                                settle_response.model_dump(by_alias=True)
+                                if hasattr(settle_response, "model_dump")
+                                else dict(settle_response)
+                            )
+                            await self._handle_terminal_state(task, results, state, additional_metadata=md)
+                        else:
+                            md = build_payment_failed_metadata(
+                                settle_response.error_reason or "settlement_failed",
+                                (
+                                    settle_response.model_dump(by_alias=True)
+                                    if hasattr(settle_response, "model_dump")
+                                    else dict(settle_response)
+                                ),
+                            )
+                            # Keep task open (input-required) and attach failure metadata & message
+                            error_message = f"Payment settlement failed: {settle_response.error_reason or 'unknown'}"
+                            err_msgs = MessageConverter.to_protocol_messages(
+                                error_message, task["id"], task["context_id"]
+                            )
+                            await self.storage.update_task(
+                                task["id"], state="input-required", new_messages=err_msgs, metadata=md
+                            )
+                            await self._notify_lifecycle(
+                                task["id"], task["context_id"], "input-required", False
+                            )
+                            return
+                    except Exception as e:
+                        md = build_payment_failed_metadata(f"settlement_exception: {e}")
+                        err_msgs = MessageConverter.to_protocol_messages(
+                            str(e), task["id"], task["context_id"]
+                        )
+                        await self.storage.update_task(
+                            task["id"], state="input-required", new_messages=err_msgs, metadata=md
+                        )
+                        await self._notify_lifecycle(
+                            task["id"], task["context_id"], "input-required", False
+                        )
+                        return
+                else:
+                    await self._handle_terminal_state(task, results, state)
 
         except Exception as e:
             # Handle task failure with error message
@@ -369,13 +487,27 @@ class ManifestWorker(Worker):
             state: Task state to set
             message_content: Content for agent message (any type: str, dict, list, etc.)
         """
-        agent_messages = MessageConverter.to_protocol_messages(
-            message_content, task["id"], task["context_id"]
+        # Render message content for user; for structured, prefer 'prompt' field
+        content = (
+            message_content.get("prompt")
+            if isinstance(message_content, dict) and message_content.get("prompt")
+            else message_content
         )
+        agent_messages = MessageConverter.to_protocol_messages(
+            content, task["id"], task["context_id"]
+        )
+
+        metadata: dict[str, Any] | None = None
+        # If this is an x402 payment-required structured object, attach metadata
+        if isinstance(message_content, dict):
+            st = message_content.get("state")
+            if st == app_settings.x402.status_required or "required" in message_content:
+                required = message_content.get("required") or message_content
+                metadata = build_payment_required_metadata(required)
 
         # Update task with state and append agent messages to history
         await self.storage.update_task(
-            task["id"], state=state, new_messages=agent_messages
+            task["id"], state=state, new_messages=agent_messages, metadata=metadata
         )
         await self._notify_lifecycle(task["id"], task["context_id"], state, False)
 
@@ -384,7 +516,11 @@ class ManifestWorker(Worker):
     # -------------------------------------------------------------------------
 
     async def _handle_terminal_state(
-        self, task: dict[str, Any], results: Any, state: TaskState = "completed"
+        self,
+        task: dict[str, Any],
+        results: Any,
+        state: TaskState = "completed",
+        additional_metadata: dict[str, Any] | None = None,
     ) -> None:
         """Handle terminal task states (completed/failed).
 
@@ -425,6 +561,7 @@ class ManifestWorker(Worker):
                 state=state,
                 new_artifacts=artifacts,
                 new_messages=agent_messages,
+                metadata=additional_metadata,
             )
             await self._notify_lifecycle(task["id"], task["context_id"], state, True)
 
@@ -434,7 +571,7 @@ class ManifestWorker(Worker):
                 results, task["id"], task["context_id"]
             )
             await self.storage.update_task(
-                task["id"], state=state, new_messages=error_message
+                task["id"], state=state, new_messages=error_message, metadata=additional_metadata
             )
             await self._notify_lifecycle(task["id"], task["context_id"], state, True)
 
@@ -463,6 +600,50 @@ class ManifestWorker(Worker):
             task["id"], state="failed", new_messages=error_message
         )
         await self._notify_lifecycle(task["id"], task["context_id"], "failed", True)
+
+    # -------------------------------------------------------------------------
+    # x402 helpers
+    # -------------------------------------------------------------------------
+
+    def _parse_payment_payload(self, data: Any) -> PaymentPayload | None:
+        if data is None:
+            return None
+        try:
+            if hasattr(PaymentPayload, "model_validate"):
+                return PaymentPayload.model_validate(data)  # type: ignore
+            return PaymentPayload(**data)
+        except Exception:
+            return None
+
+    def _parse_payment_requirements(self, data: Any) -> PaymentRequirements | None:
+        if data is None:
+            return None
+        try:
+            if hasattr(PaymentRequirements, "model_validate"):
+                return PaymentRequirements.model_validate(data)  # type: ignore
+            return PaymentRequirements(**data)
+        except Exception:
+            return None
+
+    def _select_requirement_from_required(
+        self, required: Any, payload: PaymentPayload | None
+    ) -> PaymentRequirements | None:
+        if not required:
+            return None
+        accepts = required.get("accepts") if isinstance(required, dict) else None
+        if not accepts:
+            return None
+        if payload is None:
+            return self._parse_payment_requirements(accepts[0])
+        # Match by scheme and network
+        for req in accepts:
+            if (
+                isinstance(req, dict)
+                and req.get("scheme") == getattr(payload, "scheme", None)
+                and req.get("network") == getattr(payload, "network", None)
+            ):
+                return self._parse_payment_requirements(req)
+        return self._parse_payment_requirements(accepts[0])
 
     # -------------------------------------------------------------------------
     # Result Collection
@@ -668,6 +849,9 @@ class ManifestWorker(Worker):
             elif state == "auth-required":
                 prompt = structured.get("prompt", self._serialize_result(result))
                 return ("auth-required", prompt)
+            elif state == app_settings.x402.status_required:
+                # Keep overall task state as input-required; carry structured info forward
+                return ("input-required", structured)
 
         # Default: task completion with any result type
         return ("completed", result)

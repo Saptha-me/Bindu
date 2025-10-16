@@ -15,6 +15,10 @@ from bindu.common.protocol.types import (
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
+from bindu.extensions.x402.extension import (
+    is_activation_requested as x402_is_requested,
+    add_activation_header as x402_add_header,
+)
 
 if TYPE_CHECKING:
     from ..applications import BinduApplication
@@ -65,12 +69,17 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
 
         logger.debug(f"A2A response to {client_ip}: method={method}, id={request_id}")
 
-        return Response(
+        resp = Response(
             content=a2a_response_ta.dump_json(
                 jsonrpc_response, by_alias=True, serialize_as_any=True
             ),
             media_type="application/json",
         )
+
+        if x402_is_requested(request):
+            resp = x402_add_header(resp)
+
+        return resp
 
     except Exception as e:
         logger.error(

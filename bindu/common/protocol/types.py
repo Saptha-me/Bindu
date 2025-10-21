@@ -1459,6 +1459,16 @@ ContextNotCancelableError = JSONRPCError[
     ],
 ]
 
+# Skill errors (-32030 to -32039)
+# Bindu-specific skill management extensions
+SkillNotFoundError = JSONRPCError[
+    Literal[-32030],
+    Literal[
+        "The specified skill ID was not found. "
+        "Check available skills: GET /agent/skills"
+    ],
+]
+
 # -----------------------------------------------------------------------------
 # JSON-RPC Request & Response Types
 # -----------------------------------------------------------------------------
@@ -1699,7 +1709,12 @@ class AgentExtension(TypedDict):
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class Skill(TypedDict):
-    """Skills are a unit of capability that an agent can perform."""
+    """Skills are a unit of capability that an agent can perform.
+
+    Skills can be defined in two ways:
+    1. Inline (legacy): All metadata in config JSON
+    2. File-based (Claude-style): Rich documentation in SKILL.md files
+    """
 
     id: str
     """A unique identifier for the skill."""
@@ -1730,6 +1745,62 @@ class Skill(TypedDict):
 
     output_modes: list[str]
     """Supported mime types for output data."""
+
+    # Rich documentation fields (Claude-style skills)
+    documentation_path: NotRequired[str]
+    """Path to the SKILL.md file containing detailed instructions and examples.
+
+    This file provides rich documentation for orchestrators to understand
+    when and how to use this skill.
+    """
+
+    documentation_content: NotRequired[str]
+    """Full content of the SKILL.md file.
+
+    Loaded at runtime for orchestrator discovery and agent selection.
+    """
+
+    capabilities_detail: NotRequired[dict[str, Any]]
+    """Structured capability details for orchestrator matching.
+
+    Example:
+    {
+        "text_extraction": {"supported": true, "types": ["standard", "ocr"]},
+        "form_filling": {"supported": true, "field_types": ["text", "checkbox"]}
+    }
+    """
+
+    requirements: NotRequired[dict[str, Any]]
+    """Dependencies and system requirements.
+
+    Example:
+    {
+        "packages": ["pypdf", "pdfplumber"],
+        "system": ["tesseract-ocr"],
+        "min_memory_mb": 512
+    }
+    """
+
+    performance: NotRequired[dict[str, Any]]
+    """Performance characteristics for orchestrator planning.
+
+    Example:
+    {
+        "avg_processing_time_ms": 2000,
+        "max_file_size_mb": 50,
+        "concurrent_requests": 5
+    }
+    """
+
+    version: NotRequired[str]
+    """Skill version for compatibility tracking."""
+
+    allowed_tools: NotRequired[list[str]]
+    """List of tools/capabilities this skill is allowed to use.
+
+    Used for security and capability restriction.
+    Example: ["Read", "Write", "Execute"]
+    """
 
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))

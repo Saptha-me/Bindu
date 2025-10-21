@@ -19,7 +19,6 @@ from __future__ import annotations as _annotations
 
 from contextlib import asynccontextmanager
 from functools import partial
-from pathlib import Path
 from typing import AsyncIterator, Callable, Sequence
 from uuid import UUID, uuid4
 
@@ -35,18 +34,11 @@ from bindu.settings import app_settings
 
 from .endpoints import (
     agent_card_endpoint,
-    agent_js_endpoint,
-    agent_page_endpoint,
     agent_run_endpoint,
-    api_js_endpoint,
-    chat_js_endpoint,
-    chat_page_endpoint,
-    common_js_endpoint,
-    custom_css_endpoint,
     did_resolve_endpoint,
-    head_loader_js_endpoint,
-    storage_js_endpoint,
-    storage_page_endpoint,
+    skill_detail_endpoint,
+    skill_documentation_endpoint,
+    skills_list_endpoint,
 )
 from .middleware import Auth0Middleware
 from .scheduler.memory_scheduler import InMemoryScheduler
@@ -209,6 +201,26 @@ class BinduApplication(Starlette):
             "/did/resolve", did_resolve_endpoint, ["GET", "POST"], with_app=True
         )
 
+        # Skills endpoints
+        self._add_route(
+            "/agent/skills",
+            skills_list_endpoint,
+            ["GET"],
+            with_app=True,
+        )
+        self._add_route(
+            "/agent/skills/{skill_id}",
+            skill_detail_endpoint,
+            ["GET"],
+            with_app=True,
+        )
+        self._add_route(
+            "/agent/skills/{skill_id}/documentation",
+            skill_documentation_endpoint,
+            ["GET"],
+            with_app=True,
+        )
+
     def _add_route(
         self,
         path: str,
@@ -234,7 +246,6 @@ class BinduApplication(Starlette):
     async def _wrap_with_app(self, endpoint: Callable, request: Request) -> Response:
         """Wrap endpoint that requires app instance."""
         return await endpoint(self, request)
-
 
     def _create_default_lifespan(
         self,

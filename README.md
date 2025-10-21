@@ -173,7 +173,7 @@ In this swarm, each Bindu is a dot - annotating agents with the shared language 
 Agents can be hosted anywhere — on laptops, clouds, or clusters — yet speak the same protocol, trust each other by design,
 and work together as a single, distributed mind.
 
-**A Goal Without a Plan Is Just a Wish**. 
+**A Goal Without a Plan Is Just a Wish**.
 So Saptha.me takes care <b>Research, Plan and Implement</b>.
 
 Saptha.me gives them the seven layers of connection — mind, memory, trust, task, identity, value, and flow —

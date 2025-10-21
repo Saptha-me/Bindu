@@ -1,9 +1,10 @@
 """Pytest configuration and fixtures for Bindu tests."""
 
-# Provide a lightweight opentelemetry.trace stub unconditionally for tests
+# Provide lightweight stubs for external dependencies to avoid heavy installs
 import sys
 from types import ModuleType
 
+# --- OpenTelemetry trace stub ---
 ot_trace = ModuleType("opentelemetry.trace")
 
 
@@ -25,6 +26,7 @@ class _Span:
 
 
 def get_current_span():  # noqa: D401
+    """Return a mock span for testing without OpenTelemetry."""
     return _Span()
 
 
@@ -66,6 +68,7 @@ op_root = ModuleType("opentelemetry")
 
 metrics_mod = ModuleType("opentelemetry.metrics")
 
+
 class _Counter:
     def add(self, *_args, **_kwargs):  # noqa: D401
         return None
@@ -93,6 +96,7 @@ class _Meter:
 
 
 def get_meter(name: str):  # noqa: D401, ARG001
+    """Return a mock meter for testing without OpenTelemetry."""
     return _Meter()
 
 
@@ -105,25 +109,93 @@ sys.modules["opentelemetry"] = op_root
 sys.modules["opentelemetry.trace"] = ot_trace
 sys.modules["opentelemetry.metrics"] = metrics_mod
 
-import asyncio
-from typing import AsyncGenerator, cast
-from uuid import uuid4
 
-import pytest
-import pytest_asyncio  # type: ignore[import-untyped]
+# --- x402 package stub ---
+class _PaymentRequirements:
+    """Mock PaymentRequirements for testing."""
 
-from bindu.common.models import AgentManifest
-from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
+    def __init__(self, **kwargs):
+        self._data = kwargs
+
+    def model_dump(self, by_alias: bool = True):  # noqa: ARG002
+        return dict(self._data)
+
+
+class _PaymentPayload:
+    """Mock PaymentPayload for testing."""
+
+    def __init__(self, **kwargs):
+        self._data = kwargs
+
+    @classmethod
+    def model_validate(cls, data):  # noqa: ARG003
+        """Mock Pydantic model_validate method."""
+        return cls(**data) if isinstance(data, dict) else cls()
+
+    def model_dump(self, by_alias: bool = True):  # noqa: ARG002
+        return dict(self._data)
+
+
+class _SupportedNetworks:
+    """Mock SupportedNetworks for testing."""
+
+    def __init__(self, value: str):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
+
+class _FacilitatorClient:
+    """Mock FacilitatorClient for testing."""
+
+    def __init__(self, *args, **kwargs):  # noqa: ARG002
+        pass
+
+    async def verify_payment(self, *args, **kwargs):  # noqa: ARG002
+        """Mock verify_payment method."""
+        return None
+
+    async def settle_payment(self, *args, **kwargs):  # noqa: ARG002
+        """Mock settle_payment method."""
+        return None
+
+
+x402_mod = ModuleType("x402")
+x402_common = ModuleType("x402.common")
+x402_types = ModuleType("x402.types")
+x402_fac = ModuleType("x402.facilitator")
+x402_common.process_price_to_atomic_amount = lambda price, network: (1, "0x00", {})  # type: ignore[attr-defined]
+x402_types.PaymentRequirements = _PaymentRequirements  # type: ignore[attr-defined]
+x402_types.PaymentPayload = _PaymentPayload  # type: ignore[attr-defined]
+x402_types.Price = object  # type: ignore[attr-defined]
+x402_types.SupportedNetworks = _SupportedNetworks  # type: ignore[attr-defined]
+x402_fac.FacilitatorClient = _FacilitatorClient  # type: ignore[attr-defined]
+sys.modules["x402"] = x402_mod
+sys.modules["x402.common"] = x402_common
+sys.modules["x402.types"] = x402_types
+sys.modules["x402.facilitator"] = x402_fac
+
+# Imports must come after dependency mock setup
+import asyncio  # noqa: E402
+from typing import AsyncGenerator, cast  # noqa: E402
+from uuid import uuid4  # noqa: E402
+
+import pytest  # noqa: E402
+import pytest_asyncio  # type: ignore[import-untyped] # noqa: E402
+
+from bindu.common.models import AgentManifest  # noqa: E402
+from bindu.server.scheduler.memory_scheduler import InMemoryScheduler  # noqa: E402
 
 # Import directly from submodules to avoid circular imports
-from bindu.server.storage.memory_storage import InMemoryStorage
-from tests.mocks import (
+from bindu.server.storage.memory_storage import InMemoryStorage  # noqa: E402
+from tests.mocks import (  # noqa: E402
     MockAgent,
     MockDIDExtension,
     MockManifest,
     MockNotificationService,
 )
-from tests.utils import create_test_context, create_test_message, create_test_task
+from tests.utils import create_test_context, create_test_message, create_test_task  # noqa: E402
 
 
 # Configure asyncio for pytest

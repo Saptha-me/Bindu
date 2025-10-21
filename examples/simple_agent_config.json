@@ -5,16 +5,8 @@
   "version": "1.0.0",
   "recreate_keys": false,
   "skills": [
-    {
-      "name": "question-answering",
-      "description": "Ability to answer basic questions",
-      "version": "1.0.0"
-    },
-    {
-      "name": "question-answering2",
-      "description": "Ability to answer basic questions",
-      "version": "1.0.0"
-    }
+    "skills/question-answering",
+    "skills/pdf-processing"
   ],
   "capabilities": {
     "reasoning": true,
@@ -48,10 +40,11 @@
     "require_permissions": false,
     "public_endpoints": [
       "/health",
-      "/agent.html",
       "/.well-known/*",
       "/did/resolve*",
-      "/agent/info"
+      "/agent/info",
+      "/agent/skills",
+      "/agent/skills/*"
     ],
     "permissions": {
       "message/send": ["agent:write"],

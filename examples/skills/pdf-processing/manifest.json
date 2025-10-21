@@ -1,0 +1,52 @@
+{
+  "id": "pdf-processing-v1",
+  "name": "pdf-processing",
+  "description": "Extract text, fill forms, and extract tables from PDF documents",
+  "version": "1.0.0",
+  "tags": ["pdf", "documents", "extraction", "forms", "tables"],
+  "examples": [
+    "Extract text from this PDF document",
+    "Fill out this PDF form with the provided data",
+    "Extract tables from this invoice PDF"
+  ],
+  "input_modes": ["application/pdf"],
+  "output_modes": ["text/plain", "application/json", "application/pdf"],
+  "documentation_path": "examples/skills/pdf-processing/SKILL.md",
+  "capabilities_detail": {
+    "text_extraction": {
+      "supported": true,
+      "types": ["standard", "scanned_with_ocr"],
+      "languages": ["eng", "spa", "fra", "deu"],
+      "limitations": "OCR requires pytesseract and tesseract-ocr"
+    },
+    "form_filling": {
+      "supported": true,
+      "field_types": ["text", "checkbox", "dropdown", "radio"],
+      "validation": true,
+      "batch_processing": true
+    },
+    "table_extraction": {
+      "supported": true,
+      "formats": ["simple", "complex_multi_column"],
+      "output_formats": ["json", "csv", "dataframe"]
+    },
+    "merge_split": {
+      "supported": false,
+      "planned_version": "1.1.0"
+    }
+  },
+  "requirements": {
+    "packages": ["pypdf>=3.0.0", "pdfplumber>=0.9.0", "pytesseract>=0.3.10"],
+    "system": ["tesseract-ocr"],
+    "min_memory_mb": 512
+  },
+  "performance": {
+    "avg_processing_time_ms": 2000,
+    "max_file_size_mb": 50,
+    "max_pages": 500,
+    "concurrent_requests": 5,
+    "memory_per_request_mb": 500,
+    "timeout_per_page_seconds": 30
+  },
+  "allowed_tools": ["Read", "Write", "Execute"]
+}

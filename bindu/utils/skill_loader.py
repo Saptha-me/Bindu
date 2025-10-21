@@ -96,51 +96,6 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
     return skill
 
 
-def load_skill_from_inline(skill_data: Dict[str, Any]) -> Skill:
-    """Load a skill from inline configuration (legacy format).
-    
-    Args:
-        skill_data: Dictionary containing skill metadata
-        
-    Returns:
-        Skill dictionary
-    """
-    # Generate ID if not provided
-    skill_id = skill_data.get("id", f"{skill_data['name']}-v{skill_data.get('version', '1.0.0')}")
-    
-    skill: Skill = {
-        "id": skill_id,
-        "name": skill_data["name"],
-        "description": skill_data["description"],
-        "tags": skill_data.get("tags", []),
-        "input_modes": skill_data.get("input_modes", ["text/plain"]),
-        "output_modes": skill_data.get("output_modes", ["text/plain"]),
-    }
-    
-    # Add optional fields
-    if "examples" in skill_data:
-        skill["examples"] = skill_data["examples"]
-    
-    if "version" in skill_data:
-        skill["version"] = skill_data["version"]
-    
-    if "capabilities_detail" in skill_data:
-        skill["capabilities_detail"] = skill_data["capabilities_detail"]
-    
-    if "requirements" in skill_data:
-        skill["requirements"] = skill_data["requirements"]
-    
-    if "performance" in skill_data:
-        skill["performance"] = skill_data["performance"]
-    
-    if "allowed_tools" in skill_data:
-        skill["allowed_tools"] = skill_data["allowed_tools"]
-    
-    logger.debug(f"Loaded inline skill: {skill['name']}")
-    
-    return skill
-
-
 def load_skills(
     skills_config: List[Union[str, Dict[str, Any]]], 
     caller_dir: Path
@@ -163,12 +118,7 @@ def load_skills(
     for skill_item in skills_config:
         try:
             if isinstance(skill_item, str):
-                # File-based skill
                 skill = load_skill_from_directory(skill_item, caller_dir)
-                skills.append(skill)
-            elif isinstance(skill_item, dict):
-                # Inline skill
-                skill = load_skill_from_inline(skill_item)
                 skills.append(skill)
             else:
                 logger.warning(f"Invalid skill configuration: {skill_item}")

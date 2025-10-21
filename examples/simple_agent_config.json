@@ -5,8 +5,8 @@
   "version": "1.0.0",
   "recreate_keys": false,
   "skills": [
-    "examples/skills/question-answering",
-    "examples/skills/pdf-processing"
+    "skills/question-answering",
+    "skills/pdf-processing"
   ],
   "capabilities": {
     "reasoning": true,
@@ -40,10 +40,11 @@
     "require_permissions": false,
     "public_endpoints": [
       "/health",
-      "/agent.html",
       "/.well-known/*",
       "/did/resolve*",
-      "/agent/info"
+      "/agent/info",
+      "/agent/skills",
+      "/agent/skills/*"
     ],
     "permissions": {
       "message/send": ["agent:write"],

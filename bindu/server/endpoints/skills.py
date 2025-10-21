@@ -172,24 +172,20 @@ async def skill_documentation_endpoint(
     app: "BinduApplication",
     request: Request
 ) -> Response:
-    """Get the full SKILL.md documentation for a specific skill.
+    """Get the full skill.yaml documentation for a specific skill.
     
-    Returns the complete markdown documentation that orchestrators can use
+    Returns the complete YAML documentation that orchestrators can use
     to understand when and how to use this skill.
     
     GET /agent/skills/{skill_id}/documentation
     
-    Response (text/markdown):
-    ```markdown
-    ---
-    name: Skill Name
+    Response (application/yaml):
+    ```yaml
+    id: skill-id
+    name: skill-name
     description: ...
-    ---
-    
-    # Skill Name
-    
-    ## Overview
-    ...
+    documentation:
+      overview: ...
     ```
     """
     client_ip = get_client_ip(request)
@@ -235,10 +231,10 @@ async def skill_documentation_endpoint(
                 status=404
             )
         
-        # Return as markdown
+        # Return as YAML
         resp = Response(
             content=documentation,
-            media_type="text/markdown"
+            media_type="application/yaml"
         )
         if x402_is_requested(request):
             resp = x402_add_header(resp)

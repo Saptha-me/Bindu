@@ -29,6 +29,7 @@ from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.extensions.x402.extension import get_agent_extension as get_x402_agent_extension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
+from bindu.penguin.skill_loader import load_skills
 from bindu.settings import app_settings
 from bindu.utils.display import prepare_server_display
 from bindu.utils.logging import get_logger
@@ -328,13 +329,20 @@ def bindufy(
 
     logger.info(f"DID extension initialized: {did_extension.did}")
 
+    # Load skills from configuration (supports both file-based and inline)
+    logger.info("Loading agent skills...")
+    skills_list = load_skills(
+        validated_config.get("skills") or [],
+        caller_dir
+    )
+    
     # Set agent metadata for DID document
     agent_url = (
         deployment_config.url if deployment_config else app_settings.network.default_url
     )
     skills_data = [
         skill.dict() if hasattr(skill, "dict") else skill
-        for skill in (validated_config.get("skills") or [])
+        for skill in skills_list
     ]
 
     did_extension.set_agent_metadata(
@@ -360,13 +368,13 @@ def bindufy(
     # Always advertise x402 extension capability (lean path)
     capabilities = _update_capabilities_with_x402(capabilities)
 
-    # Create agent manifest
+    # Create agent manifest with loaded skills
     _manifest = create_manifest(
         agent_function=handler,
         id=agent_id,
         name=validated_config["name"],
         description=validated_config["description"],
-        skills=validated_config["skills"],
+        skills=skills_list,
         capabilities=capabilities,
         did_extension=did_extension,
         agent_trust=validated_config["agent_trust"],

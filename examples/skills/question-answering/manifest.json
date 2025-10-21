@@ -1,0 +1,40 @@
+{
+  "id": "question-answering-v1",
+  "name": "question-answering",
+  "description": "Provides intelligent question answering capabilities for general knowledge queries",
+  "version": "1.0.0",
+  "tags": ["qa", "knowledge", "reasoning", "general"],
+  "examples": [
+    "What is photosynthesis?",
+    "How does a refrigerator work?",
+    "Why do we see different phases of the moon?"
+  ],
+  "input_modes": ["text/plain", "application/json"],
+  "output_modes": ["text/plain", "application/json"],
+  "documentation_path": "examples/skills/question-answering/SKILL.md",
+  "capabilities_detail": {
+    "factual_questions": {
+      "supported": true,
+      "types": ["what", "who", "where", "when", "how", "why"]
+    },
+    "explanations": {
+      "supported": true,
+      "detail_levels": ["brief", "detailed", "comprehensive"]
+    },
+    "reasoning": {
+      "supported": true,
+      "types": ["causal", "comparative", "analytical"]
+    }
+  },
+  "requirements": {
+    "packages": [],
+    "system": [],
+    "min_memory_mb": 100
+  },
+  "performance": {
+    "avg_processing_time_ms": 750,
+    "max_concurrent_requests": 10,
+    "memory_per_request_mb": 100
+  },
+  "allowed_tools": ["Read", "Search", "Reason"]
+}

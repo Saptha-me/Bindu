@@ -5,16 +5,8 @@
   "version": "1.0.0",
   "recreate_keys": false,
   "skills": [
-    {
-      "name": "question-answering",
-      "description": "Ability to answer basic questions",
-      "version": "1.0.0"
-    },
-    {
-      "name": "question-answering2",
-      "description": "Ability to answer basic questions",
-      "version": "1.0.0"
-    }
+    "examples/skills/question-answering",
+    "examples/skills/pdf-processing"
   ],
   "capabilities": {
     "reasoning": true,

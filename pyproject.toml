@@ -40,7 +40,9 @@ dependencies = [
     "pyjwt[crypto]>=2.8.0",
     "requests>=2.31.0",
     "pyperclip>=1.11.0",
-    "x402>=0.2.1"
+    "x402>=0.2.1",
+    "agno>=2.1.9",
+    "openai>=2.6.0",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -4,12 +4,14 @@ These directly call the endpoint functions with minimal fake app objects to avoi
 """
 
 import json
+from typing import cast
 from uuid import UUID
 from types import SimpleNamespace
 
 import pytest
 from starlette.requests import Request
 
+from bindu.server.applications import BinduApplication
 from bindu.server.endpoints.a2a_protocol import agent_run_endpoint
 from bindu.server.endpoints.agent_card import agent_card_endpoint
 from bindu.settings import app_settings
@@ -17,7 +19,12 @@ from bindu.settings import app_settings
 pytestmark = [pytest.mark.integration, pytest.mark.x402]
 
 
-def _make_request(method: str = "GET", path: str = "/", headers: dict | None = None, body: bytes | None = None) -> Request:
+def _make_request(
+    method: str = "GET",
+    path: str = "/",
+    headers: dict | None = None,
+    body: bytes | None = None,
+) -> Request:
     raw_headers = []
     for k, v in (headers or {}).items():
         raw_headers.append((k.lower().encode("latin-1"), v.encode("latin-1")))
@@ -46,7 +53,14 @@ def test_agent_card_echoes_extension_header():
         debug_level=1,
         monitoring=False,
         telemetry=False,
-        agent_trust={"identity_provider": "custom", "inherited_roles": [], "creator_id": "x", "creation_timestamp": 0, "trust_verification_required": False, "allowed_operations": {}},
+        agent_trust={
+            "identity_provider": "custom",
+            "inherited_roles": [],
+            "creator_id": "x",
+            "creation_timestamp": 0,
+            "trust_verification_required": False,
+            "allowed_operations": {},
+        },
     )
     app = SimpleNamespace(
         manifest=fake_manifest,
@@ -56,7 +70,7 @@ def test_agent_card_echoes_extension_header():
     )
 
     req = _make_request(headers={"X-A2A-Extensions": app_settings.x402.extension_uri})
-    resp = asyncio_run(agent_card_endpoint(app, req))
+    resp = asyncio_run(agent_card_endpoint(cast(BinduApplication, app), req))
     assert resp.headers.get("X-A2A-Extensions") == app_settings.x402.extension_uri
 
 
@@ -66,15 +80,21 @@ def test_agent_run_echoes_extension_header():
             return {"jsonrpc": "2.0", "id": str(UUID(int=1)), "result": []}
 
     app = SimpleNamespace(task_manager=FakeTM())
-    body = json.dumps({
-        "jsonrpc": "2.0",
-        "id": str(UUID(int=1)),
-        "method": "tasks/list",
-        "params": {},
-    }).encode()
+    body = json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": str(UUID(int=1)),
+            "method": "tasks/list",
+            "params": {},
+        }
+    ).encode()
 
-    req = _make_request(method="POST", headers={"X-A2A-Extensions": app_settings.x402.extension_uri}, body=body)
-    resp = asyncio_run(agent_run_endpoint(app, req))
+    req = _make_request(
+        method="POST",
+        headers={"X-A2A-Extensions": app_settings.x402.extension_uri},
+        body=body,
+    )
+    resp = asyncio_run(agent_run_endpoint(cast(BinduApplication, app), req))
     assert resp.headers.get("X-A2A-Extensions") == app_settings.x402.extension_uri
 
 

@@ -6,10 +6,12 @@ from .worker_utils import (
     PartConverter,
     TaskStateManager,
 )
+from .skill_loader import load_skills
 
 __all__ = [
     "MessageConverter",
     "PartConverter",
     "ArtifactBuilder",
     "TaskStateManager",
+    "load_skills",
 ]

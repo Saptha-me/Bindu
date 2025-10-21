@@ -28,7 +28,9 @@ def create_payment_requirements(
 
     Price can be money (e.g., "$1.00") or a TokenAmount.
     """
-    max_amount_required, asset_address, eip712_domain = process_price_to_atomic_amount(price, network)
+    max_amount_required, asset_address, eip712_domain = process_price_to_atomic_amount(
+        price, network
+    )
 
     return PaymentRequirements(
         scheme=scheme,

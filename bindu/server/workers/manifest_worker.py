@@ -57,7 +57,6 @@ from bindu.common.protocol.types import (
 )
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
-from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
@@ -146,17 +145,21 @@ class ManifestWorker(Worker):
         facilitator_client: FacilitatorClient | None = None
 
         try:
-            if latest_meta.get(app_settings.x402.meta_status_key) == app_settings.x402.status_submitted and latest_meta.get(
+            if latest_meta.get(
+                app_settings.x402.meta_status_key
+            ) == app_settings.x402.status_submitted and latest_meta.get(
                 app_settings.x402.meta_payload_key
             ):
                 payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
-                required_data = (task.get("metadata") or {}).get(app_settings.x402.meta_required_key) or latest_meta.get(
+                required_data = (task.get("metadata") or {}).get(
                     app_settings.x402.meta_required_key
-                )
+                ) or latest_meta.get(app_settings.x402.meta_required_key)
 
                 # Parse payload and select requirement
                 payment_payload_obj = self._parse_payment_payload(payload_data)
-                payment_requirements_obj = self._select_requirement_from_required(required_data, payment_payload_obj)
+                payment_requirements_obj = self._select_requirement_from_required(
+                    required_data, payment_payload_obj
+                )
                 if payment_payload_obj and payment_requirements_obj:
                     facilitator_client = FacilitatorClient()
                     verify_response = await facilitator_client.verify(
@@ -174,29 +177,42 @@ class ManifestWorker(Worker):
                         )
                         # Keep state as input-required per design; only metadata reflects x402 failure
                         await self.storage.update_task(
-                            task["id"], state="input-required", new_messages=error_msg, metadata=md
+                            task["id"],
+                            state="input-required",
+                            new_messages=error_msg,
+                            metadata=md,
                         )
-                        await self._notify_lifecycle(task["id"], task["context_id"], "input-required", False)
+                        await self._notify_lifecycle(
+                            task["id"], task["context_id"], "input-required", False
+                        )
                         return
 
                     # Mark verified while continuing work
                     is_paid_flow = True
                     await self.storage.update_task(
-                        task["id"], state="input-required", metadata=build_payment_verified_metadata()
+                        task["id"],
+                        state="input-required",
+                        metadata=build_payment_verified_metadata(),
                     )
         except Exception as e:
             # Defensive: if verification path errors, fail the task
             error_msg = MessageConverter.to_protocol_messages(
                 f"Payment processing error: {e}", task["id"], task["context_id"]
             )
-            await self.storage.update_task(task["id"], state="input-required", new_messages=error_msg)
-            await self._notify_lifecycle(task["id"], task["context_id"], "input-required", False)
+            await self.storage.update_task(
+                task["id"], state="input-required", new_messages=error_msg
+            )
+            await self._notify_lifecycle(
+                task["id"], task["context_id"], "input-required", False
+            )
             return
 
         # If not in payment-submitted flow, transition to working as usual
         if not is_paid_flow:
             await self.storage.update_task(task["id"], state="working")
-            await self._notify_lifecycle(task["id"], task["context_id"], "working", False)
+            await self._notify_lifecycle(
+                task["id"], task["context_id"], "working", False
+            )
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
@@ -286,7 +302,12 @@ class ManifestWorker(Worker):
                         "task.state_changed",
                         attributes={"from_state": "working", "to_state": state},
                     )
-                if is_paid_flow and payment_payload_obj and payment_requirements_obj and facilitator_client:
+                if (
+                    is_paid_flow
+                    and payment_payload_obj
+                    and payment_requirements_obj
+                    and facilitator_client
+                ):
                     # Settle before final update so metadata includes receipt
                     try:
                         settle_response = await facilitator_client.settle(
@@ -298,7 +319,9 @@ class ManifestWorker(Worker):
                                 if hasattr(settle_response, "model_dump")
                                 else dict(settle_response)
                             )
-                            await self._handle_terminal_state(task, results, state, additional_metadata=md)
+                            await self._handle_terminal_state(
+                                task, results, state, additional_metadata=md
+                            )
                         else:
                             md = build_payment_failed_metadata(
                                 settle_response.error_reason or "settlement_failed",
@@ -314,7 +337,10 @@ class ManifestWorker(Worker):
                                 error_message, task["id"], task["context_id"]
                             )
                             await self.storage.update_task(
-                                task["id"], state="input-required", new_messages=err_msgs, metadata=md
+                                task["id"],
+                                state="input-required",
+                                new_messages=err_msgs,
+                                metadata=md,
                             )
                             await self._notify_lifecycle(
                                 task["id"], task["context_id"], "input-required", False
@@ -326,7 +352,10 @@ class ManifestWorker(Worker):
                             str(e), task["id"], task["context_id"]
                         )
                         await self.storage.update_task(
-                            task["id"], state="input-required", new_messages=err_msgs, metadata=md
+                            task["id"],
+                            state="input-required",
+                            new_messages=err_msgs,
+                            metadata=md,
                         )
                         await self._notify_lifecycle(
                             task["id"], task["context_id"], "input-required", False
@@ -571,7 +600,10 @@ class ManifestWorker(Worker):
                 results, task["id"], task["context_id"]
             )
             await self.storage.update_task(
-                task["id"], state=state, new_messages=error_message, metadata=additional_metadata
+                task["id"],
+                state=state,
+                new_messages=error_message,
+                metadata=additional_metadata,
             )
             await self._notify_lifecycle(task["id"], task["context_id"], state, True)
 

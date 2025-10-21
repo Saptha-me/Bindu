@@ -1,0 +1,318 @@
+# PDF Processing Skill
+# Extract text, fill forms, and extract tables from PDF documents
+
+# Basic Metadata
+id: pdf-processing-v1
+name: pdf-processing
+version: 1.0.0
+author: raahul@saptha.me
+
+# Description
+description: |
+  Extract text, fill forms, and extract tables from PDF documents.
+  Handles both standard text-based PDFs and scanned documents with OCR.
+
+# Tags and Modes
+tags:
+  - pdf
+  - documents
+  - extraction
+  - forms
+  - tables
+
+input_modes:
+  - application/pdf
+
+output_modes:
+  - text/plain
+  - application/json
+  - application/pdf
+
+# Example Queries
+examples:
+  - "Extract text from this PDF document"
+  - "Fill out this PDF form with the provided data"
+  - "Extract tables from this invoice PDF"
+  - "Get text from this scanned document"
+  - "Parse form fields from this PDF"
+
+# Detailed Capabilities
+capabilities_detail:
+  text_extraction:
+    supported: true
+    types:
+      - standard
+      - scanned_with_ocr
+    languages:
+      - eng
+      - spa
+      - fra
+      - deu
+    limitations: "OCR requires pytesseract and tesseract-ocr system package"
+    preserves_formatting: true
+
+  form_filling:
+    supported: true
+    field_types:
+      - text
+      - checkbox
+      - dropdown
+      - radio
+    validation: true
+    batch_processing: true
+
+  table_extraction:
+    supported: true
+    table_types:
+      - simple
+      - complex_multi_column
+      - merged_cells
+    output_formats:
+      - json
+      - csv
+      - dataframe
+
+  merge_split:
+    supported: false
+    planned_version: "1.1.0"
+
+# Requirements
+requirements:
+  packages:
+    - pypdf>=3.0.0
+    - pdfplumber>=0.9.0
+    - pytesseract>=0.3.10
+  system:
+    - tesseract-ocr
+  min_memory_mb: 512
+
+# Performance Metrics
+performance:
+  avg_processing_time_ms: 2000
+  avg_time_per_page_ms: 200
+  max_file_size_mb: 50
+  max_pages: 500
+  concurrent_requests: 5
+  memory_per_request_mb: 500
+  timeout_per_page_seconds: 30
+  scalability: horizontal
+
+# Tool Restrictions
+allowed_tools:
+  - Read
+  - Write
+  - Execute
+
+# Rich Documentation
+documentation:
+  overview: |
+    This agent specializes in PDF document processing with support for text extraction,
+    form filling, and table extraction. It handles both standard text-based PDFs and
+    scanned documents (with OCR).
+
+    The agent uses industry-standard libraries (pypdf, pdfplumber) and provides
+    reliable, consistent results for various PDF processing tasks.
+
+  use_cases:
+    when_to_use:
+      - User uploads a PDF and asks to extract text
+      - User needs to fill out PDF forms programmatically
+      - User wants to extract tables from reports/invoices
+      - User needs to process scanned documents
+      - User wants to parse structured data from PDFs
+
+    when_not_to_use:
+      - PDF editing or modification (use pdf-editor agent)
+      - PDF creation from scratch (use pdf-generator agent)
+      - Image extraction from PDFs (use pdf-image-extractor agent)
+      - PDF merging/splitting (use pdf-manipulator agent)
+      - Real-time PDF streaming (not supported)
+
+  input_structure: |
+    Accepts PDF files with operation specification:
+
+    {
+      "file": "base64_encoded_pdf_or_url",
+      "operation": "extract_text|fill_form|extract_tables",
+      "options": {
+        "ocr": true,
+        "language": "eng",
+        "extract_tables": true,
+        "preserve_formatting": true
+      }
+    }
+
+    File constraints:
+    - Max size: 50MB
+    - Max pages: 500
+    - Formats: PDF 1.0 - 2.0
+
+  output_format: |
+    Text Extraction:
+    {
+      "success": true,
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "Extracted text...",
+          "confidence": 0.98,
+          "word_count": 450
+        }
+      ],
+      "metadata": {
+        "total_pages": 10,
+        "processing_time_ms": 1500,
+        "ocr_used": false,
+        "file_size_bytes": 1048576
+      }
+    }
+
+    Form Filling:
+    {
+      "success": true,
+      "output_file": "base64_encoded_filled_pdf",
+      "fields_filled": 15,
+      "validation_errors": [],
+      "processing_time_ms": 800
+    }
+
+    Table Extraction:
+    {
+      "success": true,
+      "tables": [
+        {
+          "page_number": 1,
+          "table_index": 0,
+          "headers": ["Item", "Quantity", "Price"],
+          "rows": [
+            ["Widget A", "10", "$50.00"],
+            ["Widget B", "5", "$25.00"]
+          ],
+          "confidence": 0.95
+        }
+      ],
+      "metadata": {
+        "total_tables": 1,
+        "processing_time_ms": 2100
+      }
+    }
+
+  error_handling:
+    - "Encrypted PDFs: Returns error requesting password with clear message"
+    - "Corrupted files: Returns validation error with details about corruption"
+    - "Unsupported operations: Returns clear error message with alternatives"
+    - "Timeout: 30 seconds per page, returns partial results if timeout occurs"
+    - "OCR failures: Falls back to standard extraction, reports OCR unavailable"
+    - "Memory limits: Rejects files that exceed memory constraints"
+
+  examples:
+    - title: "Extract Text from Standard PDF"
+      input:
+        file: "https://example.com/document.pdf"
+        operation: "extract_text"
+      output:
+        success: true
+        pages:
+          - page_number: 1
+            text: "This is the extracted text from page 1..."
+            confidence: 0.99
+            word_count: 234
+        metadata:
+          total_pages: 1
+          processing_time_ms: 850
+          ocr_used: false
+
+    - title: "Fill PDF Form"
+      input:
+        file: "base64_encoded_form_pdf"
+        operation: "fill_form"
+        form_data:
+          name: "John Doe"
+          email: "john@example.com"
+          date: "2025-01-21"
+      output:
+        success: true
+        output_file: "base64_encoded_filled_pdf"
+        fields_filled: 3
+        validation_errors: []
+        processing_time_ms: 650
+
+    - title: "Extract Tables from Invoice"
+      input:
+        file: "https://example.com/invoice.pdf"
+        operation: "extract_tables"
+      output:
+        success: true
+        tables:
+          - page_number: 1
+            table_index: 0
+            headers: ["Description", "Quantity", "Unit Price", "Total"]
+            rows:
+              - ["Consulting Services", "10", "$150.00", "$1,500.00"]
+              - ["Software License", "1", "$500.00", "$500.00"]
+            confidence: 0.94
+        metadata:
+          total_tables: 1
+          processing_time_ms: 2100
+
+    - title: "OCR on Scanned Document"
+      input:
+        file: "base64_scanned_pdf"
+        operation: "extract_text"
+        options:
+          ocr: true
+          language: "eng"
+      output:
+        success: true
+        pages:
+          - page_number: 1
+            text: "Extracted text from scanned image..."
+            confidence: 0.87
+            word_count: 189
+        metadata:
+          total_pages: 1
+          processing_time_ms: 4500
+          ocr_used: true
+
+  best_practices:
+    for_developers:
+      - "Check file size before processing (max 50MB)"
+      - "Use OCR only when necessary (3-5x slower than standard extraction)"
+      - "Validate form data types before filling"
+      - "Handle errors gracefully with user-friendly messages"
+      - "Consider pagination for large documents"
+      - "Cache results for frequently accessed documents"
+
+    for_orchestrators:
+      - "Route PDF operations based on operation type (extract/fill/parse)"
+      - "Check tesseract-ocr availability before routing OCR requests"
+      - "Consider file size for performance estimation (2s per page average)"
+      - "Chain with text-analysis for content understanding"
+      - "Use performance metrics for load balancing across instances"
+      - "Implement retry logic for timeout scenarios"
+      - "Monitor memory usage for concurrent requests"
+
+  installation: |
+    Required packages:
+    pip install pypdf pdfplumber pytesseract
+
+    For OCR support (optional):
+    # macOS
+    brew install tesseract
+
+    # Ubuntu/Debian
+    apt-get install tesseract-ocr
+
+    # Windows
+    Download from: https://github.com/UB-Mannheim/tesseract/wiki
+
+  versioning:
+    - version: "1.0.0"
+      date: "2025-01-21"
+      changes: "Initial release with text extraction, form filling, and table extraction"
+    - version: "1.1.0"
+      status: "planned"
+      changes: "Add PDF merging/splitting capabilities"
+    - version: "1.2.0"
+      status: "planned"
+      changes: "Enhanced OCR with multiple language support and confidence scoring"

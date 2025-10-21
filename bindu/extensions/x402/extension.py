@@ -16,7 +16,9 @@ from bindu.common.protocol.types import AgentExtension
 from bindu.settings import app_settings
 
 
-def get_agent_extension(required: bool = False, description: Optional[str] = None) -> AgentExtension:
+def get_agent_extension(
+    required: bool = False, description: Optional[str] = None
+) -> AgentExtension:
     """Create an AgentExtension declaration for x402.
 
     Args:

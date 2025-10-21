@@ -9,11 +9,13 @@ from typing import TYPE_CHECKING
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from bindu.common.protocol.errors import InternalError, NotFoundError
-from bindu.common.protocol.jsonrpc import extract_error_fields, jsonrpc_error
-from bindu.extensions.x402.utils import x402_add_header, x402_is_requested
+from bindu.common.protocol.types import InternalError
+from bindu.extensions.x402.extension import (
+    is_activation_requested as x402_is_requested,
+    add_activation_header as x402_add_header,
+)
+from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 from bindu.utils.logging import get_logger
-from bindu.utils.network import get_client_ip
 
 if TYPE_CHECKING:
     from bindu.server.application import BinduApplication

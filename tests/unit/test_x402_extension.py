@@ -47,13 +47,17 @@ class TestX402ExtensionHelpers:
         assert ext.get("description") == "custom"
 
     def test_is_activation_requested_true(self):
-        req = _make_request_with_headers({
-            "X-A2A-Extensions": app_settings.x402.extension_uri,
-        })
+        req = _make_request_with_headers(
+            {
+                "X-A2A-Extensions": app_settings.x402.extension_uri,
+            }
+        )
         assert is_activation_requested(req) is True
 
     def test_is_activation_requested_false(self):
-        req = _make_request_with_headers({"X-A2A-Extensions": "https://example.com/ext"})
+        req = _make_request_with_headers(
+            {"X-A2A-Extensions": "https://example.com/ext"}
+        )
         assert is_activation_requested(req) is False
 
     def test_add_activation_header_sets_header(self):

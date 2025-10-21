@@ -27,7 +27,9 @@ from bindu.common.models import (
 )
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
-from bindu.extensions.x402.extension import get_agent_extension as get_x402_agent_extension
+from bindu.extensions.x402.extension import (
+    get_agent_extension as get_x402_agent_extension,
+)
 from bindu.penguin.manifest import create_manifest, validate_agent_function
 from bindu.settings import app_settings
 from bindu.utils.display import prepare_server_display
@@ -331,18 +333,14 @@ def bindufy(
 
     # Load skills from configuration (supports both file-based and inline)
     logger.info("Loading agent skills...")
-    skills_list = load_skills(
-        validated_config.get("skills") or [],
-        caller_dir
-    )
-    
+    skills_list = load_skills(validated_config.get("skills") or [], caller_dir)
+
     # Set agent metadata for DID document
     agent_url = (
         deployment_config.url if deployment_config else app_settings.network.default_url
     )
     skills_data = [
-        skill.dict() if hasattr(skill, "dict") else skill
-        for skill in skills_list
+        skill.dict() if hasattr(skill, "dict") else skill for skill in skills_list
     ]
 
     did_extension.set_agent_metadata(

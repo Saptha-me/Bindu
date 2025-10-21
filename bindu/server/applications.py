@@ -19,7 +19,6 @@ from __future__ import annotations as _annotations
 
 from contextlib import asynccontextmanager
 from functools import partial
-from pathlib import Path
 from typing import AsyncIterator, Callable, Sequence
 from uuid import UUID, uuid4
 
@@ -201,7 +200,7 @@ class BinduApplication(Starlette):
         self._add_route(
             "/did/resolve", did_resolve_endpoint, ["GET", "POST"], with_app=True
         )
-        
+
         # Skills endpoints
         self._add_route(
             "/agent/skills",
@@ -247,7 +246,6 @@ class BinduApplication(Starlette):
     async def _wrap_with_app(self, endpoint: Callable, request: Request) -> Response:
         """Wrap endpoint that requires app instance."""
         return await endpoint(self, request)
-
 
     def _create_default_lifespan(
         self,

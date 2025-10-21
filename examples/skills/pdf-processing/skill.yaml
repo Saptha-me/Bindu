@@ -50,7 +50,7 @@ capabilities_detail:
       - deu
     limitations: "OCR requires pytesseract and tesseract-ocr system package"
     preserves_formatting: true
-  
+
   form_filling:
     supported: true
     field_types:
@@ -60,7 +60,7 @@ capabilities_detail:
       - radio
     validation: true
     batch_processing: true
-  
+
   table_extraction:
     supported: true
     table_types:
@@ -71,7 +71,7 @@ capabilities_detail:
       - json
       - csv
       - dataframe
-  
+
   merge_split:
     supported: false
     planned_version: "1.1.0"
@@ -109,7 +109,7 @@ documentation:
     This agent specializes in PDF document processing with support for text extraction,
     form filling, and table extraction. It handles both standard text-based PDFs and
     scanned documents (with OCR).
-    
+
     The agent uses industry-standard libraries (pypdf, pdfplumber) and provides
     reliable, consistent results for various PDF processing tasks.
 
@@ -120,7 +120,7 @@ documentation:
       - User wants to extract tables from reports/invoices
       - User needs to process scanned documents
       - User wants to parse structured data from PDFs
-    
+
     when_not_to_use:
       - PDF editing or modification (use pdf-editor agent)
       - PDF creation from scratch (use pdf-generator agent)
@@ -130,7 +130,7 @@ documentation:
 
   input_structure: |
     Accepts PDF files with operation specification:
-    
+
     {
       "file": "base64_encoded_pdf_or_url",
       "operation": "extract_text|fill_form|extract_tables",
@@ -141,7 +141,7 @@ documentation:
         "preserve_formatting": true
       }
     }
-    
+
     File constraints:
     - Max size: 50MB
     - Max pages: 500
@@ -166,7 +166,7 @@ documentation:
         "file_size_bytes": 1048576
       }
     }
-    
+
     Form Filling:
     {
       "success": true,
@@ -175,7 +175,7 @@ documentation:
       "validation_errors": [],
       "processing_time_ms": 800
     }
-    
+
     Table Extraction:
     {
       "success": true,
@@ -221,7 +221,7 @@ documentation:
           total_pages: 1
           processing_time_ms: 850
           ocr_used: false
-    
+
     - title: "Fill PDF Form"
       input:
         file: "base64_encoded_form_pdf"
@@ -236,7 +236,7 @@ documentation:
         fields_filled: 3
         validation_errors: []
         processing_time_ms: 650
-    
+
     - title: "Extract Tables from Invoice"
       input:
         file: "https://example.com/invoice.pdf"
@@ -254,7 +254,7 @@ documentation:
         metadata:
           total_tables: 1
           processing_time_ms: 2100
-    
+
     - title: "OCR on Scanned Document"
       input:
         file: "base64_scanned_pdf"
@@ -282,7 +282,7 @@ documentation:
       - "Handle errors gracefully with user-friendly messages"
       - "Consider pagination for large documents"
       - "Cache results for frequently accessed documents"
-    
+
     for_orchestrators:
       - "Route PDF operations based on operation type (extract/fill/parse)"
       - "Check tesseract-ocr availability before routing OCR requests"
@@ -295,14 +295,14 @@ documentation:
   installation: |
     Required packages:
     pip install pypdf pdfplumber pytesseract
-    
+
     For OCR support (optional):
     # macOS
     brew install tesseract
-    
+
     # Ubuntu/Debian
     apt-get install tesseract-ocr
-    
+
     # Windows
     Download from: https://github.com/UB-Mannheim/tesseract/wiki
 

@@ -1459,6 +1459,16 @@ ContextNotCancelableError = JSONRPCError[
     ],
 ]
 
+# Skill errors (-32030 to -32039)
+# Bindu-specific skill management extensions
+SkillNotFoundError = JSONRPCError[
+    Literal[-32030],
+    Literal[
+        "The specified skill ID was not found. "
+        "Check available skills: GET /agent/skills"
+    ],
+]
+
 # -----------------------------------------------------------------------------
 # JSON-RPC Request & Response Types
 # -----------------------------------------------------------------------------
@@ -1700,7 +1710,7 @@ class AgentExtension(TypedDict):
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class Skill(TypedDict):
     """Skills are a unit of capability that an agent can perform.
-    
+
     Skills can be defined in two ways:
     1. Inline (legacy): All metadata in config JSON
     2. File-based (Claude-style): Rich documentation in SKILL.md files
@@ -1739,20 +1749,20 @@ class Skill(TypedDict):
     # Rich documentation fields (Claude-style skills)
     documentation_path: NotRequired[str]
     """Path to the SKILL.md file containing detailed instructions and examples.
-    
+
     This file provides rich documentation for orchestrators to understand
     when and how to use this skill.
     """
 
     documentation_content: NotRequired[str]
     """Full content of the SKILL.md file.
-    
+
     Loaded at runtime for orchestrator discovery and agent selection.
     """
 
     capabilities_detail: NotRequired[dict[str, Any]]
     """Structured capability details for orchestrator matching.
-    
+
     Example:
     {
         "text_extraction": {"supported": true, "types": ["standard", "ocr"]},
@@ -1762,7 +1772,7 @@ class Skill(TypedDict):
 
     requirements: NotRequired[dict[str, Any]]
     """Dependencies and system requirements.
-    
+
     Example:
     {
         "packages": ["pypdf", "pdfplumber"],
@@ -1773,7 +1783,7 @@ class Skill(TypedDict):
 
     performance: NotRequired[dict[str, Any]]
     """Performance characteristics for orchestrator planning.
-    
+
     Example:
     {
         "avg_processing_time_ms": 2000,
@@ -1787,7 +1797,7 @@ class Skill(TypedDict):
 
     allowed_tools: NotRequired[list[str]]
     """List of tools/capabilities this skill is allowed to use.
-    
+
     Used for security and capability restriction.
     Example: ["Read", "Write", "Execute"]
     """

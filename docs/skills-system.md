@@ -71,7 +71,7 @@ capabilities_detail:
       - type_a
       - type_b
     limitations: "Optional limitations description"
-  
+
   feature_2:
     supported: false
     planned_version: "2.0.0"
@@ -103,55 +103,55 @@ documentation:
   overview: |
     Comprehensive description of what this skill does and its purpose.
     Can include multiple paragraphs and detailed explanations.
-  
+
   use_cases:
     when_to_use:
       - Scenario 1
       - Scenario 2
       - Scenario 3
-    
+
     when_not_to_use:
       - Anti-pattern 1
       - Anti-pattern 2
-  
+
   input_structure: |
     Description of expected input format with examples:
-    
+
     ```json
     {
       "field": "value"
     }
     ```
-  
+
   output_format: |
     Description of output format with examples:
-    
+
     ```json
     {
       "result": "data"
     }
     ```
-  
+
   error_handling:
     - "Error type 1: How it's handled"
     - "Error type 2: How it's handled"
-  
+
   examples:
     - title: "Example 1"
       input: "input data"
       output: "output data"
-    
+
     - title: "Example 2"
       input:
         field: "value"
       output:
         result: "data"
-  
+
   best_practices:
     for_developers:
       - "Best practice 1"
       - "Best practice 2"
-    
+
     for_orchestrators:
       - "Routing guideline 1"
       - "Chaining guideline 2"
@@ -283,16 +283,16 @@ import yaml
 
 async def find_best_agent(task_description: str):
     """Find the best agent for a task using skill documentation."""
-    
+
     # 1. Get all available agents
     agents = await get_available_agents()
-    
+
     # 2. For each agent, fetch skill details
     candidates = []
     for agent in agents:
         skills_response = await httpx.get(f"{agent.url}/agent/skills")
         skills = skills_response.json()["skills"]
-        
+
         # 3. Load full YAML documentation for matching
         for skill in skills:
             if matches_task(skill, task_description):
@@ -300,11 +300,11 @@ async def find_best_agent(task_description: str):
                     f"{agent.url}/agent/skills/{skill['id']}/documentation"
                 )
                 skill_yaml = yaml.safe_load(doc_response.text)
-                
+
                 # 4. Score based on detailed capabilities
                 score = calculate_match_score(skill_yaml, task_description)
                 candidates.append((agent, skill_yaml, score))
-    
+
     # 5. Select best match
     best_agent, best_skill, score = max(candidates, key=lambda x: x[2])
     return best_agent, best_skill
@@ -316,17 +316,17 @@ async def find_best_agent(task_description: str):
 def check_requirements(skill: dict) -> bool:
     """Validate agent requirements before routing."""
     requirements = skill.get("requirements", {})
-    
+
     # Check system dependencies
     for sys_dep in requirements.get("system", []):
         if not system_has(sys_dep):
             return False
-    
+
     # Check memory availability
     min_memory = requirements.get("min_memory_mb", 0)
     if available_memory_mb() < min_memory:
         return False
-    
+
     return True
 ```
 
@@ -336,14 +336,14 @@ def check_requirements(skill: dict) -> bool:
 def estimate_execution_time(skill: dict, input_size: int) -> float:
     """Estimate execution time based on skill performance metrics."""
     performance = skill.get("performance", {})
-    
+
     avg_time = performance.get("avg_processing_time_ms", 1000)
     max_size = performance.get("max_file_size_mb", 10)
-    
+
     # Scale based on input size
     size_factor = input_size / max_size
     estimated_time = avg_time * size_factor
-    
+
     return estimated_time
 ```
 
@@ -352,7 +352,7 @@ def estimate_execution_time(skill: dict, input_size: int) -> float:
 ```python
 async def llm_find_agent(user_query: str, agents: list):
     """Use LLM to understand skill YAML and match to user query."""
-    
+
     # Get all skill YAMLs
     skill_yamls = []
     for agent in agents:
@@ -363,21 +363,21 @@ async def llm_find_agent(user_query: str, agents: list):
             "agent": agent,
             "yaml": doc_response.text
         })
-    
+
     # LLM can understand YAML directly
     prompt = f"""
     User query: {user_query}
-    
+
     Available skills:
     {yaml.dump([s["yaml"] for s in skill_yamls])}
-    
+
     Which skill best matches the user query? Consider:
     - Capabilities and limitations
     - Performance requirements
     - Input/output formats
     - Use cases and anti-patterns
     """
-    
+
     best_match = await llm.analyze(prompt)
     return best_match
 ```
@@ -463,7 +463,7 @@ performance:
 documentation:
   overview: |
     Detailed description
-  
+
   use_cases:
     when_to_use:
       - Use case 1
@@ -529,13 +529,13 @@ See the `examples/skills/` directory for complete examples:
 
 ### Advantages
 
-✅ **Single Source of Truth** - One file to maintain  
-✅ **Human-Friendly** - Easy to read and write  
-✅ **Structured** - Easy to parse programmatically  
-✅ **LLM-Friendly** - LLMs understand YAML well  
-✅ **Rich Content** - Supports multi-line strings, nested structures  
-✅ **No Duplication** - No need to sync multiple files  
-✅ **Version Control Friendly** - Clean diffs  
+✅ **Single Source of Truth** - One file to maintain
+✅ **Human-Friendly** - Easy to read and write
+✅ **Structured** - Easy to parse programmatically
+✅ **LLM-Friendly** - LLMs understand YAML well
+✅ **Rich Content** - Supports multi-line strings, nested structures
+✅ **No Duplication** - No need to sync multiple files
+✅ **Version Control Friendly** - Clean diffs
 
 ### Comparison with Other Formats
 

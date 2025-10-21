@@ -47,7 +47,7 @@ capabilities_detail:
       - how
       - why
     description: "Answers direct factual questions across various domains"
-  
+
   explanations:
     supported: true
     detail_levels:
@@ -55,7 +55,7 @@ capabilities_detail:
       - detailed
       - comprehensive
     description: "Provides explanations with adjustable depth"
-  
+
   reasoning:
     supported: true
     types:
@@ -63,7 +63,7 @@ capabilities_detail:
       - comparative
       - analytical
     description: "Multi-step reasoning for complex questions"
-  
+
   domains:
     - science
     - history
@@ -93,8 +93,8 @@ allowed_tools:
 # Rich Documentation
 documentation:
   overview: |
-    This skill enables the agent to answer a wide range of questions using reasoning 
-    and knowledge retrieval. It's designed for general-purpose question answering 
+    This skill enables the agent to answer a wide range of questions using reasoning
+    and knowledge retrieval. It's designed for general-purpose question answering
     across various domains including science, history, technology, and everyday topics.
 
   use_cases:
@@ -104,7 +104,7 @@ documentation:
       - User wants to understand how something works
       - User requests information about historical events, scientific facts, or general knowledge
       - User needs help understanding a topic
-    
+
     when_not_to_use:
       - Real-time information (use web-search skill)
       - Personal data or user-specific information (use context-retrieval skill)
@@ -114,10 +114,10 @@ documentation:
 
   input_structure: |
     Accepts natural language questions in plain text or structured format:
-    
+
     Plain text:
     "What is photosynthesis?"
-    
+
     Structured JSON:
     {
       "question": "What is photosynthesis?",
@@ -136,7 +136,7 @@ documentation:
         "Interested in learning about different types of photosynthesis?"
       ]
     }
-    
+
     Brief response (text/plain):
     "Photosynthesis is the process by which plants convert light energy into chemical energy..."
 
@@ -160,7 +160,7 @@ documentation:
         answer: "The capital of France is Paris."
         confidence: 1.0
         sources: ["general_knowledge"]
-    
+
     - title: "Explanation Request"
       input:
         question: "How does a refrigerator work?"
@@ -168,7 +168,7 @@ documentation:
       output:
         answer: |
           A refrigerator works by using a refrigeration cycle to remove heat from its interior...
-          
+
           1. Compression: The compressor pressurizes refrigerant gas...
           2. Condensation: The hot gas flows through condenser coils...
           3. Expansion: The liquid refrigerant passes through an expansion valve...
@@ -178,20 +178,20 @@ documentation:
         follow_up_suggestions:
           - "Would you like to know about different types of refrigerants?"
           - "Interested in energy efficiency tips for refrigerators?"
-    
+
     - title: "Complex Reasoning"
       input: "Why do we see different phases of the moon?"
       output:
         answer: |
-          We see different phases of the moon because of the changing positions of the Moon, 
-          Earth, and Sun. As the Moon orbits Earth, the amount of its sunlit surface visible 
+          We see different phases of the moon because of the changing positions of the Moon,
+          Earth, and Sun. As the Moon orbits Earth, the amount of its sunlit surface visible
           from Earth varies:
-          
+
           - New Moon: Moon is between Earth and Sun (dark side faces us)
           - First Quarter: Moon is 90° from the Sun (half illuminated)
           - Full Moon: Earth is between Moon and Sun (fully illuminated)
           - Last Quarter: Moon is 270° from the Sun (half illuminated)
-          
+
           The cycle takes about 29.5 days to complete.
         confidence: 0.96
         sources: ["astronomy", "general_knowledge"]
@@ -202,7 +202,7 @@ documentation:
       - "Include context when available"
       - "Specify desired detail level"
       - "Handle follow-up questions in conversation flow"
-    
+
     for_orchestrators:
       - "Route factual questions to this skill"
       - "Chain with web-search for real-time information"

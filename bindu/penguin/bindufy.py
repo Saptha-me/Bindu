@@ -29,10 +29,10 @@ from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
 from bindu.extensions.x402.extension import get_agent_extension as get_x402_agent_extension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
-from bindu.penguin.skill_loader import load_skills
 from bindu.settings import app_settings
 from bindu.utils.display import prepare_server_display
 from bindu.utils.logging import get_logger
+from bindu.utils.skill_loader import load_skills
 
 # Configure logging for the module
 logger = get_logger("bindu.penguin.bindufy")

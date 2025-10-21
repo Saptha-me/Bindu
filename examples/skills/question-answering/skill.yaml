@@ -1,0 +1,211 @@
+# Question Answering Skill
+# Provides intelligent question answering capabilities for general knowledge queries
+
+# Basic Metadata
+id: question-answering-v1
+name: question-answering
+version: 1.0.0
+author: raahul@saptha.me
+
+# Description
+description: |
+  Provides intelligent question answering capabilities for general knowledge queries.
+  Use when users ask factual questions, need explanations, or require information retrieval.
+
+# Tags and Modes
+tags:
+  - qa
+  - knowledge
+  - reasoning
+  - general
+
+input_modes:
+  - text/plain
+  - application/json
+
+output_modes:
+  - text/plain
+  - application/json
+
+# Example Queries
+examples:
+  - "What is photosynthesis?"
+  - "How does a refrigerator work?"
+  - "Why do we see different phases of the moon?"
+  - "Explain quantum computing in simple terms"
+  - "What's the difference between RNA and DNA?"
+
+# Detailed Capabilities
+capabilities_detail:
+  factual_questions:
+    supported: true
+    types:
+      - what
+      - who
+      - where
+      - when
+      - how
+      - why
+    description: "Answers direct factual questions across various domains"
+  
+  explanations:
+    supported: true
+    detail_levels:
+      - brief
+      - detailed
+      - comprehensive
+    description: "Provides explanations with adjustable depth"
+  
+  reasoning:
+    supported: true
+    types:
+      - causal
+      - comparative
+      - analytical
+    description: "Multi-step reasoning for complex questions"
+  
+  domains:
+    - science
+    - history
+    - technology
+    - mathematics
+    - general_knowledge
+
+# Requirements
+requirements:
+  packages: []
+  system: []
+  min_memory_mb: 100
+
+# Performance Metrics
+performance:
+  avg_processing_time_ms: 750
+  max_concurrent_requests: 10
+  memory_per_request_mb: 100
+  scalability: horizontal
+
+# Tool Restrictions
+allowed_tools:
+  - Read
+  - Search
+  - Reason
+
+# Rich Documentation
+documentation:
+  overview: |
+    This skill enables the agent to answer a wide range of questions using reasoning 
+    and knowledge retrieval. It's designed for general-purpose question answering 
+    across various domains including science, history, technology, and everyday topics.
+
+  use_cases:
+    when_to_use:
+      - User asks a direct factual question
+      - User needs an explanation of a concept
+      - User wants to understand how something works
+      - User requests information about historical events, scientific facts, or general knowledge
+      - User needs help understanding a topic
+    
+    when_not_to_use:
+      - Real-time information (use web-search skill)
+      - Personal data or user-specific information (use context-retrieval skill)
+      - Complex calculations (use calculator skill)
+      - Code generation (use code-assistant skill)
+      - Document processing (use document-analysis skill)
+
+  input_structure: |
+    Accepts natural language questions in plain text or structured format:
+    
+    Plain text:
+    "What is photosynthesis?"
+    
+    Structured JSON:
+    {
+      "question": "What is photosynthesis?",
+      "context": "optional context or constraints",
+      "detail_level": "brief|detailed|comprehensive"
+    }
+
+  output_format: |
+    Standard response (JSON):
+    {
+      "answer": "Photosynthesis is the process by which plants...",
+      "confidence": 0.95,
+      "sources": ["general_knowledge"],
+      "follow_up_suggestions": [
+        "Would you like to know about the chemical equation?",
+        "Interested in learning about different types of photosynthesis?"
+      ]
+    }
+    
+    Brief response (text/plain):
+    "Photosynthesis is the process by which plants convert light energy into chemical energy..."
+
+  quality_guidelines:
+    - "Accuracy: Prioritize factual correctness"
+    - "Clarity: Use clear, understandable language"
+    - "Completeness: Address all aspects of the question"
+    - "Conciseness: Be thorough but not verbose"
+    - "Honesty: Acknowledge uncertainty when appropriate"
+
+  error_handling:
+    - "Ambiguous questions: Ask for clarification"
+    - "Out of scope: Politely indicate limitations"
+    - "Insufficient information: Request additional context"
+    - "Controversial topics: Present balanced perspectives"
+
+  examples:
+    - title: "Simple Factual Question"
+      input: "What is the capital of France?"
+      output:
+        answer: "The capital of France is Paris."
+        confidence: 1.0
+        sources: ["general_knowledge"]
+    
+    - title: "Explanation Request"
+      input:
+        question: "How does a refrigerator work?"
+        detail_level: "detailed"
+      output:
+        answer: |
+          A refrigerator works by using a refrigeration cycle to remove heat from its interior...
+          
+          1. Compression: The compressor pressurizes refrigerant gas...
+          2. Condensation: The hot gas flows through condenser coils...
+          3. Expansion: The liquid refrigerant passes through an expansion valve...
+          4. Evaporation: The cold refrigerant absorbs heat from the interior...
+        confidence: 0.92
+        sources: ["general_knowledge", "physics"]
+        follow_up_suggestions:
+          - "Would you like to know about different types of refrigerants?"
+          - "Interested in energy efficiency tips for refrigerators?"
+    
+    - title: "Complex Reasoning"
+      input: "Why do we see different phases of the moon?"
+      output:
+        answer: |
+          We see different phases of the moon because of the changing positions of the Moon, 
+          Earth, and Sun. As the Moon orbits Earth, the amount of its sunlit surface visible 
+          from Earth varies:
+          
+          - New Moon: Moon is between Earth and Sun (dark side faces us)
+          - First Quarter: Moon is 90° from the Sun (half illuminated)
+          - Full Moon: Earth is between Moon and Sun (fully illuminated)
+          - Last Quarter: Moon is 270° from the Sun (half illuminated)
+          
+          The cycle takes about 29.5 days to complete.
+        confidence: 0.96
+        sources: ["astronomy", "general_knowledge"]
+
+  best_practices:
+    for_developers:
+      - "Provide clear questions in natural language"
+      - "Include context when available"
+      - "Specify desired detail level"
+      - "Handle follow-up questions in conversation flow"
+    
+    for_orchestrators:
+      - "Route factual questions to this skill"
+      - "Chain with web-search for real-time information"
+      - "Combine with document-analysis for context-aware answers"
+      - "Use confidence scores for answer validation"
+      - "Consider caching common questions for performance"

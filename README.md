@@ -292,6 +292,20 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zu
 [![Star History Chart](https://api.star-history.com/svg?repos=Saptha-me/Bindu&type=Date)](https://www.star-history.com/#Saptha-me/Bindu&Date)
 
 
-Built with ❤️ by the team from Amsterdam 🌷.
+---
 
-Happy Bindu! 🌻🚀✨
+<p align="center">
+  <strong>Built with 💛 by the team from Amsterdam 🌷</strong><br/>
+  <em>Happy Bindu! 🌻🚀✨</em>
+</p>
+
+<p align="center">
+  <strong>From idea to Internet of Agents in 2 minutes.</strong><br/>
+  <em>Your agent. Your framework. Universal protocols.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Saptha-me/Bindu">⭐ Star us on GitHub</a> •
+  <a href="https://discord.gg/3w5zuYUuwt">💬 Join Discord</a> •
+  <a href="https://docs.saptha.me">📚 Read the Docs</a>
+</p>

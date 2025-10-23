@@ -3,7 +3,6 @@
 import json
 from types import SimpleNamespace
 from typing import cast
-from uuid import UUID
 
 import pytest
 

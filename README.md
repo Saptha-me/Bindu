@@ -67,15 +67,16 @@ uv add bindu
 
 ## 🚀 Quick Start
 
-### Quick Start with Cookiecutter Template
+### Time to first agent: ~2 minutes ⏱️
 
-The fastest way to get started with bindu is using our cookiecutter template:
+On your local machine, navigate to the directory in which you want to
+create a project directory, and run the following command:
 
 ```bash
-# Create a new bindu project
-uv tool run cookiecutter cookiecutter-bindu/
+uvx cookiecutter https://github.com/Saptha-me/create-bindu-agent.git
 ```
 
+More details can be found [here](https://docs.saptha.me).
 <br/>
 
 That’s it.

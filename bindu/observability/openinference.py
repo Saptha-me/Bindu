@@ -254,7 +254,7 @@ def _setup_tracer_provider(
     if oltp_endpoint:
         # Normalize to list for uniform handling
         endpoints = [oltp_endpoint] if isinstance(oltp_endpoint, str) else oltp_endpoint
-        
+
         # Batch processor configuration
         batch_config = {
             "max_queue_size": batch_max_queue_size,
@@ -262,7 +262,7 @@ def _setup_tracer_provider(
             "max_export_batch_size": batch_max_export_batch_size,
             "export_timeout_millis": batch_export_timeout_millis,
         }
-        
+
         # Create a processor for each endpoint
         for endpoint in endpoints:
             # Create OTLP exporter with logging wrapper
@@ -270,11 +270,11 @@ def _setup_tracer_provider(
             logging_exporter = _LoggingSpanExporter(
                 otlp_exporter, endpoint, verbose_logging
             )
-            
+
             # Type ignore: _LoggingSpanExporter implements SpanExporter protocol
             processor = BatchSpanProcessor(logging_exporter, **batch_config)  # type: ignore[arg-type]
             tracer_provider.add_span_processor(processor)
-            
+
             if verbose_logging:
                 logger.info(
                     "Configured OTLP exporter with batch processing",

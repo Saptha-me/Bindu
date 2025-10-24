@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags for version detection
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -42,12 +44,6 @@ jobs:
         with:
           file: coverage.xml
           format: cobertura
-
-      - name: Set version
-        run: |
-          VERSION=$(uvx dunamai from any --no-metadata --style pep440)
-          uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version $VERSION
-          echo "Using version: $VERSION"
 
       - name: Build package
         run: uv build

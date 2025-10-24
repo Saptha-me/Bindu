@@ -204,7 +204,7 @@ class _LoggingSpanExporter:
 
 
 def _setup_tracer_provider(
-    oltp_endpoint: str | None = None,
+    oltp_endpoint: str | list[str] | None = None,
     oltp_service_name: str | None = None,
     verbose_logging: bool = False,
     service_version: str = "1.0.0",
@@ -250,34 +250,40 @@ def _setup_tracer_provider(
     resource = Resource.create(resource_attrs)
     tracer_provider = trace_sdk.TracerProvider(resource=resource)
 
-    # Use provided endpoint or fall back to console
+    # Use provided endpoint(s) or fall back to console
     if oltp_endpoint:
-        # Create OTLP exporter with logging wrapper
-        otlp_exporter = OTLPSpanExporter(endpoint=oltp_endpoint)
-        logging_exporter = _LoggingSpanExporter(
-            otlp_exporter, oltp_endpoint, verbose_logging
-        )
-
-        # Use batch processor configuration from parameters
+        # Normalize to list for uniform handling
+        endpoints = [oltp_endpoint] if isinstance(oltp_endpoint, str) else oltp_endpoint
+        
+        # Batch processor configuration
         batch_config = {
             "max_queue_size": batch_max_queue_size,
             "schedule_delay_millis": batch_schedule_delay_millis,
             "max_export_batch_size": batch_max_export_batch_size,
             "export_timeout_millis": batch_export_timeout_millis,
         }
-        # Type ignore: _LoggingSpanExporter implements SpanExporter protocol
-        processor = BatchSpanProcessor(logging_exporter, **batch_config)  # type: ignore[arg-type]
-        if verbose_logging:
-            logger.info(
-                "Configured OTLP exporter with batch processing",
-                endpoint=oltp_endpoint,
-                max_queue_size=batch_max_queue_size,
-                schedule_delay_millis=batch_schedule_delay_millis,
-                max_export_batch_size=batch_max_export_batch_size,
-                export_timeout_millis=batch_export_timeout_millis,
+        
+        # Create a processor for each endpoint
+        for endpoint in endpoints:
+            # Create OTLP exporter with logging wrapper
+            otlp_exporter = OTLPSpanExporter(endpoint=endpoint)
+            logging_exporter = _LoggingSpanExporter(
+                otlp_exporter, endpoint, verbose_logging
             )
-
-        tracer_provider.add_span_processor(processor)
+            
+            # Type ignore: _LoggingSpanExporter implements SpanExporter protocol
+            processor = BatchSpanProcessor(logging_exporter, **batch_config)  # type: ignore[arg-type]
+            tracer_provider.add_span_processor(processor)
+            
+            if verbose_logging:
+                logger.info(
+                    "Configured OTLP exporter with batch processing",
+                    endpoint=endpoint,
+                    max_queue_size=batch_max_queue_size,
+                    schedule_delay_millis=batch_schedule_delay_millis,
+                    max_export_batch_size=batch_max_export_batch_size,
+                    export_timeout_millis=batch_export_timeout_millis,
+                )
     else:
         tracer_provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
         if verbose_logging:
@@ -296,7 +302,7 @@ def _setup_tracer_provider(
 
 
 def setup(
-    oltp_endpoint: str | None = None,
+    oltp_endpoint: str | list[str] | None = None,
     oltp_service_name: str | None = None,
     verbose_logging: bool = False,
     service_version: str = "1.0.0",
@@ -313,7 +319,9 @@ def setup(
     2. Optionally instruments AI frameworks if available
 
     Args:
-        oltp_endpoint: OTLP endpoint URL for sending traces
+        oltp_endpoint: OTLP endpoint URL(s) for sending traces. Can be:
+            - Single string: "http://localhost:4318/v1/traces"
+            - List of strings: ["http://localhost:4318/v1/traces", "http://localhost:6006/v1/traces"]
         oltp_service_name: Service name for identifying traces
         verbose_logging: Enable verbose telemetry logging
         service_version: Service version for traces

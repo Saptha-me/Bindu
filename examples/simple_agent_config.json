@@ -68,9 +68,12 @@
   "scheduler": {
     "type": "memory"
   },
-  "oltp_endpoint": "http://localhost:4318/v1/traces",
+  "oltp_endpoint": [
+    "http://localhost:4318/v1/traces",
+    "http://localhost:6006/v1/traces"
+  ],
   "oltp_service_name": "bindu-agent",
-  "oltp_verbose_logging": false,
+  "oltp_verbose_logging": true,
   "oltp_service_version": "1.0.0",
   "oltp_deployment_environment": "production",
   "oltp_batch_max_queue_size": 2048,

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "bindu"
-version = "0.3.14"
+dynamic = ["version"]
 description = "A protocol framework for agent-to-agent communication"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -97,3 +97,10 @@ exclude_lines = [
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.3.14"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "bindu/_version.py"

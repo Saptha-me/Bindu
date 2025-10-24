@@ -7,6 +7,8 @@ from rich.console import Console, Group
 from rich.panel import Panel
 from rich.text import Text
 
+from bindu.__version__ import __version__
+
 
 def prepare_server_display(
     host: str | None = None,
@@ -20,6 +22,7 @@ def prepare_server_display(
         host: Server hostname
         port: Server port
         agent_id: Agent identifier
+        agent_did: Agent DID
     """
     console = Console()
 
@@ -90,6 +93,10 @@ def prepare_server_display(
     console.print(
         Panel(panel_content, title=title, border_style="bright_cyan", padding=(1, 2))
     )
+    console.print()
+
+    # Print version
+    console.print(Text(f"Version: {__version__}", style="bold white"), highlight=False)
     console.print()
 
     # Print server information

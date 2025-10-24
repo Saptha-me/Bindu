@@ -192,3 +192,6 @@ examples/.pebbling/public.pem
 # .bandit.baseline
 examples/.pebbling/private.pem
 examples/.pebbling/public.pem
+
+# Auto-generated version file (generated during build)
+bindu/_version.py

@@ -183,7 +183,6 @@ wheels = [
 
 [[package]]
 name = "bindu"
-version = "0.3.14"
 source = { editable = "." }
 dependencies = [
     { name = "agno" },

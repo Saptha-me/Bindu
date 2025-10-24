@@ -94,9 +94,7 @@ def prepare_server_display(
 
     # Print server information
     if host and port:
-        console.print(
-            Text("🚀 Bindu Server 🚀", style="bold magenta"), highlight=False
-        )
+        console.print(Text("🚀 Bindu Server 🚀", style="bold magenta"), highlight=False)
         console.print(
             Text(f"Agent Server: http://{host}:{port}", style="green"), highlight=False
         )
@@ -113,14 +111,14 @@ def prepare_server_display(
 
     # Print protocol endpoints
     if host and port:
-        console.print(
-            Text("Protocol Endpoints:", style="bold white"), highlight=False
-        )
+        console.print(Text("Protocol Endpoints:", style="bold white"), highlight=False)
         console.print(
             Text(f"  - A2A: http://{host}:{port}/a2a", style="white"), highlight=False
         )
         console.print(
-            Text(f"  - DID Resolution: http://{host}:{port}/did/resolve", style="white"),
+            Text(
+                f"  - DID Resolution: http://{host}:{port}/did/resolve", style="white"
+            ),
             highlight=False,
         )
         console.print(

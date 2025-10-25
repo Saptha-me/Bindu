@@ -185,6 +185,7 @@ examples/.pebbling/*
 examples/test_wallet.json
 examples/*_private_key*.json
 examples/*_payment_payload*.json
+examples/payment_payload.json
 
 examples/.pebbling/private.pem
 examples/.pebbling/public.pem

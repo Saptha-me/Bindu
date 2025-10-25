@@ -330,13 +330,23 @@ class TaskManager:
 
         # Store payment requirements in task metadata if payment is required
         if payment_requirements:
+            # Check if payment was verified (status will be in message metadata after validation)
+            payment_status = message.get("metadata", {}).get(app_settings.x402.meta_status_key)
+            
+            task_metadata_update = {
+                app_settings.x402.meta_required_key: payment_requirements,
+                "x402.payment.required_timestamp": time.time(),
+            }
+            
+            # If payment was verified, store the verified status in task metadata
+            if payment_status == app_settings.x402.status_verified:
+                task_metadata_update[app_settings.x402.meta_status_key] = payment_status
+                task_metadata_update["x402.payment.verified_timestamp"] = time.time()
+            
             await self.storage.update_task(
                 task["id"],
                 state=task["status"]["state"],  # Keep current state
-                metadata={
-                    app_settings.x402.meta_required_key: payment_requirements,
-                    "x402.payment.required_timestamp": time.time(),
-                },
+                metadata=task_metadata_update,
             )
 
         scheduler_params: TaskSendParams = TaskSendParams(
@@ -769,6 +779,11 @@ class TaskManager:
             ValueError: If payment is submitted but validation fails
         """
         # Check if agent has execution_cost configured (requires payment for all tasks)
+        # Step 1: Check if payment was submitted in the current message
+        message_metadata = message.get("metadata") or {}
+        payment_status = message_metadata.get(app_settings.x402.meta_status_key)
+        
+        # Step 2: Determine if agent requires payment from manifest
         agent_requires_payment = False
         payment_requirements_data = None
 
@@ -799,47 +814,69 @@ class TaskManager:
                         }
                         break
 
-        # Also check if previous task required payment (for multi-turn conversations)
-        tasks_in_context = await self.storage.list_tasks_by_context(context_id)
+        # Step 3: Check previous tasks in context (for multi-turn conversations)
+        # Only check if payment not already submitted in current message
         task_metadata = {}
+        if payment_status != app_settings.x402.status_submitted:
+            tasks_in_context = await self.storage.list_tasks_by_context(context_id)
+            
+            # Filter out the current task and find the most recent previous task
+            previous_tasks = [
+                t for t in tasks_in_context 
+                if t.get("id") != task_id
+            ]
+            
+            if previous_tasks:
+                latest_previous_task = previous_tasks[-1]
+                task_metadata = latest_previous_task.get("metadata") or {}
+                
+                # Check if previous task required payment
+                previous_payment_required = task_metadata.get(
+                    app_settings.x402.meta_required_key
+                )
+                
+                # Check if previous task already has verified payment
+                previous_payment_status = task_metadata.get(
+                    app_settings.x402.meta_status_key
+                )
+                
+                # Only inherit payment requirements if:
+                # 1. Previous task required payment, AND
+                # 2. Previous task does NOT have verified payment yet
+                if previous_payment_required and previous_payment_status != app_settings.x402.status_verified:
+                    agent_requires_payment = True
+                    payment_requirements_data = previous_payment_required
+                    logger.info(
+                        f"x402_inheriting_payment_requirements task_id={task_id} "
+                        f"from_task={latest_previous_task.get('id')} "
+                        f"previous_status={previous_payment_status}"
+                    )
 
-        if tasks_in_context:
-            latest_task = tasks_in_context[-1]
-            task_metadata = latest_task.get("metadata") or {}
-            previous_payment_required = task_metadata.get(
-                app_settings.x402.meta_required_key
-            )
-
-            if previous_payment_required:
-                agent_requires_payment = True
-                payment_requirements_data = previous_payment_required
-
-        # If no payment required, return None
+        # Step 4: If no payment required, return None
         if not agent_requires_payment or not payment_requirements_data:
             return None
 
         logger.info(
-            f"x402_payment_check_started task_id={task_id} agent_requires_payment={agent_requires_payment}"
+            f"x402_payment_check_started task_id={task_id} "
+            f"agent_requires_payment={agent_requires_payment} "
+            f"payment_status={payment_status}"
         )
 
-        # Check if payment was submitted in the current message
-        message_metadata = message.get("metadata") or {}
-        payment_status = message_metadata.get(app_settings.x402.meta_status_key)
-
+        # Step 5: If payment not submitted, return requirements
         if payment_status != app_settings.x402.status_submitted:
             # Payment not submitted - return requirements for task metadata
             # Worker will set task to "input-required" state with payment requirements
             logger.info(f"x402_payment_not_submitted task_id={task_id}")
             return payment_requirements_data
 
-        # Payment was submitted - validate it
+        # Step 6: Payment was submitted - validate it
         # Prepare task metadata with payment requirements for validation
-        if not task_metadata:
-            task_metadata = {}
-        task_metadata[app_settings.x402.meta_required_key] = payment_requirements_data
+        validation_metadata = {
+            app_settings.x402.meta_required_key: payment_requirements_data
+        }
 
         validation_result = await PaymentValidator.verify_payment(
-            message_metadata, task_metadata
+            message_metadata, validation_metadata
         )
 
         if not validation_result.is_valid:
@@ -850,7 +887,7 @@ class TaskManager:
             # Raise exception - payment was submitted but invalid
             raise ValueError(f"x402 Payment Error: {error_msg}")
 
-        # Payment verified - update message metadata to mark as verified
+        # Step 7: Payment verified - update message metadata to mark as verified
         logger.info(f"x402_payment_validation_success task_id={task_id}")
 
         # Mark payment as verified in message metadata for worker

@@ -51,8 +51,9 @@ except ImportError:
 try:
     from eth_account import Account
     from eth_account.messages import encode_typed_data
+    from web3 import Web3
 except ImportError:
-    print("Error: eth-account library not found. Install with: pip install eth-account")
+    print("Error: eth-account/web3 libraries not found. Install with: pip install eth-account web3")
     sys.exit(1)
 
 try:
@@ -68,22 +69,26 @@ NETWORKS = {
     'base-sepolia': {
         'chainId': 84532,
         'usdcAddress': '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-        'name': 'Base Sepolia (Testnet)'
+        'name': 'Base Sepolia (Testnet)',
+        'rpc': 'https://sepolia.base.org'
     },
     'base': {
         'chainId': 8453,
         'usdcAddress': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-        'name': 'Base (Mainnet)'
+        'name': 'Base (Mainnet)',
+        'rpc': 'https://mainnet.base.org'
     },
     'ethereum': {
         'chainId': 1,
         'usdcAddress': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        'name': 'Ethereum (Mainnet)'
+        'name': 'Ethereum (Mainnet)',
+        'rpc': 'https://eth.llamarpc.com'
     },
     'ethereum-sepolia': {
         'chainId': 11155111,
         'usdcAddress': '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
-        'name': 'Ethereum Sepolia (Testnet)'
+        'name': 'Ethereum Sepolia (Testnet)',
+        'rpc': 'https://ethereum-sepolia-rpc.publicnode.com'
     }
 }
 
@@ -211,6 +216,73 @@ def create_payment_payload(account, payment_requirements):
     }
 
 
+def get_usdc_balance(address, network):
+    """Get USDC balance for an address on a specific network.
+    
+    Args:
+        address: Wallet address
+        network: Network name (e.g., 'base-sepolia')
+        
+    Returns:
+        tuple: (balance_atomic, balance_usdc) or (None, None) if error
+    """
+    network_config = NETWORKS.get(network)
+    if not network_config or 'rpc' not in network_config:
+        return None, None
+    
+    # Try multiple RPC endpoints for Base Sepolia
+    rpc_endpoints = [network_config['rpc']]
+    if network == 'base-sepolia':
+        rpc_endpoints.extend([
+            'https://base-sepolia.blockpi.network/v1/rpc/public',
+            'https://base-sepolia-rpc.publicnode.com',
+            'https://sepolia.base.org'
+        ])
+    
+    for rpc_url in rpc_endpoints:
+        try:
+            w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+            
+            # Check connection
+            if not w3.is_connected():
+                continue
+            
+            # ERC-20 balanceOf ABI
+            balance_of_abi = [{
+                "constant": True,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "type": "function"
+            }]
+            
+            usdc_contract = w3.eth.contract(
+                address=Web3.to_checksum_address(network_config['usdcAddress']),
+                abi=balance_of_abi
+            )
+            
+            balance_atomic = usdc_contract.functions.balanceOf(
+                Web3.to_checksum_address(address)
+            ).call()
+            
+            balance_usdc = balance_atomic / 1_000_000  # USDC has 6 decimals
+            
+            # Success - show which RPC worked
+            if balance_atomic > 0:
+                console.print(f"[dim]Connected via: {rpc_url}[/dim]")
+            
+            return balance_atomic, balance_usdc
+            
+        except Exception as e:
+            # Try next RPC endpoint
+            if rpc_url == rpc_endpoints[-1]:  # Last attempt
+                console.print(f"[yellow]Warning: Could not fetch balance from any RPC[/yellow]")
+                console.print(f"[dim]Last error: {e}[/dim]")
+            continue
+    
+    return None, None
+
+
 def display_payment_info(payment_requirement, account_address):
     """Display payment information in a nice table."""
     table = Table(title="Payment Information", show_header=True, header_style="bold magenta")
@@ -222,12 +294,23 @@ def display_payment_info(payment_requirement, account_address):
     amount_usdc = amount_atomic / 1_000_000  # USDC has 6 decimals
     
     network_config = NETWORKS.get(payment_requirement['network'], {})
+    network = payment_requirement['network']
     
-    table.add_row("Network", f"{network_config.get('name', payment_requirement['network'])}")
+    table.add_row("Network", f"{network_config.get('name', network)}")
     table.add_row("Token", payment_requirement['token'])
     table.add_row("Amount", f"{amount_usdc:.6f} USDC ({amount_atomic} atomic units)")
     table.add_row("Pay To", payment_requirement['pay_to'])
     table.add_row("Your Address", account_address)
+    
+    # Get and display balance
+    balance_atomic, balance_usdc = get_usdc_balance(account_address, network)
+    if balance_usdc is not None:
+        sufficient = balance_usdc >= amount_usdc
+        status = "[green]✓ Sufficient[/green]" if sufficient else "[red]✗ Insufficient[/red]"
+        table.add_row("Your Balance", f"{balance_usdc:.6f} USDC {status}")
+    else:
+        table.add_row("Your Balance", "[dim]Unable to fetch[/dim]")
+    
     table.add_row("Timeout", f"{payment_requirement.get('max_timeout_seconds', 600)} seconds")
     
     console.print(table)

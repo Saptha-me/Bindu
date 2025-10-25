@@ -114,6 +114,7 @@ class X402AgentExtension:
                 "amount": self.amount,
                 "token": self.token,
                 "network": self.network,
+                "pay_to_address": self.pay_to_address,
             },
         )
 

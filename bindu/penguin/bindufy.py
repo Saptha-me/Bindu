@@ -25,66 +25,17 @@ from bindu.common.models import (
     SchedulerConfig,
     StorageConfig,
 )
-from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
-from bindu.extensions.x402.extension import (
-    get_agent_extension as get_x402_agent_extension,
-)
+from bindu.extensions.x402 import X402AgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
 from bindu.settings import app_settings
+from bindu.utils import add_extension_to_capabilities
 from bindu.utils.display import prepare_server_display
 from bindu.utils.logging import get_logger
 from bindu.utils.skill_loader import load_skills
 
 # Configure logging for the module
 logger = get_logger("bindu.penguin.bindufy")
-
-
-def _update_capabilities_with_did(
-    capabilities: AgentCapabilities | Dict[str, Any] | None, did_extension_obj: Any
-) -> AgentCapabilities:
-    """Update capabilities to include DID extension.
-
-    Args:
-        capabilities: Existing capabilities (dict or AgentCapabilities object)
-        did_extension_obj: DID extension object to add
-
-    Returns:
-        AgentCapabilities object with DID extension included
-    """
-    # Convert to dict if needed
-    if capabilities is None:
-        caps_dict = {}
-    elif isinstance(capabilities, dict):
-        caps_dict = capabilities.copy()
-
-    # Update extensions list
-    extensions = caps_dict.get("extensions", [])
-    if extensions:
-        caps_dict["extensions"] = [*extensions, did_extension_obj]
-    else:
-        caps_dict["extensions"] = [did_extension_obj]
-
-    return AgentCapabilities(**caps_dict)
-
-
-def _update_capabilities_with_x402(
-    capabilities: AgentCapabilities | Dict[str, Any] | None,
-) -> AgentCapabilities:
-    """Append x402 extension declaration to capabilities.extensions."""
-    # Convert to dict if needed
-    if capabilities is None:
-        caps_dict: Dict[str, Any] = {}
-    elif isinstance(capabilities, dict):
-        caps_dict = capabilities.copy()
-    else:
-        # Convert AgentCapabilities to dict-like
-        caps_dict = dict(capabilities)
-
-    extensions = caps_dict.get("extensions", []) or []
-    extensions.append(get_x402_agent_extension(required=False))
-    caps_dict["extensions"] = extensions
-    return AgentCapabilities(**caps_dict)
 
 
 def _parse_deployment_url(
@@ -360,11 +311,42 @@ def bindufy(
     logger.info("Creating agent manifest...")
 
     # Update capabilities to include DID extension
-    capabilities = _update_capabilities_with_did(
+    capabilities = add_extension_to_capabilities(
         validated_config["capabilities"], did_extension.agent_extension
     )
-    # Always advertise x402 extension capability (lean path)
-    capabilities = _update_capabilities_with_x402(capabilities)
+
+    # Only add x402 extension if execution_cost is configured
+    execution_cost = validated_config.get("execution_cost")
+    x402_extension = None
+
+    if execution_cost:
+        # Create X402 extension with payment configuration
+        amount = execution_cost.get("amount")
+        token = execution_cost.get("token", "USDC")
+        network = execution_cost.get("network", "base-sepolia")
+        pay_to_address = execution_cost.get("pay_to_address")
+
+        if not amount:
+            raise ValueError(
+                "execution_cost.amount is required when execution_cost is configured"
+            )
+
+        logger.info(f"Execution cost configured: {amount} {token} on {network}")
+
+        x402_extension = X402AgentExtension(
+            amount=amount,
+            token=token,
+            network=network,
+            required=True,  # Payment is required for paid agents
+            pay_to_address=pay_to_address,
+        )
+
+        logger.info(f"X402 extension created: {x402_extension}")
+
+        # Add x402 extension to capabilities
+        capabilities = add_extension_to_capabilities(
+            capabilities, x402_extension.agent_extension
+        )
 
     # Create agent manifest with loaded skills
     _manifest = create_manifest(
@@ -374,7 +356,7 @@ def bindufy(
         description=validated_config["description"],
         skills=skills_list,
         capabilities=capabilities,
-        did_extension=did_extension,
+        execution_cost=execution_cost,
         agent_trust=validated_config["agent_trust"],
         version=validated_config["version"],
         url=agent_url,

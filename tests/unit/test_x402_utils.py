@@ -2,12 +2,13 @@
 
 import pytest
 
-from bindu.extensions.x402.utils import (
-    build_payment_completed_metadata,
-    build_payment_failed_metadata,
-    build_payment_required_metadata,
-    build_payment_verified_metadata,
-)
+from bindu.extensions.x402 import X402AgentExtension
+
+# Use static methods from X402AgentExtension
+build_payment_completed_metadata = X402AgentExtension.build_payment_completed_metadata
+build_payment_failed_metadata = X402AgentExtension.build_payment_failed_metadata
+build_payment_required_metadata = X402AgentExtension.build_payment_required_metadata
+build_payment_verified_metadata = X402AgentExtension.build_payment_verified_metadata
 from bindu.settings import app_settings
 
 pytestmark = pytest.mark.x402

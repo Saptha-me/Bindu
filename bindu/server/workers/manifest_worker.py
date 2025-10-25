@@ -27,10 +27,13 @@ Hybrid Agent Architecture (A2A Protocol):
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
+from threading import Lock
 from typing import Any, Callable, Dict, Optional
 from uuid import UUID
 
@@ -39,12 +42,15 @@ from opentelemetry.trace import Status, StatusCode, get_tracer
 # x402
 from x402.types import PaymentPayload, PaymentRequirements
 from x402.facilitator import FacilitatorClient
-from bindu.extensions.x402.utils import (
-    build_payment_completed_metadata,
-    build_payment_failed_metadata,
-    build_payment_required_metadata,
-    build_payment_verified_metadata,
-)
+from bindu.extensions.x402 import X402AgentExtension, PaymentValidator
+
+# Use static methods from X402AgentExtension
+build_payment_completed_metadata = X402AgentExtension.build_payment_completed_metadata
+build_payment_failed_metadata = X402AgentExtension.build_payment_failed_metadata
+build_payment_required_metadata = X402AgentExtension.build_payment_required_metadata
+build_payment_verified_metadata = X402AgentExtension.build_payment_verified_metadata
+get_settlement_attempts = X402AgentExtension.get_settlement_attempts
+increment_settlement_attempts = X402AgentExtension.increment_settlement_attempts
 from bindu.settings import app_settings
 
 from bindu.common.protocol.types import (
@@ -62,6 +68,74 @@ from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStat
 
 tracer = get_tracer("bindu.server.workers.manifest_worker")
 logger = get_logger("bindu.server.workers.manifest_worker")
+
+
+class NonceTracker:
+    """In-memory nonce tracker to prevent double-spend attacks.
+
+    Tracks used payment nonces with TTL to prevent replay attacks.
+    Thread-safe for concurrent access.
+    """
+
+    def __init__(self):
+        self._nonces: Dict[str, Dict[str, float]] = defaultdict(
+            dict
+        )  # {network: {nonce: expiry_time}}
+        self._lock = Lock()
+
+    def is_nonce_used(self, network: str, nonce: str) -> bool:
+        """Check if nonce has been used on this network.
+
+        Args:
+            network: Blockchain network (e.g., 'base', 'ethereum')
+            nonce: Payment nonce from authorization
+
+        Returns:
+            True if nonce already used, False otherwise
+        """
+        with self._lock:
+            self._cleanup_expired()
+            return nonce in self._nonces.get(network, {})
+
+    def mark_nonce_used(
+        self, network: str, nonce: str, ttl_seconds: int = 3600
+    ) -> None:
+        """Mark nonce as used with TTL.
+
+        Args:
+            network: Blockchain network
+            nonce: Payment nonce to mark as used
+            ttl_seconds: Time to live in seconds (default 1 hour)
+        """
+        with self._lock:
+            expiry = time.time() + ttl_seconds
+            self._nonces[network][nonce] = expiry
+            logger.info(
+                "x402_nonce_marked_used",
+                network=network,
+                nonce=nonce,
+                ttl_seconds=ttl_seconds,
+                expiry_time=expiry,
+            )
+
+    def _cleanup_expired(self) -> None:
+        """Remove expired nonces (internal, must be called with lock held)."""
+        current_time = time.time()
+        for network in list(self._nonces.keys()):
+            expired_nonces = [
+                nonce
+                for nonce, expiry in self._nonces[network].items()
+                if expiry < current_time
+            ]
+            for nonce in expired_nonces:
+                del self._nonces[network][nonce]
+            # Remove empty network entries
+            if not self._nonces[network]:
+                del self._nonces[network]
+
+
+# Global nonce tracker instance
+_nonce_tracker = NonceTracker()
 
 
 @dataclass
@@ -126,6 +200,48 @@ class ManifestWorker(Worker):
 
         await TaskStateManager.validate_task_state(task)
 
+        # x402 Payment Check: If payment required but not verified, return payment-required response
+        task_metadata = task.get("metadata") or {}
+        payment_required = task_metadata.get(app_settings.x402.meta_required_key)
+
+        if payment_required:
+            # Check if payment was verified
+            latest_msg = (
+                (task.get("history") or [])[-1] if task.get("history") else None
+            )
+            latest_meta = (latest_msg or {}).get("metadata") or {}
+            payment_status = latest_meta.get(app_settings.x402.meta_status_key)
+
+            if payment_status != app_settings.x402.status_verified:
+                # Payment required but not verified - return payment-required response
+                logger.info(
+                    "x402_payment_required_response",
+                    task_id=str(task["id"]),
+                    context_id=str(task["context_id"]),
+                )
+
+                # Build payment-required message
+                payment_msg = MessageConverter.to_protocol_messages(
+                    "Payment required to execute this task. Please submit payment and retry.",
+                    task["id"],
+                    task["context_id"],
+                )
+
+                # Update task to payment-required state with payment requirements
+                await self.storage.update_task(
+                    task["id"],
+                    state="payment-required",
+                    new_messages=payment_msg,
+                    metadata={
+                        app_settings.x402.meta_status_key: app_settings.x402.status_required,
+                        app_settings.x402.meta_required_key: payment_required,
+                    },
+                )
+                await self._notify_lifecycle(
+                    task["id"], task["context_id"], "payment-required", False
+                )
+                return  # Don't execute task
+
         # Add span event for state transition
         from opentelemetry.trace import get_current_span
 
@@ -135,84 +251,9 @@ class ManifestWorker(Worker):
                 "task.state_changed", attributes={"to_state": "working"}
             )
 
-        # Detect x402 payment submission on the latest user message BEFORE setting state
-        latest_msg = (task.get("history") or [])[-1] if task.get("history") else None
-        latest_meta = (latest_msg or {}).get("metadata") or {}
-
-        is_paid_flow = False
-        payment_payload_obj: PaymentPayload | None = None
-        payment_requirements_obj: PaymentRequirements | None = None
-        facilitator_client: FacilitatorClient | None = None
-
-        try:
-            if latest_meta.get(
-                app_settings.x402.meta_status_key
-            ) == app_settings.x402.status_submitted and latest_meta.get(
-                app_settings.x402.meta_payload_key
-            ):
-                payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
-                required_data = (task.get("metadata") or {}).get(
-                    app_settings.x402.meta_required_key
-                ) or latest_meta.get(app_settings.x402.meta_required_key)
-
-                # Parse payload and select requirement
-                payment_payload_obj = self._parse_payment_payload(payload_data)
-                payment_requirements_obj = self._select_requirement_from_required(
-                    required_data, payment_payload_obj
-                )
-                if payment_payload_obj and payment_requirements_obj:
-                    facilitator_client = FacilitatorClient()
-                    verify_response = await facilitator_client.verify(
-                        payment_payload_obj, payment_requirements_obj
-                    )
-                    if not verify_response.is_valid:
-                        # Record failure and finish task
-                        md = build_payment_failed_metadata(
-                            verify_response.invalid_reason or "verification_failed"
-                        )
-                        error_msg = MessageConverter.to_protocol_messages(
-                            f"Payment verification failed: {verify_response.invalid_reason or 'unknown'}",
-                            task["id"],
-                            task["context_id"],
-                        )
-                        # Keep state as input-required per design; only metadata reflects x402 failure
-                        await self.storage.update_task(
-                            task["id"],
-                            state="input-required",
-                            new_messages=error_msg,
-                            metadata=md,
-                        )
-                        await self._notify_lifecycle(
-                            task["id"], task["context_id"], "input-required", False
-                        )
-                        return
-
-                    # Mark verified while continuing work
-                    is_paid_flow = True
-                    await self.storage.update_task(
-                        task["id"],
-                        state="input-required",
-                        metadata=build_payment_verified_metadata(),
-                    )
-        except Exception as e:
-            # Defensive: if verification path errors, fail the task
-            error_msg = MessageConverter.to_protocol_messages(
-                f"Payment processing error: {e}", task["id"], task["context_id"]
-            )
-            await self.storage.update_task(
-                task["id"], state="input-required", new_messages=error_msg
-            )
-            await self._notify_lifecycle(
-                task["id"], task["context_id"], "input-required", False
-            )
-            return
-
-        # If not in payment-submitted flow, transition to working as usual
-        if not is_paid_flow:
-            await self.storage.update_task(task["id"], state="working")
-            await self._notify_lifecycle(
-                task["id"], task["context_id"], "working", False
-            )
+        # Transition to working state
+        await self.storage.update_task(task["id"], state="working")
+        await self._notify_lifecycle(task["id"], task["context_id"], "working", False)
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
@@ -302,6 +343,48 @@ class ManifestWorker(Worker):
                         "task.state_changed",
                         attributes={"from_state": "working", "to_state": state},
                     )
+
+                # x402 Payment Settlement (only at task completion)
+                # Extract payment info if this was a paid task
+                latest_msg = (
+                    (task.get("history") or [])[-1] if task.get("history") else None
+                )
+                latest_meta = (latest_msg or {}).get("metadata") or {}
+                task_metadata = task.get("metadata") or {}
+                payment_status = latest_meta.get(app_settings.x402.meta_status_key)
+
+                is_paid_flow = False
+                payment_payload_obj: PaymentPayload | None = None
+                payment_requirements_obj: PaymentRequirements | None = None
+                facilitator_client: FacilitatorClient | None = None
+
+                if payment_status == app_settings.x402.status_verified:
+                    # Payment was verified by TaskManager - extract for settlement
+                    logger.info(
+                        "x402_payment_settlement_preparation",
+                        task_id=str(task["id"]),
+                        context_id=str(task["context_id"]),
+                    )
+
+                    payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
+                    required_data = task_metadata.get(
+                        app_settings.x402.meta_required_key
+                    )
+
+                    if payload_data and required_data:
+                        payment_payload_obj = PaymentValidator.parse_payment_payload(
+                            payload_data
+                        )
+                        payment_requirements_obj = (
+                            PaymentValidator.select_requirement_from_required(
+                                required_data, payment_payload_obj
+                            )
+                        )
+
+                        if payment_payload_obj and payment_requirements_obj:
+                            is_paid_flow = True
+                            facilitator_client = FacilitatorClient()
+
                 if (
                     is_paid_flow
                     and payment_payload_obj
@@ -309,11 +392,32 @@ class ManifestWorker(Worker):
                     and facilitator_client
                 ):
                     # Settle before final update so metadata includes receipt
+                    # Implement retry mechanism with exponential backoff
+                    max_retries = 3
+                    current_metadata = task.get("metadata", {})
+                    settlement_attempts = get_settlement_attempts(current_metadata)
+
+                    settle_response = None
                     try:
+                        logger.info(
+                            "x402_facilitator_settle_calling",
+                            task_id=str(task["id"]),
+                            scheme=getattr(payment_payload_obj, "scheme", None),
+                            network=getattr(payment_payload_obj, "network", None),
+                            attempt=settlement_attempts + 1,
+                            max_retries=max_retries,
+                        )
+
                         settle_response = await facilitator_client.settle(
                             payment_payload_obj, payment_requirements_obj
                         )
                         if settle_response.success:
+                            logger.info(
+                                "x402_facilitator_settle_success",
+                                task_id=str(task["id"]),
+                                tx_hash=getattr(settle_response, "tx_hash", None),
+                                network_id=getattr(settle_response, "network_id", None),
+                            )
                             md = build_payment_completed_metadata(
                                 settle_response.model_dump(by_alias=True)
                                 if hasattr(settle_response, "model_dump")
@@ -323,6 +427,87 @@ class ManifestWorker(Worker):
                                 task, results, state, additional_metadata=md
                             )
                         else:
+                            # Settlement failed - check if we should retry
+                            settlement_attempts += 1
+
+                            logger.warning(
+                                "x402_facilitator_settle_failed",
+                                task_id=str(task["id"]),
+                                error_reason=settle_response.error_reason or "unknown",
+                                success=settle_response.success,
+                                attempt=settlement_attempts,
+                                max_retries=max_retries,
+                            )
+
+                            if settlement_attempts < max_retries:
+                                # Retry with exponential backoff
+                                backoff_seconds = (
+                                    2**settlement_attempts
+                                )  # 2, 4, 8 seconds
+
+                                logger.info(
+                                    "x402_settlement_retry_scheduled",
+                                    task_id=str(task["id"]),
+                                    attempt=settlement_attempts,
+                                    backoff_seconds=backoff_seconds,
+                                )
+
+                                # Wait before retry
+                                await asyncio.sleep(backoff_seconds)
+
+                                # Update metadata with retry attempt
+                                retry_metadata = increment_settlement_attempts(
+                                    current_metadata
+                                )
+                                await self.storage.update_task(
+                                    task["id"],
+                                    metadata=retry_metadata,
+                                )
+
+                                # Retry settlement
+                                logger.info(
+                                    "x402_facilitator_settle_retry",
+                                    task_id=str(task["id"]),
+                                    attempt=settlement_attempts + 1,
+                                )
+
+                                retry_response = await facilitator_client.settle(
+                                    payment_payload_obj, payment_requirements_obj
+                                )
+
+                                if retry_response.success:
+                                    logger.info(
+                                        "x402_facilitator_settle_success_after_retry",
+                                        task_id=str(task["id"]),
+                                        tx_hash=getattr(
+                                            retry_response, "tx_hash", None
+                                        ),
+                                        attempts=settlement_attempts + 1,
+                                    )
+
+                                    md = build_payment_completed_metadata(
+                                        retry_response.model_dump(by_alias=True)
+                                        if hasattr(retry_response, "model_dump")
+                                        else dict(retry_response)
+                                    )
+                                    await self._handle_terminal_state(
+                                        task, results, state, additional_metadata=md
+                                    )
+                                    return
+                                else:
+                                    # Retry also failed, continue to final failure handling below
+                                    settle_response = retry_response
+                                    settlement_attempts += 1
+
+                            # Max retries exceeded or final retry failed
+                            logger.error(
+                                "x402_settlement_max_retries_exceeded",
+                                task_id=str(task["id"]),
+                                total_attempts=settlement_attempts,
+                                max_retries=max_retries,
+                                final_error=settle_response.error_reason or "unknown",
+                            )
+
                             md = build_payment_failed_metadata(
                                 settle_response.error_reason or "settlement_failed",
                                 (
@@ -331,8 +516,12 @@ class ManifestWorker(Worker):
                                     else dict(settle_response)
                                 ),
                             )
+                            # Add settlement attempt info to metadata
+                            md["x402.settlement.attempts"] = settlement_attempts
+                            md["x402.settlement.max_retries_exceeded"] = True
+
                             # Keep task open (input-required) and attach failure metadata & message
-                            error_message = f"Payment settlement failed: {settle_response.error_reason or 'unknown'}"
+                            error_message = f"Payment settlement failed after {settlement_attempts} attempts: {settle_response.error_reason or 'unknown'}"
                             err_msgs = MessageConverter.to_protocol_messages(
                                 error_message, task["id"], task["context_id"]
                             )
@@ -347,6 +536,13 @@ class ManifestWorker(Worker):
                             )
                             return
                     except Exception as e:
+                        logger.error(
+                            "x402_facilitator_settle_exception",
+                            task_id=str(task["id"]),
+                            error=str(e),
+                            error_type=type(e).__name__,
+                        )
+
                         md = build_payment_failed_metadata(f"settlement_exception: {e}")
                         err_msgs = MessageConverter.to_protocol_messages(
                             str(e), task["id"], task["context_id"]
@@ -634,48 +830,27 @@ class ManifestWorker(Worker):
         await self._notify_lifecycle(task["id"], task["context_id"], "failed", True)
 
     # -------------------------------------------------------------------------
-    # x402 helpers
+    # x402 helpers (DEPRECATED - Use PaymentValidator instead)
     # -------------------------------------------------------------------------
+    # Note: These methods are kept for backward compatibility but delegate to PaymentValidator
 
     def _parse_payment_payload(self, data: Any) -> PaymentPayload | None:
-        if data is None:
-            return None
-        try:
-            if hasattr(PaymentPayload, "model_validate"):
-                return PaymentPayload.model_validate(data)  # type: ignore
-            return PaymentPayload(**data)
-        except Exception:
-            return None
+        """DEPRECATED: Use PaymentValidator.parse_payment_payload() instead."""
+        return PaymentValidator.parse_payment_payload(data)
 
     def _parse_payment_requirements(self, data: Any) -> PaymentRequirements | None:
-        if data is None:
-            return None
-        try:
-            if hasattr(PaymentRequirements, "model_validate"):
-                return PaymentRequirements.model_validate(data)  # type: ignore
-            return PaymentRequirements(**data)
-        except Exception:
-            return None
+        """DEPRECATED: Use PaymentValidator.parse_payment_requirements() instead."""
+        return PaymentValidator.parse_payment_requirements(data)
 
     def _select_requirement_from_required(
         self, required: Any, payload: PaymentPayload | None
     ) -> PaymentRequirements | None:
-        if not required:
-            return None
-        accepts = required.get("accepts") if isinstance(required, dict) else None
-        if not accepts:
-            return None
-        if payload is None:
-            return self._parse_payment_requirements(accepts[0])
-        # Match by scheme and network
-        for req in accepts:
-            if (
-                isinstance(req, dict)
-                and req.get("scheme") == getattr(payload, "scheme", None)
-                and req.get("network") == getattr(payload, "network", None)
-            ):
-                return self._parse_payment_requirements(req)
-        return self._parse_payment_requirements(accepts[0])
+        """DEPRECATED: Use PaymentValidator.select_requirement_from_required() instead.
+
+        This method delegates to PaymentValidator for DRY compliance.
+        Kept for backward compatibility with existing code.
+        """
+        return PaymentValidator.select_requirement_from_required(required, payload)
 
     # -------------------------------------------------------------------------
     # Result Collection

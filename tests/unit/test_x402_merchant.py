@@ -1,11 +1,11 @@
-"""Unit tests for x402 merchant helpers.
+"""Unit tests for x402 payment requirements creation.
 
 The x402 package is mocked in conftest.py to avoid installing external dependencies.
 """
 
 import pytest
 
-from bindu.extensions.x402.merchant import create_payment_requirements
+from bindu.extensions.x402 import X402AgentExtension
 
 pytestmark = pytest.mark.x402
 
@@ -17,17 +17,20 @@ class TestX402Merchant:
         def fake_process_price_to_atomic_amount(price, network):
             return 12345, "0xasset", {"domain": "eip712"}
 
-        # Patch the imported function inside merchant module
+        # Patch the imported function inside x402_agent_extension module
         monkeypatch.setattr(
-            "bindu.extensions.x402.merchant.process_price_to_atomic_amount",
+            "bindu.extensions.x402.x402_agent_extension.process_price_to_atomic_amount",
             fake_process_price_to_atomic_amount,
         )
 
-        pr = create_payment_requirements(
-            price="$1.00",
-            pay_to_address="0xpayto",
+        # Create extension instance
+        ext = X402AgentExtension(
+            amount="1000000", token="USDC", network="base", pay_to_address="0xpayto"
+        )
+
+        # Use instance method to create payment requirements
+        pr = ext.create_payment_requirements(
             resource="test-resource",
-            network="base",
             description="desc",
             mime_type="application/json",
             scheme="exact",

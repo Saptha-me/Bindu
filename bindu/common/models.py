@@ -19,9 +19,14 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
 from uuid import UUID
 
-from bindu.extensions.did import DIDAgentExtension
 
-from .protocol.types import AgentCapabilities, AgentCard, AgentTrust, Skill
+from .protocol.types import (
+    AgentCapabilities,
+    AgentCard,
+    AgentTrust,
+    Skill,
+    AgentExecutionCost,
+)
 
 
 @dataclass(frozen=True)
@@ -109,8 +114,10 @@ class AgentManifest:
     protocol_version: str
 
     # Security & Trust
-    did_extension: DIDAgentExtension
     agent_trust: AgentTrust
+
+    # X402
+    execution_cost: AgentExecutionCost
 
     # Capabilities
     capabilities: AgentCapabilities
@@ -155,6 +162,7 @@ class AgentManifest:
             capabilities=self.capabilities,
             skills=self.skills,
             kind=self.kind,
+            execution_cost=self.execution_cost,
             num_history_sessions=self.num_history_sessions,
             extra_data=self.extra_data,
             debug_mode=self.debug_mode,

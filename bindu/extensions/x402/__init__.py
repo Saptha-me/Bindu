@@ -47,4 +47,16 @@ Inspired by the x402 protocol for enabling economic coordination between autonom
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from bindu.extensions.x402.x402_agent_extension import X402AgentExtension
+from bindu.extensions.x402.validation import X402Validation
+from bindu.extensions.x402.payment_validator import (
+    PaymentValidator,
+    PaymentValidationResult,
+)
+
+__all__ = [
+    "X402AgentExtension",
+    "X402Validation",
+    "PaymentValidator",
+    "PaymentValidationResult",
+]

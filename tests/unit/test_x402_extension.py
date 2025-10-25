@@ -6,11 +6,12 @@ from typing import List, Tuple
 from starlette.requests import Request
 from starlette.responses import Response
 
-from bindu.extensions.x402.extension import (
-    add_activation_header,
-    get_agent_extension,
-    is_activation_requested,
-)
+from bindu.extensions.x402 import X402AgentExtension
+
+# Use static methods from X402AgentExtension
+add_activation_header = X402AgentExtension.add_activation_header
+get_agent_extension = X402AgentExtension.get_agent_extension
+is_activation_requested = X402AgentExtension.is_activation_requested
 from bindu.settings import app_settings
 
 pytestmark = pytest.mark.x402

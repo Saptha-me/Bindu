@@ -21,8 +21,12 @@ from typing import Any, Callable, Literal
 from uuid import UUID
 
 from bindu.common.models import AgentManifest
-from bindu.common.protocol.types import AgentCapabilities, AgentTrust, Skill
-from bindu.extensions.did import DIDAgentExtension
+from bindu.common.protocol.types import (
+    AgentCapabilities,
+    AgentTrust,
+    Skill,
+    AgentExecutionCost,
+)
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.penguin.manifest")
@@ -79,9 +83,9 @@ def create_manifest(
     agent_function: Callable,
     id: UUID,
     name: str | None,
-    did_extension: DIDAgentExtension,
     description: str | None,
     skills: list[Skill] | None,
+    execution_cost: AgentExecutionCost | None,
     capabilities: AgentCapabilities | None,
     agent_trust: AgentTrust | None,
     version: str,
@@ -274,7 +278,7 @@ def create_manifest(
         url=url,
         version=version,
         protocol_version=protocol_version,
-        did_extension=did_extension,
+        execution_cost=execution_cost,
         agent_trust=_agent_trust,
         capabilities=_capabilities,
         skills=_skills,

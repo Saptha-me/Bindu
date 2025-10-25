@@ -10,10 +10,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from bindu.common.protocol.types import InternalError, SkillNotFoundError
-from bindu.extensions.x402.extension import (
-    is_activation_requested as x402_is_requested,
-    add_activation_header as x402_add_header,
-)
+from bindu.extensions.x402 import X402AgentExtension
+
+# Use static methods from X402AgentExtension
+x402_is_requested = X402AgentExtension.is_activation_requested
+x402_add_header = X402AgentExtension.add_activation_header
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 from bindu.utils.logging import get_logger
 

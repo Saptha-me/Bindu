@@ -10,6 +10,7 @@ This document explains how x402 payments are integrated into Bindu on this branc
 - Payment Flow and Metadata Contract
 - Worker Lifecycle Integration (verify and settle)
 - Merchant Helper for PaymentRequirements
+- Discovery Metadata for AI Agents (NEW)
 - Utilities for Task Metadata
 - End-to-End Examples
 - Running Tests and Markers
@@ -241,6 +242,55 @@ req = create_payment_requirements(
   output_schema={"type": "object"},
 )
 ```
+
+---
+
+## Discovery Metadata for AI Agents (NEW)
+
+**Enhanced in alignment with [official Coinbase x402 specification](https://docs.cdp.coinbase.com/x402/quickstart-for-sellers)**
+
+The `create_payment_requirements()` method now supports **AI agent discovery metadata**:
+
+```python
+requirements = x402.create_payment_requirements(
+    resource="/api/weather",
+    description="Get real-time weather data for any location worldwide",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "location": {
+                "type": "string",
+                "description": "City name or coordinates"
+            },
+            "units": {
+                "type": "string",
+                "enum": ["celsius", "fahrenheit"],
+                "default": "fahrenheit"
+            }
+        },
+        "required": ["location"]
+    },
+    output_schema={
+        "type": "object",
+        "properties": {
+            "temperature": {"type": "number"},
+            "conditions": {"type": "string"},
+            "humidity": {"type": "number"}
+        }
+    },
+    pay_to_address="0x..."
+)
+```
+
+**Benefits:**
+- AI agents automatically understand API usage
+- Better discovery in x402 Bazaar
+- Type-safe integration
+- Self-documenting APIs
+
+**See detailed documentation:** `docs/x402-discovery-metadata.md`
+
+**Examples:** `examples/x402_discovery_example.py`
 
 ---
 

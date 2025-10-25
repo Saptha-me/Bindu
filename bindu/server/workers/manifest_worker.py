@@ -39,18 +39,13 @@ from uuid import UUID
 
 from opentelemetry.trace import Status, StatusCode, get_tracer
 
-# x402
-from x402.types import PaymentPayload, PaymentRequirements
-from x402.facilitator import FacilitatorClient
-from bindu.extensions.x402 import X402AgentExtension, PaymentValidator
-
-# Use static methods from X402AgentExtension
-build_payment_completed_metadata = X402AgentExtension.build_payment_completed_metadata
-build_payment_failed_metadata = X402AgentExtension.build_payment_failed_metadata
-build_payment_required_metadata = X402AgentExtension.build_payment_required_metadata
-build_payment_verified_metadata = X402AgentExtension.build_payment_verified_metadata
-get_settlement_attempts = X402AgentExtension.get_settlement_attempts
-increment_settlement_attempts = X402AgentExtension.increment_settlement_attempts
+# x402 - New simplified pattern
+from bindu.extensions.x402 import (
+    x402PaymentRequiredException,
+    x402PaymentExecutor,
+    x402Utils,
+    PaymentStatus,
+)
 from bindu.settings import app_settings
 
 from bindu.common.protocol.types import (
@@ -200,47 +195,81 @@ class ManifestWorker(Worker):
 
         await TaskStateManager.validate_task_state(task)
 
-        # x402 Payment Check: If payment required but not verified, return payment-required response
-        task_metadata = task.get("metadata") or {}
-        payment_required = task_metadata.get(app_settings.x402.meta_required_key)
-
-        if payment_required:
-            # Check if payment was verified
-            latest_msg = (
-                (task.get("history") or [])[-1] if task.get("history") else None
-            )
-            latest_meta = (latest_msg or {}).get("metadata") or {}
-            payment_status = latest_meta.get(app_settings.x402.meta_status_key)
-
-            if payment_status != app_settings.x402.status_verified:
-                # Payment required but not verified - return payment-required response
+        # x402 Payment Check: If payment submitted, verify before execution
+        payment_executor = x402PaymentExecutor()
+        
+        if payment_executor.is_payment_flow_active(task):
+            payment_state = payment_executor.get_payment_state(task)
+            
+            if payment_state == PaymentStatus.REQUIRED:
+                # Payment required but not submitted yet
                 logger.info(
-                    "x402_payment_required_response",
+                    "x402_payment_awaiting_submission",
                     task_id=str(task["id"]),
                     context_id=str(task["context_id"]),
                 )
-
-                # Build payment-required message
+                
                 payment_msg = MessageConverter.to_protocol_messages(
-                    "Payment required to execute this task. Please submit payment and retry.",
+                    "Payment required. Please submit payment and retry.",
                     task["id"],
                     task["context_id"],
                 )
-
-                # Update task to payment-required state with payment requirements
+                
                 await self.storage.update_task(
                     task["id"],
                     state="payment-required",
                     new_messages=payment_msg,
-                    metadata={
-                        app_settings.x402.meta_status_key: app_settings.x402.status_required,
-                        app_settings.x402.meta_required_key: payment_required,
-                    },
                 )
                 await self._notify_lifecycle(
                     task["id"], task["context_id"], "payment-required", False
                 )
-                return  # Don't execute task
+                return
+            
+            elif payment_state == PaymentStatus.SUBMITTED:
+                # Payment submitted - verify it before execution
+                logger.info(
+                    "x402_verifying_payment_before_execution",
+                    task_id=str(task["id"]),
+                )
+                
+                # Verify payment using executor
+                async def agent_logic_wrapper(t):
+                    # This will be called after verification succeeds
+                    return await self._execute_agent_logic(t)
+                
+                try:
+                    result = await payment_executor.verify_and_process(
+                        task, agent_logic_wrapper
+                    )
+                    
+                    if result.get("state") == "failed":
+                        # Verification failed
+                        error_msg = MessageConverter.to_protocol_messages(
+                            result.get("error", "Payment verification failed"),
+                            task["id"],
+                            task["context_id"],
+                        )
+                        await self.storage.update_task(
+                            task["id"],
+                            state="failed",
+                            new_messages=error_msg,
+                        )
+                        await self._notify_lifecycle(
+                            task["id"], task["context_id"], "failed", False
+                        )
+                        return
+                    
+                    # Verification succeeded, continue with normal execution
+                    # (agent_logic_wrapper was already called)
+                    return
+                    
+                except Exception as e:
+                    logger.error(
+                        "x402_verification_exception",
+                        task_id=str(task["id"]),
+                        error=str(e),
+                    )
+                    raise
 
         # Add span event for state transition
         from opentelemetry.trace import get_current_span
@@ -303,6 +332,41 @@ class ManifestWorker(Worker):
                     )
                     agent_span.set_status(Status(StatusCode.OK))
 
+                except x402PaymentRequiredException as payment_exc:
+                    # Agent threw payment exception - handle it
+                    logger.info(
+                        "x402_payment_exception_caught",
+                        task_id=str(task["id"]),
+                        resource=payment_exc.resource,
+                    )
+                    
+                    payment_executor = x402PaymentExecutor()
+                    result = await payment_executor.handle_payment_exception(
+                        payment_exc, task
+                    )
+                    
+                    # Update task with payment-required state
+                    payment_msg = MessageConverter.to_protocol_messages(
+                        str(payment_exc),
+                        task["id"],
+                        task["context_id"],
+                    )
+                    
+                    # Add payment metadata to message
+                    if payment_msg and result.get("message"):
+                        payment_msg[0]["metadata"] = result["message"].get("metadata", {})
+                    
+                    await self.storage.update_task(
+                        task["id"],
+                        state="payment-required",
+                        new_messages=payment_msg,
+                        metadata=task.get("metadata", {}),
+                    )
+                    await self._notify_lifecycle(
+                        task["id"], task["context_id"], "payment-required", False
+                    )
+                    return
+
                 except Exception as agent_error:
                     # Record agent execution failure
                     execution_time = time.time() - start_time
@@ -345,220 +409,39 @@ class ManifestWorker(Worker):
                     )
 
                 # x402 Payment Settlement (only at task completion)
-                # Extract payment info if this was a paid task
-                latest_msg = (
-                    (task.get("history") or [])[-1] if task.get("history") else None
-                )
-                latest_meta = (latest_msg or {}).get("metadata") or {}
-                task_metadata = task.get("metadata") or {}
-                payment_status = latest_meta.get(app_settings.x402.meta_status_key)
-
-                is_paid_flow = False
-                payment_payload_obj: PaymentPayload | None = None
-                payment_requirements_obj: PaymentRequirements | None = None
-                facilitator_client: FacilitatorClient | None = None
-
-                if payment_status == app_settings.x402.status_verified:
-                    # Payment was verified by TaskManager - extract for settlement
-                    logger.info(
-                        "x402_payment_settlement_preparation",
-                        task_id=str(task["id"]),
-                        context_id=str(task["context_id"]),
-                    )
-
-                    payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
-                    required_data = task_metadata.get(
-                        app_settings.x402.meta_required_key
-                    )
-
-                    if payload_data and required_data:
-                        payment_payload_obj = PaymentValidator.parse_payment_payload(
-                            payload_data
-                        )
-                        payment_requirements_obj = (
-                            PaymentValidator.select_requirement_from_required(
-                                required_data, payment_payload_obj
-                            )
-                        )
-
-                        if payment_payload_obj and payment_requirements_obj:
-                            is_paid_flow = True
-                            facilitator_client = FacilitatorClient()
-
-                if (
-                    is_paid_flow
-                    and payment_payload_obj
-                    and payment_requirements_obj
-                    and facilitator_client
-                ):
-                    # Settle before final update so metadata includes receipt
-                    # Implement retry mechanism with exponential backoff
-                    max_retries = 3
-                    current_metadata = task.get("metadata", {})
-                    settlement_attempts = get_settlement_attempts(current_metadata)
-
-                    settle_response = None
-                    try:
+                # Use simplified executor pattern
+                payment_executor = x402PaymentExecutor()
+                
+                if payment_executor.is_payment_flow_active(task):
+                    payment_state = payment_executor.get_payment_state(task)
+                    
+                    if payment_state == PaymentStatus.VERIFIED:
+                        # Settle payment after successful task completion
                         logger.info(
-                            "x402_facilitator_settle_calling",
+                            "x402_settling_payment_after_completion",
                             task_id=str(task["id"]),
-                            scheme=getattr(payment_payload_obj, "scheme", None),
-                            network=getattr(payment_payload_obj, "network", None),
-                            attempt=settlement_attempts + 1,
-                            max_retries=max_retries,
                         )
-
-                        settle_response = await facilitator_client.settle(
-                            payment_payload_obj, payment_requirements_obj
-                        )
-                        if settle_response.success:
-                            logger.info(
-                                "x402_facilitator_settle_success",
-                                task_id=str(task["id"]),
-                                tx_hash=getattr(settle_response, "tx_hash", None),
-                                network_id=getattr(settle_response, "network_id", None),
-                            )
-                            md = build_payment_completed_metadata(
-                                settle_response.model_dump(by_alias=True)
-                                if hasattr(settle_response, "model_dump")
-                                else dict(settle_response)
-                            )
+                        
+                        try:
+                            settlement_metadata = await payment_executor.settle_after_completion(task)
+                            
+                            # Complete task with settlement metadata
                             await self._handle_terminal_state(
-                                task, results, state, additional_metadata=md
-                            )
-                        else:
-                            # Settlement failed - check if we should retry
-                            settlement_attempts += 1
-
-                            logger.warning(
-                                "x402_facilitator_settle_failed",
-                                task_id=str(task["id"]),
-                                error_reason=settle_response.error_reason or "unknown",
-                                success=settle_response.success,
-                                attempt=settlement_attempts,
-                                max_retries=max_retries,
-                            )
-
-                            if settlement_attempts < max_retries:
-                                # Retry with exponential backoff
-                                backoff_seconds = (
-                                    2**settlement_attempts
-                                )  # 2, 4, 8 seconds
-
-                                logger.info(
-                                    "x402_settlement_retry_scheduled",
-                                    task_id=str(task["id"]),
-                                    attempt=settlement_attempts,
-                                    backoff_seconds=backoff_seconds,
-                                )
-
-                                # Wait before retry
-                                await asyncio.sleep(backoff_seconds)
-
-                                # Update metadata with retry attempt
-                                retry_metadata = increment_settlement_attempts(
-                                    current_metadata
-                                )
-                                await self.storage.update_task(
-                                    task["id"],
-                                    metadata=retry_metadata,
-                                )
-
-                                # Retry settlement
-                                logger.info(
-                                    "x402_facilitator_settle_retry",
-                                    task_id=str(task["id"]),
-                                    attempt=settlement_attempts + 1,
-                                )
-
-                                retry_response = await facilitator_client.settle(
-                                    payment_payload_obj, payment_requirements_obj
-                                )
-
-                                if retry_response.success:
-                                    logger.info(
-                                        "x402_facilitator_settle_success_after_retry",
-                                        task_id=str(task["id"]),
-                                        tx_hash=getattr(
-                                            retry_response, "tx_hash", None
-                                        ),
-                                        attempts=settlement_attempts + 1,
-                                    )
-
-                                    md = build_payment_completed_metadata(
-                                        retry_response.model_dump(by_alias=True)
-                                        if hasattr(retry_response, "model_dump")
-                                        else dict(retry_response)
-                                    )
-                                    await self._handle_terminal_state(
-                                        task, results, state, additional_metadata=md
-                                    )
-                                    return
-                                else:
-                                    # Retry also failed, continue to final failure handling below
-                                    settle_response = retry_response
-                                    settlement_attempts += 1
-
-                            # Max retries exceeded or final retry failed
-                            logger.error(
-                                "x402_settlement_max_retries_exceeded",
-                                task_id=str(task["id"]),
-                                total_attempts=settlement_attempts,
-                                max_retries=max_retries,
-                                final_error=settle_response.error_reason or "unknown",
-                            )
-
-                            md = build_payment_failed_metadata(
-                                settle_response.error_reason or "settlement_failed",
-                                (
-                                    settle_response.model_dump(by_alias=True)
-                                    if hasattr(settle_response, "model_dump")
-                                    else dict(settle_response)
-                                ),
-                            )
-                            # Add settlement attempt info to metadata
-                            md["x402.settlement.attempts"] = settlement_attempts
-                            md["x402.settlement.max_retries_exceeded"] = True
-
-                            # Keep task open (input-required) and attach failure metadata & message
-                            error_message = f"Payment settlement failed after {settlement_attempts} attempts: {settle_response.error_reason or 'unknown'}"
-                            err_msgs = MessageConverter.to_protocol_messages(
-                                error_message, task["id"], task["context_id"]
-                            )
-                            await self.storage.update_task(
-                                task["id"],
-                                state="input-required",
-                                new_messages=err_msgs,
-                                metadata=md,
-                            )
-                            await self._notify_lifecycle(
-                                task["id"], task["context_id"], "input-required", False
+                                task, results, state, additional_metadata=settlement_metadata
                             )
                             return
-                    except Exception as e:
-                        logger.error(
-                            "x402_facilitator_settle_exception",
-                            task_id=str(task["id"]),
-                            error=str(e),
-                            error_type=type(e).__name__,
-                        )
+                            
+                        except Exception as e:
+                            logger.error(
+                                "x402_settlement_exception",
+                                task_id=str(task["id"]),
+                                error=str(e),
+                            )
+                            # Continue with task completion even if settlement fails
+                            # The payment was verified, so we should deliver the service
 
-                        md = build_payment_failed_metadata(f"settlement_exception: {e}")
-                        err_msgs = MessageConverter.to_protocol_messages(
-                            str(e), task["id"], task["context_id"]
-                        )
-                        await self.storage.update_task(
-                            task["id"],
-                            state="input-required",
-                            new_messages=err_msgs,
-                            metadata=md,
-                        )
-                        await self._notify_lifecycle(
-                            task["id"], task["context_id"], "input-required", False
-                        )
-                        return
-                else:
-                    await self._handle_terminal_state(task, results, state)
+                # Complete task (with or without payment settlement)
+                await self._handle_terminal_state(task, results, state)
 
         except Exception as e:
             # Handle task failure with error message
@@ -728,7 +611,15 @@ class ManifestWorker(Worker):
             st = message_content.get("state")
             if st == app_settings.x402.status_required or "required" in message_content:
                 required = message_content.get("required") or message_content
-                metadata = build_payment_required_metadata(required)
+                # Use new x402Utils pattern
+                utils = x402Utils()
+                if required:
+                    from x402.types import PaymentRequirements
+                    if isinstance(required, dict):
+                        payment_req = PaymentRequirements(**required)
+                    else:
+                        payment_req = required
+                    metadata = utils.create_payment_required_metadata(payment_req)
 
         # Update task with state and append agent messages to history
         await self.storage.update_task(

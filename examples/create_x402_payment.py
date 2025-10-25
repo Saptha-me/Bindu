@@ -165,17 +165,19 @@ def create_eip3009_authorization(account, payment_requirement):
     encoded_data = encode_typed_data(full_message=typed_data)
     signed_message = account.sign_message(encoded_data)
     
-    # Return authorization with signature
+    # Return authorization (matching x402 EIP3009Authorization type)
+    # Note: v, r, s are NOT part of authorization - they go in the signature field
     return {
         'from': from_address,
         'to': to_address,
         'value': value,
-        'validAfter': valid_after,
-        'validBefore': valid_before,
+        'validAfter': str(valid_after),  # x402 expects string
+        'validBefore': str(valid_before),  # x402 expects string
         'nonce': f"0x{nonce}",
-        'v': signed_message.v,
-        'r': hex(signed_message.r),
-        's': hex(signed_message.s)
+        # Store signature components for later use
+        '_signature_v': signed_message.v,
+        '_signature_r': hex(signed_message.r),
+        '_signature_s': hex(signed_message.s)
     }
 
 
@@ -203,13 +205,18 @@ def create_payment_payload(account, payment_requirements):
     # Create authorization
     authorization = create_eip3009_authorization(account, payment_req)
     
-    # Build payment payload
+    # Extract signature components for x402 PaymentPayload structure
+    signature = f"{authorization['r']}{authorization['s'][2:]}{hex(authorization['v'])[2:]}"
+    
+    # Build payment payload matching x402 PaymentPayload type
     return {
         'x402.payment.status': 'payment-submitted',
         'x402.payment.payload': {
+            'x402_version': 1,  # Required by x402 PaymentPayload type
             'scheme': 'eip3009',
             'network': payment_req['network'],
             'payload': {
+                'signature': signature,  # Required at payload level
                 'authorization': authorization
             }
         }

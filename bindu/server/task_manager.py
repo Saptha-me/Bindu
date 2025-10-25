@@ -783,122 +783,148 @@ class TaskManager:
         message_metadata = message.get("metadata") or {}
         payment_status = message_metadata.get(app_settings.x402.meta_status_key)
         
-        # Step 2: Determine if agent requires payment from manifest
-        agent_requires_payment = False
-        payment_requirements_data = None
-
-        if self.manifest and self.manifest.execution_cost:
-            agent_requires_payment = True
-            # Get payment requirements from manifest capabilities
-            # The x402 extension is stored as a dict in capabilities['extensions']
-            if (
-                hasattr(self.manifest, "capabilities")
-                and "extensions" in self.manifest.capabilities
-            ):
-                for ext_dict in self.manifest.capabilities["extensions"]:
-                    # Check if this is the x402 extension
-                    if ext_dict.get("uri") == app_settings.x402.extension_uri:
-                        # Build payment requirements from extension params
-                        params = ext_dict.get("params", {})
-                        payment_requirements_data = {
-                            "accepts": [
-                                {
-                                    "scheme": "eip3009",
-                                    "network": params.get("network"),
-                                    "token": params.get("token"),
-                                    "maxAmountRequired": params.get("amount"),
-                                    "pay_to": params.get("pay_to_address"),
-                                    "max_timeout_seconds": 600,
-                                }
-                            ]
-                        }
-                        break
-
-        # Step 3: Check previous tasks in context (for multi-turn conversations)
-        # Only check if payment not already submitted in current message
-        task_metadata = {}
-        if payment_status != app_settings.x402.status_submitted:
+        # Step 2: Fast path - if payment submitted, get requirements from previous task
+        if payment_status == app_settings.x402.status_submitted:
+            # Payment submitted - get requirements from previous task to validate against
             tasks_in_context = await self.storage.list_tasks_by_context(context_id)
-            
-            # Filter out the current task and find the most recent previous task
             previous_tasks = [
                 t for t in tasks_in_context 
                 if t.get("id") != task_id
             ]
             
+            payment_requirements_data = None
             if previous_tasks:
                 latest_previous_task = previous_tasks[-1]
                 task_metadata = latest_previous_task.get("metadata") or {}
-                
-                # Check if previous task required payment
-                previous_payment_required = task_metadata.get(
+                payment_requirements_data = task_metadata.get(
                     app_settings.x402.meta_required_key
                 )
-                
-                # Check if previous task already has verified payment
-                previous_payment_status = task_metadata.get(
-                    app_settings.x402.meta_status_key
+            
+            # If no previous task with requirements, build from manifest
+            if not payment_requirements_data and self.manifest and self.manifest.execution_cost:
+                payment_requirements_data = self._build_payment_requirements_from_manifest()
+            
+            if not payment_requirements_data:
+                logger.warning(
+                    f"x402_payment_submitted_but_no_requirements task_id={task_id}"
                 )
-                
-                # Only inherit payment requirements if:
-                # 1. Previous task required payment, AND
-                # 2. Previous task does NOT have verified payment yet
-                if previous_payment_required and previous_payment_status != app_settings.x402.status_verified:
-                    agent_requires_payment = True
-                    payment_requirements_data = previous_payment_required
-                    logger.info(
-                        f"x402_inheriting_payment_requirements task_id={task_id} "
-                        f"from_task={latest_previous_task.get('id')} "
-                        f"previous_status={previous_payment_status}"
-                    )
+                raise ValueError(
+                    "x402 Payment Error: Payment submitted but no payment requirements found"
+                )
+            
+            # Validate the submitted payment
+            logger.info(
+                f"x402_validating_submitted_payment task_id={task_id}"
+            )
+            
+            validation_metadata = {
+                app_settings.x402.meta_required_key: payment_requirements_data
+            }
+            
+            validation_result = await PaymentValidator.verify_payment(
+                message_metadata, validation_metadata
+            )
+            
+            if not validation_result.is_valid:
+                error_msg = validation_result.error_reason or "Payment verification failed"
+                logger.warning(
+                    f"x402_payment_validation_failed task_id={task_id} reason={error_msg}"
+                )
+                raise ValueError(f"x402 Payment Error: {error_msg}")
+            
+            # Payment verified - mark as verified in message metadata
+            logger.info(f"x402_payment_validation_success task_id={task_id}")
+            message["metadata"][app_settings.x402.meta_status_key] = (
+                app_settings.x402.status_verified
+            )
+            
+            # Return requirements for task metadata storage
+            return payment_requirements_data
+        
+        # Step 3: No payment submitted - determine if payment is required
+        agent_requires_payment = False
+        payment_requirements_data = None
 
-        # Step 4: If no payment required, return None
+        if self.manifest and self.manifest.execution_cost:
+            agent_requires_payment = True
+            payment_requirements_data = self._build_payment_requirements_from_manifest()
+
+        # Step 4: Check previous tasks in context (for multi-turn conversations)
+        tasks_in_context = await self.storage.list_tasks_by_context(context_id)
+        
+        # Filter out the current task and find the most recent previous task
+        previous_tasks = [
+            t for t in tasks_in_context 
+            if t.get("id") != task_id
+        ]
+        
+        if previous_tasks:
+            latest_previous_task = previous_tasks[-1]
+            task_metadata = latest_previous_task.get("metadata") or {}
+            
+            # Check if previous task required payment
+            previous_payment_required = task_metadata.get(
+                app_settings.x402.meta_required_key
+            )
+            
+            # Check if previous task already has verified payment
+            previous_payment_status = task_metadata.get(
+                app_settings.x402.meta_status_key
+            )
+            
+            # Only inherit payment requirements if:
+            # 1. Previous task required payment, AND
+            # 2. Previous task does NOT have verified payment yet
+            if previous_payment_required and previous_payment_status != app_settings.x402.status_verified:
+                agent_requires_payment = True
+                payment_requirements_data = previous_payment_required
+                logger.info(
+                    f"x402_inheriting_payment_requirements task_id={task_id} "
+                    f"from_task={latest_previous_task.get('id')} "
+                    f"previous_status={previous_payment_status}"
+                )
+
+        # Step 5: If no payment required, return None
         if not agent_requires_payment or not payment_requirements_data:
             return None
 
+        # Payment required but not submitted - return requirements
         logger.info(
-            f"x402_payment_check_started task_id={task_id} "
-            f"agent_requires_payment={agent_requires_payment} "
-            f"payment_status={payment_status}"
+            f"x402_payment_required task_id={task_id} "
+            f"agent_requires_payment={agent_requires_payment}"
         )
-
-        # Step 5: If payment not submitted, return requirements
-        if payment_status != app_settings.x402.status_submitted:
-            # Payment not submitted - return requirements for task metadata
-            # Worker will set task to "input-required" state with payment requirements
-            logger.info(f"x402_payment_not_submitted task_id={task_id}")
-            return payment_requirements_data
-
-        # Step 6: Payment was submitted - validate it
-        # Prepare task metadata with payment requirements for validation
-        validation_metadata = {
-            app_settings.x402.meta_required_key: payment_requirements_data
-        }
-
-        validation_result = await PaymentValidator.verify_payment(
-            message_metadata, validation_metadata
-        )
-
-        if not validation_result.is_valid:
-            error_msg = validation_result.error_reason or "Payment verification failed"
-            logger.warning(
-                f"x402_payment_validation_failed task_id={task_id} reason={error_msg}"
-            )
-            # Raise exception - payment was submitted but invalid
-            raise ValueError(f"x402 Payment Error: {error_msg}")
-
-        # Step 7: Payment verified - update message metadata to mark as verified
-        logger.info(f"x402_payment_validation_success task_id={task_id}")
-
-        # Mark payment as verified in message metadata for worker
-        if "metadata" not in message:
-            message["metadata"] = {}
-        message["metadata"][app_settings.x402.meta_status_key] = (
-            app_settings.x402.status_verified
-        )
-
-        # Return requirements for task metadata storage
         return payment_requirements_data
+    
+    def _build_payment_requirements_from_manifest(self) -> Dict[str, Any]:
+        """Build payment requirements from manifest capabilities.
+        
+        Returns:
+            Payment requirements dict
+        """
+        # Get payment requirements from manifest capabilities
+        # The x402 extension is stored as a dict in capabilities['extensions']
+        if (
+            hasattr(self.manifest, "capabilities")
+            and "extensions" in self.manifest.capabilities
+        ):
+            for ext_dict in self.manifest.capabilities["extensions"]:
+                # Check if this is the x402 extension
+                if ext_dict.get("uri") == app_settings.x402.extension_uri:
+                    # Build payment requirements from extension params
+                    params = ext_dict.get("params", {})
+                    return {
+                        "accepts": [
+                            {
+                                "scheme": "eip3009",
+                                "network": params.get("network"),
+                                "token": params.get("token"),
+                                "maxAmountRequired": params.get("amount"),
+                                "pay_to": params.get("pay_to_address"),
+                                "max_timeout_seconds": 600,
+                            }
+                        ]
+                    }
+        return None
 
     async def resubscribe_task(self, request: ResubscribeTaskRequest) -> None:
         """Resubscribe to task updates."""

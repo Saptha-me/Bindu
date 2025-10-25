@@ -1,16 +1,15 @@
 {
-  "x402.payment.required": {
-    "accepts": [
-      {
-        "scheme": "eip3009",
-        "network": "base-sepolia",
-        "token": "USDC",
-        "maxAmountRequired": "10000",
-        "pay_to": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
-        "max_timeout_seconds": 600
-      }
-    ]
-  },
-  "x402.payment.required_timestamp": 1761398828.95805,
-  "x402.payment.status": "payment-required"
-}
+            "x402.payment.required": {
+                "accepts": [
+                    {
+                        "scheme": "eip3009",
+                        "network": "base-sepolia",
+                        "token": "USDC",
+                        "maxAmountRequired": "10000",
+                        "pay_to": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+                        "max_timeout_seconds": 600
+                    }
+                ]
+            },
+            "x402.payment.required_timestamp": 1761424261.910654
+        }

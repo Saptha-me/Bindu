@@ -7,7 +7,7 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""x402 Extension for Bindu Agents.
+"""x402 Extension for Bindu Agents - Following Google a2a-x402 Pattern.
 
 What is x402?
 -------------
@@ -15,48 +15,96 @@ x402 is a protocol for agent-to-agent payments and economic interactions. It ena
 autonomous agents to negotiate, request, and execute payments seamlessly without human
 intervention. Think of it as the financial layer for the agent economy.
 
-Unlike traditional payment systems that require human approval for every transaction,
-x402 allows agents to autonomously manage budgets, negotiate prices, and complete
-transactions based on predefined rules and mandates. This makes it perfect for
-decentralized agent networks where economic coordination must happen at machine speed.
+This implementation follows the official Google a2a-x402 pattern:
+https://github.com/google-agentic-commerce/a2a-x402
 
-In Bindu, agents can use x402 to monetize their services, pay for resources, and
-participate in the emerging agent economy. The protocol supports various payment
-methods and provides strong guarantees through cryptographic mandates.
+Architecture:
+-------------
+1. **Exception-Based Payment Requirements**: Agents throw exceptions to request payment
+2. **Functional Core**: Pure functions for payment operations (verify, settle)
+3. **Executor Middleware**: Automates the payment flow (verify→process→settle)
+4. **State Management**: Uses A2A task metadata for payment state
 
 How It Works:
 -------------
-1. **Intent Mandates**: Users grant agents permission to spend within defined limits
-2. **Cart Mandates**: Merchants create signed carts with items and prices
-3. **Payment Negotiation**: Agents negotiate prices and payment terms autonomously
-4. **Payment Execution**: Transactions are executed with cryptographic proof
-5. **Settlement**: Payments are settled through various payment methods
+1. Agent throws x402PaymentRequiredException when payment needed
+2. Executor catches exception and returns payment-required response
+3. Client submits payment
+4. Executor verifies payment with facilitator
+5. Agent processes request after verification
+6. Executor settles payment on-chain after completion
 
-This Module Provides:
----------------------
-- Payment request and response handling
-- Cart and intent mandate management
-- Payment method negotiation
-- Cryptographic mandate verification
-- Integration with A2A protocol for seamless agent payments
+Example Usage:
+--------------
+```python
+from bindu.extensions.x402 import (
+    x402PaymentRequiredException,
+    require_payment,
+    x402PaymentExecutor
+)
+
+# Option 1: Throw exception directly
+if is_premium_feature(request):
+    raise x402PaymentRequiredException.for_service(
+        price="$5.00",
+        pay_to_address="0x123...",
+        resource="/premium-feature"
+    )
+
+# Option 2: Use decorator
+@require_payment(price="$5.00", pay_to_address="0x123...", resource="/ai-service")
+async def generate_content(task):
+    return ai_service.generate(task)
+
+# Option 3: Multiple tiers
+raise x402PaymentRequiredException.for_tiered_service(
+    tiers=[
+        {"price": "$2.00", "description": "Basic"},
+        {"price": "$5.00", "description": "Premium"},
+    ],
+    pay_to_address="0x123...",
+    resource="/ai-service"
+)
+```
 
 Official Specification: https://www.x402.org
-
-Inspired by the x402 protocol for enabling economic coordination between autonomous agents.
 """
 
 from __future__ import annotations
 
-from bindu.extensions.x402.x402_agent_extension import X402AgentExtension
-from bindu.extensions.x402.validation import X402Validation
-from bindu.extensions.x402.payment_validator import (
-    PaymentValidator,
-    PaymentValidationResult,
+# New simplified API (a2a-x402 pattern)
+from bindu.extensions.x402.exceptions import x402PaymentRequiredException
+from bindu.extensions.x402.core import (
+    # Core functions
+    create_payment_requirements,
+    verify_payment,
+    settle_payment,
+    # State management
+    x402Utils,
+    PaymentStatus,
+    # Extension utilities
+    get_extension_declaration,
+    check_extension_activation,
+    X402_EXTENSION_URI,
+)
+from bindu.extensions.x402.executor import (
+    x402PaymentExecutor,
+    require_payment,
 )
 
+
+
 __all__ = [
-    "X402AgentExtension",
-    "X402Validation",
-    "PaymentValidator",
-    "PaymentValidationResult",
+    # New simplified API
+    "x402PaymentRequiredException",
+    "x402PaymentExecutor",
+    "require_payment",
+    "create_payment_requirements",
+    "verify_payment",
+    "settle_payment",
+    "x402Utils",
+    "PaymentStatus",
+    "get_extension_declaration",
+    "check_extension_activation",
+    "X402_EXTENSION_URI",
 ]

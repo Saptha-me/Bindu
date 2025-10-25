@@ -1,19 +1,18 @@
 {
   "x402.payment.status": "payment-submitted",
   "x402.payment.payload": {
+    "x402_version": 1,
     "scheme": "eip3009",
     "network": "base-sepolia",
     "payload": {
+      "signature": "0x37ecbd60f603a6fb4b7c4718a98a8292bbec82f71e044cbe1b5e84e4ab279990661696811efef182b4334efc4975429c7c9bbf52924c12ec8a745756bd6430151c",
       "authorization": {
         "from": "0x4b17C3678b9Baf1866Ac831e802Fa459Bc9F7C33",
         "to": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
         "value": "10000",
-        "validAfter": 0,
-        "validBefore": 1761423835,
-        "nonce": "0xa3e3d76bb513b8dedbfb41d4ea2446c99290fe7497c7391aa57ce062293744cb",
-        "v": 27,
-        "r": "0xd27c716f814267865bb795b259e09f31850cea33e8c59b174212248b53ccc0b",
-        "s": "0x37031136c6b18df208b3aed639e30027a5eec0c38fec2f18fadb5468d78834f3"
+        "validAfter": "0",
+        "validBefore": "1761425878",
+        "nonce": "0x524a67ebebcdf8f4d08ed969d29f67c219ea32dd0e977f71673fa60434462a8d"
       }
     }
   }

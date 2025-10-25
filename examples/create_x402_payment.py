@@ -235,10 +235,10 @@ def display_payment_info(payment_requirement, account_address):
 
 def load_payment_requirements(args):
     """Load payment requirements from file or stdin."""
-    if args.requirements:
+    if args.sample_payment_requirements:
         # Load from file
-        with open(args.requirements, 'r') as f:
-            data = json.load(f)
+        with open(args.sample_payment_requirements, 'r') as f:
+            sample_payment_requirements = json.load(f)
     else:
         # Interactive mode
         console.print("\n[bold cyan]Paste the payment requirements JSON[/bold cyan]")
@@ -254,46 +254,53 @@ def load_payment_requirements(args):
             pass
         
         json_str = '\n'.join(lines)
-        data = json.loads(json_str)
+        sample_payment_requirements = json.loads(json_str)
     
     # Handle both formats:
     # 1. Full metadata object with "x402.payment.required" key
     # 2. Just the payment requirements object with "accepts" key
-    if 'x402.payment.required' in data:
-        return data['x402.payment.required']
-    elif 'accepts' in data:
-        return data
+    if 'x402.payment.required' in sample_payment_requirements:
+        return sample_payment_requirements['x402.payment.required']
+    elif 'accepts' in sample_payment_requirements:
+        return sample_payment_requirements
     else:
         raise ValueError("Invalid payment requirements format. Expected 'accepts' array.")
 
 
 def get_account(args):
     """Get account from private key."""
-    private_key = args.private_key or os.getenv('WALLET_PRIVATE_KEY')
+    private_key = None
+    
+    # Try loading from wallet file if provided
+    if args.sample_test_wallet and Path(args.sample_test_wallet).exists():
+        try:
+            with open(args.sample_test_wallet, 'r') as f:
+                private_key = json.load(f).get('private_key')
+                if private_key:
+                    console.print(f"[green]✓[/green] Loaded from {Path(args.sample_test_wallet).name}")
+        except Exception as e:
+            console.print(f"[yellow]Warning: {e}[/yellow]")
+    
+    # Fallback to env var or prompt
+    if not private_key:
+        private_key = os.getenv('WALLET_PRIVATE_KEY')
+        if not private_key:
+            from getpass import getpass
+            console.print("\n[yellow]Enter private key (or set WALLET_PRIVATE_KEY)[/yellow]")
+            private_key = getpass("Private key (0x...): ")
     
     if not private_key:
-        console.print("\n[yellow]No private key provided.[/yellow]")
-        console.print("[dim]You can provide it via:[/dim]")
-        console.print("  1. --private-key argument")
-        console.print("  2. WALLET_PRIVATE_KEY environment variable")
-        console.print("  3. Enter it now (will not be displayed)\n")
-        
-        from getpass import getpass
-        private_key = getpass("Enter private key (0x...): ")
-    
-    if not private_key:
-        console.print("[red]Error: Private key is required[/red]")
+        console.print("[red]Error: Private key required[/red]")
         sys.exit(1)
     
-    # Ensure 0x prefix
+    # Ensure 0x prefix and create account
     if not private_key.startswith('0x'):
         private_key = '0x' + private_key
     
     try:
-        account = Account.from_key(private_key)
-        return account
+        return Account.from_key(private_key)
     except Exception as e:
-        console.print(f"[red]Error loading account:[/red] {e}")
+        console.print(f"[red]Error: {e}[/red]")
         sys.exit(1)
 
 
@@ -322,19 +329,23 @@ Examples:
     )
     
     parser.add_argument(
-        '--requirements',
-        '-r',
-        help='Path to JSON file containing payment requirements'
+        '--sample_test_wallet',
+        '-s',
+        help='Use sample test wallet',
+        default='examples/test_wallet.json'
     )
+    
     parser.add_argument(
-        '--private-key',
-        '-k',
-        help='Wallet private key (or use WALLET_PRIVATE_KEY env var)'
+        '--sample_payment_requirements',
+        '-r',
+        help='Use sample payment requirements',
+        default='examples/sample_payment_requirements.json'
     )
     parser.add_argument(
         '--output',
         '-o',
-        help='Save payment payload to file'
+        help='Save payment payload to file',
+        default='examples/payment_payload.json'
     )
     parser.add_argument(
         '--copy',

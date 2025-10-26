@@ -290,22 +290,6 @@ def bindufy(
     agent_url = (
         deployment_config.url if deployment_config else app_settings.network.default_url
     )
-    skills_data = [
-        skill.dict() if hasattr(skill, "dict") else skill for skill in skills_list
-    ]
-
-    did_extension.set_agent_metadata(
-        description=validated_config["description"],
-        version=validated_config["version"],
-        author=validated_config.get("author"),
-        skills=skills_data,
-        capabilities=validated_config.get("capabilities"),
-        url=agent_url,
-        kind=validated_config["kind"],
-        telemetry=validated_config["telemetry"],
-        monitoring=validated_config["monitoring"],
-        documentation_url=validated_config.get("documentation_url"),
-    )
 
     logger.info("DID Extension setup complete", did=did_extension.did)
     logger.info("Creating agent manifest...")

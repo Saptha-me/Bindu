@@ -30,7 +30,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import base58
 from cryptography.hazmat.primitives import serialization

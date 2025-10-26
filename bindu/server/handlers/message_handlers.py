@@ -47,6 +47,55 @@ class MessageHandlers:
     workers: list[Any] | None = None
     context_id_parser: Any = None
 
+    async def _handle_payment_required(
+        self, context_id: Any, message: dict[str, Any], x402_ext: Any
+    ) -> Task:
+        """Handle payment-required response for agents with execution cost.
+
+        Args:
+            context_id: Context ID for the task
+            message: User message
+            x402_ext: X402AgentExtension instance
+
+        Returns:
+            Task with payment-required state and metadata
+        """
+        # Submit task to storage
+        task: Task = await self.storage.submit_task(context_id, message)
+
+        # Create payment requirements
+        payment_req = x402_ext.create_payment_requirements(
+            resource=f"/agent/{self.manifest.name}",
+            description=f"Payment required to use {self.manifest.name}",
+        )
+
+        # Build payment-required metadata
+        from bindu.extensions.x402.utils import build_payment_required_metadata
+
+        payment_metadata = build_payment_required_metadata(
+            {"x402Version": 1, "accepts": [payment_req.model_dump(by_alias=True)]}
+        )
+
+        # Create agent message explaining payment requirement
+        from bindu.utils.worker_utils import MessageConverter
+
+        agent_messages = MessageConverter.to_protocol_messages(
+            f"Payment required: {x402_ext.amount_usd:.2f} USD ({x402_ext.token} on {x402_ext.network})",
+            task["id"],
+            context_id,
+        )
+
+        # Update task to input-required with payment metadata
+        await self.storage.update_task(
+            task["id"],
+            state="input-required",
+            new_messages=agent_messages,
+            metadata=payment_metadata,
+        )
+
+        # Return updated task
+        return await self.storage.load_task(task["id"])
+
     @trace_task_operation("send_message")
     @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
@@ -54,6 +103,23 @@ class MessageHandlers:
         message = request["params"]["message"]
         context_id = self.context_id_parser(message.get("context_id"))
 
+        # Check if agent requires payment and no payment provided
+        message_metadata = message.get("metadata", {})
+        has_payment_payload = message_metadata.get("x402.payment.payload") is not None
+
+        if not has_payment_payload and self.manifest:
+            # Check if agent has x402 extension in capabilities
+            from bindu.utils import get_x402_extension_from_capabilities
+
+            x402_ext = get_x402_extension_from_capabilities(self.manifest)
+            if x402_ext:
+                # Agent requires payment - return payment-required immediately
+                task = await self._handle_payment_required(
+                    context_id, message, x402_ext
+                )
+                return SendMessageResponse(jsonrpc="2.0", id=request["id"], result=task)
+
+        # Normal flow (no payment required OR payment already provided)
         task: Task = await self.storage.submit_task(context_id, message)
 
         scheduler_params: TaskSendParams = TaskSendParams(

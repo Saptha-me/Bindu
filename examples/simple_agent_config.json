@@ -10,12 +10,6 @@
   ],
   "capabilities": {
   },
-  "execution_cost": {
-    "amount": "10000",
-    "token": "USDC",
-    "network": "base-sepolia",
-    "pay_to_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
-  },
   "agent_trust": "low",
   "kind": "agent",
   "debug_mode": true,

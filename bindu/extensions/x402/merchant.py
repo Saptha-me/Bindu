@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from x402.common import process_price_to_atomic_amount
-from x402.types import PaymentRequirements, Price, SupportedNetworks
+from x402.types import PaymentRequirements, Price
 
 
 def create_payment_requirements(
@@ -34,7 +34,7 @@ def create_payment_requirements(
 
     return PaymentRequirements(
         scheme=scheme,
-        network=SupportedNetworks(network),
+        network=network,
         asset=asset_address,
         pay_to=pay_to_address,
         max_amount_required=max_amount_required,

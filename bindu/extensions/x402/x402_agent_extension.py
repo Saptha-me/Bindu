@@ -194,7 +194,7 @@ class X402AgentExtension:
         }
 
     def __repr__(self) -> str:
-        """String representation of the extension."""
+        """Return string representation of the extension."""
         return (
             f"X402AgentExtension(amount={self.amount}, "
             f"token={self.token}, network={self.network}, "

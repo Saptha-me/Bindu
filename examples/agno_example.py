@@ -44,6 +44,7 @@ simple_agent = Agent(
 
 
 # Define the handler function that uses the agent
+@payment_required
 def simple_handler(messages: list[dict[str, str]]) -> Any:
     """Handle agent messages in a stateless manner.
 

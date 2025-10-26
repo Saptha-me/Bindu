@@ -27,6 +27,7 @@ from bindu.common.models import (
 )
 from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
+from bindu.extensions.x402 import X402AgentExtension
 from bindu.extensions.x402.extension import (
     get_agent_extension as get_x402_agent_extension,
 )
@@ -331,6 +332,32 @@ def bindufy(
 
     logger.info(f"DID extension initialized: {did_extension.did}")
 
+    # Initialize X402 extension if execution_cost is configured
+    x402_extension = None
+    if "execution_cost" in validated_config:
+        try:
+            exec_cost = validated_config["execution_cost"]
+            x402_extension = X402AgentExtension(
+                amount=exec_cost["amount"],
+                token=exec_cost.get("token", "USDC"),
+                network=exec_cost.get("network", "base-sepolia"),
+                pay_to_address=exec_cost["pay_to_address"],
+                required=True,
+                description=exec_cost.get("description"),
+            )
+            logger.info(
+                f"X402 extension initialized: {x402_extension.amount_usd:.2f} USD "
+                f"({exec_cost['token']}) on {exec_cost['network']}"
+            )
+        except KeyError as exc:
+            logger.error(f"Invalid execution_cost config: missing {exc}")
+            raise ValueError(
+                f"execution_cost requires 'amount' and 'pay_to_address' fields"
+            ) from exc
+        except Exception as exc:
+            logger.error(f"Failed to initialize X402 extension: {exc}")
+            raise
+
     # Load skills from configuration (supports both file-based and inline)
     logger.info("Loading agent skills...")
     skills_list = load_skills(validated_config.get("skills") or [], caller_dir)
@@ -375,6 +402,7 @@ def bindufy(
         skills=skills_list,
         capabilities=capabilities,
         did_extension=did_extension,
+        x402_extension=x402_extension,
         agent_trust=validated_config["agent_trust"],
         version=validated_config["version"],
         url=agent_url,

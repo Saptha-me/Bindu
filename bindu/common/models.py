@@ -111,6 +111,9 @@ class AgentManifest:
     # Security & Trust
     did_extension: DIDAgentExtension
     agent_trust: AgentTrust
+    
+    # Payment (optional)
+    x402_extension: Any | None = None  # X402AgentExtension (optional)
 
     # Capabilities
     capabilities: AgentCapabilities

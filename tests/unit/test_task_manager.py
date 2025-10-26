@@ -345,5 +345,5 @@ async def test_push_not_supported():
         response = await tm.set_task_push_notification(request)
 
         # Should return PushNotificationNotSupportedError (-32005)
-        if not tm._push_supported():
+        if not tm._push_manager.is_push_supported():
             assert_jsonrpc_error(response, -32005)

@@ -21,8 +21,11 @@ from typing import Any, Callable, Literal
 from uuid import UUID
 
 from bindu.common.models import AgentManifest
-from bindu.common.protocol.types import AgentCapabilities, AgentTrust, Skill
-from bindu.extensions.did import DIDAgentExtension
+from bindu.common.protocol.types import (
+    AgentCapabilities,
+    AgentTrust,
+    Skill,
+)
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.penguin.manifest")
@@ -79,7 +82,6 @@ def create_manifest(
     agent_function: Callable,
     id: UUID,
     name: str | None,
-    did_extension: DIDAgentExtension,
     description: str | None,
     skills: list[Skill] | None,
     capabilities: AgentCapabilities | None,
@@ -99,7 +101,6 @@ def create_manifest(
     enable_context_based_history: bool = False,
     documentation_url: str | None = None,
     extra_metadata: dict[str, Any] | None = None,
-    x402_extension: Any | None = None,
 ) -> AgentManifest:
     """Create a protocol-compliant AgentManifest from any Python function.
 
@@ -141,104 +142,6 @@ def create_manifest(
     Raises:
         ValueError: If agent_function doesn't have required 'input' parameter or has invalid signature.
 
-    Function Type Detection:
-        The function automatically detects and handles four types of Python functions:
-
-        1. **Async Generator Functions** (`async def` + `yield`):
-           - Detected with: inspect.isasyncgenfunction()
-           - Creates: AsyncGenDecoratorAgent with async streaming support
-           - Use case: Agents that stream multiple responses over time
-
-        2. **Coroutine Functions** (`async def` + `return`):
-           - Detected with: inspect.iscoroutinefunction()
-           - Creates: CoroDecoratorAgent with async execution
-           - Use case: Agents that perform async operations and return single result
-
-        3. **Generator Functions** (`def` + `yield`):
-           - Detected with: inspect.isgeneratorfunction()
-           - Creates: GenDecoratorAgent with sync streaming
-           - Use case: Agents that yield multiple results synchronously
-
-        4. **Regular Functions** (`def` + `return`):
-           - Default case when others don't match
-           - Creates: FuncDecoratorAgent with direct execution
-           - Use case: Simple agents with synchronous processing
-
-    Examples:
-        # Async Generator Agent (Streaming Weather Forecast)
-        @bindufy(name="Weather Agent", version="1.0.0")
-        async def weather_agent(input: str, context=None):
-            '''Provides streaming weather updates.'''
-            yield f"Fetching weather for: {input}"
-            await asyncio.sleep(1)  # Simulate API call
-            yield f"Current temp: 22°C, Sunny"
-            yield f"3-day forecast: Sunny, Cloudy, Rainy"
-
-        # Coroutine Agent (Single Response)
-        @bindufy(name="Translator", version="1.0.0")
-        async def translator_agent(input: str):
-            '''Translates text to different languages.'''
-            await asyncio.sleep(0.5)  # Simulate translation API
-            return f"Translated: {input} → Bonjour le monde"
-
-        # Generator Agent (Batch Processing)
-        @bindufy(name="Data Processor", version="1.0.0")
-        def batch_processor(input: str):
-            '''Processes data in batches.'''
-            data_items = input.split(',')
-            for i, item in enumerate(data_items):
-                yield f"Processed batch {i+1}: {item.strip()}"
-
-        # Regular Function Agent (Simple Processing)
-        @bindufy(name="Echo Agent", version="1.0.0")
-        def echo_agent(input: str):
-            '''Simple echo agent.'''
-            return f"Echo: {input.upper()}"
-
-    Parameter Detection:
-        The function analyzes the user function's parameters to determine execution context:
-
-        - **input**: Required first parameter for agent input
-        - **context**: Optional parameter for execution context (user preferences, session data)
-        - **execution_state**: Optional parameter for pause/resume functionality
-
-    Dynamic Class Generation:
-        Creates a DecoratorBase class that inherits from AgentManifest and implements:
-        - All required AgentManifest properties (id, name, description, etc.)
-        - Protocol-compliant run() method that wraps the original function
-        - Proper async/sync execution based on function type
-        - Context and execution state handling
-
-    Security Integration:
-        When security and identity parameters are provided:
-        - Integrates with DID-based authentication system
-        - Enables secure agent-to-agent communication
-        - Works with Hibiscus registry for agent discovery
-
-    Note:
-        Agent names automatically convert underscores to hyphens since underscores
-        are not allowed in agent names in the bindu protocol.
-
-    Examples:
-        # Create agent manifest
-        agent = my_agent_function
-        config = {
-            "name": "My Agent",
-            "version": "1.0.0",
-            "description": "My agent description",
-            "url": "https://example.com/my-agent",
-            "protocol_version": "1.0.0",
-            "kind": "agent",
-            "debug_mode": False,
-            "debug_level": 1,
-            "monitoring": False,
-            "telemetry": True,
-            "num_history_sessions": 10,
-            "enable_system_message": True,
-            "enable_context_based_history": False,
-            "extra_metadata": {},
-        }
-        manifest = bindufy(agent, config, my_handler)
     """
     # Analyze function signature for parameter detection
     func_name = getattr(agent_function, "__name__", "<unknown>")
@@ -275,9 +178,7 @@ def create_manifest(
         url=url,
         version=version,
         protocol_version=protocol_version,
-        did_extension=did_extension,
         agent_trust=_agent_trust,
-        x402_extension=x402_extension,
         capabilities=_capabilities,
         skills=_skills,
         kind=kind,

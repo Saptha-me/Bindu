@@ -95,10 +95,6 @@ class ManifestWorker(Worker):
     )
     """Optional callback for task lifecycle notifications (task_id, context_id, state, final)."""
 
-    # -------------------------------------------------------------------------
-    # Task Execution (Hybrid Pattern)
-    # -------------------------------------------------------------------------
-
     async def run_task(self, params: TaskSendParams) -> None:
         """Execute a task using the AgentManifest.
 
@@ -405,10 +401,6 @@ class ManifestWorker(Worker):
                 params["task_id"], task["context_id"], "canceled", True
             )
 
-    # -------------------------------------------------------------------------
-    # Protocol Conversion
-    # -------------------------------------------------------------------------
-
     def build_message_history(self, history: list[Message]) -> list[dict[str, str]]:
         """Convert A2A protocol messages to chat format for manifest execution.
 
@@ -434,10 +426,6 @@ class ManifestWorker(Worker):
         """
         did_extension = self.manifest.did_extension
         return ArtifactBuilder.from_result(result, did_extension=did_extension)
-
-    # -------------------------------------------------------------------------
-    # A2A Protocol - Conversation History
-    # -------------------------------------------------------------------------
 
     async def _build_complete_message_history(self, task: Task) -> list[dict[str, str]]:
         """Build complete conversation history following A2A Protocol.
@@ -539,10 +527,6 @@ class ManifestWorker(Worker):
             task["id"], state=state, new_messages=agent_messages, metadata=metadata
         )
         await self._notify_lifecycle(task["id"], task["context_id"], state, False)
-
-    # -------------------------------------------------------------------------
-    # Terminal State Handling
-    # -------------------------------------------------------------------------
 
     async def _handle_terminal_state(
         self,

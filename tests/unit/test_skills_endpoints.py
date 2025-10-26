@@ -25,11 +25,23 @@ def _make_request(
     for k, v in (headers or {}).items():
         raw_headers.append((k.lower().encode("latin-1"), v.encode("latin-1")))
 
+    # Extract path params from path (e.g., /agent/skills/skill-1 -> skill_id=skill-1)
+    path_params = {}
+    path_parts = path.strip("/").split("/")
+    if len(path_parts) >= 3 and path_parts[0] == "agent" and path_parts[1] == "skills":
+        if len(path_parts) == 3:
+            # /agent/skills/{skill_id}
+            path_params["skill_id"] = path_parts[2]
+        elif len(path_parts) == 4 and path_parts[3] == "documentation":
+            # /agent/skills/{skill_id}/documentation
+            path_params["skill_id"] = path_parts[2]
+
     # Mock request with minimal required attributes
     request = SimpleNamespace(
         url=SimpleNamespace(path=path),
         headers=headers or {},
         client=SimpleNamespace(host="127.0.0.1"),
+        path_params=path_params,
     )
     # Add raw headers for x402 extension check
     request._headers = raw_headers  # type: ignore

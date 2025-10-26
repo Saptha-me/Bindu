@@ -14,7 +14,7 @@ logger = get_logger("bindu.utils.endpoint_utils")
 
 
 def handle_endpoint_errors(endpoint_name: str) -> Callable:
-    """Decorator to handle common endpoint errors.
+    """Decorate endpoint to handle common errors.
 
     Args:
         endpoint_name: Name of the endpoint for logging (e.g., "agent card", "skills list")

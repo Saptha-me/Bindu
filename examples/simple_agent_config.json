@@ -43,6 +43,7 @@
       "/health",
       "/.well-known/*",
       "/did/resolve*",
+      "/did/info",
       "/agent/info",
       "/agent/skills",
       "/agent/skills/*"

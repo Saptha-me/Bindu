@@ -359,6 +359,7 @@ def bindufy(
     _manifest = create_manifest(
         agent_function=handler,
         id=agent_id,
+        did_extension=did_extension,
         name=validated_config["name"],
         description=validated_config["description"],
         skills=skills_list,

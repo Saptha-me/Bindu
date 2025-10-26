@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
 from uuid import UUID
 
-
+from bindu.extensions.did import DIDAgentExtension
 from .protocol.types import (
     AgentCapabilities,
     AgentCard,
@@ -107,6 +107,7 @@ class AgentManifest:
     # Core Identity
     id: UUID
     name: str
+    did_extension: DIDAgentExtension
     description: str
     url: str
     version: str

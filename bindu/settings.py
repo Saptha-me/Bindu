@@ -58,7 +58,7 @@ class DIDSettings(BaseSettings):
 
     # DID Document Constants
     w3c_context: str = "https://www.w3.org/ns/did/v1"
-    bindu_context: str = "https://bindu.ai/ns/v1"
+    bindu_context: str = "https://saptha.me/ns/v1"
     verification_key_type: str = "Ed25519VerificationKey2020"
     key_fragment: str = "key-1"
     service_fragment: str = "agent-service"

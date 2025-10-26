@@ -15,19 +15,20 @@ logger = get_logger("bindu.utils.endpoint_utils")
 
 def handle_endpoint_errors(endpoint_name: str) -> Callable:
     """Decorator to handle common endpoint errors.
-    
+
     Args:
         endpoint_name: Name of the endpoint for logging (e.g., "agent card", "skills list")
-        
+
     Returns:
         Decorated endpoint function with error handling
-        
+
     Example:
         @handle_endpoint_errors("agent card")
         async def agent_card_endpoint(app, request):
             # Your endpoint logic here
             return response
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Response:
@@ -39,18 +40,18 @@ def handle_endpoint_errors(endpoint_name: str) -> Callable:
                     break
             if not request and "request" in kwargs:
                 request = kwargs["request"]
-                
+
             client_ip = get_client_ip(request) if request else "unknown"
-            
+
             try:
                 return await func(*args, **kwargs)
             except Exception as e:
                 logger.error(
-                    f"Error serving {endpoint_name} to {client_ip}: {e}",
-                    exc_info=True
+                    f"Error serving {endpoint_name} to {client_ip}: {e}", exc_info=True
                 )
                 code, message = extract_error_fields(InternalError)
                 return jsonrpc_error(code, message, str(e), status=500)
-        
+
         return wrapper
+
     return decorator

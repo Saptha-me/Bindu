@@ -18,7 +18,7 @@ def create_agent_card(app: "BinduApplication") -> AgentCard:
 
     Returns:
         AgentCard instance
-    
+
     Note:
         Excludes skill documentation_content from agent card to reduce payload size.
         Full documentation is available via /agent/skills/{skill_id}/documentation
@@ -26,15 +26,19 @@ def create_agent_card(app: "BinduApplication") -> AgentCard:
     # Minimize skills to just id, name, and documentation_path (URL) - full details via dedicated endpoint
     minimal_skills = []
     for skill in app.manifest.skills:
-        minimal_skills.append({
-            "id": skill["id"],
-            "name": skill["name"],
-            "documentation_path": f"{app.url}/agent/skills/{skill['id']}"
-        })
-    
+        minimal_skills.append(
+            {
+                "id": skill["id"],
+                "name": skill["name"],
+                "documentation_path": f"{app.url}/agent/skills/{skill['id']}",
+            }
+        )
+
     # Ensure id is UUID type (convert from string if needed)
-    agent_id = app.manifest.id if isinstance(app.manifest.id, UUID) else UUID(app.manifest.id)
-    
+    agent_id = (
+        app.manifest.id if isinstance(app.manifest.id, UUID) else UUID(app.manifest.id)
+    )
+
     return AgentCard(
         id=agent_id,
         name=app.manifest.name,

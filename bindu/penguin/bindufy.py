@@ -346,13 +346,13 @@ def bindufy(
         # Add x402 extension to capabilities
         x402_agent_ext = x402_extension.agent_extension
         logger.info(f"Adding x402 extension to capabilities: {x402_agent_ext}")
-        capabilities = add_extension_to_capabilities(
-            capabilities, x402_agent_ext
-        )
-        
+        capabilities = add_extension_to_capabilities(capabilities, x402_agent_ext)
+
         # Debug: Log all extensions in capabilities
-        logger.info(f"Total extensions in capabilities: {len(capabilities.get('extensions', []))}")
-        for ext in capabilities.get('extensions', []):
+        logger.info(
+            f"Total extensions in capabilities: {len(capabilities.get('extensions', []))}"
+        )
+        for ext in capabilities.get("extensions", []):
             logger.info(f"  - Extension: {ext.get('uri')}, params: {ext.get('params')}")
 
     # Create agent manifest with loaded skills

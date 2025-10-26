@@ -33,14 +33,10 @@ async def agent_card_endpoint(app: "BinduApplication", request: Request) -> Resp
     if app._agent_card_json_schema is None:
         logger.debug("Generating agent card schema")
         agent_card = create_agent_card(app)
-        app._agent_card_json_schema = agent_card_ta.dump_json(
-            agent_card, by_alias=True
-        )
+        app._agent_card_json_schema = agent_card_ta.dump_json(agent_card, by_alias=True)
 
     logger.debug(f"Serving agent card to {client_ip}")
-    resp = Response(
-        content=app._agent_card_json_schema, media_type="application/json"
-    )
+    resp = Response(content=app._agent_card_json_schema, media_type="application/json")
     if x402_is_requested(request):
         resp = x402_add_header(resp)
     return resp

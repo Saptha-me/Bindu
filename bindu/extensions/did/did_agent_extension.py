@@ -377,7 +377,7 @@ class DIDAgentExtension:
                     "controller": self.did,
                     "publicKeyBase58": self.public_key_base58,
                 }
-            ]
+            ],
         }
         return did_doc
 

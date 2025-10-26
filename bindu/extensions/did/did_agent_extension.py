@@ -316,36 +316,6 @@ class DIDAgentExtension:
         multibase_encoded = app_settings.did.multibase_prefix + encoded
         return f"did:{app_settings.did.method_key}:{multibase_encoded}"
 
-    def set_agent_metadata(
-        self,
-        skills: Optional[List[Any]] = None,
-        capabilities: Optional[Dict[str, Any]] = None,
-        description: Optional[str] = None,
-        version: Optional[str] = None,
-        author: Optional[str] = None,
-        **extra_metadata,
-    ) -> None:
-        """Set metadata that will be included in the DID document.
-
-        Args:
-            skills: List of agent skills
-            capabilities: Agent capabilities dictionary
-            description: Agent description
-            version: Agent version
-            author: Agent author
-            **extra_metadata: Any additional metadata to include
-        """
-        # Update metadata with all non-None values
-        updates = {
-            "skills": skills,
-            "capabilities": capabilities,
-            "description": description,
-            "version": version,
-            "author": author,
-        }
-        self.metadata.update({k: v for k, v in updates.items() if v is not None})
-        self.metadata.update(extra_metadata)
-
     def _get_public_key_raw_bytes(self) -> bytes:
         """Get raw bytes of public key."""
         return self.public_key.public_bytes(

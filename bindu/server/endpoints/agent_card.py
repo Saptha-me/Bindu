@@ -11,7 +11,7 @@ from bindu.extensions.x402.extension import (
     add_activation_header as x402_add_header,
 )
 from bindu.utils.agent_card_utils import create_agent_card
-from bindu.utils.endpoint_utils import handle_endpoint_errors
+from bindu.utils.request_utils import handle_endpoint_errors
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import get_client_ip
 

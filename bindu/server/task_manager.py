@@ -89,10 +89,10 @@ class TaskManager:
 
     _aexit_stack: AsyncExitStack | None = field(default=None, init=False)
     _workers: list[ManifestWorker] = field(default_factory=list, init=False)
-    _push_manager: PushNotificationManager | None = field(default=None, init=False)
-    _message_handlers: MessageHandlers | None = field(default=None, init=False)
-    _task_handlers: TaskHandlers | None = field(default=None, init=False)
-    _context_handlers: ContextHandlers | None = field(default=None, init=False)
+    _push_manager: PushNotificationManager = field(init=False)
+    _message_handlers: MessageHandlers = field(init=False)
+    _task_handlers: TaskHandlers = field(init=False)
+    _context_handlers: ContextHandlers = field(init=False)
 
     def __post_init__(self) -> None:
         """Initialize push notification manager after dataclass initialization."""
@@ -190,15 +190,6 @@ class TaskManager:
         if name in ("list_contexts", "clear_context"):
             return getattr(self._context_handlers, name)
 
-        # Push notification handler methods
-        if name in (
-            "set_task_push_notification",
-            "get_task_push_notification",
-            "list_task_push_notifications",
-            "delete_task_push_notification",
-        ):
-            return getattr(self._push_manager, name)
-
         # Special case for set_task_push_notification which needs storage
         if name == "set_task_push_notification":
 
@@ -208,6 +199,14 @@ class TaskManager:
                 )
 
             return _set_with_storage
+
+        # Other push notification handler methods
+        if name in (
+            "get_task_push_notification",
+            "list_task_push_notifications",
+            "delete_task_push_notification",
+        ):
+            return getattr(self._push_manager, name)
 
         raise AttributeError(
             f"'{type(self).__name__}' object has no attribute '{name}'"

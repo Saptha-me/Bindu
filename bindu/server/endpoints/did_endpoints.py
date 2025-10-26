@@ -13,7 +13,7 @@ from bindu.common.protocol.types import (
 from bindu.utils.did_utils import (
     get_did_extension,
 )
-from bindu.utils.endpoint_utils import handle_endpoint_errors
+from bindu.utils.request_utils import handle_endpoint_errors
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 

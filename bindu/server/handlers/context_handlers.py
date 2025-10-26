@@ -40,9 +40,7 @@ class ContextHandlers:
     error_response_creator: Any = None
 
     @trace_context_operation("list_contexts")
-    async def list_contexts(
-        self, request: ListContextsRequest
-    ) -> ListContextsResponse:
+    async def list_contexts(self, request: ListContextsRequest) -> ListContextsResponse:
         """List all contexts in storage."""
         contexts = await self.storage.list_contexts(request["params"].get("length"))
 

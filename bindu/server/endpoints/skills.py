@@ -14,7 +14,7 @@ from bindu.extensions.x402.extension import (
     is_activation_requested as x402_is_requested,
     add_activation_header as x402_add_header,
 )
-from bindu.utils.endpoint_utils import handle_endpoint_errors
+from bindu.utils.request_utils import handle_endpoint_errors
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 from bindu.utils.skill_utils import find_skill_by_id

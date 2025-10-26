@@ -9,11 +9,6 @@
     "skills/pdf-processing"
   ],
   "capabilities": {
-    "reasoning": true,
-    "code_execution": false,
-    "web_search": false,
-    "file_operations": false,
-    "multimodal": false
   },
   "agent_trust": "low",
   "kind": "agent",

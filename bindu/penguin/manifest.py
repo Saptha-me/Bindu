@@ -99,6 +99,7 @@ def create_manifest(
     enable_context_based_history: bool = False,
     documentation_url: str | None = None,
     extra_metadata: dict[str, Any] | None = None,
+    x402_extension: Any | None = None,
 ) -> AgentManifest:
     """Create a protocol-compliant AgentManifest from any Python function.
 
@@ -276,6 +277,7 @@ def create_manifest(
         protocol_version=protocol_version,
         did_extension=did_extension,
         agent_trust=_agent_trust,
+        x402_extension=x402_extension,
         capabilities=_capabilities,
         skills=_skills,
         kind=kind,

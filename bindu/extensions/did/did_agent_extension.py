@@ -377,45 +377,9 @@ class DIDAgentExtension:
                     "controller": self.did,
                     "publicKeyBase58": self.public_key_base58,
                 }
-            ],
-            # bindu-specific metadata
-            "bindu": {
-                "agentName": self.agent_name,
-                "author": self.author,
-                **self.metadata,  # Include all metadata
-            },
-        }
-
-        # Add service endpoints if URL is available
-        if "url" in self.metadata:
-            did_doc["service"] = [
-                {
-                    "id": f"{self.did}#{app_settings.did.service_fragment}",
-                    "type": app_settings.did.service_type,
-                    "serviceEndpoint": self.metadata["url"],
-                }
             ]
-
-        return did_doc
-
-    def get_agent_info(self) -> Dict[str, Any]:
-        """Get a simplified agent info JSON (more readable than full DID document).
-
-        Returns:
-            Dictionary with agent information in a user-friendly format
-        """
-        info = {
-            "did": self.did,
-            "agentName": self.agent_name,
-            "author": self.author,
-            "publicKey": self.public_key_base58,
-            "created": self._created_at,
         }
-
-        # Add all metadata fields
-        info.update(self.metadata)
-
-        return info
+        return did_doc
 
     @cached_property
     def agent_extension(self) -> AgentExtension:

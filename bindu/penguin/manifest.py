@@ -21,6 +21,7 @@ from typing import Any, Callable, Literal
 from uuid import UUID
 
 from bindu.common.models import AgentManifest
+from bindu.extensions.did import DIDAgentExtension
 from bindu.common.protocol.types import (
     AgentCapabilities,
     AgentTrust,
@@ -81,6 +82,7 @@ def validate_agent_function(agent_function: Callable) -> None:
 def create_manifest(
     agent_function: Callable,
     id: UUID,
+    did_extension: DIDAgentExtension,
     name: str | None,
     description: str | None,
     skills: list[Skill] | None,
@@ -173,6 +175,7 @@ def create_manifest(
     # Create base manifest
     manifest = AgentManifest(
         id=id,
+        did_extension=did_extension,
         name=manifest_name,
         description=manifest_description,
         url=url,

@@ -25,6 +25,7 @@ __all__ = [
     "agent_card_endpoint",
     # DID Endpoints
     "did_resolve_endpoint",
+    "did_info_endpoint",
     # Skills Endpoints
     "skills_list_endpoint",
     "skill_detail_endpoint",

@@ -1,6 +1,5 @@
 """Unit tests for capabilities utility functions."""
 
-import pytest
 from unittest.mock import MagicMock
 
 from bindu.utils.capabilities import (
@@ -76,9 +75,9 @@ class TestGetX402ExtensionFromCapabilities:
                 }
             ]
         }
-        
+
         result = get_x402_extension_from_capabilities(manifest)
-        
+
         assert result is not None
         assert result.amount == "10000"
         assert result.token == "USDC"
@@ -102,9 +101,9 @@ class TestGetX402ExtensionFromCapabilities:
                 }
             ]
         }
-        
+
         result = get_x402_extension_from_capabilities(manifest)
-        
+
         assert result is not None
         assert result.amount == "5000"
         assert result.token == "USDC"  # Default
@@ -133,9 +132,9 @@ class TestGetX402ExtensionFromCapabilities:
                 },
             ]
         }
-        
+
         result = get_x402_extension_from_capabilities(manifest)
-        
+
         assert result is not None
         assert result.amount == "10000"
 
@@ -151,9 +150,9 @@ class TestAddExtensionToCapabilities:
             required=True,
             params={"key": "value"},
         )
-        
+
         result = add_extension_to_capabilities(None, extension)
-        
+
         assert "extensions" in result
         assert len(result["extensions"]) == 1
         assert result["extensions"][0] == extension
@@ -166,18 +165,18 @@ class TestAddExtensionToCapabilities:
             required=False,
             params={},
         )
-        
+
         capabilities = {"extensions": [existing_ext]}
-        
+
         new_ext = AgentExtension(
             uri="https://example.com/new",
             description="New extension",
             required=True,
             params={"key": "value"},
         )
-        
+
         result = add_extension_to_capabilities(capabilities, new_ext)
-        
+
         assert "extensions" in result
         assert len(result["extensions"]) == 2
         assert result["extensions"][0] == existing_ext

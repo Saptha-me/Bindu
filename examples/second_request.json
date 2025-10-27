@@ -1,0 +1,44 @@
+{
+    "jsonrpc": "2.0",
+    "method": "message/send",
+    "params": {
+        "message": {
+            "role": "user",
+            "parts": [
+                {
+                    "kind": "text",
+                    "text": "provide sunset quote"
+                }
+            ],
+            "kind": "message",
+            "messageId": "550e8400-e29b-41d4-a716-446655440039",
+            "contextId": "550e8400-e29b-41d4-a716-446655440038",
+            "taskId": "550e8400-e29b-41d4-a716-446655440078",
+            "metadata": {
+                "x402.payment.status": "payment-submitted",
+                "x402.payment.payload": {
+                    "x402Version": 1,
+                    "scheme": "exact",
+                    "network": "base-sepolia",
+                    "payload": {
+                        "signature": "0x33fdb7aece033de4b437bd1ba2852fd2ffc845ee0a41b7fd6fa2b1385986ea455912b11919e02aeab92b6a84ab8558b48122387c090fa7139d51fb9ac0eea0961c",
+                        "authorization": {
+                            "from": "0x558AB94CB5249F94E217e2cCaa04E4E0fFBE879A",
+                            "to": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+                            "value": "100",
+                            "validAfter": "0",
+                            "validBefore": "1761514692",
+                            "nonce": "0xd53bc1edd7289c1e4e973cb04140b9fed1b434dfdd188203b27fad31cb353848"
+                        }
+                    }
+                }
+            }
+        },
+        "configuration": {
+            "acceptedOutputModes": [
+                "application/json"
+            ]
+        }
+    },
+    "id": "550e8400-e29b-41d4-a716-446655440025"
+}

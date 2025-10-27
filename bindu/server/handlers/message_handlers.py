@@ -29,6 +29,7 @@ from bindu.common.protocol.types import (
     Task,
     TaskSendParams,
 )
+from bindu.utils.coinbase_utils import generate_coinbase_jwt
 
 from ...utils.task_telemetry import trace_task_operation, track_active_task
 
@@ -64,8 +65,9 @@ class MessageHandlers:
         task: Task = await self.storage.submit_task(context_id, message)
 
         # Create payment requirements
+        # Use DID as resource identifier for semantic agent identity
         payment_req = x402_ext.create_payment_requirements(
-            resource=f"/agent/{self.manifest.name}",
+            resource=self.manifest.did_extension.did or self.manifest.id,
             description=f"Payment required to use {self.manifest.name}",
         )
 
@@ -96,6 +98,135 @@ class MessageHandlers:
         # Return updated task
         return await self.storage.load_task(task["id"])
 
+    async def _handle_payment_verification(
+        self, context_id: Any, message: dict[str, Any], task: Task
+    ) -> Task | None:
+        """Verify payment payload before allowing task execution.
+
+        Args:
+            context_id: Context ID for the task
+            message: User message with payment payload
+            task: Submitted task
+
+        Returns:
+            Task with payment-failed if verification fails, None if verification succeeds
+        """
+        from bindu.extensions.x402.utils import (
+            build_payment_failed_metadata,
+            build_payment_verified_metadata,
+        )
+        from bindu.settings import app_settings
+        from bindu.utils.worker_utils import MessageConverter
+        from x402.facilitator import FacilitatorClient
+        from x402.types import PaymentPayload, PaymentRequirements
+
+        message_metadata = message.get("metadata", {})
+        payload_data = message_metadata.get(app_settings.x402.meta_payload_key)
+
+        # Get payment requirements from task metadata
+        task_metadata = task.get("metadata", {})
+        required_data = task_metadata.get(app_settings.x402.meta_required_key)
+
+        if not required_data:
+            # No payment requirements found - this shouldn't happen
+            error_msg = MessageConverter.to_protocol_messages(
+                "Payment requirements not found", task["id"], context_id
+            )
+            await self.storage.update_task(
+                task["id"],
+                state="input-required",
+                new_messages=error_msg,
+                metadata=build_payment_failed_metadata("missing_requirements"),
+            )
+            return await self.storage.load_task(task["id"])
+
+        try:
+            # Parse payment payload
+            payment_payload = PaymentPayload(**payload_data)
+
+            # Select matching requirement
+            accepts = required_data.get("accepts", [])
+            if not accepts:
+                raise ValueError("No payment requirements in accepts array")
+
+            # Match by scheme and network, or use first
+            payment_requirement = None
+            for req in accepts:
+                if (
+                    req.get("scheme") == payment_payload.scheme
+                    and req.get("network") == payment_payload.network
+                ):
+                    if hasattr(PaymentRequirements, "model_validate"):
+                        payment_requirement = PaymentRequirements.model_validate(req)
+                    else:
+                        payment_requirement = PaymentRequirements(**req)
+                    break
+
+            if not payment_requirement:
+                # Use first requirement as fallback
+                if hasattr(PaymentRequirements, "model_validate"):
+                    payment_requirement = PaymentRequirements.model_validate(accepts[0])
+                else:
+                    payment_requirement = PaymentRequirements(**accepts[0])
+
+            # Verify payment with facilitator
+            facilitator = FacilitatorClient()
+            try:
+                jwt_token = generate_coinbase_jwt(
+                    request_method=self.manifest.coinbase_config.request_method,
+                    request_host=self.manifest.coinbase_config.request_host,
+                    request_path=self.manifest.coinbase_config.request_path,
+                )
+                verify_response = await facilitator.verify(
+                    payment_payload, payment_requirement, jwt_token
+                )
+            except Exception as e:
+                print(f"DEBUG facilitator.verify() exception: {e}")
+                print(f"DEBUG exception type: {type(e)}")
+                raise
+
+            print(f"DEBUG verify_response: {verify_response}")
+            print(f"DEBUG verify_response.is_valid: {verify_response.is_valid}")
+            if hasattr(verify_response, 'invalid_reason'):
+                print(f"DEBUG verify_response.invalid_reason: {verify_response.invalid_reason}")
+
+            if not verify_response.is_valid:
+                # Verification failed
+                error_msg = MessageConverter.to_protocol_messages(
+                    f"Payment verification failed: {verify_response.invalid_reason or 'unknown'}",
+                    task["id"],
+                    context_id,
+                )
+                await self.storage.update_task(
+                    task["id"],
+                    state="input-required",
+                    new_messages=error_msg,
+                    metadata=build_payment_failed_metadata(
+                        verify_response.invalid_reason or "verification_failed"
+                    ),
+                )
+                return await self.storage.load_task(task["id"])
+
+            # Verification succeeded - mark as verified and allow execution
+            await self.storage.update_task(
+                task["id"],
+                metadata=build_payment_verified_metadata(),
+            )
+            return None  # None means verification passed, proceed with execution
+
+        except Exception as e:
+            # Payment processing error
+            error_msg = MessageConverter.to_protocol_messages(
+                f"Payment processing error: {str(e)}", task["id"], context_id
+            )
+            await self.storage.update_task(
+                task["id"],
+                state="input-required",
+                new_messages=error_msg,
+                metadata=build_payment_failed_metadata(f"processing_error: {str(e)}"),
+            )
+            return await self.storage.load_task(task["id"])
+
     @trace_task_operation("send_message")
     @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
@@ -119,9 +250,27 @@ class MessageHandlers:
                 )
                 return SendMessageResponse(jsonrpc="2.0", id=request["id"], result=task)
 
-        # Normal flow (no payment required OR payment already provided)
+        # Submit task to storage
         task: Task = await self.storage.submit_task(context_id, message)
 
+        # If payment payload is present, verify it BEFORE scheduling
+        if has_payment_payload:
+            from bindu.settings import app_settings
+
+            payment_status = message_metadata.get(app_settings.x402.meta_status_key)
+            if payment_status == app_settings.x402.status_submitted:
+                # Verify payment
+                failed_task = await self._handle_payment_verification(
+                    context_id, message, task
+                )
+                if failed_task:
+                    # Verification failed - return task with error
+                    return SendMessageResponse(
+                        jsonrpc="2.0", id=request["id"], result=failed_task
+                    )
+                # Verification passed - continue to schedule task
+
+        # Schedule task for execution
         scheduler_params: TaskSendParams = TaskSendParams(
             task_id=task["id"],
             context_id=context_id,

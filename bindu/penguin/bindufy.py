@@ -336,6 +336,14 @@ def bindufy(
         logger.info(
             f"Total extensions in capabilities: {len(capabilities.get('extensions', []))}"
         )
+
+        # Check we have the right coinbase config
+        coinbase_config = validated_config.get("coinbase_config", {})
+        if coinbase_config:
+            logger.info(f"Coinbase config: path={coinbase_config.get('path')}, host={coinbase_config.get('host')}")
+        else:
+            logger.error("Coinbase config not found")
+            raise ValueError("Coinbase config not found")
         for ext in capabilities.get("extensions", []):
             logger.info(f"  - Extension: {ext.get('uri')}, params: {ext.get('params')}")
 
@@ -368,6 +376,7 @@ def bindufy(
         ),
         documentation_url=validated_config["documentation_url"],
         extra_metadata=validated_config["extra_metadata"],
+        coinbase_config=coinbase_config,
     )
 
     # Log manifest creation

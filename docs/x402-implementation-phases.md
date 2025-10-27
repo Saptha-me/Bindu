@@ -1,7 +1,7 @@
 # x402 Payment Flow Implementation - Phased Approach
 
-**Status:** 🚧 In Progress  
-**Last Updated:** 2025-10-26  
+**Status:** 🚧 In Progress
+**Last Updated:** 2025-10-26
 **Goal:** Implement proper x402 payment flow following official A2A x402 specification
 
 ---
@@ -53,8 +53,8 @@ Request 2: "hello" (with payment payload)
 
 ## 🎯 PHASE 1: Payment-Required Detection
 
-**Status:** ✅ COMPLETED (2025-10-26)  
-**Goal:** First request returns `payment-required` without executing agent  
+**Status:** ✅ COMPLETED (2025-10-26)
+**Goal:** First request returns `payment-required` without executing agent
 **Risk Level:** 🟢 Low (no impact on existing functionality)
 
 ### Changes Required
@@ -68,7 +68,7 @@ Request 2: "hello" (with payment payload)
 @dataclass
 class MessageHandlers:
     """Handles message-related RPC requests."""
-    
+
     scheduler: Scheduler
     storage: Storage[Any]
     manifest: Any | None = None  # ADD THIS
@@ -82,31 +82,31 @@ async def send_message(self, request: SendMessageRequest) -> SendMessageResponse
     """Send a message using the A2A protocol."""
     message = request["params"]["message"]
     context_id = self.context_id_parser(message.get("context_id"))
-    
+
     # NEW: Check if agent requires payment and no payment provided
     message_metadata = message.get("metadata", {})
     has_payment_payload = message_metadata.get("x402.payment.payload") is not None
-    
+
     if self.manifest and not has_payment_payload:
         # Check if agent has execution_cost configured
         x402_ext = getattr(self.manifest, 'x402_extension', None)
         if x402_ext:
             # Agent requires payment - return payment-required immediately
             task: Task = await self.storage.submit_task(context_id, message)
-            
+
             # Create payment requirements
             payment_req = x402_ext.create_payment_requirements(
                 resource=f"/agent/{self.manifest.name}",
                 description=f"Payment required to use {self.manifest.name}",
             )
-            
+
             # Build payment-required metadata
             from bindu.extensions.x402.utils import build_payment_required_metadata
             payment_metadata = build_payment_required_metadata({
                 "x402Version": 1,
                 "accepts": [payment_req.model_dump(by_alias=True)]
             })
-            
+
             # Create agent message explaining payment requirement
             from bindu.utils.worker_utils import MessageConverter
             agent_messages = MessageConverter.to_protocol_messages(
@@ -114,7 +114,7 @@ async def send_message(self, request: SendMessageRequest) -> SendMessageResponse
                 task["id"],
                 context_id
             )
-            
+
             # Update task to input-required with payment metadata
             await self.storage.update_task(
                 task["id"],
@@ -122,25 +122,25 @@ async def send_message(self, request: SendMessageRequest) -> SendMessageResponse
                 new_messages=agent_messages,
                 metadata=payment_metadata
             )
-            
+
             # Return task WITHOUT calling scheduler.run_task()
             task = await self.storage.load_task(task["id"])
             return SendMessageResponse(jsonrpc="2.0", id=request["id"], result=task)
-    
+
     # Normal flow (no payment required OR payment already provided)
     task: Task = await self.storage.submit_task(context_id, message)
-    
+
     scheduler_params: TaskSendParams = TaskSendParams(
         task_id=task["id"],
         context_id=context_id,
         message=message,
     )
-    
+
     # Add optional configuration parameters
     config = request["params"].get("configuration", {})
     if history_length := config.get("history_length"):
         scheduler_params["history_length"] = history_length
-    
+
     await self.scheduler.run_task(scheduler_params)
     return SendMessageResponse(jsonrpc="2.0", id=request["id"], result=task)
 ```
@@ -255,8 +255,8 @@ curl -X POST http://localhost:3773/a2a \
 
 ## 🔐 PHASE 2: Payment Verification & Execution
 
-**Status:** ⏳ Not Started (depends on Phase 1)  
-**Goal:** Second request with payment gets verified and executes  
+**Status:** ✅ COMPLETED (2025-10-26)
+**Goal:** Second request with payment gets verified and executes
 **Risk Level:** 🟡 Medium (modifies execution flow)
 
 ### Current State
@@ -285,10 +285,10 @@ if latest_meta.get(app_settings.x402.meta_status_key) == app_settings.x402.statu
     # Parse payment payload
     payment_payload_obj = self._parse_payment_payload(payload_data)
     payment_requirements_obj = self._select_requirement_from_required(...)
-    
+
     # Verify with facilitator
     verify_response = await facilitator_client.verify(...)
-    
+
     if not verify_response.is_valid:
         # Return payment-failed
         ...
@@ -302,7 +302,7 @@ if latest_meta.get(app_settings.x402.meta_status_key) == app_settings.x402.statu
 # This code already exists - just needs testing
 if is_paid_flow and payment_payload_obj and payment_requirements_obj:
     settle_response = await facilitator_client.settle(...)
-    
+
     if settle_response.success:
         # Mark payment-completed
         md = build_payment_completed_metadata(...)
@@ -327,11 +327,11 @@ def _select_requirement_from_required(
 ) -> PaymentRequirements:
     """Select matching payment requirement from accepts array."""
     from x402.types import PaymentRequirements
-    
+
     accepts = required_data.get("accepts", [])
     if not accepts:
         raise ValueError("No payment requirements in required data")
-    
+
     # For now, select first requirement
     # TODO: Match based on payment_payload.resource or other criteria
     return PaymentRequirements(**accepts[0])
@@ -417,14 +417,35 @@ curl -X POST http://localhost:3773/a2a \
 # Expected: Task returns to input-required with payment-failed
 ```
 
-### Success Criteria
+### Success Criteria ✅ ALL COMPLETED
 
-- ✅ Payment verification works correctly
+- ✅ Payment verification works correctly (in message_handlers.py)
 - ✅ Valid payments allow agent execution
 - ✅ Invalid payments return `payment-failed` error
-- ✅ Settlement happens after successful execution
+- ✅ Settlement happens after successful execution (in manifest_worker.py)
 - ✅ Settlement receipts are stored in metadata
 - ✅ Settlement failures are handled gracefully
+- ✅ Clean separation: verification in handlers, settlement in worker
+- ✅ Test wallet generation script created
+- ✅ Payment signing utilities created
+
+### Implementation Summary
+
+**Files Modified:**
+1. `bindu/server/handlers/message_handlers.py` - Added `_handle_payment_verification()` method
+2. `bindu/server/workers/manifest_worker.py` - Simplified to only handle settlement
+3. `examples/generate_test_wallet.py` - Generate test wallets and sign payments
+4. `examples/process_payment_response.py` - Process payment responses
+5. `examples/generate_second_request.py` - Quick request generation
+
+**Architecture:**
+- **Verification Gate** (message_handlers): Validates payment BEFORE scheduling task
+- **Settlement** (manifest_worker): Settles payment AFTER successful execution
+- **Clean Separation**: Each component has single responsibility
+
+**Documentation:**
+- `docs/x402-phase2-implementation.md` - Complete implementation guide
+- `docs/x402-testing-guide.md` - Testing guide with examples
 
 ### Rollback Plan
 
@@ -437,8 +458,8 @@ If Phase 2 fails:
 
 ## ✨ PHASE 3: Optimization & Polish
 
-**Status:** ⏳ Not Started (depends on Phase 2)  
-**Goal:** Clean code, better architecture, comprehensive tests  
+**Status:** ⏳ Not Started (depends on Phase 2)
+**Goal:** Clean code, better architecture, comprehensive tests
 **Risk Level:** 🟢 Low (refactoring only)
 
 ### Potential Improvements
@@ -471,58 +492,58 @@ from bindu.settings import app_settings
 @dataclass
 class PaymentManager:
     """Manages x402 payment verification and settlement."""
-    
+
     async def check_payment_required(
         self, manifest: Any, message_metadata: dict
     ) -> Optional[dict]:
         """Check if payment is required for this request.
-        
+
         Returns payment-required metadata if needed, None otherwise.
         """
         has_payment = message_metadata.get("x402.payment.payload") is not None
         if has_payment:
             return None
-        
+
         x402_ext = getattr(manifest, 'x402_extension', None)
         if not x402_ext:
             return None
-        
+
         # Create payment requirements
         payment_req = x402_ext.create_payment_requirements(
             resource=f"/agent/{manifest.name}",
             description=f"Payment required to use {manifest.name}",
         )
-        
+
         return build_payment_required_metadata({
             "x402Version": 1,
             "accepts": [payment_req.model_dump(by_alias=True)]
         })
-    
+
     async def verify_payment(
         self, payment_payload: PaymentPayload, payment_requirements: PaymentRequirements
     ) -> tuple[bool, Optional[str]]:
         """Verify payment with facilitator.
-        
+
         Returns (is_valid, error_reason).
         """
         facilitator = FacilitatorClient()
         verify_response = await facilitator.verify(payment_payload, payment_requirements)
-        
+
         if not verify_response.is_valid:
             return False, verify_response.invalid_reason or "verification_failed"
-        
+
         return True, None
-    
+
     async def settle_payment(
         self, payment_payload: PaymentPayload, payment_requirements: PaymentRequirements
     ) -> tuple[bool, dict]:
         """Settle payment on-chain.
-        
+
         Returns (success, metadata).
         """
         facilitator = FacilitatorClient()
         settle_response = await facilitator.settle(payment_payload, payment_requirements)
-        
+
         if settle_response.success:
             return True, build_payment_completed_metadata(
                 settle_response.model_dump(by_alias=True)
@@ -540,7 +561,7 @@ class PaymentManager:
 class ManifestWorker(Worker):
     manifest: AgentManifest
     payment_manager: PaymentManager = field(default_factory=PaymentManager)
-    
+
     async def run_task(self, params: TaskSendParams) -> None:
         # Use payment_manager instead of inline logic
         is_valid, error = await self.payment_manager.verify_payment(...)
@@ -654,13 +675,16 @@ payment requirements and can submit signed payments to use your agent.
 - [x] Code review
 - [x] Documentation complete
 
-### Phase 2: Payment Verification & Execution
-- [ ] Verify existing verification logic
-- [ ] Add missing helper methods
-- [ ] Test complete payment flow
-- [ ] Test invalid payment handling
-- [ ] Test settlement failures
-- [ ] Code review
+### Phase 2: Payment Verification & Execution ✅ COMPLETE
+- [x] Refactor verification to message_handlers.py
+- [x] Simplify manifest_worker.py to only handle settlement
+- [x] Create test wallet generation utilities
+- [x] Create payment signing utilities
+- [x] Test complete payment flow
+- [x] Test invalid payment handling
+- [x] Test settlement failures
+- [x] Code review
+- [x] Documentation complete
 
 ### Phase 3: Optimization & Polish
 - [ ] Extract PaymentManager (optional)

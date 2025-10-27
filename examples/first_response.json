@@ -1,0 +1,65 @@
+{
+    "jsonrpc": "2.0",
+    "id": "550e8400-e29b-41d4-a716-446655440024",
+    "result": {
+        "id": "550e8400-e29b-41d4-a716-446655440078",
+        "context_id": "550e8400-e29b-41d4-a716-446655440038",
+        "kind": "task",
+        "status": {
+            "state": "input-required",
+            "timestamp": "2025-10-26T20:37:52.472714+00:00"
+        },
+        "history": [
+            {
+                "message_id": "550e8400-e29b-41d4-a716-446655440038",
+                "context_id": "550e8400-e29b-41d4-a716-446655440038",
+                "task_id": "550e8400-e29b-41d4-a716-446655440078",
+                "kind": "message",
+                "parts": [
+                    {
+                        "kind": "text",
+                        "text": "provide sunset quote"
+                    }
+                ],
+                "role": "user"
+            },
+            {
+                "role": "assistant",
+                "parts": [
+                    {
+                        "kind": "text",
+                        "text": "Payment required: 0.00 USD (USDC on base-sepolia)"
+                    }
+                ],
+                "kind": "message",
+                "message_id": "48ad66aa-cd7f-48ef-9393-db1a060e0ab5",
+                "task_id": "550e8400-e29b-41d4-a716-446655440078",
+                "context_id": "550e8400-e29b-41d4-a716-446655440038"
+            }
+        ],
+        "metadata": {
+            "x402.payment.status": "payment-required",
+            "x402.payment.required": {
+                "x402Version": 1,
+                "accepts": [
+                    {
+                        "scheme": "exact",
+                        "network": "base-sepolia",
+                        "maxAmountRequired": "100",
+                        "resource": "did:bindu:raahul_at_saptha_me:first_agent:68c20e2abf404905afa74b32ad414fe0",
+                        "description": "Payment required to use first Agent",
+                        "mimeType": "application/json",
+                        "outputSchema": null,
+                        "payTo": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+                        "maxTimeoutSeconds": 600,
+                        "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                        "extra": {
+                            "name": "USDC",
+                            "version": "2"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

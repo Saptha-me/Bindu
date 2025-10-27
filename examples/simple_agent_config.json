@@ -10,6 +10,17 @@
   ],
   "capabilities": {
   },
+  "execution_cost": {
+    "amount": "$0.0001",
+    "token": "USDC",
+    "network": "base-sepolia",
+    "pay_to_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+  },
+  "coinbase_config": {
+    "method": "GET",
+    "path": "/platform/v2/evm/token-balances/base-sepolia/0x8fddcc0c5c993a1968b46787919cc34577d6dc5c",
+    "host": "api.cdp.coinbase.com"
+  },
   "agent_trust": "low",
   "kind": "agent",
   "debug_mode": true,

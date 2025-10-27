@@ -43,6 +43,9 @@ dependencies = [
     "x402>=0.2.1",
     "agno>=2.1.9",
     "openai>=2.6.0",
+    "web3>=7.13.0",
+    "eth-account>=0.13.7",
+    "cdp-sdk>=0.21.0",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -103,6 +103,7 @@ def create_manifest(
     enable_context_based_history: bool = False,
     documentation_url: str | None = None,
     extra_metadata: dict[str, Any] | None = None,
+    coinbase_config: dict[str, Any] | None = None,
 ) -> AgentManifest:
     """Create a protocol-compliant AgentManifest from any Python function.
 
@@ -137,6 +138,7 @@ def create_manifest(
         enable_context_based_history: Enable context-based history in agent execution (default: False).
         documentation_url: URL to agent documentation (optional).
         extra_metadata: Additional metadata dictionary to attach to the agent manifest (default: {}).
+        coinbase_config: Coinbase configuration dictionary (optional).
 
     Returns:
         AgentManifest: A protocol-compliant agent manifest with proper execution methods.
@@ -196,6 +198,7 @@ def create_manifest(
         oltp_endpoint=oltp_endpoint,
         oltp_service_name=oltp_service_name,
         documentation_url=documentation_url,
+        coinbase_config=coinbase_config,
     )
 
     # Create execution method based on function type

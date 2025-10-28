@@ -12,14 +12,14 @@
 This module provides middleware layers for the bindu framework including
 authentication and payment protocol enforcement.
 
-MIDDLEWARE TYPES:
+MIDDLEWARE STRUCTURE:
 
-1. AUTHENTICATION MIDDLEWARE:
+1. AUTHENTICATION MIDDLEWARE (auth/):
    - AuthMiddleware: Abstract base class for authentication
    - Auth0Middleware: Auth0 JWT validation (production-ready)
    - CognitoMiddleware: AWS Cognito JWT validation (template)
 
-2. PAYMENT MIDDLEWARE:
+2. PAYMENT MIDDLEWARE (x402/):
    - X402Middleware: x402 payment protocol enforcement
      Automatically handles payment verification and settlement for agents
      with execution_cost configured.
@@ -33,21 +33,18 @@ USAGE PATTERNS:
 
 from __future__ import annotations as _annotations
 
-# Export authentication implementations
-from .auth0 import Auth0Middleware
-from .base import AuthMiddleware
+# Export authentication implementations from auth/ subdirectory
+from .auth import Auth0Middleware, AuthMiddleware, CognitoMiddleware
 
-# Export payment middleware
-from .x402_middleware import X402Middleware
-
-# from .cognito import CognitoMiddleware # TODO: Implement Cognito authentication
+# Export payment middleware from x402/ subdirectory
+from .x402 import X402Middleware
 
 __all__ = [
     # Base interface
     "AuthMiddleware",
     # Authentication implementations
     "Auth0Middleware",
-    # "CognitoMiddleware",
+    "CognitoMiddleware",
     # Payment middleware
     "X402Middleware",
 ]

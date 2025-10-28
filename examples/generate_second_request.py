@@ -26,13 +26,16 @@ timestamp = datetime.now(timezone.utc).isoformat()
 
 # Create EIP3009 authorization structure
 import secrets
-random_nonce = "0x" + secrets.token_hex(32)  # Generate random 32-byte nonce
+# Generate 20-byte nonce (40 hex chars) to match Coinbase API spec
+random_nonce = "0x" + secrets.token_hex(20)
+# Use Unix timestamps for validAfter and validBefore
+current_time = int(datetime.now(timezone.utc).timestamp())
 authorization = {
     "from": payer_address,
     "to": accepts["payTo"],
     "value": accepts["maxAmountRequired"],
-    "validAfter": "0",
-    "validBefore": str(int(datetime.now(timezone.utc).timestamp()) + 3600),  # 1 hour from now
+    "validAfter": str(current_time - 60),  # Valid from 1 minute ago
+    "validBefore": str(current_time + 3600),  # Valid for 1 hour
     "nonce": random_nonce,
 }
 
@@ -127,10 +130,13 @@ with open("examples/second_request.json", "w") as f:
 
 print("✅ Second request generated: examples/second_request.json")
 print(f"\n📝 Payment Details:")
-print(f"   Payer:     {payer_address}")
-print(f"   Amount:    {accepts['maxAmountRequired']} (0.01 USDC)")
-print(f"   Network:   {accepts['network']}")
-print(f"   Signature: {signed.signature.hex()[:20]}...")
+print(f"   Payer:        {payer_address}")
+print(f"   Amount:       {accepts['maxAmountRequired']} (0.01 USDC)")
+print(f"   Network:      {accepts['network']}")
+print(f"   ValidAfter:   {authorization['validAfter']}")
+print(f"   ValidBefore:  {authorization['validBefore']}")
+print(f"   Nonce:        {random_nonce[:22]}... (20 bytes)")
+print(f"   Signature:    {signed.signature.hex()[:20]}...")
 print(f"\n🚀 Curl command:")
 print(f"curl --location 'http://localhost:8030/' \\")
 print(f"--header 'Content-Type: application/json' \\")

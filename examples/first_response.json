@@ -7,7 +7,7 @@
         "kind": "task",
         "status": {
             "state": "input-required",
-            "timestamp": "2025-10-26T20:37:52.472714+00:00"
+            "timestamp": "2025-10-27T16:26:15.153543+00:00"
         },
         "history": [
             {
@@ -32,7 +32,7 @@
                     }
                 ],
                 "kind": "message",
-                "message_id": "48ad66aa-cd7f-48ef-9393-db1a060e0ab5",
+                "message_id": "2fe92d6c-ce7a-4e09-a86b-11dfb3732ef7",
                 "task_id": "550e8400-e29b-41d4-a716-446655440078",
                 "context_id": "550e8400-e29b-41d4-a716-446655440038"
             }
@@ -46,7 +46,7 @@
                         "scheme": "exact",
                         "network": "base-sepolia",
                         "maxAmountRequired": "100",
-                        "resource": "did:bindu:raahul_at_saptha_me:first_agent:68c20e2abf404905afa74b32ad414fe0",
+                        "resource": "did:bindu:raahul_at_saptha_me:first_agent:32f85dfb8bc34a35affbb9e3ffe47946",
                         "description": "Payment required to use first Agent",
                         "mimeType": "application/json",
                         "outputSchema": null,

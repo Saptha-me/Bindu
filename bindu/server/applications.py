@@ -19,7 +19,7 @@ from __future__ import annotations as _annotations
 
 from contextlib import asynccontextmanager
 from functools import partial
-from typing import Any, AsyncIterator, Callable, Dict, Sequence
+from typing import Any, AsyncIterator, Callable, Sequence
 from uuid import UUID, uuid4
 
 from starlette.applications import Starlette
@@ -250,9 +250,11 @@ class BinduApplication(Starlette):
             # Copy from middleware requirements but change resource URL
             self._payment_requirements = []
             for req in payment_requirements_for_middleware:
-                req_dict = dict(req)
-                req_dict["resource"] = f"{self.manifest.url}/payment-capture"
-                self._payment_requirements.append(PaymentRequirements(**req_dict))
+                # Use model_copy with update for Pydantic models
+                updated_req = req.model_copy(
+                    update={"resource": f"{self.manifest.url}/payment-capture"}
+                )
+                self._payment_requirements.append(updated_req)
 
             self._paywall_config = PaywallConfig(
                 cdp_client_key=os.getenv("CDP_CLIENT_KEY") or "",
@@ -262,7 +264,7 @@ class BinduApplication(Starlette):
 
         # In-memory not a good practice, but for development purposes
         # in production, use a database or redis
-        self.payment_sessions: Dict[str, Dict[str, Any]] = {}
+        self.payment_sessions: dict[str, dict[str, Any]] = {}
 
         # Register all routes
         self._register_routes()

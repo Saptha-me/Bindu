@@ -103,7 +103,7 @@ async def payment_capture_endpoint(
         # Payment completed - capture token
         try:
             payment_dict = json.loads(safe_base64_decode(payment_token))
-            payment_payload = PaymentPayload(**payment_dict)
+            payment_payload = PaymentPayload.model_validate(payment_dict)
 
             # Store payment in session (NOT consumed yet!)
             app._payment_session_manager.complete_session(session_id, payment_payload)
@@ -129,14 +129,14 @@ async def payment_capture_endpoint(
         )
 
     # Add session_id to resource URL
-    from x402.types import PaymentRequirements
 
     payment_reqs_with_session = []
     for req in app._payment_requirements:
-        req_dict = dict(req)
-        # Append session_id to resource URL
-        req_dict["resource"] = f"{req_dict['resource']}?session_id={session_id}"
-        payment_reqs_with_session.append(PaymentRequirements(**req_dict))
+        # Append session_id to resource URL using model_copy
+        updated_req = req.model_copy(
+            update={"resource": f"{req.resource}?session_id={session_id}"}
+        )
+        payment_reqs_with_session.append(updated_req)
 
     html_content = get_paywall_html(
         error="Complete payment to continue",

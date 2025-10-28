@@ -142,7 +142,7 @@ class X402Middleware(BaseHTTPMiddleware):
         # Decode and parse payment payload
         try:
             payment_dict = json.loads(safe_base64_decode(payment_header))
-            payment_payload = PaymentPayload(**payment_dict)
+            payment_payload = PaymentPayload.model_validate(payment_dict)
         except Exception as e:
             logger.warning(
                 f"Invalid X-PAYMENT header from {request.client.host if request.client else 'unknown'}: {e}"

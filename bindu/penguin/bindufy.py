@@ -328,7 +328,9 @@ def bindufy(
         logger.info(f"X402 extension created: {x402_extension}")
 
         # Add x402 extension to capabilities
-        capabilities = add_extension_to_capabilities(capabilities, x402_extension)
+        capabilities = add_extension_to_capabilities(
+            capabilities, x402_extension.agent_extension
+        )
 
     # Create agent manifest with loaded skills
     _manifest = create_manifest(

@@ -19,7 +19,7 @@ from __future__ import annotations as _annotations
 
 from contextlib import asynccontextmanager
 from functools import partial
-from typing import AsyncIterator, Callable, Sequence
+from typing import Any, AsyncIterator, Callable, Dict, Sequence
 from uuid import UUID, uuid4
 
 from starlette.applications import Starlette

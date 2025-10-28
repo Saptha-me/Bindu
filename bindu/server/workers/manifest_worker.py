@@ -97,9 +97,11 @@ class ManifestWorker(Worker):
            - auth-required → Message only, task stays open
            - normal → Message + Artifact, task completes
         5. Update storage with appropriate state and content
+        6. Settle payment if task completes successfully (x402 flow)
 
         Args:
-            params: Task execution parameters containing task_id, context_id, message
+            params: Task execution parameters containing task_id, context_id, message, 
+                   and optional payment_context from middleware
 
         Raises:
             ValueError: If task not found
@@ -109,6 +111,9 @@ class ManifestWorker(Worker):
         task = await self.storage.load_task(params["task_id"])
         if task is None:
             raise ValueError(f"Task {params['task_id']} not found")
+        
+        # Extract payment context if available (from x402 middleware)
+        payment_context = params.get("payment_context")
 
         await TaskStateManager.validate_task_state(task)
 
@@ -215,7 +220,7 @@ class ManifestWorker(Worker):
                         "task.state_changed",
                         attributes={"from_state": "working", "to_state": state},
                     )
-                await self._handle_terminal_state(task, results, state)
+                await self._handle_terminal_state(task, results, state, payment_context=payment_context)
 
         except Exception as e:
             # Handle task failure with error message
@@ -386,6 +391,7 @@ class ManifestWorker(Worker):
         results: Any,
         state: TaskState = "completed",
         additional_metadata: dict[str, Any] | None = None,
+        payment_context: dict[str, Any] | None = None,
     ) -> None:
         """Handle terminal task states (completed/failed).
 
@@ -398,11 +404,17 @@ class ManifestWorker(Worker):
         - Agent messages are added to task.history
         - Artifacts are added to task.artifacts (completed only)
         - Task becomes immutable after reaching terminal state
+        
+        X402 Payment Flow:
+        - If payment_context is provided and state is completed, settle payment
+        - Payment settlement happens ONLY when task successfully completes
 
         Args:
             task: Task dict being finalized
             results: Agent execution results
             state: Terminal state (completed or failed)
+            additional_metadata: Optional metadata to attach to task
+            payment_context: Optional payment details from x402 middleware
 
         Raises:
             ValueError: If state is not a terminal state
@@ -420,6 +432,14 @@ class ManifestWorker(Worker):
                 results, task["id"], task["context_id"]
             )
             artifacts = self.build_artifacts(results)
+            
+            # Handle payment settlement if payment context is available
+            if payment_context:
+                settlement_metadata = await self._settle_payment(payment_context)
+                if additional_metadata:
+                    additional_metadata.update(settlement_metadata)
+                else:
+                    additional_metadata = settlement_metadata
 
             await self.storage.update_task(
                 task["id"],
@@ -468,6 +488,56 @@ class ManifestWorker(Worker):
             task["id"], state="failed", new_messages=error_message
         )
         await self._notify_lifecycle(task["id"], task["context_id"], "failed", True)
+
+    async def _settle_payment(self, payment_context: dict[str, Any]) -> dict[str, Any]:
+        """Settle payment after successful task completion.
+        
+        This method is called only when a task completes successfully with payment context.
+        It calls the facilitator to settle the payment and returns metadata to attach to the task.
+        
+        Args:
+            payment_context: Payment details from x402 middleware containing:
+                - payment_payload: The payment payload from the client
+                - payment_requirements: The payment requirements for this agent
+                - verify_response: The verification response from facilitator
+        
+        Returns:
+            Metadata dict containing settlement information to attach to task
+        """
+        from x402.facilitator import FacilitatorClient, FacilitatorConfig
+        
+        try:
+            payment_payload = payment_context["payment_payload"]
+            payment_requirements = payment_context["payment_requirements"]
+            
+            # Initialize facilitator client
+            facilitator_config = FacilitatorConfig()
+            facilitator = FacilitatorClient(facilitator_config)
+            
+            # Settle payment
+            logger.info(f"Settling payment for completed task")
+            settle_response = await facilitator.settle(payment_payload, payment_requirements)
+            
+            if settle_response.success:
+                logger.info(f"Payment settled successfully")
+                return {
+                    app_settings.x402.meta_status_key: app_settings.x402.status_completed,
+                    app_settings.x402.meta_receipts_key: [settle_response.model_dump()],
+                }
+            else:
+                error_reason = settle_response.error_reason or "Unknown error"
+                logger.error(f"Payment settlement failed: {error_reason}")
+                return {
+                    app_settings.x402.meta_status_key: app_settings.x402.status_failed,
+                    app_settings.x402.meta_error_key: error_reason,
+                }
+        
+        except Exception as e:
+            logger.error(f"Error settling payment: {e}", exc_info=True)
+            return {
+                app_settings.x402.meta_status_key: app_settings.x402.status_failed,
+                app_settings.x402.meta_error_key: str(e),
+            }
 
     async def _notify_lifecycle(
         self, task_id: UUID, context_id: UUID, state: str, final: bool

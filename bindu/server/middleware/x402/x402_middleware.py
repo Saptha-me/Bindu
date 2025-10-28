@@ -39,6 +39,7 @@ from x402.types import (
 
 from bindu.utils.logging import get_logger
 from bindu.extensions.x402 import X402AgentExtension
+from bindu.settings import app_settings
 
 if TYPE_CHECKING:
     from bindu.common.models import AgentManifest
@@ -102,6 +103,32 @@ class X402Middleware(BaseHTTPMiddleware):
         ):
             return await call_next(request)
 
+        # Check if the JSON-RPC method requires payment
+        # Only methods in app_settings.x402.protected_methods require payment
+        try:
+            body = await request.body()
+            request_data = json.loads(body.decode("utf-8"))
+            method = request_data.get("method", "")
+            
+            # Recreate request with consumed body
+            from starlette.requests import Request as StarletteRequest
+            
+            async def receive():
+                return {"type": "http.request", "body": body}
+            
+            request = StarletteRequest(request.scope, receive)
+            
+            # Check if method requires payment (configured in settings)
+            if method not in app_settings.x402.protected_methods:
+                logger.debug(f"Method '{method}' does not require payment, allowing request")
+                return await call_next(request)
+            
+            logger.debug(f"Method '{method}' requires payment, checking X-PAYMENT header")
+                
+        except Exception as e:
+            logger.warning(f"Error parsing request body: {e}")
+            return await call_next(request)
+
         # Check for X-PAYMENT header
         payment_header = request.headers.get("X-PAYMENT", "")
 
@@ -148,38 +175,14 @@ class X402Middleware(BaseHTTPMiddleware):
             f"Payment verified for {request.url.path} from {request.client.host if request.client else 'unknown'}"
         )
 
-        # Attach payment details to request for later use
+        # Attach payment details to request for later use by the worker
         request.state.payment_payload = payment_payload
         request.state.payment_requirements = selected_payment_requirements
         request.state.verify_response = verify_response
 
         # Process the request (execute agent)
+        # Payment settlement will be handled by ManifestWorker when task completes
         response = await call_next(request)
-
-        # Only settle payment if response is successful (2xx status code)
-        if 200 <= response.status_code < 300:
-            try:
-                settle_response = await self.facilitator.settle(
-                    payment_payload, selected_payment_requirements
-                )
-
-                if settle_response.success:
-                    # Add payment confirmation to response headers
-                    response.headers["X-PAYMENT-RESPONSE"] = base64.b64encode(
-                        settle_response.model_dump_json(by_alias=True).encode("utf-8")
-                    ).decode("utf-8")
-                    
-                    logger.info(
-                        f"Payment settled for {request.url.path} from {request.client.host if request.client else 'unknown'}"
-                    )
-                else:
-                    error_reason = settle_response.error_reason or "Unknown error"
-                    logger.error(f"Payment settlement failed: {error_reason}")
-                    return self._create_402_response(f"Settlement failed: {error_reason}")
-
-            except Exception as e:
-                logger.error(f"Payment settlement error: {e}", exc_info=True)
-                return self._create_402_response(f"Settlement error: {str(e)}")
 
         return response
 
@@ -195,7 +198,7 @@ class X402Middleware(BaseHTTPMiddleware):
         # Use the official x402PaymentRequiredResponse type
         response_data = x402PaymentRequiredResponse(
             x402_version=x402_VERSION,
-            accepts=self.payment_requirements,
+            accepts=self._payment_requirements,
             error=error,
         ).model_dump(by_alias=True)
         

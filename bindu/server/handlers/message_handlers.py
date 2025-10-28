@@ -54,7 +54,8 @@ class MessageHandlers:
         """Send a message using the A2A protocol.
         
         Note: Payment enforcement is handled by X402Middleware before this method is called.
-        If the request reaches here, payment has already been verified and settled.
+        If the request reaches here, payment has already been verified.
+        Settlement will be handled by ManifestWorker when task completes.
         """
         message = request["params"]["message"]
         context_id = self.context_id_parser(message.get("context_id"))
@@ -73,6 +74,14 @@ class MessageHandlers:
         config = request["params"].get("configuration", {})
         if history_length := config.get("history_length"):
             scheduler_params["history_length"] = history_length
+
+        # Pass payment context from message metadata to worker if available
+        # This is injected by the endpoint when x402 middleware verifies payment
+        message_metadata = message.get("metadata", {})
+        if "_payment_context" in message_metadata:
+            scheduler_params["payment_context"] = message_metadata["_payment_context"]
+            # Remove from message metadata to keep it clean (internal use only)
+            del message["metadata"]["_payment_context"]
 
         await self.scheduler.run_task(scheduler_params)
         return SendMessageResponse(jsonrpc="2.0", id=request["id"], result=task)

@@ -102,7 +102,7 @@ def create_manifest(
     enable_system_message: bool = True,
     enable_context_based_history: bool = False,
     documentation_url: str | None = None,
-    extra_metadata: dict[str, Any] | None = None
+    extra_metadata: dict[str, Any] | None = None,
 ) -> AgentManifest:
     """Create a protocol-compliant AgentManifest from any Python function.
 
@@ -195,7 +195,7 @@ def create_manifest(
         telemetry=telemetry,
         oltp_endpoint=oltp_endpoint,
         oltp_service_name=oltp_service_name,
-        documentation_url=documentation_url
+        documentation_url=documentation_url,
     )
 
     # Create execution method based on function type

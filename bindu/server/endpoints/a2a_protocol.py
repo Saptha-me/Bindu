@@ -65,7 +65,7 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
             )
 
         handler = getattr(app.task_manager, handler_name)
-        
+
         # Pass payment details from middleware to handler if available
         # Payment context is passed through the metadata field in params
         if hasattr(request.state, "payment_payload") and method == "message/send":
@@ -74,14 +74,14 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
                 message = a2a_request["params"]["message"]
                 if "metadata" not in message:
                     message["metadata"] = {}
-                
+
                 # Add payment context to message metadata (internal use only)
                 message["metadata"]["_payment_context"] = {
                     "payment_payload": request.state.payment_payload,
                     "payment_requirements": request.state.payment_requirements,
                     "verify_response": request.state.verify_response,
                 }
-        
+
         jsonrpc_response = await handler(a2a_request)
 
         logger.debug(f"A2A response to {client_ip}: method={method}, id={request_id}")

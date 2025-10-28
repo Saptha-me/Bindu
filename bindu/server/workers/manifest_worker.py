@@ -100,7 +100,7 @@ class ManifestWorker(Worker):
         6. Settle payment if task completes successfully (x402 flow)
 
         Args:
-            params: Task execution parameters containing task_id, context_id, message, 
+            params: Task execution parameters containing task_id, context_id, message,
                    and optional payment_context from middleware
 
         Raises:
@@ -111,7 +111,7 @@ class ManifestWorker(Worker):
         task = await self.storage.load_task(params["task_id"])
         if task is None:
             raise ValueError(f"Task {params['task_id']} not found")
-        
+
         # Extract payment context if available (from x402 middleware)
         payment_context = params.get("payment_context")
 
@@ -220,7 +220,9 @@ class ManifestWorker(Worker):
                         "task.state_changed",
                         attributes={"from_state": "working", "to_state": state},
                     )
-                await self._handle_terminal_state(task, results, state, payment_context=payment_context)
+                await self._handle_terminal_state(
+                    task, results, state, payment_context=payment_context
+                )
 
         except Exception as e:
             # Handle task failure with error message
@@ -404,7 +406,7 @@ class ManifestWorker(Worker):
         - Agent messages are added to task.history
         - Artifacts are added to task.artifacts (completed only)
         - Task becomes immutable after reaching terminal state
-        
+
         X402 Payment Flow:
         - If payment_context is provided and state is completed, settle payment
         - Payment settlement happens ONLY when task successfully completes
@@ -432,7 +434,7 @@ class ManifestWorker(Worker):
                 results, task["id"], task["context_id"]
             )
             artifacts = self.build_artifacts(results)
-            
+
             # Handle payment settlement if payment context is available
             if payment_context:
                 settlement_metadata = await self._settle_payment(payment_context)
@@ -491,35 +493,37 @@ class ManifestWorker(Worker):
 
     async def _settle_payment(self, payment_context: dict[str, Any]) -> dict[str, Any]:
         """Settle payment after successful task completion.
-        
+
         This method is called only when a task completes successfully with payment context.
         It calls the facilitator to settle the payment and returns metadata to attach to the task.
-        
+
         Args:
             payment_context: Payment details from x402 middleware containing:
                 - payment_payload: The payment payload from the client
                 - payment_requirements: The payment requirements for this agent
                 - verify_response: The verification response from facilitator
-        
+
         Returns:
             Metadata dict containing settlement information to attach to task
         """
         from x402.facilitator import FacilitatorClient, FacilitatorConfig
-        
+
         try:
             payment_payload = payment_context["payment_payload"]
             payment_requirements = payment_context["payment_requirements"]
-            
+
             # Initialize facilitator client
             facilitator_config = FacilitatorConfig()
             facilitator = FacilitatorClient(facilitator_config)
-            
+
             # Settle payment
-            logger.info(f"Settling payment for completed task")
-            settle_response = await facilitator.settle(payment_payload, payment_requirements)
-            
+            logger.info("Settling payment for completed task")
+            settle_response = await facilitator.settle(
+                payment_payload, payment_requirements
+            )
+
             if settle_response.success:
-                logger.info(f"Payment settled successfully")
+                logger.info("Payment settled successfully")
                 return {
                     app_settings.x402.meta_status_key: app_settings.x402.status_completed,
                     app_settings.x402.meta_receipts_key: [settle_response.model_dump()],
@@ -531,7 +535,7 @@ class ManifestWorker(Worker):
                     app_settings.x402.meta_status_key: app_settings.x402.status_failed,
                     app_settings.x402.meta_error_key: error_reason,
                 }
-        
+
         except Exception as e:
             logger.error(f"Error settling payment: {e}", exc_info=True)
             return {

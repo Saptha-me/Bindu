@@ -259,7 +259,7 @@ class X402Settings(BaseSettings):
 
     # Extension URI
     extension_uri: str = "https://github.com/google-a2a/a2a-x402/v0.1"
-    
+
     # Protected methods that require payment
     # Similar to auth's public_endpoints, this defines which JSON-RPC methods need payment
     protected_methods: list[str] = [

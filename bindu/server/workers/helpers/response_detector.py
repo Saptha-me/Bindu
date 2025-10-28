@@ -16,12 +16,12 @@ from bindu.settings import app_settings
 
 class ResponseDetector:
     """Detects and parses agent responses for state transitions.
-    
+
     This class provides static methods for:
     - Parsing structured JSON responses
     - Determining task state from agent responses
     - Handling both structured and unstructured responses
-    
+
     All methods are stateless and can be used independently.
     """
 

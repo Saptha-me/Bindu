@@ -6,8 +6,11 @@ and integrates with the x402 protocol for agent monetization.
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import Optional
 
+from bindu.common.protocol.types import AgentExtension
+from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
 logger = get_logger("bindu.x402_agent_extension")
@@ -61,4 +64,15 @@ class X402AgentExtension:
             f"token={self.token}, network={self.network}, "
             f"pay_to_address={self.pay_to_address[:10]}..., "
             f"required={self.required})"
+        )
+
+    @cached_property
+    def agent_extension(self) -> AgentExtension:
+        """Get agent extension configuration for capabilities.
+
+        Returns:
+            AgentExtension TypedDict with x402 extension URI
+        """
+        return AgentExtension(
+            uri=app_settings.x402.extension_uri,
         )

@@ -37,9 +37,12 @@ from .endpoints import (
     agent_card_endpoint,
     agent_run_endpoint,
     did_resolve_endpoint,
+    payment_capture_endpoint,
+    payment_status_endpoint,
     skill_detail_endpoint,
     skill_documentation_endpoint,
     skills_list_endpoint,
+    start_payment_session_endpoint,
 )
 from .middleware import Auth0Middleware
 from .scheduler.memory_scheduler import InMemoryScheduler
@@ -128,6 +131,41 @@ class BinduApplication(Starlette):
         # Add X402 payment middleware if agent has execution_cost configured
         from bindu.utils import get_x402_extension_from_capabilities
         x402_ext = get_x402_extension_from_capabilities(manifest)
+        
+        # Initialize payment requirements before middleware (needed by both middleware and endpoints)
+        payment_requirements_for_middleware = None
+        if x402_ext:
+            from x402.common import process_price_to_atomic_amount
+            from x402.types import PaymentRequirements, SupportedNetworks
+            from typing import cast
+            
+            max_amount_required, asset_address, eip712_domain = process_price_to_atomic_amount(
+                x402_ext.amount, x402_ext.network
+            )
+            
+            payment_requirements_for_middleware = [
+                PaymentRequirements(
+                    scheme="exact",
+                    network=cast(SupportedNetworks, x402_ext.network),
+                    asset=asset_address,
+                    max_amount_required=max_amount_required,
+                    resource=f"{manifest.url}/",  # Add trailing slash for proper URL format
+                    description=f"Payment required to use {manifest.name}",
+                    mime_type="",
+                    pay_to=x402_ext.pay_to_address,
+                    max_timeout_seconds=60,
+                    output_schema={
+                        "input": {
+                            "type": "http",
+                            "method": "POST",
+                            "discoverable": True,
+                        },
+                        "output": {},
+                    },
+                    extra=eip712_domain,
+                )
+            ]
+        
         if x402_ext:
             from bindu.utils.logging import get_logger
             from .middleware import X402Middleware
@@ -147,6 +185,7 @@ class BinduApplication(Starlette):
                     url=app_settings.x402.facilitator_url
                 ),
                 x402_ext=x402_ext,
+                payment_requirements=payment_requirements_for_middleware,
             )
             middleware_list.insert(0, x402_middleware)
         
@@ -192,6 +231,31 @@ class BinduApplication(Starlette):
         self._scheduler = scheduler
         self._agent_card_json_schema: bytes | None = None
         self._x402_ext = x402_ext
+        self._payment_session_manager = None
+        self._payment_requirements = None
+        self._paywall_config = None
+
+        # Initialize payment session manager and payment config if x402 enabled
+        if x402_ext and payment_requirements_for_middleware:
+            from bindu.server.middleware.x402.payment_session_manager import PaymentSessionManager
+            from x402.types import PaymentRequirements, PaywallConfig
+            import os
+            
+            self._payment_session_manager = PaymentSessionManager()
+            
+            # Create payment requirements for endpoints (with /payment-capture resource)
+            # Copy from middleware requirements but change resource URL
+            self._payment_requirements = []
+            for req in payment_requirements_for_middleware:
+                req_dict = dict(req)
+                req_dict['resource'] = f"{self.manifest.url}/payment-capture"
+                self._payment_requirements.append(PaymentRequirements(**req_dict))
+            
+            self._paywall_config = PaywallConfig(
+                cdp_client_key=os.getenv("CDP_CLIENT_KEY") or "",
+                app_name=f"{manifest.name} - x402 Payment",
+                app_logo="/assets/light.svg",
+            )
 
         # In-memory not a good practice, but for development purposes
         # in production, use a database or redis
@@ -238,7 +302,27 @@ class BinduApplication(Starlette):
 
         if self._x402_ext:
             self._register_payment_endpoints()
-    
+
+    def _register_payment_endpoints(self) -> None:
+        """Register payment session endpoints."""
+        self._add_route(
+            "/api/start-payment-session",
+            start_payment_session_endpoint,
+            ["POST"],
+            with_app=True,
+        )
+        self._add_route(
+            "/payment-capture",
+            payment_capture_endpoint,
+            ["GET"],
+            with_app=True,
+        )
+        self._add_route(
+            "/api/payment-status/{session_id}",
+            payment_status_endpoint,
+            ["GET"],
+            with_app=True,
+        )
 
     def _add_route(
         self,

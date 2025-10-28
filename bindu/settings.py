@@ -457,6 +457,7 @@ class AuthSettings(BaseSettings):
         "/agent.html",
         "/chat.html",
         "/storage.html",
+        "/payment-capture",  # x402 payment capture page (browser-based)
         "/js/*",
         "/css/*",
     ]

@@ -36,7 +36,6 @@ import base58
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from bindu.common.protocol.types import AgentExtension
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
@@ -81,21 +80,6 @@ class DIDAgentExtension:
             public_key_path (str): Full path to the public key PEM file
             did (str): The agent's Decentralized Identifier (computed from public key)
             metadata (dict): Additional metadata included in the DID document
-
-        Example:
-            >>> from pathlib import Path
-            >>> from uuid import uuid4
-            >>> did_ext = DIDAgentExtension(
-            ...     recreate_keys=False,
-            ...     key_dir=Path(".keys"),
-            ...     author="alice@example.com",
-            ...     agent_name="travel_agent",
-            ...     agent_id=str(uuid4()),
-            ...     key_password="env:AGENT_KEY_PASSWORD"
-            ... )
-            >>> did_ext.generate_and_save_key_pair()
-            >>> print(did_ext.did)
-            'did:bindu:alice_at_example_com:travel_agent:550e8400-e29b-41d4-a716-446655440000'
         """
         # Store key directory and paths
         self._key_dir = key_dir
@@ -112,6 +96,14 @@ class DIDAgentExtension:
 
         # Store additional metadata that will be included in DID document
         self.metadata: Dict[str, Any] = {}
+
+    def __repr__(self) -> str:
+        """Return string representation of the extension."""
+        did_preview = self.did[:20] + "..." if len(self.did) > 20 else self.did
+        return (
+            f"DIDAgentExtension(did={did_preview}, "
+            f"author={self.author}, agent_name={self.agent_name})"
+        )
 
     def _generate_key_pair_data(self) -> tuple[bytes, bytes]:
         """Generate key pair and return PEM data.
@@ -350,17 +342,3 @@ class DIDAgentExtension:
             ],
         }
         return did_doc
-
-    @cached_property
-    def agent_extension(self) -> AgentExtension:
-        """Get agent extension configuration for capabilities."""
-        return AgentExtension(
-            uri=app_settings.did.extension_uri,
-            description=app_settings.did.extension_description,
-            required=False,
-            params={
-                "did": self.did,
-                "resolver_endpoint": app_settings.did.resolver_endpoint,
-                "info_endpoint": app_settings.did.info_endpoint,
-            },
-        )

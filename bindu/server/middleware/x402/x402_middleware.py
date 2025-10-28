@@ -65,59 +65,23 @@ class X402Middleware(BaseHTTPMiddleware):
                  app,
                  manifest: AgentManifest,
                  facilitator_config: FacilitatorConfig,
-                 x402_ext: X402AgentExtension):
+                 x402_ext: X402AgentExtension,
+                 payment_requirements: list[PaymentRequirements]):
         """Initialize X402 middleware.
         
         Args:
             app: ASGI application
             manifest: Agent manifest with x402 configuration
+            facilitator_config: Facilitator configuration
             x402_ext: X402AgentExtension instance
+            payment_requirements: Pre-configured payment requirements from application
         """
         super().__init__(app)
         self.manifest = manifest
         self.x402_ext = x402_ext
-        
-        supported_networks = get_args(SupportedNetworks)
-        if self.x402_ext.network not in supported_networks:
-            raise ValueError(
-                f"Unsupported network: {self.x402_ext.network}. Must be one of: {supported_networks}"
-            )
-
         self.facilitator = FacilitatorClient(facilitator_config)
-        self.max_amount_required, self.asset_address, self.eip712_domain = (
-            process_price_to_atomic_amount(self.x402_ext.amount, self.x402_ext.network)
-        )
-
-        self.payment_requirements = [
-            PaymentRequirements(
-                scheme="exact",
-                network=cast(SupportedNetworks, self.x402_ext.network),
-                asset=self.asset_address,
-                max_amount_required=self.max_amount_required,
-                resource=manifest.did_extension.did,
-                description=f"Payment required to use {manifest.name}",
-                mime_type="",
-                pay_to=self.x402_ext.pay_to_address,
-                max_timeout_seconds=60,
-                # TODO: Rename output_schema to request_structure
-                output_schema={
-                    "input": {
-                        "type": "http",
-                        "method": "POST",
-                        "discoverable": True,
-                    },
-                    "output": {},
-                },
-                extra=self.eip712_domain,
-            )
-        ]
-
-        self.paywall_config=PaywallConfig(
-            cdp_client_key=os.getenv("CDP_CLIENT_KEY") or "",
-            app_name="x402 Bindu Example",
-            app_logo="/assets/light.svg",
-        )
-
+        self._payment_requirements = payment_requirements
+        
         self.protected_path = "/"  # A2A protocol endpoint
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -144,18 +108,6 @@ class X402Middleware(BaseHTTPMiddleware):
         if not payment_header:
             # No payment provided - return 402 Payment Required
             logger.info(f"Payment required for {request.url.path} from {request.client.host if request.client else 'unknown'}")
-            html_content = get_paywall_html(
-                error="No X-PAYMENT header provided", 
-                payment_requirements=self.payment_requirements, 
-                paywall_config=self.paywall_config
-            )
-            headers = {"Content-Type": "text/html; charset=utf-8"}
-
-            return HTMLResponse(
-                content=html_content,
-                status_code=402,
-                headers=headers,
-            )
 
         # Decode and parse payment payload
         try:
@@ -167,27 +119,18 @@ class X402Middleware(BaseHTTPMiddleware):
             )
             return self._create_402_response(f"Invalid X-PAYMENT header format: {str(e)}")
 
-        # Create payment requirements for this agent
-        payment_requirements = self.x402_ext.create_payment_requirements(
-            resource=self.manifest.did_extension.did if self.manifest.did_extension else self.manifest.id,
-            description=f"Payment required to use {self.manifest.name}",
-        )
-
-        # Find matching payment requirements
         selected_payment_requirements = find_matching_payment_requirements(
-            [payment_requirements], payment_payload
+            self._payment_requirements, payment_payload
         )
 
         if not selected_payment_requirements:
-            logger.warning(
-                f"No matching payment requirements from {request.client.host if request.client else 'unknown'}"
-            )
             return self._create_402_response("No matching payment requirements found")
-
+        
         try:
             verify_response = await self.facilitator.verify(
                 payment_payload, selected_payment_requirements
             )
+            logger.info(f"Facilitator verify response: is_valid={verify_response.is_valid}, invalid_reason={verify_response.invalid_reason}")
         except Exception as e:
             logger.error(f"Payment verification error: {e}", exc_info=True)
             return self._create_402_response(f"Payment verification error: {str(e)}")
@@ -197,6 +140,8 @@ class X402Middleware(BaseHTTPMiddleware):
             logger.warning(
                 f"Payment verification failed from {request.client.host if request.client else 'unknown'}: {error_reason}"
             )
+            logger.warning(f"Payment payload: {payment_payload}")
+            logger.warning(f"Payment requirements: {selected_payment_requirements}")
             return self._create_402_response(f"Invalid payment: {error_reason}")
 
         logger.info(

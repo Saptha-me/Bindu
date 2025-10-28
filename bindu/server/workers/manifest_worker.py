@@ -34,14 +34,6 @@ from uuid import UUID
 
 from opentelemetry.trace import Status, StatusCode, get_tracer
 
-# x402
-from x402.types import PaymentPayload, PaymentRequirements
-from x402.facilitator import FacilitatorClient
-from bindu.extensions.x402.utils import (
-    build_payment_completed_metadata,
-    build_payment_failed_metadata,
-    build_payment_required_metadata,
-)
 from bindu.settings import app_settings
 
 from bindu.common.protocol.types import (
@@ -54,7 +46,7 @@ from bindu.common.protocol.types import (
 )
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
-from bindu.server.workers.helpers import PaymentHandler, ResponseDetector, ResultProcessor
+from bindu.server.workers.helpers import ResponseDetector, ResultProcessor
 from bindu.utils.logging import get_logger
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
@@ -128,32 +120,6 @@ class ManifestWorker(Worker):
             current_span.add_event(
                 "task.state_changed", attributes={"to_state": "working"}
             )
-
-        # Check if this is a paid flow (payment already verified in message_handlers)
-        task_metadata = task.get("metadata", {})
-        is_paid_flow = (
-            task_metadata.get(app_settings.x402.meta_status_key)
-            == app_settings.x402.status_verified
-        )
-
-        # Extract payment info for settlement (if paid flow)
-        payment_payload_obj: PaymentPayload | None = None
-        payment_requirements_obj: PaymentRequirements | None = None
-
-        if is_paid_flow:
-            # Get payment data from latest message
-            latest_msg = (
-                (task.get("history") or [])[-1] if task.get("history") else None
-            )
-            latest_meta = (latest_msg or {}).get("metadata") or {}
-            payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
-            required_data = task_metadata.get(app_settings.x402.meta_required_key)
-            
-            if payload_data and required_data:
-                payment_payload_obj = PaymentHandler.parse_payment_payload(payload_data)
-                payment_requirements_obj = PaymentHandler.select_requirement(
-                    required_data, payment_payload_obj
-                )
 
         # Transition to working
         await self.storage.update_task(task["id"], state="working")
@@ -249,15 +215,7 @@ class ManifestWorker(Worker):
                         "task.state_changed",
                         attributes={"from_state": "working", "to_state": state},
                     )
-                if is_paid_flow and payment_payload_obj and payment_requirements_obj:
-                    # Handle payment settlement
-                    await PaymentHandler.settle_payment(
-                        task, results, state, payment_payload_obj, payment_requirements_obj,
-                        self.storage, self._handle_terminal_state, self.lifecycle_notifier
-                    )
-                else:
-                    # No payment - complete task normally
-                    await self._handle_terminal_state(task, results, state)
+                await self._handle_terminal_state(task, results, state)
 
         except Exception as e:
             # Handle task failure with error message
@@ -274,6 +232,7 @@ class ManifestWorker(Worker):
                 )
             await self._handle_task_failure(task, str(e))
             raise
+        return
 
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Cancel a running task.
@@ -414,12 +373,6 @@ class ManifestWorker(Worker):
         )
 
         metadata: dict[str, Any] | None = None
-        # If this is an x402 payment-required structured object, attach metadata
-        if isinstance(message_content, dict):
-            st = message_content.get("state")
-            if st == app_settings.x402.status_required or "required" in message_content:
-                required = message_content.get("required") or message_content
-                metadata = build_payment_required_metadata(required)
 
         # Update task with state and append agent messages to history
         await self.storage.update_task(

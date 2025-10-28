@@ -17,12 +17,23 @@ The X402Middleware automatically handles:
 - Payment verification with Coinbase facilitator
 - Payment settlement after successful execution
 - 402 Payment Required responses
+
+The payment_endpoints module provides REST API endpoints for
+session-based payment flow:
+- POST /api/start-payment-session: Start a new payment session
+- GET /payment-capture: Browser page to capture payment
+- GET /api/payment-status/{session_id}: Get payment status and token
 """
 
 from __future__ import annotations as _annotations
 
 from .x402_middleware import X402Middleware
+from .payment_session_manager import PaymentSessionManager, PaymentSession
+from .payment_endpoints import create_payment_router
 
 __all__ = [
     "X402Middleware",
+    "PaymentSessionManager",
+    "PaymentSession",
+    "create_payment_router",
 ]

@@ -191,6 +191,11 @@ class BinduApplication(Starlette):
         self._storage = storage
         self._scheduler = scheduler
         self._agent_card_json_schema: bytes | None = None
+        self._x402_ext = x402_ext
+
+        # In-memory not a good practice, but for development purposes
+        # in production, use a database or redis
+        self.payment_sessions: Dict[str, Dict[str, Any]] = {}
 
         # Register all routes
         self._register_routes()
@@ -230,6 +235,10 @@ class BinduApplication(Starlette):
             ["GET"],
             with_app=True,
         )
+
+        if self._x402_ext:
+            self._register_payment_endpoints()
+    
 
     def _add_route(
         self,
@@ -297,6 +306,10 @@ class BinduApplication(Starlette):
                         "OpenInference telemetry setup failed", error=str(exc)
                     )
 
+            # Start payment session manager cleanup task if x402 enabled
+            if app._payment_session_manager:
+                await app._payment_session_manager.start_cleanup_task()
+            
             # Start TaskManager
             task_manager = TaskManager(
                 scheduler=scheduler, storage=storage, manifest=manifest
@@ -304,6 +317,10 @@ class BinduApplication(Starlette):
             async with task_manager:
                 app.task_manager = task_manager
                 yield
+            
+            # Stop payment session manager cleanup task
+            if app._payment_session_manager:
+                await app._payment_session_manager.stop_cleanup_task()
 
         return lifespan
 

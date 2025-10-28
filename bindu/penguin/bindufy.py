@@ -24,6 +24,7 @@ from bindu.common.models import (
     DeploymentConfig,
     SchedulerConfig,
     StorageConfig,
+    TelemetryConfig,
 )
 from bindu.extensions.did import DIDAgentExtension
 from bindu.extensions.x402 import X402AgentExtension
@@ -296,7 +297,7 @@ def bindufy(
 
     # Update capabilities to include DID extension
     capabilities = add_extension_to_capabilities(
-        validated_config["capabilities"], did_extension.agent_extension
+        validated_config["capabilities"], did_extension
     )
 
     # Only add x402 extension if execution_cost is configured
@@ -328,9 +329,7 @@ def bindufy(
         logger.info(f"X402 extension created: {x402_extension}")
 
         # Add x402 extension to capabilities
-        capabilities = add_extension_to_capabilities(
-            capabilities, x402_extension.agent_extension
-        )
+        capabilities = add_extension_to_capabilities(capabilities, x402_extension)
 
     # Create agent manifest with loaded skills
     _manifest = create_manifest(
@@ -382,6 +381,28 @@ def bindufy(
     # Check if auth is enabled in config
     auth_enabled = validated_config.get("auth", {}).get("enabled", False)
 
+    # Create telemetry configuration
+    telemetry_config = TelemetryConfig(
+        enabled=validated_config["telemetry"],
+        endpoint=validated_config.get("oltp_endpoint"),
+        service_name=validated_config.get("oltp_service_name"),
+        verbose_logging=validated_config.get("oltp_verbose_logging", False),
+        service_version=validated_config.get("oltp_service_version", "1.0.0"),
+        deployment_environment=validated_config.get(
+            "oltp_deployment_environment", "production"
+        ),
+        batch_max_queue_size=validated_config.get("oltp_batch_max_queue_size", 2048),
+        batch_schedule_delay_millis=validated_config.get(
+            "oltp_batch_schedule_delay_millis", 5000
+        ),
+        batch_max_export_batch_size=validated_config.get(
+            "oltp_batch_max_export_batch_size", 512
+        ),
+        batch_export_timeout_millis=validated_config.get(
+            "oltp_batch_export_timeout_millis", 30000
+        ),
+    )
+
     # Create Bindu application with telemetry config
     # Telemetry will be initialized in the application lifespan context
     bindu_app = BinduApplication(
@@ -391,26 +412,7 @@ def bindufy(
         manifest=_manifest,
         version=validated_config["version"],
         auth_enabled=auth_enabled,
-        telemetry_enabled=validated_config["telemetry"],
-        oltp_endpoint=validated_config.get("oltp_endpoint"),
-        oltp_service_name=validated_config.get("oltp_service_name"),
-        oltp_verbose_logging=validated_config.get("oltp_verbose_logging", False),
-        oltp_service_version=validated_config.get("oltp_service_version", "1.0.0"),
-        oltp_deployment_environment=validated_config.get(
-            "oltp_deployment_environment", "production"
-        ),
-        oltp_batch_max_queue_size=validated_config.get(
-            "oltp_batch_max_queue_size", 2048
-        ),
-        oltp_batch_schedule_delay_millis=validated_config.get(
-            "oltp_batch_schedule_delay_millis", 5000
-        ),
-        oltp_batch_max_export_batch_size=validated_config.get(
-            "oltp_batch_max_export_batch_size", 512
-        ),
-        oltp_batch_export_timeout_millis=validated_config.get(
-            "oltp_batch_export_timeout_millis", 30000
-        ),
+        telemetry_config=telemetry_config,
     )
 
     # Parse deployment URL

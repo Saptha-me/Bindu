@@ -165,16 +165,38 @@ x402_mod = ModuleType("x402")
 x402_common = ModuleType("x402.common")
 x402_types = ModuleType("x402.types")
 x402_fac = ModuleType("x402.facilitator")
+x402_encoding = ModuleType("x402.encoding")
+x402_paywall = ModuleType("x402.paywall")
+
+# Setup x402.common
 x402_common.process_price_to_atomic_amount = lambda price, network: (1, "0x00", {})  # type: ignore[attr-defined]
+x402_common.x402_VERSION = "1.0.0"  # type: ignore[attr-defined]
+x402_common.find_matching_payment_requirements = lambda *args, **kwargs: None  # type: ignore[attr-defined]
+
+# Setup x402.types
 x402_types.PaymentRequirements = _PaymentRequirements  # type: ignore[attr-defined]
 x402_types.PaymentPayload = _PaymentPayload  # type: ignore[attr-defined]
 x402_types.Price = object  # type: ignore[attr-defined]
 x402_types.SupportedNetworks = _SupportedNetworks  # type: ignore[attr-defined]
+x402_types.PaywallConfig = dict  # type: ignore[attr-defined]
+x402_types.x402PaymentRequiredResponse = dict  # type: ignore[attr-defined]
+
+# Setup x402.facilitator
 x402_fac.FacilitatorClient = _FacilitatorClient  # type: ignore[attr-defined]
+
+# Setup x402.encoding
+x402_encoding.safe_base64_decode = lambda x: x.encode() if isinstance(x, str) else x  # type: ignore[attr-defined]
+
+# Setup x402.paywall
+x402_paywall.get_paywall_html = lambda *args, **kwargs: "<html>Mock Paywall</html>"  # type: ignore[attr-defined]
+
+# Register all x402 modules
 sys.modules["x402"] = x402_mod
 sys.modules["x402.common"] = x402_common
 sys.modules["x402.types"] = x402_types
 sys.modules["x402.facilitator"] = x402_fac
+sys.modules["x402.encoding"] = x402_encoding
+sys.modules["x402.paywall"] = x402_paywall
 
 # Imports must come after dependency mock setup
 import asyncio  # noqa: E402

@@ -514,7 +514,7 @@ class ManifestWorker(Worker):
 
             # Initialize facilitator client
             # FacilitatorClient will use default config if None is passed
-            facilitator = FacilitatorClient(None)
+            facilitator = FacilitatorClient()
 
             # Settle payment
             logger.info("Settling payment for completed task")

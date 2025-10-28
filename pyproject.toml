@@ -46,6 +46,7 @@ dependencies = [
     "web3>=7.13.0",
     "eth-account>=0.13.7",
     "cdp-sdk>=0.21.0",
+    "coinbase-advanced-py>=1.8.2",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -1,0 +1,26 @@
+{
+  "name": "bindu-x402-client-examples",
+  "version": "1.0.0",
+  "description": "Examples of interacting with Bindu agents using x402 payment protocol",
+  "type": "module",
+  "scripts": {
+    "fetch-example": "node fetch-example.js",
+    "axios-example": "node axios-example.js"
+  },
+  "keywords": [
+    "bindu",
+    "x402",
+    "payment",
+    "agent",
+    "a2a"
+  ],
+  "author": "Saptha.me",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "x402-fetch": "^latest",
+    "x402-axios": "^latest",
+    "axios": "^1.6.0",
+    "viem": "^2.0.0",
+    "dotenv": "^16.0.0"
+  }
+}

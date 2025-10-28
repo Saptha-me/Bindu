@@ -121,8 +121,28 @@ class BinduApplication(Starlette):
         if lifespan is None:
             lifespan = self._create_default_lifespan(storage, scheduler, manifest)
 
-        # Add authentication middleware if enabled
+        # Add middleware
         middleware_list = list(middleware) if middleware else []
+        
+        # Add X402 payment middleware if agent has execution_cost configured
+        from bindu.utils import get_x402_extension_from_capabilities
+        x402_ext = get_x402_extension_from_capabilities(manifest)
+        if x402_ext:
+            from bindu.utils.logging import get_logger
+            from .middleware import X402Middleware
+            
+            logger = get_logger("bindu.server.applications")
+            logger.info(
+                f"X402 payment middleware enabled: "
+                f"${x402_ext.amount_usd:.4f} USD ({x402_ext.token} on {x402_ext.network})"
+            )
+            
+            # Add X402 middleware to the beginning of middleware chain
+            # This ensures payment is verified before any other processing
+            x402_middleware = Middleware(X402Middleware, manifest=manifest)
+            middleware_list.insert(0, x402_middleware)
+        
+        # Add authentication middleware if enabled
         if auth_enabled and app_settings.auth.enabled:
             from bindu.utils.logging import get_logger
 
@@ -161,8 +181,9 @@ class BinduApplication(Starlette):
                     f"Unknown authentication provider: '{provider}'. Supported providers: auth0, cognito, azure, custom"
                 )
 
-            # Add auth middleware to the beginning of middleware chain
-            middleware_list.insert(0, auth_middleware)
+            # Add auth middleware after X402 (if present)
+            # Auth happens after payment verification
+            middleware_list.insert(1 if x402_ext else 0, auth_middleware)
 
         super().__init__(
             debug=debug,

@@ -6,13 +6,9 @@ and integrates with the x402 protocol for agent monetization.
 
 from __future__ import annotations
 
-from functools import cached_property
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from bindu.common.protocol.types import AgentExtension
-from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
-from x402.types import PaymentRequirements
 
 logger = get_logger("bindu.x402_agent_extension")
 

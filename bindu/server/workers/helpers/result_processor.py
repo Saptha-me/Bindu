@@ -16,12 +16,12 @@ logger = get_logger("bindu.server.workers.helpers.result_processor")
 
 class ResultProcessor:
     """Handles result collection and normalization from agent execution.
-    
+
     This class provides static methods for:
     - Collecting results from generators and async generators
     - Normalizing results to extract final responses
     - Serializing results to strings
-    
+
     All methods are stateless and can be used independently.
     """
 

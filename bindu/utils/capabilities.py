@@ -70,9 +70,13 @@ def get_x402_extension_from_capabilities(manifest: Any) -> Optional[Any]:
         # Check if it's already an X402AgentExtension instance
         if isinstance(ext, X402AgentExtension):
             return ext
-        
+
         # Otherwise, check if it's a dict with x402 URI
-        if isinstance(ext, dict) and ext.get("uri") == app_settings.x402.extension_uri and ext.get("required"):
+        if (
+            isinstance(ext, dict)
+            and ext.get("uri") == app_settings.x402.extension_uri
+            and ext.get("required")
+        ):
             # Reconstruct X402AgentExtension from params
             params = ext.get("params", {})
             return X402AgentExtension(

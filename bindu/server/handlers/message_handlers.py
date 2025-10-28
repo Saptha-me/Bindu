@@ -29,7 +29,6 @@ from bindu.common.protocol.types import (
     Task,
     TaskSendParams,
 )
-from bindu.utils.worker_utils import MessageConverter
 
 from bindu.utils.task_telemetry import trace_task_operation, track_active_task
 
@@ -52,7 +51,7 @@ class MessageHandlers:
     @track_active_task
     async def send_message(self, request: SendMessageRequest) -> SendMessageResponse:
         """Send a message using the A2A protocol.
-        
+
         Note: Payment enforcement is handled by X402Middleware before this method is called.
         If the request reaches here, payment has already been verified.
         Settlement will be handled by ManifestWorker when task completes.

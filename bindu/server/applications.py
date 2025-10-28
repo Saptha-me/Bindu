@@ -28,7 +28,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route
 from starlette.types import Lifespan, Receive, Scope, Send
-from x402.facilitator import FacilitatorClient, FacilitatorConfig
+from x402.facilitator import FacilitatorConfig
 
 from bindu.common.models import AgentManifest
 from bindu.settings import app_settings
@@ -127,22 +127,23 @@ class BinduApplication(Starlette):
 
         # Add middleware
         middleware_list = list(middleware) if middleware else []
-        
+
         # Add X402 payment middleware if agent has execution_cost configured
         from bindu.utils import get_x402_extension_from_capabilities
+
         x402_ext = get_x402_extension_from_capabilities(manifest)
-        
+
         # Initialize payment requirements before middleware (needed by both middleware and endpoints)
         payment_requirements_for_middleware = None
         if x402_ext:
             from x402.common import process_price_to_atomic_amount
             from x402.types import PaymentRequirements, SupportedNetworks
             from typing import cast
-            
-            max_amount_required, asset_address, eip712_domain = process_price_to_atomic_amount(
-                x402_ext.amount, x402_ext.network
+
+            max_amount_required, asset_address, eip712_domain = (
+                process_price_to_atomic_amount(x402_ext.amount, x402_ext.network)
             )
-            
+
             payment_requirements_for_middleware = [
                 PaymentRequirements(
                     scheme="exact",
@@ -165,17 +166,17 @@ class BinduApplication(Starlette):
                     extra=eip712_domain,
                 )
             ]
-        
+
         if x402_ext:
             from bindu.utils.logging import get_logger
             from .middleware import X402Middleware
-            
+
             logger = get_logger("bindu.server.applications")
             logger.info(
                 f"X402 payment middleware enabled: "
                 f"{x402_ext.amount} {x402_ext.token} on {x402_ext.network})"
             )
-            
+
             # Add X402 middleware to the beginning of middleware chain
             # This ensures payment is verified before any other processing
             x402_middleware = Middleware(
@@ -188,7 +189,7 @@ class BinduApplication(Starlette):
                 payment_requirements=payment_requirements_for_middleware,
             )
             middleware_list.insert(0, x402_middleware)
-        
+
         # Add authentication middleware if enabled
         if auth_enabled and app_settings.auth.enabled:
             from bindu.utils.logging import get_logger
@@ -237,20 +238,22 @@ class BinduApplication(Starlette):
 
         # Initialize payment session manager and payment config if x402 enabled
         if x402_ext and payment_requirements_for_middleware:
-            from bindu.server.middleware.x402.payment_session_manager import PaymentSessionManager
+            from bindu.server.middleware.x402.payment_session_manager import (
+                PaymentSessionManager,
+            )
             from x402.types import PaymentRequirements, PaywallConfig
             import os
-            
+
             self._payment_session_manager = PaymentSessionManager()
-            
+
             # Create payment requirements for endpoints (with /payment-capture resource)
             # Copy from middleware requirements but change resource URL
             self._payment_requirements = []
             for req in payment_requirements_for_middleware:
                 req_dict = dict(req)
-                req_dict['resource'] = f"{self.manifest.url}/payment-capture"
+                req_dict["resource"] = f"{self.manifest.url}/payment-capture"
                 self._payment_requirements.append(PaymentRequirements(**req_dict))
-            
+
             self._paywall_config = PaywallConfig(
                 cdp_client_key=os.getenv("CDP_CLIENT_KEY") or "",
                 app_name=f"{manifest.name} - x402 Payment",
@@ -393,7 +396,7 @@ class BinduApplication(Starlette):
             # Start payment session manager cleanup task if x402 enabled
             if app._payment_session_manager:
                 await app._payment_session_manager.start_cleanup_task()
-            
+
             # Start TaskManager
             task_manager = TaskManager(
                 scheduler=scheduler, storage=storage, manifest=manifest
@@ -401,7 +404,7 @@ class BinduApplication(Starlette):
             async with task_manager:
                 app.task_manager = task_manager
                 yield
-            
+
             # Stop payment session manager cleanup task
             if app._payment_session_manager:
                 await app._payment_session_manager.stop_cleanup_task()

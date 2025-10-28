@@ -10,7 +10,7 @@ from typing import Any
 from x402.facilitator import FacilitatorClient
 from x402.types import PaymentPayload, PaymentRequirements
 
-from bindu.common.protocol.types import Task, TaskState
+from bindu.common.protocol.types import TaskState
 from bindu.extensions.x402.utils import (
     build_payment_completed_metadata,
     build_payment_failed_metadata,
@@ -23,22 +23,22 @@ logger = get_logger("bindu.server.workers.helpers.payment_handler")
 
 class PaymentHandler:
     """Handles x402 payment settlement and parsing.
-    
+
     This class provides methods for:
     - Parsing payment payloads and requirements
     - Selecting matching payment requirements
     - Settling payments after successful execution
-    
+
     Most methods are static for easy testing and reuse.
     """
 
     @staticmethod
     def parse_payment_payload(data: Any) -> PaymentPayload | None:
         """Parse payment payload from message metadata.
-        
+
         Args:
             data: Payment payload data (dict or None)
-            
+
         Returns:
             PaymentPayload object or None if parsing fails
         """
@@ -54,10 +54,10 @@ class PaymentHandler:
     @staticmethod
     def parse_payment_requirements(data: Any) -> PaymentRequirements | None:
         """Parse payment requirements from task metadata.
-        
+
         Args:
             data: Payment requirements data (dict or None)
-            
+
         Returns:
             PaymentRequirements object or None if parsing fails
         """
@@ -75,13 +75,13 @@ class PaymentHandler:
         required: Any, payload: PaymentPayload | None
     ) -> PaymentRequirements | None:
         """Select matching payment requirement from accepts array.
-        
+
         Matches by scheme and network, or returns first requirement as fallback.
-        
+
         Args:
             required: Payment requirements data with accepts array
             payload: Payment payload to match against
-            
+
         Returns:
             Matching PaymentRequirements or None
         """
@@ -92,7 +92,7 @@ class PaymentHandler:
             return None
         if payload is None:
             return PaymentHandler.parse_payment_requirements(accepts[0])
-        
+
         # Match by scheme and network
         for req in accepts:
             if (
@@ -115,7 +115,7 @@ class PaymentHandler:
         lifecycle_notifier: Any = None,
     ) -> None:
         """Handle payment settlement after successful agent execution.
-        
+
         Args:
             task: Task dict
             results: Agent execution results
@@ -125,11 +125,11 @@ class PaymentHandler:
             storage: Storage instance for updating task
             terminal_state_handler: Callback to handle terminal state (from ManifestWorker)
             lifecycle_notifier: Optional lifecycle notification callback
-            
+
         Note:
             If settlement succeeds, task completes with payment-completed metadata.
             If settlement fails, task returns to input-required state.
-            
+
             This method handles both success and failure cases, updating the task
             appropriately and calling the terminal state handler or returning to
             input-required state.
@@ -139,7 +139,7 @@ class PaymentHandler:
             settle_response = await facilitator_client.settle(
                 payment_payload, payment_requirements
             )
-            
+
             if settle_response.success:
                 # Settlement succeeded - complete task with receipt
                 md = build_payment_completed_metadata(
@@ -147,7 +147,7 @@ class PaymentHandler:
                     if hasattr(settle_response, "model_dump")
                     else dict(settle_response)
                 )
-                
+
                 # Call terminal state handler with payment metadata
                 await terminal_state_handler(task, results, state, md)
             else:
@@ -161,7 +161,7 @@ class PaymentHandler:
                     storage,
                     lifecycle_notifier,
                 )
-                
+
         except Exception as e:
             # Settlement exception - return to input-required
             await PaymentHandler._handle_settlement_failure(
@@ -181,7 +181,7 @@ class PaymentHandler:
         lifecycle_notifier: Any = None,
     ) -> None:
         """Handle settlement failure by returning task to input-required.
-        
+
         Args:
             task: Task dict
             error_reason: Reason for settlement failure
@@ -194,14 +194,14 @@ class PaymentHandler:
         err_msgs = MessageConverter.to_protocol_messages(
             error_message, task["id"], task["context_id"]
         )
-        
+
         await storage.update_task(
             task["id"],
             state="input-required",
             new_messages=err_msgs,
             metadata=md,
         )
-        
+
         # Notify lifecycle if notifier is configured
         if lifecycle_notifier:
             try:

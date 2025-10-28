@@ -36,6 +36,7 @@ def load_config(config_path: str):
     with open(full_path, "r") as f:
         return json.load(f)
 
+
 simple_config = load_config("simple_agent_config.json")
 
 # 1. SIMPLE STATELESS AGENT - Direct response
@@ -44,6 +45,7 @@ simple_agent = Agent(
     instructions="Provide helpful responses to user messages",
     model=OpenAIChat(id="gpt-4o"),
 )
+
 
 # Define the handler function that uses the agent
 def simple_handler(messages: list[dict[str, str]]) -> Any:

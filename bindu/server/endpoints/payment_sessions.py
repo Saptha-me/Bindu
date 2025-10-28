@@ -40,27 +40,26 @@ async def start_payment_session_endpoint(
     app: "BinduApplication", request: Request
 ) -> Response:
     """Start a new payment session.
-    
+
     Returns:
         Session details including browser_url to complete payment
     """
     if not app._payment_session_manager:
         return JSONResponse(
-            content={"error": "Payment sessions not enabled"},
-            status_code=503
+            content={"error": "Payment sessions not enabled"}, status_code=503
         )
-    
+
     session = app._payment_session_manager.create_session()
-    
+
     # Construct browser URL using app's base URL
     browser_url = f"{app.manifest.url}/payment-capture?session_id={session.session_id}"
-    
+
     return JSONResponse(
         content={
             "session_id": session.session_id,
             "browser_url": browser_url,
             "expires_at": session.expires_at.isoformat(),
-            "status": session.status
+            "status": session.status,
         }
     )
 
@@ -70,93 +69,82 @@ async def payment_capture_endpoint(
     app: "BinduApplication", request: Request
 ) -> Response:
     """Browser page to capture payment.
-    
+
     Shows paywall UI and captures payment token when completed.
     """
     if not app._payment_session_manager:
         return HTMLResponse(
-            content=_get_error_html("Payment sessions not enabled"),
-            status_code=503
+            content=_get_error_html("Payment sessions not enabled"), status_code=503
         )
-    
+
     session_id = request.query_params.get("session_id")
     if not session_id:
         return HTMLResponse(
-            content=_get_error_html("Session ID required"),
-            status_code=400
+            content=_get_error_html("Session ID required"), status_code=400
         )
-    
+
     # Verify session exists
     session = app._payment_session_manager.get_session(session_id)
     if session is None:
         return HTMLResponse(
-            content=_get_error_html("Session not found or expired"),
-            status_code=404
+            content=_get_error_html("Session not found or expired"), status_code=404
         )
-    
+
     # Check if payment already completed
     if session.is_completed():
-        return HTMLResponse(
-            content=_get_success_html(session_id),
-            status_code=200
-        )
-    
+        return HTMLResponse(content=_get_success_html(session_id), status_code=200)
+
     # Check for payment token (from header or query param)
-    payment_token = request.headers.get("X-PAYMENT", "") or request.query_params.get("payment", "")
-    
+    payment_token = request.headers.get("X-PAYMENT", "") or request.query_params.get(
+        "payment", ""
+    )
+
     if payment_token:
         # Payment completed - capture token
         try:
             payment_dict = json.loads(safe_base64_decode(payment_token))
             payment_payload = PaymentPayload(**payment_dict)
-            
+
             # Store payment in session (NOT consumed yet!)
             app._payment_session_manager.complete_session(session_id, payment_payload)
-            
+
             logger.info(f"Payment captured for session: {session_id}")
-            
-            return HTMLResponse(
-                content=_get_success_html(session_id),
-                status_code=200
-            )
-            
+
+            return HTMLResponse(content=_get_success_html(session_id), status_code=200)
+
         except Exception as e:
             error_msg = f"Invalid payment: {str(e)}"
-            logger.error(f"Payment capture error for session {session_id}: {e}", exc_info=True)
-            app._payment_session_manager.fail_session(session_id, error_msg)
-            
-            return HTMLResponse(
-                content=_get_error_html(error_msg),
-                status_code=400
+            logger.error(
+                f"Payment capture error for session {session_id}: {e}", exc_info=True
             )
-    
+            app._payment_session_manager.fail_session(session_id, error_msg)
+
+            return HTMLResponse(content=_get_error_html(error_msg), status_code=400)
+
     # No payment yet - show paywall
     if not app._payment_requirements or not app._paywall_config:
         return HTMLResponse(
             content=_get_error_html("Payment configuration not available"),
-            status_code=503
+            status_code=503,
         )
-    
+
     # Add session_id to resource URL
     from x402.types import PaymentRequirements
-    
+
     payment_reqs_with_session = []
     for req in app._payment_requirements:
         req_dict = dict(req)
         # Append session_id to resource URL
-        req_dict['resource'] = f"{req_dict['resource']}?session_id={session_id}"
+        req_dict["resource"] = f"{req_dict['resource']}?session_id={session_id}"
         payment_reqs_with_session.append(PaymentRequirements(**req_dict))
-    
+
     html_content = get_paywall_html(
         error="Complete payment to continue",
         payment_requirements=payment_reqs_with_session,
-        paywall_config=app._paywall_config
+        paywall_config=app._paywall_config,
     )
-    
-    return HTMLResponse(
-        content=html_content,
-        status_code=402
-    )
+
+    return HTMLResponse(content=html_content, status_code=402)
 
 
 @handle_endpoint_errors("payment status")
@@ -164,25 +152,21 @@ async def payment_status_endpoint(
     app: "BinduApplication", request: Request
 ) -> Response:
     """Get payment status and token.
-    
+
     The payment token is returned but NOT consumed - it can be used
     for the actual API call.
     """
     if not app._payment_session_manager:
         return JSONResponse(
-            content={"error": "Payment sessions not enabled"},
-            status_code=503
+            content={"error": "Payment sessions not enabled"}, status_code=503
         )
-    
+
     session_id = request.path_params.get("session_id")
     if not session_id:
-        return JSONResponse(
-            content={"error": "Session ID required"},
-            status_code=400
-        )
-    
+        return JSONResponse(content={"error": "Session ID required"}, status_code=400)
+
     wait = request.query_params.get("wait", "false").lower() == "true"
-    
+
     if wait:
         # Wait for completion (up to 5 minutes)
         session = await app._payment_session_manager.wait_for_completion(
@@ -191,31 +175,31 @@ async def payment_status_endpoint(
     else:
         # Get current status
         session = app._payment_session_manager.get_session(session_id)
-    
+
     if session is None:
         return JSONResponse(
-            content={"error": "Session not found or expired"},
-            status_code=404
+            content={"error": "Session not found or expired"}, status_code=404
         )
-    
+
     # Prepare response
     response_data = {
         "session_id": session.session_id,
         "status": session.status,
     }
-    
+
     if session.error:
         response_data["error"] = session.error
-    
+
     # Include payment token if completed (but don't consume it!)
     if session.is_completed() and session.payment_payload:
         # Return the payment payload as base64-encoded JSON
         # This can be used directly as X-PAYMENT header
         import base64
+
         payment_json = session.payment_payload.model_dump_json(by_alias=True)
         payment_token = base64.b64encode(payment_json.encode("utf-8")).decode("utf-8")
         response_data["payment_token"] = payment_token
-    
+
     return JSONResponse(content=response_data)
 
 
@@ -297,7 +281,7 @@ def _get_success_html(session_id: str) -> str:
                 Session ID: {session_id}
             </div>
             <div class="note">
-                <strong>Note:</strong> Your payment token has been captured but not consumed yet. 
+                <strong>Note:</strong> Your payment token has been captured but not consumed yet.
                 You can now retrieve it using the API and use it for your request.
             </div>
         </div>

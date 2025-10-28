@@ -347,12 +347,12 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 with patch("bindu.server.workers.manifest_worker.FacilitatorClient") as mock:
     instance = MagicMock()
-    
+
     # Mock verify (success)
     verify_response = MagicMock()
     verify_response.is_valid = True
     instance.verify = AsyncMock(return_value=verify_response)
-    
+
     # Mock settle (success)
     settle_response = MagicMock()
     settle_response.success = True
@@ -361,9 +361,9 @@ with patch("bindu.server.workers.manifest_worker.FacilitatorClient") as mock:
         "blockNumber": 12345
     })
     instance.settle = AsyncMock(return_value=settle_response)
-    
+
     mock.return_value = instance
-    
+
     # Run your tests...
 ```
 

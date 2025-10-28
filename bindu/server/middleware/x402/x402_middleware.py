@@ -19,15 +19,23 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 from typing import TYPE_CHECKING, get_args, cast
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, Response, HTMLResponse
 from x402.common import x402_VERSION, process_price_to_atomic_amount, find_matching_payment_requirements
 from x402.encoding import safe_base64_decode
 from x402.facilitator import FacilitatorClient, FacilitatorConfig
-from x402.types import Price, PaymentPayload, SupportedNetworks, PaymentRequirements
+from x402.paywall import is_browser_request, get_paywall_html
+from x402.types import (
+    PaymentPayload, 
+    SupportedNetworks, 
+    PaymentRequirements, 
+    x402PaymentRequiredResponse,
+    PaywallConfig,
+)
 
 from bindu.utils.logging import get_logger
 from bindu.extensions.x402 import X402AgentExtension
@@ -104,6 +112,12 @@ class X402Middleware(BaseHTTPMiddleware):
             )
         ]
 
+        self.paywall_config=PaywallConfig(
+            cdp_client_key=os.getenv("CDP_CLIENT_KEY") or "",
+            app_name="x402 Bindu Example",
+            app_logo="/assets/light.svg",
+        )
+
         self.protected_path = "/"  # A2A protocol endpoint
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -129,8 +143,19 @@ class X402Middleware(BaseHTTPMiddleware):
 
         if not payment_header:
             # No payment provided - return 402 Payment Required
-            logger.debug(f"Payment required for {request.url.path} from {request.client.host if request.client else 'unknown'}")
-            return self._create_402_response("No X-PAYMENT header provided")
+            logger.info(f"Payment required for {request.url.path} from {request.client.host if request.client else 'unknown'}")
+            html_content = get_paywall_html(
+                error="No X-PAYMENT header provided", 
+                payment_requirements=self.payment_requirements, 
+                paywall_config=self.paywall_config
+            )
+            headers = {"Content-Type": "text/html; charset=utf-8"}
+
+            return HTMLResponse(
+                content=html_content,
+                status_code=402,
+                headers=headers,
+            )
 
         # Decode and parse payment payload
         try:
@@ -214,7 +239,7 @@ class X402Middleware(BaseHTTPMiddleware):
         return response
 
     def _create_402_response(self, error: str) -> JSONResponse:
-        """Create a 402 Payment Required response.
+        """Create a 402 Payment Required response using x402PaymentRequiredResponse.
         
         Args:
             error: Error message to include in response
@@ -222,21 +247,21 @@ class X402Middleware(BaseHTTPMiddleware):
         Returns:
             JSONResponse with 402 status and payment requirements
         """
-
-        response_data = {
-            "x402Version": 1,
-            "accepts": [req.model_dump(by_alias=True) for req in self.payment_requirements],
-            "error": error,
-        }
+        # Use the official x402PaymentRequiredResponse type
+        response_data = x402PaymentRequiredResponse(
+            x402_version=x402_VERSION,
+            accepts=self.payment_requirements,
+            error=error,
+        ).model_dump(by_alias=True)
         
-        # Add agent discovery metadata
+        # Add agent discovery metadata (Bindu-specific extension)
         response_data["agent"] = {
             "name": self.manifest.name,
             "description": self.manifest.description or "",
             "agentCard": "/.well-known/agent.json",
         }
             
-        # Add DID if available
+        # Add DID if available (Bindu-specific extension)
         if self.manifest.did_extension and self.manifest.did_extension.did:
             response_data["agent"]["did"] = self.manifest.did_extension.did
 

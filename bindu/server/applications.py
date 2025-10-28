@@ -179,12 +179,13 @@ class BinduApplication(Starlette):
 
             # Add X402 middleware to the beginning of middleware chain
             # This ensures payment is verified before any other processing
+            facilitator_config: FacilitatorConfig = {
+                "url": app_settings.x402.facilitator_url
+            }
             x402_middleware = Middleware(
                 X402Middleware,
                 manifest=manifest,
-                facilitator_config=FacilitatorConfig(
-                    url=app_settings.x402.facilitator_url
-                ),
+                facilitator_config=facilitator_config,
                 x402_ext=x402_ext,
                 payment_requirements=payment_requirements_for_middleware,
             )

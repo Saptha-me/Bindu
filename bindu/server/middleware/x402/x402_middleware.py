@@ -19,17 +19,18 @@ from __future__ import annotations
 
 import base64
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, get_args, cast
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-from x402.common import find_matching_payment_requirements
+from x402.common import x402_VERSION, process_price_to_atomic_amount, find_matching_payment_requirements
 from x402.encoding import safe_base64_decode
-from x402.types import PaymentPayload
+from x402.facilitator import FacilitatorClient, FacilitatorConfig
+from x402.types import Price, PaymentPayload, SupportedNetworks, PaymentRequirements
 
-from bindu.utils.coinbase_utils import CoinbaseFacilitatorClient as FacilitatorClient
 from bindu.utils.logging import get_logger
+from bindu.extensions.x402 import X402AgentExtension
 
 if TYPE_CHECKING:
     from bindu.common.models import AgentManifest
@@ -52,26 +53,58 @@ class X402Middleware(BaseHTTPMiddleware):
         protected_path: Path that requires payment (default: "/" for A2A endpoint)
     """
 
-    def __init__(self, app, manifest: AgentManifest):
+    def __init__(self,
+                 app,
+                 manifest: AgentManifest,
+                 facilitator_config: FacilitatorConfig,
+                 x402_ext: X402AgentExtension):
         """Initialize X402 middleware.
         
         Args:
             app: ASGI application
             manifest: Agent manifest with x402 configuration
+            x402_ext: X402AgentExtension instance
         """
         super().__init__(app)
         self.manifest = manifest
-        self.protected_path = "/"  # A2A protocol endpoint
+        self.x402_ext = x402_ext
         
-        # Get x402 extension from manifest capabilities
-        from bindu.utils import get_x402_extension_from_capabilities
-        self.x402_ext = get_x402_extension_from_capabilities(manifest)
-        
-        if self.x402_ext:
-            logger.info(
-                f"X402 middleware enabled for agent '{manifest.name}': "
-                f"${self.x402_ext.amount_usd:.4f} USD ({self.x402_ext.token} on {self.x402_ext.network})"
+        supported_networks = get_args(SupportedNetworks)
+        if self.x402_ext.network not in supported_networks:
+            raise ValueError(
+                f"Unsupported network: {self.x402_ext.network}. Must be one of: {supported_networks}"
             )
+
+        self.facilitator = FacilitatorClient(facilitator_config)
+        self.max_amount_required, self.asset_address, self.eip712_domain = (
+            process_price_to_atomic_amount(self.x402_ext.amount, self.x402_ext.network)
+        )
+
+        self.payment_requirements = [
+            PaymentRequirements(
+                scheme="exact",
+                network=cast(SupportedNetworks, self.x402_ext.network),
+                asset=self.asset_address,
+                max_amount_required=self.max_amount_required,
+                resource=manifest.did_extension.did,
+                description=f"Payment required to use {manifest.name}",
+                mime_type="",
+                pay_to=self.x402_ext.pay_to_address,
+                max_timeout_seconds=60,
+                # TODO: Rename output_schema to request_structure
+                output_schema={
+                    "input": {
+                        "type": "http",
+                        "method": "POST",
+                        "discoverable": True,
+                    },
+                    "output": {},
+                },
+                extra=self.eip712_domain,
+            )
+        ]
+
+        self.protected_path = "/"  # A2A protocol endpoint
 
     async def dispatch(self, request: Request, call_next) -> Response:
         """Process request and enforce payment if required.
@@ -83,10 +116,7 @@ class X402Middleware(BaseHTTPMiddleware):
         Returns:
             Response with payment enforcement or agent execution result
         """
-        # Skip payment check if:
-        # 1. Agent doesn't require payment
-        # 2. Request is not to the protected A2A endpoint
-        # 3. Request method is not POST (A2A uses POST)
+
         if (
             not self.x402_ext
             or request.url.path != self.protected_path
@@ -129,13 +159,8 @@ class X402Middleware(BaseHTTPMiddleware):
             )
             return self._create_402_response("No matching payment requirements found")
 
-        # Verify payment with facilitator
-        facilitator = FacilitatorClient(
-            manifest_coinbase_config=self.manifest.coinbase_config,
-        )
-
         try:
-            verify_response = await facilitator.verify(
+            verify_response = await self.facilitator.verify(
                 payment_payload, selected_payment_requirements
             )
         except Exception as e:
@@ -164,7 +189,7 @@ class X402Middleware(BaseHTTPMiddleware):
         # Only settle payment if response is successful (2xx status code)
         if 200 <= response.status_code < 300:
             try:
-                settle_response = await facilitator.settle(
+                settle_response = await self.facilitator.settle(
                     payment_payload, selected_payment_requirements
                 )
 
@@ -197,17 +222,23 @@ class X402Middleware(BaseHTTPMiddleware):
         Returns:
             JSONResponse with 402 status and payment requirements
         """
-        # Create payment requirements
-        payment_requirements = self.x402_ext.create_payment_requirements(
-            resource=self.manifest.did_extension.did if self.manifest.did_extension else self.manifest.id,
-            description=f"Payment required to use {self.manifest.name}",
-        )
 
         response_data = {
             "x402Version": 1,
-            "accepts": [payment_requirements.model_dump(by_alias=True)],
+            "accepts": [req.model_dump(by_alias=True) for req in self.payment_requirements],
             "error": error,
         }
+        
+        # Add agent discovery metadata
+        response_data["agent"] = {
+            "name": self.manifest.name,
+            "description": self.manifest.description or "",
+            "agentCard": "/.well-known/agent.json",
+        }
+            
+        # Add DID if available
+        if self.manifest.did_extension and self.manifest.did_extension.did:
+            response_data["agent"]["did"] = self.manifest.did_extension.did
 
         return JSONResponse(
             content=response_data,

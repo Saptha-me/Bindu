@@ -64,11 +64,16 @@ def get_x402_extension_from_capabilities(manifest: Any) -> Optional[Any]:
     if not capabilities or "extensions" not in capabilities:
         return None
 
-    for ext in capabilities.get("extensions", []):
-        if ext.get("uri") == app_settings.x402.extension_uri and ext.get("required"):
-            # Reconstruct X402AgentExtension from params
-            from bindu.extensions.x402 import X402AgentExtension
+    from bindu.extensions.x402 import X402AgentExtension
 
+    for ext in capabilities.get("extensions", []):
+        # Check if it's already an X402AgentExtension instance
+        if isinstance(ext, X402AgentExtension):
+            return ext
+        
+        # Otherwise, check if it's a dict with x402 URI
+        if isinstance(ext, dict) and ext.get("uri") == app_settings.x402.extension_uri and ext.get("required"):
+            # Reconstruct X402AgentExtension from params
             params = ext.get("params", {})
             return X402AgentExtension(
                 amount=params.get("amount"),

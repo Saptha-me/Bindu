@@ -24,7 +24,7 @@ from bindu.common.protocol.types import (
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, jsonrpc_error
 
-logger = get_logger("bindu.server.middleware.base")
+logger = get_logger("bindu.server.middleware.auth.base")
 
 
 class AuthMiddleware(BaseHTTPMiddleware, ABC):

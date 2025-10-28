@@ -138,8 +138,6 @@ class AgentManifest:
     # Optional Metadata
     documentation_url: str | None = None
 
-    coinbase_config: dict[str, Any] | None = None
-
     # Runtime Execution (injected by framework)
     run: Callable[..., Any] | None = field(default=None, init=False)
 

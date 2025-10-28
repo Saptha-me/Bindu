@@ -28,6 +28,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route
 from starlette.types import Lifespan, Receive, Scope, Send
+from x402.facilitator import FacilitatorClient, FacilitatorConfig
 
 from bindu.common.models import AgentManifest
 from bindu.settings import app_settings
@@ -134,12 +135,19 @@ class BinduApplication(Starlette):
             logger = get_logger("bindu.server.applications")
             logger.info(
                 f"X402 payment middleware enabled: "
-                f"${x402_ext.amount_usd:.4f} USD ({x402_ext.token} on {x402_ext.network})"
+                f"{x402_ext.amount} {x402_ext.token} on {x402_ext.network})"
             )
             
             # Add X402 middleware to the beginning of middleware chain
             # This ensures payment is verified before any other processing
-            x402_middleware = Middleware(X402Middleware, manifest=manifest)
+            x402_middleware = Middleware(
+                X402Middleware,
+                manifest=manifest,
+                facilitator_config=FacilitatorConfig(
+                    url=app_settings.x402.facilitator_url
+                ),
+                x402_ext=x402_ext,
+            )
             middleware_list.insert(0, x402_middleware)
         
         # Add authentication middleware if enabled
@@ -156,25 +164,6 @@ class BinduApplication(Starlette):
                 auth_middleware = Middleware(
                     Auth0Middleware, auth_config=app_settings.auth
                 )
-            # elif provider == "cognito": # TODO: Implement Cognito authentication
-            #     logger.info("AWS Cognito authentication enabled")
-            #     from .middleware.auth_cognito import CognitoMiddleware
-
-            #     auth_middleware = Middleware(
-            #         CognitoMiddleware, auth_config=app_settings.auth
-            #     )
-            # elif provider == "azure":
-            #     logger.warning("Azure AD authentication not yet implemented")
-            #     raise NotImplementedError(
-            #         "Azure AD authentication is not yet implemented. "
-            #         "Use 'auth0' provider or implement AzureADMiddleware."
-            #     )
-            # elif provider == "custom":
-            #     logger.warning("Custom JWT authentication not yet implemented")
-            #     raise NotImplementedError(
-            #         "Custom JWT authentication is not yet implemented. "
-            #         "Use 'auth0' provider or implement CustomJWTMiddleware."
-            #     )
             else:
                 logger.error(f"Unknown authentication provider: {provider}")
                 raise ValueError(

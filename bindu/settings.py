@@ -252,8 +252,8 @@ class X402Settings(BaseSettings):
     )
 
     provider: str = "coinbase"
-    facilitator_url: str = ""
-    default_network: str = "base"
+    facilitator_url: str = "https://x402.org/facilitator"
+    default_network: str = "base-sepolia"
     pay_to_env: str = "X402_PAY_TO"
     max_timeout_seconds: int = 600
 

@@ -328,24 +328,7 @@ def bindufy(
         logger.info(f"X402 extension created: {x402_extension}")
 
         # Add x402 extension to capabilities
-        x402_agent_ext = x402_extension.agent_extension
-        logger.info(f"Adding x402 extension to capabilities: {x402_agent_ext}")
-        capabilities = add_extension_to_capabilities(capabilities, x402_agent_ext)
-
-        # Debug: Log all extensions in capabilities
-        logger.info(
-            f"Total extensions in capabilities: {len(capabilities.get('extensions', []))}"
-        )
-
-        # Check we have the right coinbase config
-        coinbase_config = validated_config.get("coinbase_config", {})
-        if coinbase_config:
-            logger.info(f"Coinbase config: path={coinbase_config.get('path')}, host={coinbase_config.get('host')}")
-        else:
-            logger.error("Coinbase config not found")
-            raise ValueError("Coinbase config not found")
-        for ext in capabilities.get("extensions", []):
-            logger.info(f"  - Extension: {ext.get('uri')}, params: {ext.get('params')}")
+        capabilities = add_extension_to_capabilities(capabilities, x402_extension)
 
     # Create agent manifest with loaded skills
     _manifest = create_manifest(
@@ -376,7 +359,6 @@ def bindufy(
         ),
         documentation_url=validated_config["documentation_url"],
         extra_metadata=validated_config["extra_metadata"],
-        coinbase_config=coinbase_config,
     )
 
     # Log manifest creation

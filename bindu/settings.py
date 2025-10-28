@@ -259,6 +259,13 @@ class X402Settings(BaseSettings):
 
     # Extension URI
     extension_uri: str = "https://github.com/google-a2a/a2a-x402/v0.1"
+    
+    # Protected methods that require payment
+    # Similar to auth's public_endpoints, this defines which JSON-RPC methods need payment
+    protected_methods: list[str] = [
+        "message/send",  # Creating new tasks requires payment
+        # "message/stream",  # Uncomment if streaming should require payment
+    ]
 
     # Metadata keys
     meta_status_key: str = "x402.payment.status"

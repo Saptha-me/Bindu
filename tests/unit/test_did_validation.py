@@ -1,7 +1,5 @@
 """Unit tests for DID validation utilities."""
 
-import pytest
-
 from bindu.extensions.did.validation import DIDValidation
 from bindu.settings import app_settings
 
@@ -275,9 +273,7 @@ class TestDIDValidation:
     def test_validate_did_field(self):
         """Test _validate_did_field method."""
         errors = []
-        DIDValidation._validate_did_field(
-            {"id": "did:bindu:author:agent"}, errors
-        )
+        DIDValidation._validate_did_field({"id": "did:bindu:author:agent"}, errors)
         assert len(errors) == 0
 
         errors = []

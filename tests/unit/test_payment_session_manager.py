@@ -109,8 +109,8 @@ class TestPaymentSessionManager:
         """Test getting an expired session returns None."""
         session = manager.create_session()
         # Manually expire the session
-        manager._sessions[session.session_id].expires_at = datetime.utcnow() - timedelta(
-            minutes=1
+        manager._sessions[session.session_id].expires_at = (
+            datetime.utcnow() - timedelta(minutes=1)
         )
         retrieved_session = manager.get_session(session.session_id)
         assert retrieved_session is None
@@ -135,8 +135,8 @@ class TestPaymentSessionManager:
     def test_complete_session_expired(self, manager):
         """Test completing an expired session."""
         session = manager.create_session()
-        manager._sessions[session.session_id].expires_at = datetime.utcnow() - timedelta(
-            minutes=1
+        manager._sessions[session.session_id].expires_at = (
+            datetime.utcnow() - timedelta(minutes=1)
         )
         payload = MagicMock(spec=PaymentPayload)
         result = manager.complete_session(session.session_id, payload)
@@ -160,8 +160,8 @@ class TestPaymentSessionManager:
     def test_fail_session_expired(self, manager):
         """Test failing an expired session."""
         session = manager.create_session()
-        manager._sessions[session.session_id].expires_at = datetime.utcnow() - timedelta(
-            minutes=1
+        manager._sessions[session.session_id].expires_at = (
+            datetime.utcnow() - timedelta(minutes=1)
         )
         result = manager.fail_session(session.session_id, "error")
         assert result is False
@@ -190,7 +190,9 @@ class TestPaymentSessionManager:
             manager.complete_session(session.session_id, payload)
 
         task = asyncio.create_task(complete_later())
-        result = await manager.wait_for_completion(session.session_id, timeout_seconds=5)
+        result = await manager.wait_for_completion(
+            session.session_id, timeout_seconds=5
+        )
         await task
 
         assert result is not None
@@ -200,7 +202,9 @@ class TestPaymentSessionManager:
     async def test_wait_for_completion_timeout(self, manager):
         """Test waiting for session completion times out."""
         session = manager.create_session()
-        result = await manager.wait_for_completion(session.session_id, timeout_seconds=1)
+        result = await manager.wait_for_completion(
+            session.session_id, timeout_seconds=1
+        )
         assert result is None
 
     @pytest.mark.asyncio
@@ -220,7 +224,9 @@ class TestPaymentSessionManager:
             manager.fail_session(session.session_id, "test error")
 
         task = asyncio.create_task(fail_later())
-        result = await manager.wait_for_completion(session.session_id, timeout_seconds=5)
+        result = await manager.wait_for_completion(
+            session.session_id, timeout_seconds=5
+        )
         await task
 
         assert result is not None
@@ -265,8 +271,8 @@ class TestPaymentSessionManager:
         session2 = manager.create_session()
 
         # Expire session1
-        manager._sessions[session1.session_id].expires_at = datetime.utcnow() - timedelta(
-            minutes=1
+        manager._sessions[session1.session_id].expires_at = (
+            datetime.utcnow() - timedelta(minutes=1)
         )
 
         # Manually trigger cleanup logic (instead of waiting for background task)
@@ -290,9 +296,9 @@ class TestPaymentSessionManager:
         await manager.start_cleanup_task()
         assert manager._cleanup_task is not None
         assert not manager._cleanup_task.done()
-        
+
         # Stop cleanup task
         await manager.stop_cleanup_task()
-        
+
         # Task should have been cancelled
         assert manager._cleanup_task.done()

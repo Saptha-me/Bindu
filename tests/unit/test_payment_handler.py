@@ -32,7 +32,9 @@ class TestPaymentHandler:
     def test_parse_payment_payload_invalid_data(self):
         """Test parsing invalid payment payload data."""
         # Mock PaymentPayload to raise exception on invalid data
-        with patch("bindu.server.workers.helpers.payment_handler.PaymentPayload") as mock_pp:
+        with patch(
+            "bindu.server.workers.helpers.payment_handler.PaymentPayload"
+        ) as mock_pp:
             mock_pp.model_validate.side_effect = Exception("Invalid")
             mock_pp.side_effect = Exception("Invalid")
             result = PaymentHandler.parse_payment_payload({"invalid": "data"})
@@ -58,7 +60,9 @@ class TestPaymentHandler:
 
     def test_parse_payment_requirements_invalid_data(self):
         """Test parsing invalid payment requirements data."""
-        with patch("bindu.server.workers.helpers.payment_handler.PaymentRequirements") as mock_pr:
+        with patch(
+            "bindu.server.workers.helpers.payment_handler.PaymentRequirements"
+        ) as mock_pr:
             mock_pr.model_validate.side_effect = Exception("Invalid")
             mock_pr.side_effect = Exception("Invalid")
             result = PaymentHandler.parse_payment_requirements({"invalid": "data"})
@@ -254,9 +258,7 @@ class TestPaymentHandler:
         ) as mock_facilitator_class:
             mock_facilitator = MagicMock()
             mock_facilitator_class.return_value = mock_facilitator
-            mock_facilitator.settle = AsyncMock(
-                side_effect=Exception("Network error")
-            )
+            mock_facilitator.settle = AsyncMock(side_effect=Exception("Network error"))
 
             await PaymentHandler.settle_payment(
                 task,

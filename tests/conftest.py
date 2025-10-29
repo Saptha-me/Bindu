@@ -161,6 +161,13 @@ class _FacilitatorClient:
         return None
 
 
+class _FacilitatorConfig:
+    """Mock FacilitatorConfig for testing."""
+
+    def __init__(self, *args, **kwargs):  # noqa: ARG002
+        self._data = kwargs
+
+
 x402_mod = ModuleType("x402")
 x402_common = ModuleType("x402.common")
 x402_types = ModuleType("x402.types")
@@ -183,6 +190,7 @@ x402_types.x402PaymentRequiredResponse = dict  # type: ignore[attr-defined]
 
 # Setup x402.facilitator
 x402_fac.FacilitatorClient = _FacilitatorClient  # type: ignore[attr-defined]
+x402_fac.FacilitatorConfig = _FacilitatorConfig  # type: ignore[attr-defined]
 
 # Setup x402.encoding
 x402_encoding.safe_base64_decode = lambda x: x.encode() if isinstance(x, str) else x  # type: ignore[attr-defined]

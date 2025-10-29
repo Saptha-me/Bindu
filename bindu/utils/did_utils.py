@@ -5,18 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 
-def get_did_extension(app: "BinduApplication") -> Any | None:
-    """Get DID extension from app manifest if available.
-
-    Args:
-        app: BinduApplication instance
-
-    Returns:
-        DID extension or None
-    """
-    return getattr(app.manifest, "did_extension", None)
-
-
 def validate_did_extension(
     did_extension: Any | None, required_attr: str
 ) -> tuple[bool, str | None]:

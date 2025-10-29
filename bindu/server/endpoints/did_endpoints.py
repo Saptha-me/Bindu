@@ -12,9 +12,7 @@ from bindu.common.protocol.types import (
     InvalidParamsError,
     JSONParseError,
 )
-from bindu.utils.did_utils import (
-    get_did_extension,
-)
+from bindu.server.applications import BinduApplication
 from bindu.utils.request_utils import handle_endpoint_errors
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
@@ -43,7 +41,7 @@ async def did_resolve_endpoint(app: BinduApplication, request: Request) -> Respo
         return jsonrpc_error(code, message, "Missing 'did' parameter")
 
     # Get DID extension
-    did_extension = get_did_extension(app)
+    did_extension = app.manifest.did_extension
 
     # First check if DID extension exists and has 'did' attribute
     if not did_extension or not hasattr(did_extension, "did"):

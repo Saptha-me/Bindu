@@ -1,9 +1,8 @@
 """DID utilities for DID extension management and validation."""
 
-from typing import TYPE_CHECKING, Any
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from bindu.server.applications import BinduApplication
+from typing import Any
 
 
 def get_did_extension(app: "BinduApplication") -> Any | None:

@@ -4,7 +4,7 @@ These endpoints provide rich skill metadata for orchestrators to make
 intelligent agent selection and routing decisions.
 """
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -19,14 +19,11 @@ from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 from bindu.utils.skill_utils import find_skill_by_id
 
-if TYPE_CHECKING:
-    from bindu.server.applications import BinduApplication
-
 logger = get_logger("bindu.server.endpoints.skills")
 
 
 @handle_endpoint_errors("skills list")
-async def skills_list_endpoint(app: "BinduApplication", request: Request) -> Response:
+async def skills_list_endpoint(app: BinduApplication, request: Request) -> Response:
     """List all skills available on this agent.
 
     Returns a summary of all skills with basic metadata for discovery.
@@ -68,7 +65,7 @@ async def skills_list_endpoint(app: "BinduApplication", request: Request) -> Res
 
 
 @handle_endpoint_errors("skill detail")
-async def skill_detail_endpoint(app: "BinduApplication", request: Request) -> Response:
+async def skill_detail_endpoint(app: BinduApplication, request: Request) -> Response:
     """Get detailed information about a specific skill.
 
     Returns full skill metadata including documentation, capabilities,
@@ -111,7 +108,7 @@ async def skill_detail_endpoint(app: "BinduApplication", request: Request) -> Re
 
 @handle_endpoint_errors("skill documentation")
 async def skill_documentation_endpoint(
-    app: "BinduApplication", request: Request
+    app: BinduApplication, request: Request
 ) -> Response:
     """Get the full skill.yaml documentation for a specific skill.
 

@@ -18,14 +18,13 @@ Based on: https://github.com/coinbase/x402/blob/main/python/x402/src/x402/fastap
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from x402.common import x402_VERSION, find_matching_payment_requirements
 from x402.encoding import safe_base64_decode
-from x402.facilitator import FacilitatorClient
+from x402.facilitator import FacilitatorClient, FacilitatorConfig
 from x402.types import (
     PaymentPayload,
     PaymentRequirements,
@@ -36,8 +35,7 @@ from bindu.utils.logging import get_logger
 from bindu.extensions.x402 import X402AgentExtension
 from bindu.settings import app_settings
 
-if TYPE_CHECKING:
-    from bindu.common.models import AgentManifest
+from bindu.common.models import AgentManifest
 
 logger = get_logger("bindu.server.middleware.x402")
 
@@ -61,7 +59,7 @@ class X402Middleware(BaseHTTPMiddleware):
         self,
         app,
         manifest: AgentManifest,
-        facilitator_config: dict[str, Any],
+        facilitator_config: FacilitatorConfig,
         x402_ext: X402AgentExtension,
         payment_requirements: list[PaymentRequirements],
     ):
@@ -77,7 +75,7 @@ class X402Middleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.manifest = manifest
         self.x402_ext = x402_ext
-        self.facilitator = FacilitatorClient(facilitator_config)
+        self.facilitator = FacilitatorClient(config=facilitator_config)
         self._payment_requirements = payment_requirements
 
         self.protected_path = "/"  # A2A protocol endpoint

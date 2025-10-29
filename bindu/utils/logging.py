@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, cast
-
-if TYPE_CHECKING:
-    from loguru import Logger
+from typing import Optional, cast
 
 from loguru import logger
 from rich.console import Console

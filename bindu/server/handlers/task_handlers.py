@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from bindu.common.protocol.types import (
     CancelTaskRequest,
@@ -33,11 +33,10 @@ from bindu.common.protocol.types import (
 )
 from bindu.settings import app_settings
 
-from ...utils.task_telemetry import trace_task_operation, track_active_task
+from bindu.utils.task_telemetry import trace_task_operation, track_active_task
 
-if TYPE_CHECKING:
-    from ..scheduler import Scheduler
-    from ..storage import Storage
+from bindu.server.scheduler import Scheduler
+from bindu.server.storage import Storage
 
 
 @dataclass

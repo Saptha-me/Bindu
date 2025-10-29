@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import Any, Optional, Union
 from uuid import UUID, uuid4
 
 from bindu.common.protocol.types import (
@@ -14,9 +14,7 @@ from bindu.common.protocol.types import (
     TextPart,
 )
 from bindu.settings import app_settings
-
-if TYPE_CHECKING:
-    from bindu.extensions.did import DIDAgentExtension
+from bindu.extensions.did import DIDAgentExtension
 
 # Type aliases for better readability
 ChatMessage = dict[str, str]

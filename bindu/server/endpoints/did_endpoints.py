@@ -1,6 +1,8 @@
 """DID resolution and agent information endpoints."""
 
-from typing import TYPE_CHECKING, Optional
+from __future__ import annotations
+
+from typing import Optional
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -17,14 +19,11 @@ from bindu.utils.request_utils import handle_endpoint_errors
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
 
-if TYPE_CHECKING:
-    from ..applications import BinduApplication
-
 logger = get_logger("bindu.server.endpoints.did_endpoints")
 
 
 @handle_endpoint_errors("DID resolve")
-async def did_resolve_endpoint(app: "BinduApplication", request: Request) -> Response:
+async def did_resolve_endpoint(app: BinduApplication, request: Request) -> Response:
     """Resolve DID and return full W3C-compliant DID document."""
     client_ip = get_client_ip(request)
 

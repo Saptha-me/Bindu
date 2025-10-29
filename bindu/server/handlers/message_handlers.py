@@ -20,7 +20,7 @@ import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from bindu.common.protocol.types import (
     SendMessageRequest,
@@ -32,9 +32,8 @@ from bindu.common.protocol.types import (
 
 from bindu.utils.task_telemetry import trace_task_operation, track_active_task
 
-if TYPE_CHECKING:
-    from bindu.server.scheduler import Scheduler
-    from bindu.server.storage import Storage
+from bindu.server.scheduler import Scheduler
+from bindu.server.storage import Storage
 
 
 @dataclass

@@ -43,18 +43,18 @@ class TestGetX402ExtensionFromCapabilities:
     def test_ignores_other_extension_types(self):
         """Test that other extension types are ignored."""
         manifest = MagicMock()
-        
+
         # Mock another extension type
         other_ext = MagicMock()
         other_ext.__class__.__name__ = "DIDAgentExtension"
-        
+
         x402_ext = X402AgentExtension(
             amount="10000",
             token="USDC",
             network="base-sepolia",
             pay_to_address="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
         )
-        
+
         manifest.capabilities = {"extensions": [other_ext, x402_ext]}
 
         result = get_x402_extension_from_capabilities(manifest)

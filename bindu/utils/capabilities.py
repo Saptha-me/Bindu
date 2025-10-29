@@ -2,23 +2,26 @@
 
 from typing import Any, Dict, Optional
 
-from bindu.common.protocol.types import AgentCapabilities, AgentExtension
+from bindu.common.protocol.types import AgentCapabilities
 
 
 def add_extension_to_capabilities(
     capabilities: AgentCapabilities | Dict[str, Any] | None,
-    extension: AgentExtension,
+    extension: Any,
 ) -> AgentCapabilities:
     """Add an extension to agent capabilities.
 
     Args:
         capabilities: Existing capabilities (dict, AgentCapabilities object, or None)
-        extension: AgentExtension dict to add
+        extension: Extension instance (X402AgentExtension or DIDAgentExtension)
 
     Returns:
         AgentCapabilities object with extension included
 
     """
+    if capabilities is None:
+        capabilities = {}
+
     extensions = capabilities.get("extensions", [])
     extensions.append(extension)
     return AgentCapabilities(extensions=extensions)

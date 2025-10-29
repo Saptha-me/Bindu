@@ -18,7 +18,6 @@ Provides REST API endpoints for payment session management:
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
 
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response
@@ -29,15 +28,12 @@ from x402.types import PaymentPayload
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import handle_endpoint_errors
 
-if TYPE_CHECKING:
-    from bindu.server.applications import BinduApplication
-
 logger = get_logger("bindu.server.endpoints.payment_sessions")
 
 
 @handle_endpoint_errors("start payment session")
 async def start_payment_session_endpoint(
-    app: "BinduApplication", request: Request
+    app: BinduApplication, request: Request
 ) -> Response:
     """Start a new payment session.
 
@@ -66,7 +62,7 @@ async def start_payment_session_endpoint(
 
 @handle_endpoint_errors("payment capture")
 async def payment_capture_endpoint(
-    app: "BinduApplication", request: Request
+    app: BinduApplication, request: Request
 ) -> Response:
     """Browser page to capture payment.
 
@@ -149,7 +145,7 @@ async def payment_capture_endpoint(
 
 @handle_endpoint_errors("payment status")
 async def payment_status_endpoint(
-    app: "BinduApplication", request: Request
+    app: BinduApplication, request: Request
 ) -> Response:
     """Get payment status and token.
 

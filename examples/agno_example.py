@@ -20,8 +20,12 @@ from typing import Any
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
+from dotenv import load_dotenv
 
 from bindu.penguin.bindufy import bindufy
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 # Load configuration

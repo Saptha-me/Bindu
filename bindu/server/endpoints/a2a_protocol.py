@@ -1,6 +1,6 @@
 """A2A protocol endpoint for agent-to-agent communication."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
 from starlette.requests import Request
 from starlette.responses import Response
@@ -12,6 +12,7 @@ from bindu.common.protocol.types import (
     a2a_request_ta,
     a2a_response_ta,
 )
+from bindu.server.applications import BinduApplication
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error
@@ -20,13 +21,10 @@ from bindu.extensions.x402.extension import (
     add_activation_header as x402_add_header,
 )
 
-if TYPE_CHECKING:
-    from ..applications import BinduApplication
-
 logger = get_logger("bindu.server.endpoints.a2a_protocol")
 
 
-async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Response:
+async def agent_run_endpoint(app: BinduApplication, request: Request) -> Response:
     """Handle A2A protocol requests for agent-to-agent communication.
 
     Protocol Behavior:
@@ -65,6 +63,23 @@ async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Respo
             )
 
         handler = getattr(app.task_manager, handler_name)
+
+        # Pass payment details from middleware to handler if available
+        # Payment context is passed through the metadata field in params
+        if hasattr(request.state, "payment_payload") and method == "message/send":
+            # Inject payment context into message metadata
+            if "params" in a2a_request and "message" in a2a_request["params"]:
+                message = a2a_request["params"]["message"]
+                if "metadata" not in message:
+                    message["metadata"] = {}
+
+                # Add payment context to message metadata (internal use only)
+                message["metadata"]["_payment_context"] = {
+                    "payment_payload": request.state.payment_payload,
+                    "payment_requirements": request.state.payment_requirements,
+                    "verify_response": request.state.verify_response,
+                }
+
         jsonrpc_response = await handler(a2a_request)
 
         logger.debug(f"A2A response to {client_ip}: method={method}, id={request_id}")

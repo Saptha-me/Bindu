@@ -9,11 +9,15 @@
     "skills/pdf-processing"
   ],
   "capabilities": {
-    "reasoning": true,
-    "code_execution": false,
-    "web_search": false,
-    "file_operations": false,
-    "multimodal": false
+  },
+  "execution_cost": {
+    "amount": "$0.0001",
+    "token": "USDC",
+    "network": "base-sepolia",
+    "pay_to_address": "0x2654bb8B272f117c514aAc3d4032B1795366BA5d",
+    "protected_methods": [
+      "message/send"
+    ]
   },
   "agent_trust": "low",
   "kind": "agent",
@@ -42,9 +46,11 @@
       "/health",
       "/.well-known/*",
       "/did/resolve*",
+      "/did/info",
       "/agent/info",
       "/agent/skills",
-      "/agent/skills/*"
+      "/agent/skills/*",
+      "/payment-capture"
     ],
     "permissions": {
       "message/send": ["agent:write"],

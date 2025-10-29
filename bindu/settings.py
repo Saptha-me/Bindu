@@ -58,7 +58,7 @@ class DIDSettings(BaseSettings):
 
     # DID Document Constants
     w3c_context: str = "https://www.w3.org/ns/did/v1"
-    bindu_context: str = "https://bindu.ai/ns/v1"
+    bindu_context: str = "https://saptha.me/ns/v1"
     verification_key_type: str = "Ed25519VerificationKey2020"
     key_fragment: str = "key-1"
     service_fragment: str = "agent-service"
@@ -252,13 +252,20 @@ class X402Settings(BaseSettings):
     )
 
     provider: str = "coinbase"
-    facilitator_url: str = ""
-    default_network: str = "base"
+    facilitator_url: str = "https://x402.org/facilitator"
+    default_network: str = "base-sepolia"
     pay_to_env: str = "X402_PAY_TO"
     max_timeout_seconds: int = 600
 
     # Extension URI
     extension_uri: str = "https://github.com/google-a2a/a2a-x402/v0.1"
+
+    # Protected methods that require payment
+    # Similar to auth's public_endpoints, this defines which JSON-RPC methods need payment
+    protected_methods: list[str] = [
+        "message/send",  # Creating new tasks requires payment
+        # "message/stream",  # Uncomment if streaming should require payment
+    ]
 
     # Metadata keys
     meta_status_key: str = "x402.payment.status"
@@ -273,6 +280,31 @@ class X402Settings(BaseSettings):
     status_verified: str = "payment-verified"
     status_completed: str = "payment-completed"
     status_failed: str = "payment-failed"
+
+    # RPC URLs by network
+    # Always look https://chainlist.org/chain/84532?testnets=true for latest RPC URLs
+    rpc_urls_by_network: dict[str, list[str]] = {
+        "base-sepolia": [
+            "https://sepolia.base.org",  # Official Base Sepolia
+            "https://base-sepolia.public.blastapi.io",  # Blast public API
+            "https://rpc.ankr.com/base_sepolia",  # Ankr public
+            "https://base-sepolia.blockpi.network/v1/rpc/public",  # BlockPI public
+            "https://base-sepolia-rpc.publicnode.com",  # PublicNode
+        ],
+        "base": [
+            "https://mainnet.base.org",  # Official Base Mainnet
+            "https://base.blockpi.network/v1/rpc/public",  # BlockPI public
+            "https://base-rpc.publicnode.com",  # PublicNode
+            "https://1rpc.io/base",  # 1RPC public
+            "https://base.drpc.org",  # DRPC public
+        ],
+        "ethereum": [
+            "https://eth.llamarpc.com",  # LlamaRPC
+            "https://ethereum-rpc.publicnode.com",  # PublicNode
+            "https://rpc.ankr.com/eth",  # Ankr public
+            "https://ethereum.public.blockpi.network/v1/rpc/public",  # BlockPI
+        ],
+    }
 
 
 class AgentSettings(BaseSettings):
@@ -304,7 +336,6 @@ class AgentSettings(BaseSettings):
             "working",  # Agent actively processing
             "input-required",  # Waiting for user input
             "auth-required",  # Waiting for authentication
-            "payment-required",  # Waiting for payment (Bindu extension)
         }
     )
 
@@ -457,6 +488,7 @@ class AuthSettings(BaseSettings):
         "/agent.html",
         "/chat.html",
         "/storage.html",
+        "/payment-capture",  # x402 payment capture page (browser-based)
         "/js/*",
         "/css/*",
     ]

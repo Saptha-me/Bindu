@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, cast
-
-if TYPE_CHECKING:
-    from loguru import Logger
+from typing import Optional, cast
 
 from loguru import logger
 from rich.console import Console
@@ -105,7 +102,7 @@ def configure_logger(
     _is_logging_configured = True
 
 
-def get_logger(name: Optional[str] = None) -> "Logger":
+def get_logger(name: Optional[str] = None) -> type[logger]:
     """Get a configured logger instance with automatic name inference.
 
     Args:

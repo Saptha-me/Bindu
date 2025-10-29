@@ -13,7 +13,7 @@ from bindu.settings import app_settings
 def _make_request(
     path: str = "/",
     method: str = "POST",
-    headers: dict = None,
+    headers: dict | None = None,
     body: bytes = b"",
 ) -> Request:
     """Helper to create a test request."""

@@ -281,6 +281,31 @@ class X402Settings(BaseSettings):
     status_completed: str = "payment-completed"
     status_failed: str = "payment-failed"
 
+    # RPC URLs by network
+    # Always look https://chainlist.org/chain/84532?testnets=true for latest RPC URLs
+    rpc_urls_by_network: dict[str, list[str]] = {
+        "base-sepolia": [
+            "https://sepolia.base.org",  # Official Base Sepolia
+            "https://base-sepolia.public.blastapi.io",  # Blast public API
+            "https://rpc.ankr.com/base_sepolia",  # Ankr public
+            "https://base-sepolia.blockpi.network/v1/rpc/public",  # BlockPI public
+            "https://base-sepolia-rpc.publicnode.com",  # PublicNode
+        ],
+        "base": [
+            "https://mainnet.base.org",  # Official Base Mainnet
+            "https://base.blockpi.network/v1/rpc/public",  # BlockPI public
+            "https://base-rpc.publicnode.com",  # PublicNode
+            "https://1rpc.io/base",  # 1RPC public
+            "https://base.drpc.org",  # DRPC public
+        ],
+        "ethereum": [
+            "https://eth.llamarpc.com",  # LlamaRPC
+            "https://ethereum-rpc.publicnode.com",  # PublicNode
+            "https://rpc.ankr.com/eth",  # Ankr public
+            "https://ethereum.public.blockpi.network/v1/rpc/public",  # BlockPI
+        ],
+    }
+
 
 class AgentSettings(BaseSettings):
     """Agent behavior and protocol configuration settings."""
@@ -311,7 +336,6 @@ class AgentSettings(BaseSettings):
             "working",  # Agent actively processing
             "input-required",  # Waiting for user input
             "auth-required",  # Waiting for authentication
-            "payment-required",  # Waiting for payment (Bindu extension)
         }
     )
 

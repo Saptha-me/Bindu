@@ -18,6 +18,7 @@ class TestDIDValidation:
         """Test validation of DID with invalid prefix."""
         valid, error = DIDValidation.validate_did_format("invalid:bindu:author:agent")
         assert valid is False
+        assert error is not None
         assert f"DID must start with '{app_settings.did.prefix}'" in error
 
     def test_validate_invalid_pattern(self):
@@ -37,20 +38,21 @@ class TestDIDValidation:
         """Test validation of bindu DID with invalid format."""
         valid, error = DIDValidation.validate_did_format("did:bindu:author")
         assert valid is False
+        assert error is not None
         assert "bindu DID must have format" in error
 
     def test_validate_bindu_did_empty_author(self):
         """Test validation of bindu DID with empty author."""
         valid, error = DIDValidation.validate_did_format("did:bindu::agent")
         assert valid is False
-        # Pattern check fails first for empty components
+        assert error is not None
         assert "bindu DID must have format" in error
 
     def test_validate_bindu_did_empty_agent_name(self):
         """Test validation of bindu DID with empty agent name."""
         valid, error = DIDValidation.validate_did_format("did:bindu:author:")
         assert valid is False
-        # Pattern check fails first for empty components
+        assert error is not None
         assert "bindu DID must have format" in error
 
     def test_validate_valid_bindu_did(self):
@@ -152,7 +154,7 @@ class TestDIDValidation:
                     "id": "did:bindu:author:agent#key-1",
                     "type": "Ed25519VerificationKey2020",
                     "controller": "did:bindu:author:agent",
-                    "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV",
+                    "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV",  # pragma: allowlist secret
                 }
             ],
         }
@@ -200,6 +202,7 @@ class TestDIDValidation:
         """Test _validate_prefix method."""
         valid, error = DIDValidation._validate_prefix("invalid:bindu:author:agent")
         assert valid is False
+        assert error is not None
         assert f"DID must start with '{app_settings.did.prefix}'" in error
 
         valid, error = DIDValidation._validate_prefix("did:bindu:author:agent")
@@ -222,6 +225,7 @@ class TestDIDValidation:
         # Need at least 3 parts: did:method:identifier
         valid, error, parts = DIDValidation._validate_parts("did:x")
         assert valid is False
+        assert error is not None
         assert f"DID must have at least {app_settings.did.min_parts} parts" in error
         assert parts == []
 
@@ -236,6 +240,7 @@ class TestDIDValidation:
             "did:bindu:author", ["did", "bindu", "author"]
         )
         assert valid is False
+        assert error is not None
         assert "bindu DID must have format" in error
 
         valid, error = DIDValidation._validate_bindu_did(
@@ -251,12 +256,14 @@ class TestDIDValidation:
             "did:bindu:author:agent", ["did", "bindu", "", "agent"]
         )
         assert valid is False
+        assert error is not None
         assert "Author and agent name cannot be empty" in error
 
         valid, error = DIDValidation._validate_bindu_did(
             "did:bindu:author:agent", ["did", "bindu", "author", ""]
         )
         assert valid is False
+        assert error is not None
         assert "Author and agent name cannot be empty" in error
 
     def test_validate_required_field(self):

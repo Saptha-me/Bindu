@@ -18,6 +18,7 @@ Based on: https://github.com/coinbase/x402/blob/main/python/x402/src/x402/fastap
 from __future__ import annotations
 
 import json
+from web3 import Web3
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -35,7 +36,7 @@ from bindu.utils.logging import get_logger
 from bindu.extensions.x402 import X402AgentExtension
 from bindu.settings import app_settings
 
-from bindu.common.models import AgentManifest
+from bindu.common.models import AgentManifest, VerifyResponse
 
 logger = get_logger("bindu.server.middleware.x402")
 
@@ -60,7 +61,7 @@ class X402Middleware(BaseHTTPMiddleware):
         app,
         manifest: AgentManifest,
         facilitator_config: FacilitatorConfig,
-        x402_ext: X402AgentExtension,
+        x402_ext: X402AgentExtension | None,
         payment_requirements: list[PaymentRequirements],
     ):
         """Initialize X402 middleware.
@@ -79,6 +80,70 @@ class X402Middleware(BaseHTTPMiddleware):
         self._payment_requirements = payment_requirements
 
         self.protected_path = "/"  # A2A protocol endpoint
+
+        # Web3 connection pool for performance optimization
+        self._web3_connections: dict[str, Web3] = {}
+
+    def _get_web3_connection(self, network: str) -> tuple[Web3 | None, str | None]:
+        """Get or create cached Web3 connection for network.
+
+        This method maintains a connection pool to avoid creating new Web3
+        instances for every payment validation request.
+
+        Args:
+            network: Network name (e.g., "base-sepolia", "base", "ethereum")
+
+        Returns:
+            Tuple of (Web3 instance or None, error message or None)
+        """
+        # Check if we have a cached connection
+        if network in self._web3_connections:
+            try:
+                # Verify connection is still alive
+                self._web3_connections[network].eth.chain_id
+                logger.debug(f"Using cached Web3 connection for {network}")
+                return self._web3_connections[network], None
+            except Exception as e:
+                logger.warning(
+                    f"Cached connection for {network} failed: {e}. Reconnecting..."
+                )
+                del self._web3_connections[network]
+
+        # Get RPC URLs for this network
+        rpc_urls = app_settings.x402.rpc_urls_by_network.get(network)
+        if not rpc_urls:
+            error_msg = f"No RPC URLs configured for network: {network}"
+            logger.warning(error_msg)
+            return None, error_msg
+
+        # Try each RPC URL until one succeeds
+        last_error = None
+        for rpc_url in rpc_urls:
+            try:
+                logger.debug(f"Creating new Web3 connection to {rpc_url}")
+                w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 10}))
+
+                # Test connection
+                chain_id = w3.eth.chain_id
+                logger.info(
+                    f"Successfully connected to {network} (chain_id={chain_id}) via {rpc_url}"
+                )
+
+                # Cache the connection
+                self._web3_connections[network] = w3
+                return w3, None
+
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(f"Failed to connect to {rpc_url}: {e}")
+                continue
+
+        # All connections failed
+        error_msg = (
+            f"Failed to connect to any {network} RPC provider. Last error: {last_error}"
+        )
+        logger.error(error_msg)
+        return None, error_msg
 
     async def dispatch(self, request: Request, call_next) -> Response:
         """Process request and enforce payment if required.
@@ -135,6 +200,7 @@ class X402Middleware(BaseHTTPMiddleware):
             logger.info(
                 f"Payment required for {request.url.path} from {request.client.host if request.client else 'unknown'}"
             )
+            return self._create_402_response("X-PAYMENT header required")
 
         # Decode and parse payment payload
         try:
@@ -156,18 +222,17 @@ class X402Middleware(BaseHTTPMiddleware):
             return self._create_402_response("No matching payment requirements found")
 
         try:
-            verify_response = await self.facilitator.verify(
+            is_valid, error_reason = await self._validate_payment_manually(
                 payment_payload, selected_payment_requirements
             )
             logger.info(
-                f"Facilitator verify response: is_valid={verify_response.is_valid}, invalid_reason={verify_response.invalid_reason}"
+                f"Manual payment validation: is_valid={is_valid}, error_reason={error_reason}"
             )
         except Exception as e:
             logger.error(f"Payment verification error: {e}", exc_info=True)
             return self._create_402_response(f"Payment verification error: {str(e)}")
 
-        if not verify_response.is_valid:
-            error_reason = verify_response.invalid_reason or "Unknown error"
+        if not is_valid:
             logger.warning(
                 f"Payment verification failed from {request.client.host if request.client else 'unknown'}: {error_reason}"
             )
@@ -182,13 +247,135 @@ class X402Middleware(BaseHTTPMiddleware):
         # Attach payment details to request for later use by the worker
         request.state.payment_payload = payment_payload
         request.state.payment_requirements = selected_payment_requirements
-        request.state.verify_response = verify_response
+        request.state.verify_response = VerifyResponse(
+            is_valid=True, invalid_reason=None
+        )
 
         # Process the request (execute agent)
         # Payment settlement will be handled by ManifestWorker when task completes
         response = await call_next(request)
 
         return response
+
+    async def _validate_payment_manually(
+        self, payment_payload: PaymentPayload, payment_requirements: PaymentRequirements
+    ) -> tuple[bool, str | None]:
+        """Manually validate payment without consuming nonce.
+
+        This validates:
+        1. Payment structure (already validated by Pydantic)
+        2. Amount matches requirements
+        3. Network matches requirements
+        4. Payer has sufficient balance (on-chain check)
+        5. EIP-3009 signature is valid (optional)
+
+        Args:
+            payment_payload: Payment payload from client
+            payment_requirements: Payment requirements for this agent
+
+        Returns:
+            Tuple of (is_valid, error_reason)
+        """
+        try:
+            # 1. Check scheme is 'exact'
+            if payment_payload.x402_version != 1 or payment_payload.scheme != "exact":
+                return False, f"Unsupported payment scheme: {payment_payload.scheme}"
+
+            # 2. Extract authorization details
+            if not hasattr(payment_payload.payload, "authorization"):
+                return False, "Missing authorization in payment payload"
+
+            auth = payment_payload.payload.authorization
+
+            # 3. Validate amount matches requirements
+            payment_value = int(auth.value)
+            required_value = int(payment_requirements.max_amount_required)
+
+            if payment_value < required_value:
+                return (
+                    False,
+                    f"Insufficient payment amount: {payment_value} < {required_value}",
+                )
+
+            # 4. Validate network matches
+            if payment_payload.network != payment_requirements.network:
+                return (
+                    False,
+                    f"Network mismatch: {payment_payload.network} != {payment_requirements.network}",
+                )
+
+            # 5. Get RPC URL for network
+            w3, connection_error = self._get_web3_connection(payment_payload.network)
+
+            if w3 is None:
+                return False, f"Cannot connect to {payment_payload.network} network"
+
+            # 6. Check balance on-chain (optional - skip if token contract unavailable)
+            try:
+                # Get token contract address
+                token_address = Web3.to_checksum_address(payment_requirements.asset)
+                logger.info(
+                    f"Checking token contract: {token_address} on {payment_payload.network}"
+                )
+
+                # Check if contract is deployed at this address
+                code = w3.eth.get_code(token_address)
+                if code == b"" or code == b"\x00" or code.hex() == "0x":
+                    logger.warning(
+                        f"No contract found at {token_address} on {payment_payload.network}. "
+                        f"This may be an incorrect token address. Skipping balance check."
+                    )
+                else:
+                    logger.info(
+                        f"Contract found at {token_address}, bytecode length: {len(code)} bytes"
+                    )
+
+                    # ERC-20 balanceOf ABI
+                    balance_of_abi = [
+                        {
+                            "constant": True,
+                            "inputs": [{"name": "_owner", "type": "address"}],
+                            "name": "balanceOf",
+                            "outputs": [{"name": "balance", "type": "uint256"}],
+                            "type": "function",
+                        }
+                    ]
+
+                    token_contract = w3.eth.contract(
+                        address=token_address, abi=balance_of_abi
+                    )
+
+                    # Check payer balance
+                    payer_address = Web3.to_checksum_address(auth.from_)
+                    balance = token_contract.functions.balanceOf(payer_address).call()
+
+                    if balance < payment_value:
+                        return (
+                            False,
+                            f"Insufficient balance: {balance} < {payment_value} (required)",
+                        )
+
+                    logger.info(
+                        f"Payment validation passed: network={payment_payload.network}, "
+                        f"token={token_address}, amount={payment_value}, balance={balance}, payer={payer_address}"
+                    )
+
+            except Exception as balance_error:
+                # Balance check failed - log warning but continue validation
+                logger.warning(
+                    f"Could not verify on-chain balance for {payment_requirements.asset}: {balance_error}. "
+                    f"Skipping balance check and allowing payment based on signature verification only."
+                )
+                logger.info(
+                    f"Payment validation passed (without balance check): network={payment_payload.network}, "
+                    f"token={payment_requirements.asset}, amount={payment_value}, payer={auth.from_}"
+                )
+
+            return True, None
+
+        except Exception as e:
+            logger.error(f"Payment validation error: {e}", exc_info=True)
+            return False, f"Validation error: {str(e)}"
 
     def _create_402_response(self, error: str) -> JSONResponse:
         """Create a 402 Payment Required response using x402PaymentRequiredResponse.

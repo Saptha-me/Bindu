@@ -113,6 +113,14 @@ class AgentFrameworkSpec:
 
 
 @dataclass
+class VerifyResponse:
+    """Response from payment verification."""
+
+    is_valid: bool
+    invalid_reason: str | None = None
+
+
+@dataclass
 class AgentManifest:
     """The living blueprint of an agent.
 

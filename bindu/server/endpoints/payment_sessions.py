@@ -196,163 +196,231 @@ async def payment_status_endpoint(app: BinduApplication, request: Request) -> Re
     return JSONResponse(content=response_data)
 
 
-def _get_success_html(session_id: str) -> str:
-    """Generate success HTML page."""
+def _get_common_styles() -> str:
+    """Generate common CSS styles for payment pages."""
+    return """
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+        h1 {
+            color: #1f2937;
+            margin: 0 0 1rem;
+            font-size: 2rem;
+        }
+        p {
+            color: #6b7280;
+            margin: 0 0 2rem;
+            font-size: 1.1rem;
+        }
+    """
+
+
+def _get_base_html(
+    title: str, background_gradient: str, body_content: str, additional_styles: str = ""
+) -> str:
+    """Generate base HTML structure for payment pages.
+
+    Args:
+        title: Page title
+        background_gradient: CSS gradient for body background
+        body_content: HTML content for the page body
+        additional_styles: Additional CSS styles specific to the page
+    """
+    common_styles = _get_common_styles()
+
     return f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Payment Successful</title>
+        <title>{title}</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
+            {common_styles}
             body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                margin: 0;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: {background_gradient};
             }}
-            .container {{
-                background: white;
-                padding: 3rem;
-                border-radius: 1rem;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                text-align: center;
-                max-width: 500px;
-            }}
-            .success-icon {{
-                width: 80px;
-                height: 80px;
-                margin: 0 auto 1.5rem;
-                background: #10b981;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 3rem;
-            }}
-            h1 {{
-                color: #1f2937;
-                margin: 0 0 1rem;
-                font-size: 2rem;
-            }}
-            p {{
-                color: #6b7280;
-                margin: 0 0 2rem;
-                font-size: 1.1rem;
-            }}
-            .session-id {{
-                background: #f3f4f6;
-                padding: 1rem;
-                border-radius: 0.5rem;
-                font-family: monospace;
-                font-size: 0.9rem;
-                word-break: break-all;
-                color: #374151;
-            }}
-            .note {{
-                margin-top: 2rem;
-                padding: 1rem;
-                background: #fef3c7;
-                border-left: 4px solid #f59e0b;
-                border-radius: 0.5rem;
-                text-align: left;
-                font-size: 0.9rem;
-                color: #92400e;
-            }}
+            {additional_styles}
         </style>
     </head>
     <body>
+        {body_content}
+    </body>
+    </html>
+    """
+
+
+def _get_success_html(session_id: str) -> str:
+    """Generate success HTML page with copy button."""
+    additional_styles = """
+        .icon {
+            background: #10b981;
+        }
+        .session-id-container {
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .session-id {
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            color: #374151;
+            flex: 1;
+            text-align: left;
+        }
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .copy-btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        .copy-btn.copied {
+            background: #10b981;
+        }
+        .note {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            border-radius: 0.5rem;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #92400e;
+        }
+    """
+
+    body_content = f"""
         <div class="container">
-            <div class="success-icon">✓</div>
+            <div class="icon">✓</div>
             <h1>Payment Successful!</h1>
             <p>Your payment has been captured and is ready to use.</p>
-            <div class="session-id">
-                Session ID: {session_id}
+            <div class="session-id-container">
+                <div class="session-id" id="session-id-text">
+                    Session ID: {session_id}
+                </div>
+                <button class="copy-btn" id="copy-btn" onclick="copySessionId()">
+                    Copy
+                </button>
             </div>
             <div class="note">
                 <strong>Note:</strong> Your payment token has been captured but not consumed yet.
                 You can now retrieve it using the API and use it for your request.
             </div>
         </div>
-    </body>
-    </html>
+        <script>
+            function copySessionId() {{
+                const sessionId = '{session_id}';
+                const btn = document.getElementById('copy-btn');
+
+                navigator.clipboard.writeText(sessionId).then(() => {{
+                    // Success feedback
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+
+                    // Reset after 2 seconds
+                    setTimeout(() => {{
+                        btn.textContent = 'Copy';
+                        btn.classList.remove('copied');
+                    }}, 2000);
+                }}).catch(err => {{
+                    // Fallback for older browsers
+                    console.error('Failed to copy:', err);
+                    btn.textContent = 'Error';
+                    setTimeout(() => {{
+                        btn.textContent = 'Copy';
+                    }}, 2000);
+                }});
+            }}
+        </script>
     """
+
+    return _get_base_html(
+        title="Payment Successful",
+        background_gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        body_content=body_content,
+        additional_styles=additional_styles,
+    )
 
 
 def _get_error_html(error: str) -> str:
     """Generate error HTML page."""
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Payment Error</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                margin: 0;
-                background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
-            }}
-            .container {{
-                background: white;
-                padding: 3rem;
-                border-radius: 1rem;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                text-align: center;
-                max-width: 500px;
-            }}
-            .error-icon {{
-                width: 80px;
-                height: 80px;
-                margin: 0 auto 1.5rem;
-                background: #ef4444;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 3rem;
-                color: white;
-            }}
-            h1 {{
-                color: #1f2937;
-                margin: 0 0 1rem;
-                font-size: 2rem;
-            }}
-            p {{
-                color: #6b7280;
-                margin: 0;
-                font-size: 1.1rem;
-            }}
-            .error-message {{
-                margin-top: 1.5rem;
-                padding: 1rem;
-                background: #fee2e2;
-                border-left: 4px solid #dc2626;
-                border-radius: 0.5rem;
-                text-align: left;
-                font-size: 0.9rem;
-                color: #991b1b;
-            }}
-        </style>
-    </head>
-    <body>
+    additional_styles = """
+        .icon {
+            background: #ef4444;
+            color: white;
+        }
+        p {
+            margin: 0;
+        }
+        .error-message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #fee2e2;
+            border-left: 4px solid #dc2626;
+            border-radius: 0.5rem;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #991b1b;
+        }
+    """
+
+    body_content = f"""
         <div class="container">
-            <div class="error-icon">✕</div>
+            <div class="icon">✕</div>
             <h1>Payment Error</h1>
             <p>There was a problem with your payment.</p>
             <div class="error-message">
                 {error}
             </div>
         </div>
-    </body>
-    </html>
     """
+
+    return _get_base_html(
+        title="Payment Error",
+        background_gradient="linear-gradient(135deg, #f87171 0%, #dc2626 100%)",
+        body_content=body_content,
+        additional_styles=additional_styles,
+    )

@@ -42,7 +42,7 @@ def jsonrpc_error(
     code: int,
     message: str,
     data: str | None = None,
-    request_id: str | None = None,
+    request_id: Any = None,
     status: int = 400,
 ) -> JSONResponse:
     """Create a JSON-RPC error response.
@@ -65,7 +65,7 @@ def jsonrpc_error(
         content={
             "jsonrpc": "2.0",
             "error": error_dict,
-            "id": request_id,
+            "id": str(request_id) if request_id is not None else None,
         },
         status_code=status,
     )

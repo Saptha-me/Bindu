@@ -506,15 +506,16 @@ class ManifestWorker(Worker):
         Returns:
             Metadata dict containing settlement information to attach to task
         """
-        from x402.facilitator import FacilitatorClient
+        from x402.facilitator import FacilitatorClient, FacilitatorConfig
 
         try:
             payment_payload = payment_context["payment_payload"]
             payment_requirements = payment_context["payment_requirements"]
 
             # Initialize facilitator client
-            # FacilitatorClient will use default config if None is passed
-            facilitator = FacilitatorClient()
+            facilitator = FacilitatorClient(
+                config=FacilitatorConfig(url=app_settings.x402.facilitator_url)
+            )
 
             # Settle payment
             logger.info("Settling payment for completed task")

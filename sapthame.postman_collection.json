@@ -28,7 +28,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"provide sunset quote\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440041\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"provide sunset quote\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440078\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -36,12 +36,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -105,6 +105,53 @@
 				"body": {
 					"mode": "raw",
 					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"instagram\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440041\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8030/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "second send message Copy",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "<>",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer <>"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"provide sunset quote\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440039\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440078\",\n            \"metadata\": {\n                \"x402.payment.status\": \"payment-submitted\",\n                \"x402.payment.payload\": {\n                    \"resource\": \"/agent/first Agent\",\n                    \"scheme\": \"exact\",\n                    \"network\": \"base-sepolia\",\n                    \"asset\": \"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\n                    \"payTo\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0\",\n                    \"amount\": \"10000000000\",\n                    \"signature\": \"0x<YOUR_WALLET_SIGNATURE_HERE>\",\n                    \"timestamp\": \"2025-10-26T14:47:52.183416+00:00\",\n                    \"payer\": \"0x<YOUR_WALLET_ADDRESS>\"\n                }\n            }\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440025\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -405,7 +452,7 @@
 					},
 					{
 						"key": "Authorization",
-						"value": "Bearer f9ca180007875e668cd43e287d2bd9d274c696e0c0dc8c6a9ff15f99129a1ae2"
+						"value": "Bearer <>"
 					}
 				],
 				"body": {
@@ -435,7 +482,39 @@
 			"name": "agent card",
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8030/.well-known/agent.json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						".well-known",
+						"agent.json"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "agent card Copy",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8030/.well-known/agent.json",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						".well-known",
+						"agent.json"
+					]
+				}
 			},
 			"response": []
 		},
@@ -468,6 +547,135 @@
 					"path": [
 						"did",
 						"resolve"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List skills",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8030/agent/skills",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						"agent",
+						"skills"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Skill details",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8030/agent/skills/question-answering-v1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						"agent",
+						"skills",
+						"question-answering-v1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "skill documentation",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8030/agent/skills/question-answering-v1/documentation",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						"agent",
+						"skills",
+						"question-answering-v1",
+						"documentation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "start-payment-session",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "<>",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8030/api/start-payment-session",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						"api",
+						"start-payment-session"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "payment-capture",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "<>",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8030/api/payment-status/Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						"api",
+						"payment-status",
+						"<>"
 					]
 				}
 			},

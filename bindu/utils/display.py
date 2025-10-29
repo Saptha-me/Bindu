@@ -148,13 +148,13 @@ def prepare_server_display(
     )
     console.print()
 
-    console.print(Text("🌎 Join our Community 🌎", style="bold green"), highlight=False)
+    console.print(Text("Join our Community 🤝", style="bold green"), highlight=False)
     console.print(
         Text("https://discord.gg/3w5zuYUuwt", style="cyan underline"), highlight=False
     )
     console.print()
 
-    console.print(Text("📚 Documentation 📚", style="bold blue"), highlight=False)
+    console.print(Text("Documentation 🌻", style="bold blue"), highlight=False)
     console.print(
         Text("https://docs.saptha.me", style="cyan underline"), highlight=False
     )

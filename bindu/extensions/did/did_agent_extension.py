@@ -30,13 +30,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import base58
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
-from bindu.common.protocol.types import AgentExtension
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
@@ -81,21 +80,6 @@ class DIDAgentExtension:
             public_key_path (str): Full path to the public key PEM file
             did (str): The agent's Decentralized Identifier (computed from public key)
             metadata (dict): Additional metadata included in the DID document
-
-        Example:
-            >>> from pathlib import Path
-            >>> from uuid import uuid4
-            >>> did_ext = DIDAgentExtension(
-            ...     recreate_keys=False,
-            ...     key_dir=Path(".keys"),
-            ...     author="alice@example.com",
-            ...     agent_name="travel_agent",
-            ...     agent_id=str(uuid4()),
-            ...     key_password="env:AGENT_KEY_PASSWORD"
-            ... )
-            >>> did_ext.generate_and_save_key_pair()
-            >>> print(did_ext.did)
-            'did:bindu:alice_at_example_com:travel_agent:550e8400-e29b-41d4-a716-446655440000'
         """
         # Store key directory and paths
         self._key_dir = key_dir
@@ -112,6 +96,14 @@ class DIDAgentExtension:
 
         # Store additional metadata that will be included in DID document
         self.metadata: Dict[str, Any] = {}
+
+    def __repr__(self) -> str:
+        """Return string representation of the extension."""
+        did_preview = self.did[:20] + "..." if len(self.did) > 20 else self.did
+        return (
+            f"DIDAgentExtension(did={did_preview}, "
+            f"author={self.author}, agent_name={self.agent_name})"
+        )
 
     def _generate_key_pair_data(self) -> tuple[bytes, bytes]:
         """Generate key pair and return PEM data.
@@ -316,36 +308,6 @@ class DIDAgentExtension:
         multibase_encoded = app_settings.did.multibase_prefix + encoded
         return f"did:{app_settings.did.method_key}:{multibase_encoded}"
 
-    def set_agent_metadata(
-        self,
-        skills: Optional[List[Any]] = None,
-        capabilities: Optional[Dict[str, Any]] = None,
-        description: Optional[str] = None,
-        version: Optional[str] = None,
-        author: Optional[str] = None,
-        **extra_metadata,
-    ) -> None:
-        """Set metadata that will be included in the DID document.
-
-        Args:
-            skills: List of agent skills
-            capabilities: Agent capabilities dictionary
-            description: Agent description
-            version: Agent version
-            author: Agent author
-            **extra_metadata: Any additional metadata to include
-        """
-        # Update metadata with all non-None values
-        updates = {
-            "skills": skills,
-            "capabilities": capabilities,
-            "description": description,
-            "version": version,
-            "author": author,
-        }
-        self.metadata.update({k: v for k, v in updates.items() if v is not None})
-        self.metadata.update(extra_metadata)
-
     def _get_public_key_raw_bytes(self) -> bytes:
         """Get raw bytes of public key."""
         return self.public_key.public_bytes(
@@ -378,55 +340,5 @@ class DIDAgentExtension:
                     "publicKeyBase58": self.public_key_base58,
                 }
             ],
-            # bindu-specific metadata
-            "bindu": {
-                "agentName": self.agent_name,
-                "author": self.author,
-                **self.metadata,  # Include all metadata
-            },
         }
-
-        # Add service endpoints if URL is available
-        if "url" in self.metadata:
-            did_doc["service"] = [
-                {
-                    "id": f"{self.did}#{app_settings.did.service_fragment}",
-                    "type": app_settings.did.service_type,
-                    "serviceEndpoint": self.metadata["url"],
-                }
-            ]
-
         return did_doc
-
-    def get_agent_info(self) -> Dict[str, Any]:
-        """Get a simplified agent info JSON (more readable than full DID document).
-
-        Returns:
-            Dictionary with agent information in a user-friendly format
-        """
-        info = {
-            "did": self.did,
-            "agentName": self.agent_name,
-            "author": self.author,
-            "publicKey": self.public_key_base58,
-            "created": self._created_at,
-        }
-
-        # Add all metadata fields
-        info.update(self.metadata)
-
-        return info
-
-    @cached_property
-    def agent_extension(self) -> AgentExtension:
-        """Get agent extension configuration for capabilities."""
-        return AgentExtension(
-            uri=app_settings.did.extension_uri,
-            description=app_settings.did.extension_description,
-            required=False,
-            params={
-                "did": self.did,
-                "resolver_endpoint": app_settings.did.resolver_endpoint,
-                "info_endpoint": app_settings.did.info_endpoint,
-            },
-        )

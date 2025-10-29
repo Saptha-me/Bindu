@@ -27,24 +27,13 @@ Hybrid Agent Architecture (A2A Protocol):
 
 from __future__ import annotations
 
-import json
-import re
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 from uuid import UUID
 
 from opentelemetry.trace import Status, StatusCode, get_tracer
 
-# x402
-from x402.types import PaymentPayload, PaymentRequirements
-from x402.facilitator import FacilitatorClient
-from bindu.extensions.x402.utils import (
-    build_payment_completed_metadata,
-    build_payment_failed_metadata,
-    build_payment_required_metadata,
-    build_payment_verified_metadata,
-)
 from bindu.settings import app_settings
 
 from bindu.common.protocol.types import (
@@ -57,6 +46,7 @@ from bindu.common.protocol.types import (
 )
 from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
+from bindu.server.workers.helpers import ResponseDetector, ResultProcessor
 from bindu.utils.logging import get_logger
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
@@ -95,10 +85,6 @@ class ManifestWorker(Worker):
     )
     """Optional callback for task lifecycle notifications (task_id, context_id, state, final)."""
 
-    # -------------------------------------------------------------------------
-    # Task Execution (Hybrid Pattern)
-    # -------------------------------------------------------------------------
-
     async def run_task(self, params: TaskSendParams) -> None:
         """Execute a task using the AgentManifest.
 
@@ -111,9 +97,11 @@ class ManifestWorker(Worker):
            - auth-required → Message only, task stays open
            - normal → Message + Artifact, task completes
         5. Update storage with appropriate state and content
+        6. Settle payment if task completes successfully (x402 flow)
 
         Args:
-            params: Task execution parameters containing task_id, context_id, message
+            params: Task execution parameters containing task_id, context_id, message,
+                   and optional payment_context from middleware
 
         Raises:
             ValueError: If task not found
@@ -123,6 +111,9 @@ class ManifestWorker(Worker):
         task = await self.storage.load_task(params["task_id"])
         if task is None:
             raise ValueError(f"Task {params['task_id']} not found")
+
+        # Extract payment context if available (from x402 middleware)
+        payment_context = params.get("payment_context")
 
         await TaskStateManager.validate_task_state(task)
 
@@ -135,84 +126,9 @@ class ManifestWorker(Worker):
                 "task.state_changed", attributes={"to_state": "working"}
             )
 
-        # Detect x402 payment submission on the latest user message BEFORE setting state
-        latest_msg = (task.get("history") or [])[-1] if task.get("history") else None
-        latest_meta = (latest_msg or {}).get("metadata") or {}
-
-        is_paid_flow = False
-        payment_payload_obj: PaymentPayload | None = None
-        payment_requirements_obj: PaymentRequirements | None = None
-        facilitator_client: FacilitatorClient | None = None
-
-        try:
-            if latest_meta.get(
-                app_settings.x402.meta_status_key
-            ) == app_settings.x402.status_submitted and latest_meta.get(
-                app_settings.x402.meta_payload_key
-            ):
-                payload_data = latest_meta.get(app_settings.x402.meta_payload_key)
-                required_data = (task.get("metadata") or {}).get(
-                    app_settings.x402.meta_required_key
-                ) or latest_meta.get(app_settings.x402.meta_required_key)
-
-                # Parse payload and select requirement
-                payment_payload_obj = self._parse_payment_payload(payload_data)
-                payment_requirements_obj = self._select_requirement_from_required(
-                    required_data, payment_payload_obj
-                )
-                if payment_payload_obj and payment_requirements_obj:
-                    facilitator_client = FacilitatorClient()
-                    verify_response = await facilitator_client.verify(
-                        payment_payload_obj, payment_requirements_obj
-                    )
-                    if not verify_response.is_valid:
-                        # Record failure and finish task
-                        md = build_payment_failed_metadata(
-                            verify_response.invalid_reason or "verification_failed"
-                        )
-                        error_msg = MessageConverter.to_protocol_messages(
-                            f"Payment verification failed: {verify_response.invalid_reason or 'unknown'}",
-                            task["id"],
-                            task["context_id"],
-                        )
-                        # Keep state as input-required per design; only metadata reflects x402 failure
-                        await self.storage.update_task(
-                            task["id"],
-                            state="input-required",
-                            new_messages=error_msg,
-                            metadata=md,
-                        )
-                        await self._notify_lifecycle(
-                            task["id"], task["context_id"], "input-required", False
-                        )
-                        return
-
-                    # Mark verified while continuing work
-                    is_paid_flow = True
-                    await self.storage.update_task(
-                        task["id"],
-                        state="input-required",
-                        metadata=build_payment_verified_metadata(),
-                    )
-        except Exception as e:
-            # Defensive: if verification path errors, fail the task
-            error_msg = MessageConverter.to_protocol_messages(
-                f"Payment processing error: {e}", task["id"], task["context_id"]
-            )
-            await self.storage.update_task(
-                task["id"], state="input-required", new_messages=error_msg
-            )
-            await self._notify_lifecycle(
-                task["id"], task["context_id"], "input-required", False
-            )
-            return
-
-        # If not in payment-submitted flow, transition to working as usual
-        if not is_paid_flow:
-            await self.storage.update_task(task["id"], state="working")
-            await self._notify_lifecycle(
-                task["id"], task["context_id"], "working", False
-            )
+        # Transition to working
+        await self.storage.update_task(task["id"], state="working")
+        await self._notify_lifecycle(task["id"], task["context_id"], "working", False)
 
         # Step 2: Build conversation history (A2A Protocol)
         message_history = await self._build_complete_message_history(task)
@@ -250,10 +166,12 @@ class ManifestWorker(Worker):
                     raw_results = self.manifest.run(message_history or [])
 
                     # Handle generator/async generator responses
-                    collected_results = await self._collect_results(raw_results)
+                    collected_results = await ResultProcessor.collect_results(
+                        raw_results
+                    )
 
                     # Normalize result to extract final response (intelligent extraction)
-                    results = self._normalize_result(collected_results)
+                    results = ResultProcessor.normalize_result(collected_results)
 
                     # Record successful execution
                     execution_time = time.time() - start_time
@@ -276,10 +194,10 @@ class ManifestWorker(Worker):
                     raise
 
             # Step 4: Parse response and detect state
-            structured_response = self._parse_structured_response(results)
+            structured_response = ResponseDetector.parse_structured_response(results)
 
             # Determine task state based on response
-            state, message_content = self._determine_task_state(
+            state, message_content = ResponseDetector.determine_task_state(
                 results, structured_response
             )
 
@@ -302,67 +220,9 @@ class ManifestWorker(Worker):
                         "task.state_changed",
                         attributes={"from_state": "working", "to_state": state},
                     )
-                if (
-                    is_paid_flow
-                    and payment_payload_obj
-                    and payment_requirements_obj
-                    and facilitator_client
-                ):
-                    # Settle before final update so metadata includes receipt
-                    try:
-                        settle_response = await facilitator_client.settle(
-                            payment_payload_obj, payment_requirements_obj
-                        )
-                        if settle_response.success:
-                            md = build_payment_completed_metadata(
-                                settle_response.model_dump(by_alias=True)
-                                if hasattr(settle_response, "model_dump")
-                                else dict(settle_response)
-                            )
-                            await self._handle_terminal_state(
-                                task, results, state, additional_metadata=md
-                            )
-                        else:
-                            md = build_payment_failed_metadata(
-                                settle_response.error_reason or "settlement_failed",
-                                (
-                                    settle_response.model_dump(by_alias=True)
-                                    if hasattr(settle_response, "model_dump")
-                                    else dict(settle_response)
-                                ),
-                            )
-                            # Keep task open (input-required) and attach failure metadata & message
-                            error_message = f"Payment settlement failed: {settle_response.error_reason or 'unknown'}"
-                            err_msgs = MessageConverter.to_protocol_messages(
-                                error_message, task["id"], task["context_id"]
-                            )
-                            await self.storage.update_task(
-                                task["id"],
-                                state="input-required",
-                                new_messages=err_msgs,
-                                metadata=md,
-                            )
-                            await self._notify_lifecycle(
-                                task["id"], task["context_id"], "input-required", False
-                            )
-                            return
-                    except Exception as e:
-                        md = build_payment_failed_metadata(f"settlement_exception: {e}")
-                        err_msgs = MessageConverter.to_protocol_messages(
-                            str(e), task["id"], task["context_id"]
-                        )
-                        await self.storage.update_task(
-                            task["id"],
-                            state="input-required",
-                            new_messages=err_msgs,
-                            metadata=md,
-                        )
-                        await self._notify_lifecycle(
-                            task["id"], task["context_id"], "input-required", False
-                        )
-                        return
-                else:
-                    await self._handle_terminal_state(task, results, state)
+                await self._handle_terminal_state(
+                    task, results, state, payment_context=payment_context
+                )
 
         except Exception as e:
             # Handle task failure with error message
@@ -379,6 +239,7 @@ class ManifestWorker(Worker):
                 )
             await self._handle_task_failure(task, str(e))
             raise
+        return
 
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Cancel a running task.
@@ -405,10 +266,6 @@ class ManifestWorker(Worker):
                 params["task_id"], task["context_id"], "canceled", True
             )
 
-    # -------------------------------------------------------------------------
-    # Protocol Conversion
-    # -------------------------------------------------------------------------
-
     def build_message_history(self, history: list[Message]) -> list[dict[str, str]]:
         """Convert A2A protocol messages to chat format for manifest execution.
 
@@ -434,10 +291,6 @@ class ManifestWorker(Worker):
         """
         did_extension = self.manifest.did_extension
         return ArtifactBuilder.from_result(result, did_extension=did_extension)
-
-    # -------------------------------------------------------------------------
-    # A2A Protocol - Conversation History
-    # -------------------------------------------------------------------------
 
     async def _build_complete_message_history(self, task: Task) -> list[dict[str, str]]:
         """Build complete conversation history following A2A Protocol.
@@ -527,12 +380,6 @@ class ManifestWorker(Worker):
         )
 
         metadata: dict[str, Any] | None = None
-        # If this is an x402 payment-required structured object, attach metadata
-        if isinstance(message_content, dict):
-            st = message_content.get("state")
-            if st == app_settings.x402.status_required or "required" in message_content:
-                required = message_content.get("required") or message_content
-                metadata = build_payment_required_metadata(required)
 
         # Update task with state and append agent messages to history
         await self.storage.update_task(
@@ -540,16 +387,13 @@ class ManifestWorker(Worker):
         )
         await self._notify_lifecycle(task["id"], task["context_id"], state, False)
 
-    # -------------------------------------------------------------------------
-    # Terminal State Handling
-    # -------------------------------------------------------------------------
-
     async def _handle_terminal_state(
         self,
         task: dict[str, Any],
         results: Any,
         state: TaskState = "completed",
         additional_metadata: dict[str, Any] | None = None,
+        payment_context: dict[str, Any] | None = None,
     ) -> None:
         """Handle terminal task states (completed/failed).
 
@@ -563,10 +407,16 @@ class ManifestWorker(Worker):
         - Artifacts are added to task.artifacts (completed only)
         - Task becomes immutable after reaching terminal state
 
+        X402 Payment Flow:
+        - If payment_context is provided and state is completed, settle payment
+        - Payment settlement happens ONLY when task successfully completes
+
         Args:
             task: Task dict being finalized
             results: Agent execution results
             state: Terminal state (completed or failed)
+            additional_metadata: Optional metadata to attach to task
+            payment_context: Optional payment details from x402 middleware
 
         Raises:
             ValueError: If state is not a terminal state
@@ -584,6 +434,14 @@ class ManifestWorker(Worker):
                 results, task["id"], task["context_id"]
             )
             artifacts = self.build_artifacts(results)
+
+            # Handle payment settlement if payment context is available
+            if payment_context:
+                settlement_metadata = await self._settle_payment(payment_context)
+                if additional_metadata:
+                    additional_metadata.update(settlement_metadata)
+                else:
+                    additional_metadata = settlement_metadata
 
             await self.storage.update_task(
                 task["id"],
@@ -633,280 +491,58 @@ class ManifestWorker(Worker):
         )
         await self._notify_lifecycle(task["id"], task["context_id"], "failed", True)
 
-    # -------------------------------------------------------------------------
-    # x402 helpers
-    # -------------------------------------------------------------------------
+    async def _settle_payment(self, payment_context: dict[str, Any]) -> dict[str, Any]:
+        """Settle payment after successful task completion.
 
-    def _parse_payment_payload(self, data: Any) -> PaymentPayload | None:
-        if data is None:
-            return None
-        try:
-            if hasattr(PaymentPayload, "model_validate"):
-                return PaymentPayload.model_validate(data)  # type: ignore
-            return PaymentPayload(**data)
-        except Exception:
-            return None
-
-    def _parse_payment_requirements(self, data: Any) -> PaymentRequirements | None:
-        if data is None:
-            return None
-        try:
-            if hasattr(PaymentRequirements, "model_validate"):
-                return PaymentRequirements.model_validate(data)  # type: ignore
-            return PaymentRequirements(**data)
-        except Exception:
-            return None
-
-    def _select_requirement_from_required(
-        self, required: Any, payload: PaymentPayload | None
-    ) -> PaymentRequirements | None:
-        if not required:
-            return None
-        accepts = required.get("accepts") if isinstance(required, dict) else None
-        if not accepts:
-            return None
-        if payload is None:
-            return self._parse_payment_requirements(accepts[0])
-        # Match by scheme and network
-        for req in accepts:
-            if (
-                isinstance(req, dict)
-                and req.get("scheme") == getattr(payload, "scheme", None)
-                and req.get("network") == getattr(payload, "network", None)
-            ):
-                return self._parse_payment_requirements(req)
-        return self._parse_payment_requirements(accepts[0])
-
-    # -------------------------------------------------------------------------
-    # Result Collection
-    # -------------------------------------------------------------------------
-
-    async def _collect_results(self, raw_results: Any) -> Any:
-        """Collect results from manifest execution.
-
-        Handles different result types:
-        - Direct return: str, dict, list, etc.
-        - Generator: Collect all yielded values
-        - Async generator: Await and collect all yielded values
+        This method is called only when a task completes successfully with payment context.
+        It calls the facilitator to settle the payment and returns metadata to attach to the task.
 
         Args:
-            raw_results: Raw result from manifest.run()
+            payment_context: Payment details from x402 middleware containing:
+                - payment_payload: The payment payload from the client
+                - payment_requirements: The payment requirements for this agent
+                - verify_response: The verification response from facilitator
 
         Returns:
-            Collected result (single value or last yielded value)
+            Metadata dict containing settlement information to attach to task
         """
-        # Check if it's an async generator
-        if hasattr(raw_results, "__anext__"):
-            collected = []
-            try:
-                async for chunk in raw_results:
-                    collected.append(chunk)
-            except StopAsyncIteration:
-                pass
-            # Return last chunk or all chunks if multiple
-            return collected[-1] if collected else None
+        from x402.facilitator import FacilitatorClient, FacilitatorConfig
 
-        # Check if it's a sync generator
-        elif hasattr(raw_results, "__next__"):
-            collected = []
-            try:
-                for chunk in raw_results:
-                    collected.append(chunk)
-            except StopIteration:
-                pass
-            # Return last chunk or all chunks if multiple
-            return collected[-1] if collected else None
+        try:
+            payment_payload = payment_context["payment_payload"]
+            payment_requirements = payment_context["payment_requirements"]
 
-        # Direct return value (str, dict, list, etc.)
-        else:
-            return raw_results
+            # Initialize facilitator client
+            facilitator = FacilitatorClient(
+                config=FacilitatorConfig(url=app_settings.x402.facilitator_url)
+            )
 
-    def _normalize_result(self, result: Any) -> Any:
-        """Intelligently normalize agent result to extract final response.
+            # Settle payment
+            logger.info("Settling payment for completed task")
+            settle_response = await facilitator.settle(
+                payment_payload, payment_requirements
+            )
 
-        This method gives users full control over what they return from handlers:
-        - Return raw agent output → System extracts intelligently
-        - Return pre-extracted string → System uses directly
-        - Return structured dict → System respects state transitions
-
-        Handles multiple formats from different frameworks:
-        - Plain string: "Hello!" → "Hello!"
-        - Dict with state: {"state": "input-required", ...} → pass through
-        - Dict with content: {"content": "Hello!"} → "Hello!"
-        - List of messages: [Message(...), Message(content="Hello!")] → "Hello!"
-        - Message object: Message(content="Hello!") → "Hello!"
-        - Custom objects: Try .content, .to_dict()["content"], or str()
-
-        Args:
-            result: Raw result from handler function
-
-        Returns:
-            Normalized result (str, dict with state, or original if can't normalize)
-        """
-        # Strategy 1: Already a string - use directly
-        if isinstance(result, str):
-            return result
-
-        # Strategy 2: Dict with "state" key - structured response (pass through)
-        if isinstance(result, dict):
-            if "state" in result:
-                return result  # Structured state transition
-            elif "content" in result:
-                return result["content"]  # Extract content from dict
+            if settle_response.success:
+                logger.info("Payment settled successfully")
+                return {
+                    app_settings.x402.meta_status_key: app_settings.x402.status_completed,
+                    app_settings.x402.meta_receipts_key: [settle_response.model_dump()],
+                }
             else:
-                return result  # Unknown dict format, pass through
+                error_reason = settle_response.error_reason or "Unknown error"
+                logger.error(f"Payment settlement failed: {error_reason}")
+                return {
+                    app_settings.x402.meta_status_key: app_settings.x402.status_failed,
+                    app_settings.x402.meta_error_key: error_reason,
+                }
 
-        # Strategy 3: List (e.g., list of Message objects from Agno)
-        if isinstance(result, list) and result:
-            last_item = result[-1]
-
-            # Try to extract content from last item
-            if hasattr(last_item, "content"):
-                return last_item.content
-            elif hasattr(last_item, "to_dict"):
-                item_dict = last_item.to_dict()
-                if "content" in item_dict:
-                    return item_dict["content"]
-            elif isinstance(last_item, dict) and "content" in last_item:
-                return last_item["content"]
-            elif isinstance(last_item, str):
-                return last_item
-
-            # Can't extract, return last item as-is
-            return last_item
-
-        # Strategy 4: Object with .content attribute (e.g., Message object)
-        if hasattr(result, "content"):
-            return result.content
-
-        # Strategy 5: Object with .to_dict() method
-        if hasattr(result, "to_dict"):
-            try:
-                result_dict = result.to_dict()
-                if "content" in result_dict:
-                    return result_dict["content"]
-                return result_dict
-            except Exception as e:
-                logger.debug(
-                    "Failed to extract content from .to_dict() method", error=str(e)
-                )
-
-        # Strategy 6: Fallback to string conversion
-        return str(result) if result is not None else ""
-
-    # -------------------------------------------------------------------------
-    # Response Detection (Structured + Heuristic)
-    # -------------------------------------------------------------------------
-
-    def _parse_structured_response(self, result: Any) -> Optional[Dict[str, Any]]:
-        """Parse agent response for structured state transitions.
-
-        Handles multiple response types:
-        - dict: Direct structured response
-        - str: JSON string or plain text
-        - list: Array of messages/content
-        - other: Images, binary data, etc.
-
-        Structured format:
-        {"state": "input-required|auth-required", "prompt": "...", ...}
-
-        Strategy:
-        1. If dict with "state" key → return directly
-        2. If string → try JSON parsing
-        3. If string → try regex extraction of JSON blocks
-        4. Otherwise → return None (normal completion)
-
-        Args:
-            result: Agent execution result (any type)
-
-        Returns:
-            Dict with state info if structured response found, None otherwise
-        """
-        # Strategy 1: Direct dict response
-        if isinstance(result, dict):
-            if "state" in result:
-                return result
-            return None
-
-        # Strategy 2: String response - try JSON parsing
-        if isinstance(result, str):
-            # Try parsing entire response as JSON
-            try:
-                parsed = json.loads(result)
-                if isinstance(parsed, dict) and "state" in parsed:
-                    return parsed
-            except (json.JSONDecodeError, ValueError):
-                pass
-
-            # Try extracting JSON from text using regex
-            json_pattern = r'\{[^{}]*"state"[^{}]*\}'
-            matches = re.findall(json_pattern, result, re.DOTALL)
-
-            for match in matches:
-                try:
-                    parsed = json.loads(match)
-                    if isinstance(parsed, dict) and "state" in parsed:
-                        return parsed
-                except (json.JSONDecodeError, ValueError):
-                    continue
-
-        # Strategy 3: Other types (list, bytes, etc.) - no state transition
-        return None
-
-    def _determine_task_state(
-        self, result: Any, structured: Optional[dict[str, Any]]
-    ) -> tuple[TaskState, Any]:
-        """Determine task state from agent response.
-
-        Handles multiple response types:
-        - Structured dict: {"state": "...", "prompt": "..."}
-        - Plain string: "Hello! How can I assist you?"
-        - Rich content: {"text": "...", "image": "..."}
-        - Binary data: images, files, etc.
-
-        Args:
-            result: Agent execution result (any type)
-            structured: Parsed structured response if available
-
-        Returns:
-            Tuple of (state, message_content)
-            message_content can be str, dict, list, or any serializable type
-        """
-        # Check structured response first (preferred)
-        if structured:
-            state = structured.get("state")
-            if state == "input-required":
-                prompt = structured.get("prompt", self._serialize_result(result))
-                return ("input-required", prompt)
-            elif state == "auth-required":
-                prompt = structured.get("prompt", self._serialize_result(result))
-                return ("auth-required", prompt)
-            elif state == app_settings.x402.status_required:
-                # Keep overall task state as input-required; carry structured info forward
-                return ("input-required", structured)
-
-        # Default: task completion with any result type
-        return ("completed", result)
-
-    def _serialize_result(self, result: Any) -> str:
-        """Serialize result to string for message content.
-
-        Args:
-            result: Any agent result
-
-        Returns:
-            String representation of result
-        """
-        if isinstance(result, str):
-            return result
-        elif isinstance(result, (dict, list)):
-            return json.dumps(result)
-        else:
-            return str(result)
-
-    # -------------------------------------------------------------------------
-    # Lifecycle Notifications
-    # -------------------------------------------------------------------------
+        except Exception as e:
+            logger.error(f"Error settling payment: {e}", exc_info=True)
+            return {
+                app_settings.x402.meta_status_key: app_settings.x402.status_failed,
+                app_settings.x402.meta_error_key: str(e),
+            }
 
     async def _notify_lifecycle(
         self, task_id: UUID, context_id: UUID, state: str, final: bool

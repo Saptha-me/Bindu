@@ -21,7 +21,12 @@ from uuid import UUID
 
 from bindu.extensions.did import DIDAgentExtension
 
-from .protocol.types import AgentCapabilities, AgentCard, AgentTrust, Skill
+from .protocol.types import (
+    AgentCapabilities,
+    AgentCard,
+    AgentTrust,
+    Skill,
+)
 
 
 @dataclass(frozen=True)
@@ -74,6 +79,26 @@ class OLTPConfig:
     service_name: str
 
 
+@dataclass
+class TelemetryConfig:
+    """Configuration for OpenTelemetry observability.
+
+    Comprehensive configuration for telemetry, tracing, and observability
+    using OpenTelemetry Protocol (OTLP).
+    """
+
+    enabled: bool = False
+    endpoint: str | None = None
+    service_name: str | None = None
+    verbose_logging: bool = False
+    service_version: str = "1.0.0"
+    deployment_environment: str = "production"
+    batch_max_queue_size: int = 2048
+    batch_schedule_delay_millis: int = 5000
+    batch_max_export_batch_size: int = 512
+    batch_export_timeout_millis: int = 30000
+
+
 @dataclass(frozen=True)
 class AgentFrameworkSpec:
     """Specification for an agent framework.
@@ -85,6 +110,14 @@ class AgentFrameworkSpec:
     framework: str
     instrumentation_package: str
     min_version: str
+
+
+@dataclass
+class VerifyResponse:
+    """Response from payment verification."""
+
+    is_valid: bool
+    invalid_reason: str | None = None
 
 
 @dataclass
@@ -103,13 +136,13 @@ class AgentManifest:
     # Core Identity
     id: UUID
     name: str
+    did_extension: DIDAgentExtension
     description: str
     url: str
     version: str
     protocol_version: str
 
     # Security & Trust
-    did_extension: DIDAgentExtension
     agent_trust: AgentTrust
 
     # Capabilities

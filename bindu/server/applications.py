@@ -19,7 +19,7 @@ from __future__ import annotations as _annotations
 
 from contextlib import asynccontextmanager
 from functools import partial
-from typing import AsyncIterator, Callable, Sequence
+from typing import Any, AsyncIterator, Callable, Sequence
 from uuid import UUID, uuid4
 
 from starlette.applications import Starlette
@@ -29,21 +29,16 @@ from starlette.responses import Response
 from starlette.routing import Route
 from starlette.types import Lifespan, Receive, Scope, Send
 
-from bindu.common.models import AgentManifest
+from bindu.common.models import AgentManifest, TelemetryConfig
 from bindu.settings import app_settings
 
-from .endpoints import (
-    agent_card_endpoint,
-    agent_run_endpoint,
-    did_resolve_endpoint,
-    skill_detail_endpoint,
-    skill_documentation_endpoint,
-    skills_list_endpoint,
-)
 from .middleware import Auth0Middleware
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .storage.memory_storage import InMemoryStorage
 from .task_manager import TaskManager
+from bindu.utils.logging import get_logger
+
+logger = get_logger("bindu.server.applications")
 
 
 class BinduApplication(Starlette):
@@ -64,16 +59,7 @@ class BinduApplication(Starlette):
         routes: Sequence[Route] | None = None,
         middleware: Sequence[Middleware] | None = None,
         auth_enabled: bool = False,
-        telemetry_enabled: bool = False,
-        oltp_endpoint: str | None = None,
-        oltp_service_name: str | None = None,
-        oltp_verbose_logging: bool = False,
-        oltp_service_version: str = "1.0.0",
-        oltp_deployment_environment: str = "production",
-        oltp_batch_max_queue_size: int = 2048,
-        oltp_batch_schedule_delay_millis: int = 5000,
-        oltp_batch_max_export_batch_size: int = 512,
-        oltp_batch_export_timeout_millis: int = 30000,
+        telemetry_config: TelemetryConfig | None = None,
     ):
         """Initialize Bindu application.
 
@@ -90,79 +76,36 @@ class BinduApplication(Starlette):
             routes: Optional custom routes
             middleware: Optional middleware
             auth_enabled: Enable Auth0 authentication middleware
-            telemetry_enabled: Enable OpenTelemetry observability
-            oltp_endpoint: OTLP endpoint URL for telemetry
-            oltp_service_name: Service name for telemetry traces
-            oltp_verbose_logging: Enable verbose telemetry logging
-            oltp_service_version: Service version for traces
-            oltp_deployment_environment: Deployment environment (dev/staging/production)
-            oltp_batch_max_queue_size: Max queue size for batch processor
-            oltp_batch_schedule_delay_millis: Schedule delay for batch processor
-            oltp_batch_max_export_batch_size: Max export batch size
-            oltp_batch_export_timeout_millis: Export timeout in milliseconds
+            telemetry_config: Optional telemetry configuration (defaults to disabled)
         """
         # Generate penguin_id if not provided
         if penguin_id is None:
             penguin_id = uuid4()
 
         # Store telemetry config for lifespan
-        self._telemetry_enabled = telemetry_enabled
-        self._oltp_endpoint = oltp_endpoint
-        self._oltp_service_name = oltp_service_name
-        self._oltp_verbose_logging = oltp_verbose_logging
-        self._oltp_service_version = oltp_service_version
-        self._oltp_deployment_environment = oltp_deployment_environment
-        self._oltp_batch_max_queue_size = oltp_batch_max_queue_size
-        self._oltp_batch_schedule_delay_millis = oltp_batch_schedule_delay_millis
-        self._oltp_batch_max_export_batch_size = oltp_batch_max_export_batch_size
-        self._oltp_batch_export_timeout_millis = oltp_batch_export_timeout_millis
+        self._telemetry_config = telemetry_config or TelemetryConfig()
 
         # Create default lifespan if none provided
         if lifespan is None:
             lifespan = self._create_default_lifespan(storage, scheduler, manifest)
 
-        # Add authentication middleware if enabled
-        middleware_list = list(middleware) if middleware else []
-        if auth_enabled and app_settings.auth.enabled:
-            from bindu.utils.logging import get_logger
+        # Setup middleware chain
+        from bindu.utils import get_x402_extension_from_capabilities
 
-            logger = get_logger("bindu.server.applications")
+        x402_ext = get_x402_extension_from_capabilities(manifest)
+        payment_requirements_for_middleware = (
+            self._create_payment_requirements(x402_ext, manifest, resource_suffix="/")
+            if x402_ext
+            else None
+        )
 
-            # Select middleware based on provider
-            provider = app_settings.auth.provider.lower()
-
-            if provider == "auth0":
-                logger.info("Auth0 authentication enabled")
-                auth_middleware = Middleware(
-                    Auth0Middleware, auth_config=app_settings.auth
-                )
-            # elif provider == "cognito": # TODO: Implement Cognito authentication
-            #     logger.info("AWS Cognito authentication enabled")
-            #     from .middleware.auth_cognito import CognitoMiddleware
-
-            #     auth_middleware = Middleware(
-            #         CognitoMiddleware, auth_config=app_settings.auth
-            #     )
-            # elif provider == "azure":
-            #     logger.warning("Azure AD authentication not yet implemented")
-            #     raise NotImplementedError(
-            #         "Azure AD authentication is not yet implemented. "
-            #         "Use 'auth0' provider or implement AzureADMiddleware."
-            #     )
-            # elif provider == "custom":
-            #     logger.warning("Custom JWT authentication not yet implemented")
-            #     raise NotImplementedError(
-            #         "Custom JWT authentication is not yet implemented. "
-            #         "Use 'auth0' provider or implement CustomJWTMiddleware."
-            #     )
-            else:
-                logger.error(f"Unknown authentication provider: {provider}")
-                raise ValueError(
-                    f"Unknown authentication provider: '{provider}'. Supported providers: auth0, cognito, azure, custom"
-                )
-
-            # Add auth middleware to the beginning of middleware chain
-            middleware_list.insert(0, auth_middleware)
+        middleware_list = self._setup_middleware(
+            middleware,
+            x402_ext,
+            payment_requirements_for_middleware,
+            manifest,
+            auth_enabled,
+        )
 
         super().__init__(
             debug=debug,
@@ -181,12 +124,35 @@ class BinduApplication(Starlette):
         self._storage = storage
         self._scheduler = scheduler
         self._agent_card_json_schema: bytes | None = None
+        self._x402_ext = x402_ext
+        self._payment_session_manager = None
+        self._payment_requirements = None
+        self._paywall_config = None
+
+        # Initialize payment session manager and payment config if x402 enabled
+        if x402_ext and payment_requirements_for_middleware:
+            self._setup_payment_session_manager(
+                manifest, payment_requirements_for_middleware
+            )
+
+        # In-memory not a good practice, but for development purposes
+        # in production, use a database or redis
+        self.payment_sessions: dict[str, dict[str, Any]] = {}
 
         # Register all routes
         self._register_routes()
 
     def _register_routes(self) -> None:
         """Register all application routes."""
+        from .endpoints import (
+            agent_card_endpoint,
+            agent_run_endpoint,
+            did_resolve_endpoint,
+            skill_detail_endpoint,
+            skill_documentation_endpoint,
+            skills_list_endpoint,
+        )
+
         # Protocol endpoints
         self._add_route(
             "/.well-known/agent.json",
@@ -217,6 +183,36 @@ class BinduApplication(Starlette):
         self._add_route(
             "/agent/skills/{skill_id}/documentation",
             skill_documentation_endpoint,
+            ["GET"],
+            with_app=True,
+        )
+
+        if self._x402_ext:
+            self._register_payment_endpoints()
+
+    def _register_payment_endpoints(self) -> None:
+        """Register payment session endpoints."""
+        from .endpoints import (
+            payment_capture_endpoint,
+            payment_status_endpoint,
+            start_payment_session_endpoint,
+        )
+
+        self._add_route(
+            "/api/start-payment-session",
+            start_payment_session_endpoint,
+            ["POST"],
+            with_app=True,
+        )
+        self._add_route(
+            "/payment-capture",
+            payment_capture_endpoint,
+            ["GET"],
+            with_app=True,
+        )
+        self._add_route(
+            "/api/payment-status/{session_id}",
+            payment_status_endpoint,
             ["GET"],
             with_app=True,
         )
@@ -258,34 +254,12 @@ class BinduApplication(Starlette):
         @asynccontextmanager
         async def lifespan(app: BinduApplication) -> AsyncIterator[None]:
             # Setup observability if enabled
-            if self._telemetry_enabled:
-                from bindu.observability import setup as setup_observability
-                from bindu.utils.logging import get_logger
+            if self._telemetry_config.enabled:
+                self._setup_observability()
 
-                logger = get_logger("bindu.server.applications")
-
-                try:
-                    setup_observability(
-                        oltp_endpoint=self._oltp_endpoint,
-                        oltp_service_name=self._oltp_service_name,
-                        verbose_logging=self._oltp_verbose_logging,
-                        service_version=self._oltp_service_version,
-                        deployment_environment=self._oltp_deployment_environment,
-                        batch_max_queue_size=self._oltp_batch_max_queue_size,
-                        batch_schedule_delay_millis=self._oltp_batch_schedule_delay_millis,
-                        batch_max_export_batch_size=self._oltp_batch_max_export_batch_size,
-                        batch_export_timeout_millis=self._oltp_batch_export_timeout_millis,
-                    )
-                    if self._oltp_verbose_logging:
-                        logger.info(
-                            "OpenInference telemetry initialized in lifespan",
-                            endpoint=self._oltp_endpoint or "console",
-                            service_name=self._oltp_service_name or "bindu-agent",
-                        )
-                except Exception as exc:
-                    logger.warning(
-                        "OpenInference telemetry setup failed", error=str(exc)
-                    )
+            # Start payment session manager cleanup task if x402 enabled
+            if app._payment_session_manager:
+                await app._payment_session_manager.start_cleanup_task()
 
             # Start TaskManager
             task_manager = TaskManager(
@@ -295,7 +269,188 @@ class BinduApplication(Starlette):
                 app.task_manager = task_manager
                 yield
 
+            # Stop payment session manager cleanup task
+            if app._payment_session_manager:
+                await app._payment_session_manager.stop_cleanup_task()
+
         return lifespan
+
+    def _setup_observability(self) -> None:
+        """Set up OpenTelemetry observability."""
+        from bindu.observability import setup as setup_observability
+
+        config = self._telemetry_config
+        try:
+            setup_observability(
+                oltp_endpoint=config.endpoint,
+                oltp_service_name=config.service_name,
+                verbose_logging=config.verbose_logging,
+                service_version=config.service_version,
+                deployment_environment=config.deployment_environment,
+                batch_max_queue_size=config.batch_max_queue_size,
+                batch_schedule_delay_millis=config.batch_schedule_delay_millis,
+                batch_max_export_batch_size=config.batch_max_export_batch_size,
+                batch_export_timeout_millis=config.batch_export_timeout_millis,
+            )
+            if config.verbose_logging:
+                logger.info(
+                    "OpenInference telemetry initialized in lifespan",
+                    endpoint=config.endpoint or "console",
+                    service_name=config.service_name or "bindu-agent",
+                )
+        except Exception as exc:
+            logger.warning("OpenInference telemetry setup failed", error=str(exc))
+
+    def _create_payment_requirements(
+        self,
+        x402_ext: Any,
+        manifest: AgentManifest,
+        resource_suffix: str = "/",
+    ) -> list[Any] | None:
+        """Create payment requirements for X402 extension.
+
+        Args:
+            x402_ext: X402 extension instance
+            manifest: Agent manifest
+            resource_suffix: Suffix to append to manifest URL for resource path
+
+        Returns:
+            List of PaymentRequirements or None
+        """
+        if not x402_ext:
+            return None
+
+        from x402.common import process_price_to_atomic_amount
+        from x402.types import PaymentRequirements, SupportedNetworks
+        from typing import cast
+
+        max_amount_required, asset_address, eip712_domain = (
+            process_price_to_atomic_amount(x402_ext.amount, x402_ext.network)
+        )
+
+        return [
+            PaymentRequirements(
+                scheme="exact",
+                network=cast(SupportedNetworks, x402_ext.network),
+                asset=asset_address,
+                max_amount_required=max_amount_required,
+                resource=f"{manifest.url}{resource_suffix}",
+                description=f"Payment required to use {manifest.name}",
+                mime_type="",
+                pay_to=x402_ext.pay_to_address,
+                max_timeout_seconds=60,
+                output_schema={
+                    "input": {
+                        "type": "http",
+                        "method": "POST",
+                        "discoverable": True,
+                    },
+                    "output": {},
+                },
+                extra=eip712_domain,
+            )
+        ]
+
+    def _setup_middleware(
+        self,
+        middleware: Sequence[Middleware] | None,
+        x402_ext: Any,
+        payment_requirements: list[Any] | None,
+        manifest: AgentManifest,
+        auth_enabled: bool,
+    ) -> list[Middleware]:
+        """Set up middleware chain with X402 and Auth0 middleware.
+
+        Args:
+            middleware: Custom middleware to include
+            x402_ext: X402 extension instance
+            payment_requirements: Payment requirements for X402
+            manifest: Agent manifest
+            auth_enabled: Whether authentication is enabled
+
+        Returns:
+            List of configured middleware
+        """
+        middleware_list = list(middleware) if middleware else []
+
+        # Add X402 middleware if configured
+        if x402_ext and payment_requirements:
+            from .middleware import X402Middleware
+
+            logger.info(
+                f"X402 payment middleware enabled: "
+                f"{x402_ext.amount} {x402_ext.token} on {x402_ext.network})"
+            )
+
+            facilitator_config = {"url": app_settings.x402.facilitator_url}
+            x402_middleware = Middleware(
+                X402Middleware,
+                manifest=manifest,
+                facilitator_config=facilitator_config,
+                x402_ext=x402_ext,
+                payment_requirements=payment_requirements,
+            )
+            middleware_list.insert(0, x402_middleware)
+
+        # Add authentication middleware if enabled
+        if auth_enabled and app_settings.auth.enabled:
+            auth_middleware = self._create_auth_middleware()
+            # Add auth middleware after X402 (if present)
+            middleware_list.insert(1 if x402_ext else 0, auth_middleware)
+
+        return middleware_list
+
+    def _create_auth_middleware(self) -> Middleware:
+        """Create authentication middleware based on provider.
+
+        Returns:
+            Configured auth middleware
+
+        Raises:
+            ValueError: If authentication provider is unknown
+        """
+        provider = app_settings.auth.provider.lower()
+
+        if provider == "auth0":
+            logger.info("Auth0 authentication enabled")
+            return Middleware(Auth0Middleware, auth_config=app_settings.auth)
+        else:
+            logger.error(f"Unknown authentication provider: {provider}")
+            raise ValueError(
+                f"Unknown authentication provider: '{provider}'. "
+                f"Supported providers: auth0, cognito, azure, custom"
+            )
+
+    def _setup_payment_session_manager(
+        self,
+        manifest: AgentManifest,
+        payment_requirements_for_middleware: list[Any],
+    ) -> None:
+        """Initialize payment session manager and related configuration.
+
+        Args:
+            manifest: Agent manifest
+            payment_requirements_for_middleware: Payment requirements from middleware setup
+        """
+        from bindu.server.middleware.x402.payment_session_manager import (
+            PaymentSessionManager,
+        )
+        from x402.types import PaywallConfig
+        import os
+
+        self._payment_session_manager = PaymentSessionManager()
+
+        # Create payment requirements for endpoints (with /payment-capture resource)
+        self._payment_requirements = [
+            req.model_copy(update={"resource": f"{manifest.url}/payment-capture"})
+            for req in payment_requirements_for_middleware
+        ]
+
+        self._paywall_config = PaywallConfig(
+            cdp_client_key=os.getenv("CDP_CLIENT_KEY") or "",
+            app_name=f"{manifest.name} - x402 Payment",
+            app_logo="/assets/light.svg",
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Handle ASGI requests with TaskManager validation."""

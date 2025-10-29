@@ -9,46 +9,42 @@
 
 """MIDDLEWARE MODULE EXPORTS.
 
-This module provides the authentication middleware layer for the bindu framework.
-It exposes different authentication provider implementations.
+This module provides middleware layers for the bindu framework including
+authentication and payment protocol enforcement.
 
-AUTHENTICATION PROVIDERS:
+MIDDLEWARE STRUCTURE:
 
-Think of this as the restaurant's security checkpoint catalog:
-
-1. AUTHENTICATION INTERFACE (AuthMiddleware):
-   - Abstract base class defining the authentication contract
-   - All provider implementations must follow this interface
-   - Ensures consistent API across different auth providers
-
-2. AUTHENTICATION IMPLEMENTATIONS:
+1. AUTHENTICATION MIDDLEWARE (auth/):
+   - AuthMiddleware: Abstract base class for authentication
    - Auth0Middleware: Auth0 JWT validation (production-ready)
    - CognitoMiddleware: AWS Cognito JWT validation (template)
 
-3. USAGE PATTERNS:
+2. PAYMENT MIDDLEWARE (x402/):
+   - X402Middleware: x402 payment protocol enforcement
+     Automatically handles payment verification and settlement for agents
+     with execution_cost configured.
+
+USAGE PATTERNS:
    - Import the base AuthMiddleware class for type hints and interfaces
    - Import specific implementations based on your auth provider
-   - All implementations are interchangeable through the AuthMiddleware interface
-
-AVAILABLE AUTHENTICATION OPTIONS:
-- Auth0Middleware: Production-ready Auth0 integration
-- CognitoMiddleware: AWS Cognito integration (template for future implementation)
+   - Import X402Middleware for payment-gated agents
+   - All implementations are interchangeable through their base interfaces
 """
 
 from __future__ import annotations as _annotations
 
-# Export all authentication implementations
-from .auth0 import Auth0Middleware
+# Export authentication implementations from auth/ subdirectory
+from .auth import Auth0Middleware, AuthMiddleware, CognitoMiddleware
 
-# Export the base authentication interface
-from .base import AuthMiddleware
-
-# from .cognito import CognitoMiddleware # TODO: Implement Cognito authentication
+# Export payment middleware from x402/ subdirectory
+from .x402 import X402Middleware
 
 __all__ = [
     # Base interface
     "AuthMiddleware",
     # Authentication implementations
     "Auth0Middleware",
-    # "CognitoMiddleware",
+    "CognitoMiddleware",
+    # Payment middleware
+    "X402Middleware",
 ]

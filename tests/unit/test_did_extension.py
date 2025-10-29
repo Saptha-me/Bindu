@@ -212,29 +212,9 @@ class TestDIDAgentExtension:
         did = ext.did
         assert did.startswith("did:key:")
 
-    def test_set_agent_metadata(self, did_extension):
-        """Test setting agent metadata."""
-        did_extension.set_agent_metadata(
-            skills=["skill1", "skill2"],
-            capabilities={"streaming": True},
-            description="Test agent",
-            version="1.0.0",
-            custom_field="custom_value",
-        )
-
-        assert did_extension.metadata["skills"] == ["skill1", "skill2"]
-        assert did_extension.metadata["capabilities"] == {"streaming": True}
-        assert did_extension.metadata["description"] == "Test agent"
-        assert did_extension.metadata["version"] == "1.0.0"
-        assert did_extension.metadata["custom_field"] == "custom_value"
-
     def test_get_did_document(self, did_extension):
         """Test generating DID document."""
         did_extension.generate_and_save_key_pair()
-        did_extension.set_agent_metadata(
-            skills=["skill1"],
-            description="Test agent",
-        )
 
         doc = did_extension.get_did_document()
 
@@ -246,39 +226,6 @@ class TestDIDAgentExtension:
         assert (
             doc["authentication"][0]["type"] == app_settings.did.verification_key_type
         )
-        assert "bindu" in doc
-        assert doc["bindu"]["agentName"] == "test_agent"
-        assert doc["bindu"]["skills"] == ["skill1"]
-
-    def test_get_did_document_with_service(self, did_extension):
-        """Test DID document includes service endpoint when URL provided."""
-        did_extension.generate_and_save_key_pair()
-        did_extension.set_agent_metadata(url="http://localhost:3773")
-
-        doc = did_extension.get_did_document()
-
-        assert "service" in doc
-        assert len(doc["service"]) == 1
-        assert doc["service"][0]["serviceEndpoint"] == "http://localhost:3773"
-
-    def test_get_agent_info(self, did_extension):
-        """Test getting simplified agent info."""
-        did_extension.generate_and_save_key_pair()
-        did_extension.set_agent_metadata(
-            skills=["skill1"],
-            description="Test agent",
-            url="http://localhost:3773",
-        )
-
-        info = did_extension.get_agent_info()
-
-        assert info["did"] == did_extension.did
-        assert info["agentName"] == "test_agent"
-        assert info["author"] == "test@example.com"
-        assert "publicKey" in info
-        assert "created" in info
-        assert info["skills"] == ["skill1"]
-        assert info["url"] == "http://localhost:3773"
 
     def test_public_key_base58(self, did_extension):
         """Test base58-encoded public key."""
@@ -288,17 +235,6 @@ class TestDIDAgentExtension:
         assert pub_key_b58 is not None
         assert isinstance(pub_key_b58, str)
         assert len(pub_key_b58) > 0
-
-    def test_agent_extension_property(self, did_extension):
-        """Test agent extension property."""
-        did_extension.generate_and_save_key_pair()
-
-        ext = did_extension.agent_extension
-
-        assert ext["uri"] == app_settings.did.extension_uri
-        assert ext["required"] is False
-        assert "did" in ext["params"]
-        assert ext["params"]["did"] == did_extension.did
 
     def test_encrypted_key_without_password(self, temp_key_dir):
         """Test loading encrypted key without password raises error."""

@@ -131,7 +131,7 @@ class MockDIDExtension:
     def get_did_document(self) -> Dict[str, Any]:
         """Get mock DID document."""
         return {
-            "@context": ["https://www.w3.org/ns/did/v1", "https://bindu.ai/ns/v1"],
+            "@context": ["https://www.w3.org/ns/did/v1", "https://saptha.me/ns/v1"],
             "id": self.did,
             "created": self.created,
             "authentication": [

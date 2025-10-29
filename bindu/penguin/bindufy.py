@@ -24,67 +24,19 @@ from bindu.common.models import (
     DeploymentConfig,
     SchedulerConfig,
     StorageConfig,
+    TelemetryConfig,
 )
-from bindu.common.protocol.types import AgentCapabilities
 from bindu.extensions.did import DIDAgentExtension
-from bindu.extensions.x402.extension import (
-    get_agent_extension as get_x402_agent_extension,
-)
+from bindu.extensions.x402 import X402AgentExtension
 from bindu.penguin.manifest import create_manifest, validate_agent_function
 from bindu.settings import app_settings
+from bindu.utils import add_extension_to_capabilities
 from bindu.utils.display import prepare_server_display
 from bindu.utils.logging import get_logger
 from bindu.utils.skill_loader import load_skills
 
 # Configure logging for the module
 logger = get_logger("bindu.penguin.bindufy")
-
-
-def _update_capabilities_with_did(
-    capabilities: AgentCapabilities | Dict[str, Any] | None, did_extension_obj: Any
-) -> AgentCapabilities:
-    """Update capabilities to include DID extension.
-
-    Args:
-        capabilities: Existing capabilities (dict or AgentCapabilities object)
-        did_extension_obj: DID extension object to add
-
-    Returns:
-        AgentCapabilities object with DID extension included
-    """
-    # Convert to dict if needed
-    if capabilities is None:
-        caps_dict = {}
-    elif isinstance(capabilities, dict):
-        caps_dict = capabilities.copy()
-
-    # Update extensions list
-    extensions = caps_dict.get("extensions", [])
-    if extensions:
-        caps_dict["extensions"] = [*extensions, did_extension_obj]
-    else:
-        caps_dict["extensions"] = [did_extension_obj]
-
-    return AgentCapabilities(**caps_dict)
-
-
-def _update_capabilities_with_x402(
-    capabilities: AgentCapabilities | Dict[str, Any] | None,
-) -> AgentCapabilities:
-    """Append x402 extension declaration to capabilities.extensions."""
-    # Convert to dict if needed
-    if capabilities is None:
-        caps_dict: Dict[str, Any] = {}
-    elif isinstance(capabilities, dict):
-        caps_dict = capabilities.copy()
-    else:
-        # Convert AgentCapabilities to dict-like
-        caps_dict = dict(capabilities)
-
-    extensions = caps_dict.get("extensions", []) or []
-    extensions.append(get_x402_agent_extension(required=False))
-    caps_dict["extensions"] = extensions
-    return AgentCapabilities(**caps_dict)
 
 
 def _parse_deployment_url(
@@ -339,42 +291,55 @@ def bindufy(
     agent_url = (
         deployment_config.url if deployment_config else app_settings.network.default_url
     )
-    skills_data = [
-        skill.dict() if hasattr(skill, "dict") else skill for skill in skills_list
-    ]
-
-    did_extension.set_agent_metadata(
-        description=validated_config["description"],
-        version=validated_config["version"],
-        author=validated_config.get("author"),
-        skills=skills_data,
-        capabilities=validated_config.get("capabilities"),
-        url=agent_url,
-        kind=validated_config["kind"],
-        telemetry=validated_config["telemetry"],
-        monitoring=validated_config["monitoring"],
-        documentation_url=validated_config.get("documentation_url"),
-    )
 
     logger.info("DID Extension setup complete", did=did_extension.did)
     logger.info("Creating agent manifest...")
 
     # Update capabilities to include DID extension
-    capabilities = _update_capabilities_with_did(
-        validated_config["capabilities"], did_extension.agent_extension
+    capabilities = add_extension_to_capabilities(
+        validated_config["capabilities"], did_extension
     )
-    # Always advertise x402 extension capability (lean path)
-    capabilities = _update_capabilities_with_x402(capabilities)
+
+    # Only add x402 extension if execution_cost is configured
+    execution_cost = validated_config.get("execution_cost")
+    x402_extension = None
+
+    if execution_cost:
+        # Create X402 extension with payment configuration
+        amount = execution_cost.get("amount")
+        token = execution_cost.get("token", "USDC")
+        network = execution_cost.get("network", "base-sepolia")
+        pay_to_address = execution_cost.get("pay_to_address")
+
+        if not amount:
+            raise ValueError(
+                "execution_cost.amount is required when execution_cost is configured"
+            )
+
+        logger.info(f"Execution cost configured: {amount} {token} on {network}")
+
+        x402_extension = X402AgentExtension(
+            amount=amount,
+            token=token,
+            network=network,
+            required=True,  # Payment is required for paid agents
+            pay_to_address=pay_to_address,
+        )
+
+        logger.info(f"X402 extension created: {x402_extension}")
+
+        # Add x402 extension to capabilities
+        capabilities = add_extension_to_capabilities(capabilities, x402_extension)
 
     # Create agent manifest with loaded skills
     _manifest = create_manifest(
         agent_function=handler,
         id=agent_id,
+        did_extension=did_extension,
         name=validated_config["name"],
         description=validated_config["description"],
         skills=skills_list,
         capabilities=capabilities,
-        did_extension=did_extension,
         agent_trust=validated_config["agent_trust"],
         version=validated_config["version"],
         url=agent_url,
@@ -416,6 +381,28 @@ def bindufy(
     # Check if auth is enabled in config
     auth_enabled = validated_config.get("auth", {}).get("enabled", False)
 
+    # Create telemetry configuration
+    telemetry_config = TelemetryConfig(
+        enabled=validated_config["telemetry"],
+        endpoint=validated_config.get("oltp_endpoint"),
+        service_name=validated_config.get("oltp_service_name"),
+        verbose_logging=validated_config.get("oltp_verbose_logging", False),
+        service_version=validated_config.get("oltp_service_version", "1.0.0"),
+        deployment_environment=validated_config.get(
+            "oltp_deployment_environment", "production"
+        ),
+        batch_max_queue_size=validated_config.get("oltp_batch_max_queue_size", 2048),
+        batch_schedule_delay_millis=validated_config.get(
+            "oltp_batch_schedule_delay_millis", 5000
+        ),
+        batch_max_export_batch_size=validated_config.get(
+            "oltp_batch_max_export_batch_size", 512
+        ),
+        batch_export_timeout_millis=validated_config.get(
+            "oltp_batch_export_timeout_millis", 30000
+        ),
+    )
+
     # Create Bindu application with telemetry config
     # Telemetry will be initialized in the application lifespan context
     bindu_app = BinduApplication(
@@ -425,26 +412,7 @@ def bindufy(
         manifest=_manifest,
         version=validated_config["version"],
         auth_enabled=auth_enabled,
-        telemetry_enabled=validated_config["telemetry"],
-        oltp_endpoint=validated_config.get("oltp_endpoint"),
-        oltp_service_name=validated_config.get("oltp_service_name"),
-        oltp_verbose_logging=validated_config.get("oltp_verbose_logging", False),
-        oltp_service_version=validated_config.get("oltp_service_version", "1.0.0"),
-        oltp_deployment_environment=validated_config.get(
-            "oltp_deployment_environment", "production"
-        ),
-        oltp_batch_max_queue_size=validated_config.get(
-            "oltp_batch_max_queue_size", 2048
-        ),
-        oltp_batch_schedule_delay_millis=validated_config.get(
-            "oltp_batch_schedule_delay_millis", 5000
-        ),
-        oltp_batch_max_export_batch_size=validated_config.get(
-            "oltp_batch_max_export_batch_size", 512
-        ),
-        oltp_batch_export_timeout_millis=validated_config.get(
-            "oltp_batch_export_timeout_millis", 30000
-        ),
+        telemetry_config=telemetry_config,
     )
 
     # Parse deployment URL

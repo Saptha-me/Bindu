@@ -136,6 +136,16 @@ class _PaymentPayload:
         return dict(self._data)
 
 
+class _x402PaymentRequiredResponse:
+    """Mock x402PaymentRequiredResponse for testing."""
+
+    def __init__(self, **kwargs):
+        self._data = kwargs
+
+    def model_dump(self, by_alias: bool = True):  # noqa: ARG002
+        return dict(self._data)
+
+
 class _SupportedNetworks:
     """Mock SupportedNetworks for testing."""
 
@@ -186,7 +196,7 @@ x402_types.PaymentPayload = _PaymentPayload  # type: ignore[attr-defined]
 x402_types.Price = object  # type: ignore[attr-defined]
 x402_types.SupportedNetworks = _SupportedNetworks  # type: ignore[attr-defined]
 x402_types.PaywallConfig = dict  # type: ignore[attr-defined]
-x402_types.x402PaymentRequiredResponse = dict  # type: ignore[attr-defined]
+x402_types.x402PaymentRequiredResponse = _x402PaymentRequiredResponse  # type: ignore[attr-defined]
 
 # Setup x402.facilitator
 x402_fac.FacilitatorClient = _FacilitatorClient  # type: ignore[attr-defined]

@@ -16,7 +16,7 @@ listing and clearing contexts.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from bindu.common.protocol.types import (
     ClearContextsRequest,
@@ -26,10 +26,9 @@ from bindu.common.protocol.types import (
     ListContextsResponse,
 )
 
-from ...utils.task_telemetry import trace_context_operation
+from bindu.utils.task_telemetry import trace_context_operation
 
-if TYPE_CHECKING:
-    from ..storage import Storage
+from bindu.server.storage import Storage
 
 
 @dataclass

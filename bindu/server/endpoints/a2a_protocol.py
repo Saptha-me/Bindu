@@ -1,6 +1,6 @@
 """A2A protocol endpoint for agent-to-agent communication."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
 from starlette.requests import Request
 from starlette.responses import Response
@@ -20,13 +20,10 @@ from bindu.extensions.x402.extension import (
     add_activation_header as x402_add_header,
 )
 
-if TYPE_CHECKING:
-    from ..applications import BinduApplication
-
 logger = get_logger("bindu.server.endpoints.a2a_protocol")
 
 
-async def agent_run_endpoint(app: "BinduApplication", request: Request) -> Response:
+async def agent_run_endpoint(app: BinduApplication, request: Request) -> Response:
     """Handle A2A protocol requests for agent-to-agent communication.
 
     Protocol Behavior:

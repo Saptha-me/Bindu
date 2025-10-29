@@ -1,6 +1,6 @@
 """Agent card endpoint for W3C-compliant agent discovery."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
 from starlette.requests import Request
 from starlette.responses import Response
@@ -15,14 +15,11 @@ from bindu.utils.request_utils import handle_endpoint_errors
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import get_client_ip
 
-if TYPE_CHECKING:
-    from ..applications import BinduApplication
-
 logger = get_logger("bindu.server.endpoints.agent_card")
 
 
 @handle_endpoint_errors("agent card")
-async def agent_card_endpoint(app: "BinduApplication", request: Request) -> Response:
+async def agent_card_endpoint(app: BinduApplication, request: Request) -> Response:
     """Serve the agent card JSON schema.
 
     This endpoint provides W3C-compliant agent discovery information.

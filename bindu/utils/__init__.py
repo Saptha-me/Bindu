@@ -9,18 +9,11 @@ from .did_utils import check_did_match, get_did_extension, validate_did_extensio
 from .request_utils import handle_endpoint_errors
 from .skill_loader import load_skills
 from .skill_utils import find_skill_by_id
-from .worker_utils import (
-    ArtifactBuilder,
-    MessageConverter,
-    PartConverter,
-    TaskStateManager,
-)
+
+# Note: worker_utils is NOT imported here to avoid circular dependency with DID extension
+# Import directly from bindu.utils.worker_utils where needed
 
 __all__ = [
-    "MessageConverter",
-    "PartConverter",
-    "ArtifactBuilder",
-    "TaskStateManager",
     "load_skills",
     "add_extension_to_capabilities",
     "get_x402_extension_from_capabilities",

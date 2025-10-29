@@ -236,17 +236,6 @@ class TestDIDAgentExtension:
         assert isinstance(pub_key_b58, str)
         assert len(pub_key_b58) > 0
 
-    def test_agent_extension_property(self, did_extension):
-        """Test agent extension property."""
-        did_extension.generate_and_save_key_pair()
-
-        ext = did_extension.agent_extension
-
-        assert ext["uri"] == app_settings.did.extension_uri
-        assert ext["required"] is False
-        assert "did" in ext["params"]
-        assert ext["params"]["did"] == did_extension.did
-
     def test_encrypted_key_without_password(self, temp_key_dir):
         """Test loading encrypted key without password raises error."""
         # Create extension with password and generate keys

@@ -32,17 +32,6 @@ from starlette.types import Lifespan, Receive, Scope, Send
 from bindu.common.models import AgentManifest, TelemetryConfig
 from bindu.settings import app_settings
 
-from .endpoints import (
-    agent_card_endpoint,
-    agent_run_endpoint,
-    did_resolve_endpoint,
-    payment_capture_endpoint,
-    payment_status_endpoint,
-    skill_detail_endpoint,
-    skill_documentation_endpoint,
-    skills_list_endpoint,
-    start_payment_session_endpoint,
-)
 from .middleware import Auth0Middleware
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .storage.memory_storage import InMemoryStorage
@@ -155,6 +144,15 @@ class BinduApplication(Starlette):
 
     def _register_routes(self) -> None:
         """Register all application routes."""
+        from .endpoints import (
+            agent_card_endpoint,
+            agent_run_endpoint,
+            did_resolve_endpoint,
+            skill_detail_endpoint,
+            skill_documentation_endpoint,
+            skills_list_endpoint,
+        )
+
         # Protocol endpoints
         self._add_route(
             "/.well-known/agent.json",
@@ -194,6 +192,12 @@ class BinduApplication(Starlette):
 
     def _register_payment_endpoints(self) -> None:
         """Register payment session endpoints."""
+        from .endpoints import (
+            payment_capture_endpoint,
+            payment_status_endpoint,
+            start_payment_session_endpoint,
+        )
+
         self._add_route(
             "/api/start-payment-session",
             start_payment_session_endpoint,

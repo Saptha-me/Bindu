@@ -1,16 +1,14 @@
 """Agent card utilities for W3C-compliant agent discovery."""
 
+from __future__ import annotations
+
 from time import time
-from typing import TYPE_CHECKING
 from uuid import UUID
 
 from bindu.common.protocol.types import AgentCard
 
-if TYPE_CHECKING:
-    from bindu.server.applications import BinduApplication
 
-
-def create_agent_card(app: "BinduApplication") -> AgentCard:
+def create_agent_card(app: BinduApplication) -> AgentCard:
     """Create agent card from application manifest.
 
     Args:

@@ -102,7 +102,7 @@ def configure_logger(
     _is_logging_configured = True
 
 
-def get_logger(name: Optional[str] = None) -> "Logger":
+def get_logger(name: Optional[str] = None) -> type[logger]:
     """Get a configured logger instance with automatic name inference.
 
     Args:

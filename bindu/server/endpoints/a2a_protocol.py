@@ -12,6 +12,7 @@ from bindu.common.protocol.types import (
     a2a_request_ta,
     a2a_response_ta,
 )
+from bindu.server.applications import BinduApplication
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import extract_error_fields, get_client_ip, jsonrpc_error

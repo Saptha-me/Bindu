@@ -20,6 +20,7 @@ from typing import Any, Callable, Literal
 from uuid import UUID
 
 from bindu.extensions.did import DIDAgentExtension
+
 from .protocol.types import (
     AgentCapabilities,
     AgentCard,

@@ -25,6 +25,7 @@ from x402.encoding import safe_base64_decode
 from x402.paywall import get_paywall_html
 from x402.types import PaymentPayload
 
+from bindu.server.applications import BinduApplication
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import handle_endpoint_errors
 
@@ -61,9 +62,7 @@ async def start_payment_session_endpoint(
 
 
 @handle_endpoint_errors("payment capture")
-async def payment_capture_endpoint(
-    app: BinduApplication, request: Request
-) -> Response:
+async def payment_capture_endpoint(app: BinduApplication, request: Request) -> Response:
     """Browser page to capture payment.
 
     Shows paywall UI and captures payment token when completed.
@@ -144,9 +143,7 @@ async def payment_capture_endpoint(
 
 
 @handle_endpoint_errors("payment status")
-async def payment_status_endpoint(
-    app: BinduApplication, request: Request
-) -> Response:
+async def payment_status_endpoint(app: BinduApplication, request: Request) -> Response:
     """Get payment status and token.
 
     The payment token is returned but NOT consumed - it can be used

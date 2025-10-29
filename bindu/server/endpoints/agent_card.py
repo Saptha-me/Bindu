@@ -2,20 +2,75 @@
 
 from __future__ import annotations
 
+from time import time
+from uuid import UUID
+
 from starlette.requests import Request
 from starlette.responses import Response
 
-from bindu.common.protocol.types import agent_card_ta
+from bindu.common.protocol.types import AgentCard, agent_card_ta
 from bindu.extensions.x402.extension import (
     is_activation_requested as x402_is_requested,
     add_activation_header as x402_add_header,
 )
-from bindu.utils.agent_card_utils import create_agent_card
+from bindu.server.applications import BinduApplication
 from bindu.utils.request_utils import handle_endpoint_errors
 from bindu.utils.logging import get_logger
 from bindu.utils.request_utils import get_client_ip
 
 logger = get_logger("bindu.server.endpoints.agent_card")
+
+
+def create_agent_card(app: BinduApplication) -> AgentCard:
+    """Create agent card from application manifest.
+
+    Args:
+        app: BinduApplication instance
+
+    Returns:
+        AgentCard instance
+
+    Note:
+        Excludes skill documentation_content from agent card to reduce payload size.
+        Full documentation is available via /agent/skills/{skill_id}/documentation
+    """
+    # Minimize skills to just id, name, and documentation_path (URL) - full details via dedicated endpoint
+    minimal_skills = []
+    for skill in app.manifest.skills:
+        minimal_skills.append(
+            {
+                "id": skill["id"],
+                "name": skill["name"],
+                "documentation_path": f"{app.url}/agent/skills/{skill['id']}",
+            }
+        )
+
+    # Ensure id is UUID type (convert from string if needed)
+    agent_id = (
+        app.manifest.id if isinstance(app.manifest.id, UUID) else UUID(app.manifest.id)
+    )
+
+    return AgentCard(
+        id=agent_id,
+        name=app.manifest.name,
+        description=app.manifest.description or "An AI agent exposed as an A2A agent.",
+        url=app.url,
+        version=app.version,
+        protocol_version="0.2.5",
+        skills=minimal_skills,
+        capabilities=app.manifest.capabilities,
+        kind=app.manifest.kind,
+        num_history_sessions=app.manifest.num_history_sessions,
+        extra_data=app.manifest.extra_data
+        or {"created": int(time()), "server_info": "bindu Agent Server"},
+        debug_mode=app.manifest.debug_mode,
+        debug_level=app.manifest.debug_level,
+        monitoring=app.manifest.monitoring,
+        telemetry=app.manifest.telemetry,
+        agent_trust=app.manifest.agent_trust,
+        default_input_modes=["text/plain", "application/json"],
+        default_output_modes=["text/plain", "application/json"],
+    )
 
 
 @handle_endpoint_errors("agent card")

@@ -266,19 +266,19 @@ We are grateful to the following projects for the development of bindu:
 
 Here's what's next for bindu:
 
-- [ ] [GRPC transport support](http://docs.saptha.me/roadmap/grpc-transport)
-- [ ] [Sentry Error Tracking](http://docs.saptha.me/roadmap/sentry-integration)
-- [ ] [Ag-Ui Integration](http://docs.saptha.me/roadmap/ag-ui-integration)
-- [ ] [Retry Mechanism add](http://docs.saptha.me/roadmap/retry-mechanism)
-- [ ] [Increase Test Coverage to 80%](http://docs.saptha.me/roadmap/test-coverage)
-- [ ] [Redis Scheduler Implementation](http://docs.saptha.me/roadmap/redis-scheduler)
-- [ ] [Postgres Database Implementation for Memory Storage](http://docs.saptha.me/roadmap/postgres-memory)
-- [ ] [Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra)](http://docs.saptha.me/roadmap/authentication)
-- [ ] [Negotiation Support](http://docs.saptha.me/roadmap/negotiation)
-- [ ] [AP2 End to End Support](http://docs.saptha.me/roadmap/ap2-support)
-- [ ] [Dspy Addition](http://docs.saptha.me/roadmap/dspy)
-- [ ] [MLTS Support](http://docs.saptha.me/roadmap/mlts)
-- [ ] [X402 Support with other facilitators](http://docs.saptha.me/roadmap/x402)
+- [ ] <a href="http://docs.saptha.me/roadmap/grpc-transport" target="_blank">GRPC transport support</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/sentry-integration" target="_blank">Sentry Error Tracking</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/ag-ui-integration" target="_blank">Ag-Ui Integration</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/retry-mechanism" target="_blank">Retry Mechanism add</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/test-coverage" target="_blank">Increase Test Coverage to 80%</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/redis-scheduler" target="_blank">Redis Scheduler Implementation</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/postgres-memory" target="_blank">Postgres Database Implementation for Memory Storage</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/authentication" target="_blank">Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra)</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/negotiation" target="_blank">Negotiation Support</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/ap2-support" target="_blank">AP2 End to End Support</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/dspy" target="_blank">Dspy Addition</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/mlts" target="_blank">MLTS Support</a>
+- [ ] <a href="http://docs.saptha.me/roadmap/x402" target="_blank">X402 Support with other facilitators</a>
 
 
 Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zuYUuwt)!

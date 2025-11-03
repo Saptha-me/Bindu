@@ -36,7 +36,7 @@ Think of this as the restaurant's order board system catalog:
 
 AVAILABLE SCHEDULER OPTIONS:
 - InMemoryScheduler: Fast in-memory task queue for single-process deployments
-- RedisScheduler: Distributed task queue using Redis for multi-process systems # TODO: Add RedisScheduler
+- RedisScheduler: Distributed task queue using Redis for multi-process systems
 """
 
 from __future__ import annotations as _annotations
@@ -46,8 +46,7 @@ from .base import Scheduler, TaskOperation
 
 # Export all scheduler implementations
 from .memory_scheduler import InMemoryScheduler
-
-# from .redis_scheduler import RedisScheduler # TODO: Add RedisScheduler
+from .redis_scheduler import RedisScheduler
 
 __all__ = [
     # Base interface
@@ -55,5 +54,5 @@ __all__ = [
     "TaskOperation",
     # Scheduler implementations
     "InMemoryScheduler",
-    # "RedisScheduler", # TODO: Add RedisScheduler
+    "RedisScheduler",
 ]

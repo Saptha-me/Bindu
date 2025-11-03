@@ -271,7 +271,7 @@ Here's what's next for bindu:
 - [ ] Ag-Ui Integration.
 - [ ] Retry Mechanism add.
 - [ ] Increase Test Coverage to 80%.
-- [ ] Redis Scheduler Implementation.
+- [x] Redis Scheduler Implementation.
 - [ ] Postgres Database Implementation for Memory Storage.
 - [ ] Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra).
 - [ ] Negotiation Support.

@@ -267,12 +267,12 @@ We are grateful to the following projects for the development of bindu:
 Here's what's next for bindu:
 
 - [ ] <a href="http://docs.saptha.me/roadmap/grpc-transport" target="_blank">GRPC transport support</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/sentry-integration" target="_blank">Sentry Error Tracking</a>
+- [x] <a href="http://docs.saptha.me/roadmap/sentry-integration" target="_blank">Sentry Error Tracking</a> (In Progress)
 - [ ] <a href="http://docs.saptha.me/roadmap/ag-ui-integration" target="_blank">Ag-Ui Integration</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/retry-mechanism" target="_blank">Retry Mechanism add</a>
+- [x] <a href="http://docs.saptha.me/roadmap/retry-mechanism" target="_blank">Retry Mechanism add</a>(In Progress)
 - [ ] <a href="http://docs.saptha.me/roadmap/test-coverage" target="_blank">Increase Test Coverage to 80%</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/redis-scheduler" target="_blank">Redis Scheduler Implementation</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/postgres-memory" target="_blank">Postgres Database Implementation for Memory Storage</a>
+- [x] <a href="http://docs.saptha.me/roadmap/redis-scheduler" target="_blank">Redis Scheduler Implementation</a>(In Progress)
+- [x] <a href="http://docs.saptha.me/roadmap/postgres-memory" target="_blank">Postgres Database Implementation for Memory Storage</a>(In Progress)
 - [ ] <a href="http://docs.saptha.me/roadmap/authentication" target="_blank">Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra)</a>
 - [ ] <a href="http://docs.saptha.me/roadmap/negotiation" target="_blank">Negotiation Support</a>
 - [ ] <a href="http://docs.saptha.me/roadmap/ap2-support" target="_blank">AP2 End to End Support</a>

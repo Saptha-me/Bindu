@@ -1,0 +1,1072 @@
+openapi: 3.1.0
+info:
+  title: Bindu Agent API
+  description: |
+    A2A Protocol compliant API for Bindu agents supporting JSON-RPC 2.0 methods for agent communication,
+    task management, context management, DID resolution, and payment processing.
+  version: 1.0.0
+  contact:
+    name: Saptha.me
+    email: raahul@saptha.me
+
+servers:
+  - url: http://localhost:3773
+    description: Development server (default port)
+  - url: http://localhost:8030
+    description: Development server (alternate port)
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: JSON-RPC
+    description: JSON-RPC 2.0 endpoints for agent communication
+  - name: Agent Discovery
+    description: Agent metadata and capability discovery
+  - name: DID Resolution
+    description: Decentralized Identifier resolution
+  - name: Skills
+    description: Agent skills and capabilities
+  - name: Payment
+    description: x402 payment protocol endpoints
+
+paths:
+  /:
+    post:
+      tags:
+        - JSON-RPC
+      summary: JSON-RPC 2.0 Endpoint
+      description: |
+        Main JSON-RPC 2.0 endpoint supporting multiple methods:
+        - message/send: Send messages to agent
+        - message/stream: Stream messages from agent
+        - tasks/get: Get task status
+        - tasks/list: List all tasks
+        - tasks/cancel: Cancel a task
+        - tasks/feedback: Submit feedback for a task
+        - contexts/list: List conversation contexts
+        - contexts/clear: Clear a context
+      operationId: jsonRpcEndpoint
+      security:
+        - BearerAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/MessageSendRequest'
+                - $ref: '#/components/schemas/TasksGetRequest'
+                - $ref: '#/components/schemas/TasksListRequest'
+                - $ref: '#/components/schemas/TasksCancelRequest'
+                - $ref: '#/components/schemas/TasksFeedbackRequest'
+                - $ref: '#/components/schemas/ContextsListRequest'
+                - $ref: '#/components/schemas/ContextsClearRequest'
+            examples:
+              messageSend:
+                summary: Send a message
+                value:
+                  jsonrpc: "2.0"
+                  method: "message/send"
+                  params:
+                    message:
+                      role: "user"
+                      parts:
+                        - kind: "text"
+                          text: "provide sunset quote"
+                      kind: "message"
+                      messageId: "550e8400-e29b-41d4-a716-446655440038"
+                      contextId: "550e8400-e29b-41d4-a716-446655440038"
+                      taskId: "550e8400-e29b-41d4-a716-446655440078"
+                    configuration:
+                      acceptedOutputModes:
+                        - "application/json"
+                  id: "550e8400-e29b-41d4-a716-446655440024"
+              
+              messageSendWithPayment:
+                summary: Send a message with x402 payment
+                value:
+                  jsonrpc: "2.0"
+                  method: "message/send"
+                  params:
+                    message:
+                      role: "user"
+                      parts:
+                        - kind: "text"
+                          text: "provide sunset quote"
+                      kind: "message"
+                      messageId: "550e8400-e29b-41d4-a716-446655440039"
+                      contextId: "550e8400-e29b-41d4-a716-446655440038"
+                      taskId: "550e8400-e29b-41d4-a716-446655440078"
+                      metadata:
+                        x402.payment.status: "payment-submitted"
+                        x402.payment.payload:
+                          resource: "/agent/first Agent"
+                          scheme: "exact"
+                          network: "base-sepolia"
+                          asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+                          payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+                          amount: "10000000000"
+                          signature: "0x<YOUR_WALLET_SIGNATURE_HERE>"
+                          timestamp: "2025-10-26T14:47:52.183416+00:00"
+                          payer: "0x<YOUR_WALLET_ADDRESS>"
+                    configuration:
+                      acceptedOutputModes:
+                        - "application/json"
+                  id: "550e8400-e29b-41d4-a716-446655440025"
+              
+              messageSendWithReference:
+                summary: Send a message with reference to previous task
+                value:
+                  jsonrpc: "2.0"
+                  method: "message/send"
+                  params:
+                    message:
+                      role: "user"
+                      parts:
+                        - kind: "text"
+                          text: "make it shorter"
+                      kind: "message"
+                      messageId: "550e8400-e29b-41d4-a716-446655440027"
+                      contextId: "550e8400-e29b-41d4-a716-446655440027"
+                      taskId: "550e8400-e29b-41d4-a716-446655440042"
+                      referenceTaskIds:
+                        - "550e8400-e29b-41d4-a716-446655440041"
+                    configuration:
+                      acceptedOutputModes:
+                        - "application/json"
+                  id: "550e8400-e29b-41d4-a716-446655440024"
+              
+              tasksGet:
+                summary: Get task status
+                value:
+                  jsonrpc: "2.0"
+                  method: "tasks/get"
+                  params:
+                    taskId: "550e8400-e29b-41d4-a716-446655440013"
+                  id: "550e8400-e29b-41d4-a716-446655440014"
+              
+              tasksList:
+                summary: List all tasks
+                value:
+                  jsonrpc: "2.0"
+                  method: "tasks/list"
+                  params: {}
+                  id: "550e8400-e29b-41d4-a716-446655440099"
+              
+              tasksFeedback:
+                summary: Submit task feedback
+                value:
+                  jsonrpc: "2.0"
+                  method: "tasks/feedback"
+                  params:
+                    taskId: "550e8400-e29b-41d4-a716-446655440045"
+                    feedback: "Great job! The response was very helpful and accurate."
+                    rating: 5
+                    metadata:
+                      category: "quality"
+                      source: "user"
+                      helpful: true
+                  id: "550e8400-e29b-41d4-a716-446655440024"
+              
+              contextsList:
+                summary: List contexts
+                value:
+                  jsonrpc: "2.0"
+                  method: "contexts/list"
+                  params:
+                    length: 10
+                  id: "550e8400-e29b-41d4-a716-446655440025"
+              
+              contextsClear:
+                summary: Clear a context
+                value:
+                  jsonrpc: "2.0"
+                  method: "contexts/clear"
+                  params:
+                    contextId: "550e8400-e29b-41d4-a716-446655440037"
+                  id: "550e8400-e29b-41d4-a716-446655440025"
+      responses:
+        '200':
+          description: Successful JSON-RPC response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/JsonRpcSuccessResponse'
+                  - $ref: '#/components/schemas/JsonRpcErrorResponse'
+              examples:
+                success:
+                  summary: Successful response
+                  value:
+                    jsonrpc: "2.0"
+                    result:
+                      task:
+                        taskId: "550e8400-e29b-41d4-a716-446655440078"
+                        contextId: "550e8400-e29b-41d4-a716-446655440038"
+                        status:
+                          state: "completed"
+                          timestamp: "2025-10-26T14:47:52.183416+00:00"
+                        artifacts:
+                          - kind: "text"
+                            text: "The sunset paints the sky with hope for tomorrow."
+                    id: "550e8400-e29b-41d4-a716-446655440024"
+                
+                error:
+                  summary: Error response
+                  value:
+                    jsonrpc: "2.0"
+                    error:
+                      code: -32602
+                      message: "Invalid params"
+                      data:
+                        details: "Missing required field: taskId"
+                    id: "550e8400-e29b-41d4-a716-446655440024"
+
+  /.well-known/agent.json:
+    get:
+      tags:
+        - Agent Discovery
+      summary: Get Agent Card
+      description: |
+        Returns the agent's metadata card following the A2A Protocol specification.
+        Includes agent capabilities, supported features, and discovery information.
+      operationId: getAgentCard
+      security: []
+      responses:
+        '200':
+          description: Agent card metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentCard'
+              example:
+                name: "First Agent"
+                description: "A helpful AI agent"
+                version: "1.0.0"
+                capabilities:
+                  streaming: true
+                  pushNotifications: false
+                  taskManagement: true
+                skills:
+                  - id: "question-answering-v1"
+                    name: "Question Answering"
+                    description: "Answer questions based on context"
+                did: "did:bindu:raahul_at_saptha_me:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6"
+                endpoints:
+                  jsonrpc: "http://localhost:8030/"
+                  did: "http://localhost:8030/did/resolve"
+
+  /did/resolve:
+    post:
+      tags:
+        - DID Resolution
+      summary: Resolve DID
+      description: |
+        Resolves a Decentralized Identifier (DID) to its W3C-compliant DID document.
+        Supports custom Bindu DID format: did:bindu:{author}:{agent_name}:{agent_id}
+      operationId: resolveDid
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - did
+              properties:
+                did:
+                  type: string
+                  description: The DID to resolve
+                  example: "did:bindu:raahul_at_saptha_me:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6"
+      responses:
+        '200':
+          description: DID document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DidDocument'
+              example:
+                "@context":
+                  - "https://www.w3.org/ns/did/v1"
+                  - "https://bindu.ai/ns/v1"
+                id: "did:bindu:raahul_at_saptha_me:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6"
+                created: "2025-10-26T14:47:52.183416+00:00"
+                authentication:
+                  - id: "did:bindu:raahul_at_saptha_me:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6#key-1"
+                    type: "Ed25519VerificationKey2020"
+                    controller: "did:bindu:raahul_at_saptha_me:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6"
+                    publicKeyBase58: "..."
+                bindu:
+                  agentName: "first_agent"
+                  userId: "raahul_at_saptha_me"
+                  skills:
+                    - "question-answering-v1"
+                  capabilities:
+                    streaming: true
+                  description: "A helpful AI agent"
+                  version: "1.0.0"
+                service:
+                  - id: "did:bindu:raahul_at_saptha_me:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6#agent-service"
+                    type: "BinduAgentService"
+                    serviceEndpoint: "http://localhost:8030"
+        '400':
+          description: Invalid DID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: DID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agent/skills:
+    get:
+      tags:
+        - Skills
+      summary: List Agent Skills
+      description: Returns a list of all skills supported by the agent
+      operationId: listSkills
+      security: []
+      responses:
+        '200':
+          description: List of skills
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SkillSummary'
+              example:
+                skills:
+                  - id: "question-answering-v1"
+                    name: "Question Answering"
+                    description: "Answer questions based on context"
+                    version: "1.0.0"
+
+  /agent/skills/{skillId}:
+    get:
+      tags:
+        - Skills
+      summary: Get Skill Details
+      description: Returns detailed information about a specific skill
+      operationId: getSkillDetails
+      security: []
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          description: The skill identifier
+          schema:
+            type: string
+          example: "question-answering-v1"
+      responses:
+        '200':
+          description: Skill details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillDetails'
+              example:
+                id: "question-answering-v1"
+                name: "Question Answering"
+                description: "Answer questions based on context"
+                version: "1.0.0"
+                inputSchema:
+                  type: "object"
+                  properties:
+                    question:
+                      type: "string"
+                      description: "The question to answer"
+                  required:
+                    - "question"
+                outputSchema:
+                  type: "object"
+                  properties:
+                    answer:
+                      type: "string"
+                      description: "The answer to the question"
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agent/skills/{skillId}/documentation:
+    get:
+      tags:
+        - Skills
+      summary: Get Skill Documentation
+      description: Returns human-readable documentation for a specific skill
+      operationId: getSkillDocumentation
+      security: []
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          description: The skill identifier
+          schema:
+            type: string
+          example: "question-answering-v1"
+      responses:
+        '200':
+          description: Skill documentation
+          content:
+            text/markdown:
+              schema:
+                type: string
+              example: |
+                # Question Answering Skill
+                
+                This skill allows the agent to answer questions based on provided context.
+                
+                ## Usage
+                
+                Send a message with your question and the agent will respond with an answer.
+                
+                ## Examples
+                
+                - "What is the capital of France?"
+                - "Explain quantum computing"
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/start-payment-session:
+    post:
+      tags:
+        - Payment
+      summary: Start Payment Session
+      description: |
+        Initiates a payment session for x402 protocol.
+        Returns payment requirements and session information.
+      operationId: startPaymentSession
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Payment session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentSession'
+              example:
+                sessionId: "Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8"
+                paymentRequirements:
+                  resource: "/agent/first Agent"
+                  scheme: "exact"
+                  network: "base-sepolia"
+                  asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+                  payTo: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+                  amount: "10000000000"
+                  description: "Payment for agent service"
+                expiresAt: "2025-10-26T15:47:52.183416+00:00"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payment-status/{sessionId}:
+    get:
+      tags:
+        - Payment
+      summary: Get Payment Status
+      description: |
+        Retrieves the status of a payment session.
+        Used to verify payment completion.
+      operationId: getPaymentStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          description: The payment session identifier
+          schema:
+            type: string
+          example: "Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8"
+      responses:
+        '200':
+          description: Payment status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatus'
+              example:
+                sessionId: "Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8"
+                status: "completed"
+                transactionHash: "0x..."
+                timestamp: "2025-10-26T14:47:52.183416+00:00"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token for authentication
+
+  schemas:
+    # JSON-RPC Request Schemas
+    MessageSendRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        method:
+          type: string
+          enum: ["message/send"]
+        params:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              $ref: '#/components/schemas/Message'
+            configuration:
+              $ref: '#/components/schemas/Configuration'
+        id:
+          type: string
+          description: Request identifier
+
+    TasksGetRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        method:
+          type: string
+          enum: ["tasks/get"]
+        params:
+          type: object
+          required:
+            - taskId
+          properties:
+            taskId:
+              type: string
+              format: uuid
+        id:
+          type: string
+
+    TasksListRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        method:
+          type: string
+          enum: ["tasks/list"]
+        params:
+          type: object
+          properties:
+            limit:
+              type: integer
+              minimum: 1
+              maximum: 100
+            offset:
+              type: integer
+              minimum: 0
+        id:
+          type: string
+
+    TasksCancelRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        method:
+          type: string
+          enum: ["tasks/cancel"]
+        params:
+          type: object
+          required:
+            - taskId
+          properties:
+            taskId:
+              type: string
+              format: uuid
+        id:
+          type: string
+
+    TasksFeedbackRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        method:
+          type: string
+          enum: ["tasks/feedback"]
+        params:
+          type: object
+          required:
+            - taskId
+            - feedback
+          properties:
+            taskId:
+              type: string
+              format: uuid
+            feedback:
+              type: string
+            rating:
+              type: integer
+              minimum: 1
+              maximum: 5
+            metadata:
+              type: object
+              additionalProperties: true
+        id:
+          type: string
+
+    ContextsListRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        method:
+          type: string
+          enum: ["contexts/list"]
+        params:
+          type: object
+          properties:
+            length:
+              type: integer
+              minimum: 1
+              maximum: 100
+        id:
+          type: string
+
+    ContextsClearRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - params
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        method:
+          type: string
+          enum: ["contexts/clear"]
+        params:
+          type: object
+          required:
+            - contextId
+          properties:
+            contextId:
+              type: string
+              format: uuid
+        id:
+          type: string
+
+    # JSON-RPC Response Schemas
+    JsonRpcSuccessResponse:
+      type: object
+      required:
+        - jsonrpc
+        - result
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        result:
+          type: object
+          description: Method-specific result
+        id:
+          type: string
+
+    JsonRpcErrorResponse:
+      type: object
+      required:
+        - jsonrpc
+        - error
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          enum: ["2.0"]
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: integer
+              description: JSON-RPC error code
+            message:
+              type: string
+              description: Error message
+            data:
+              type: object
+              description: Additional error data
+        id:
+          type: string
+
+    # Core Domain Schemas
+    Message:
+      type: object
+      required:
+        - role
+        - parts
+        - kind
+        - messageId
+        - contextId
+        - taskId
+      properties:
+        role:
+          type: string
+          enum: ["user", "agent"]
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessagePart'
+        kind:
+          type: string
+          enum: ["message"]
+        messageId:
+          type: string
+          format: uuid
+        contextId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        referenceTaskIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: References to previous tasks in the conversation
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata (e.g., payment information)
+
+    MessagePart:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum: ["text", "file", "data"]
+        text:
+          type: string
+          description: Text content (for kind=text)
+        file:
+          type: object
+          description: File reference (for kind=file)
+        data:
+          type: object
+          description: Structured data (for kind=data)
+
+    Configuration:
+      type: object
+      properties:
+        acceptedOutputModes:
+          type: array
+          items:
+            type: string
+          description: Accepted MIME types for output
+          example: ["application/json", "text/plain"]
+
+    Task:
+      type: object
+      required:
+        - taskId
+        - contextId
+        - status
+        - kind
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        contextId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: ["task"]
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artifact'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        metadata:
+          type: object
+          additionalProperties: true
+
+    TaskStatus:
+      type: object
+      required:
+        - state
+        - timestamp
+      properties:
+        state:
+          type: string
+          enum:
+            - submitted
+            - working
+            - input-required
+            - auth-required
+            - completed
+            - canceled
+            - failed
+        timestamp:
+          type: string
+          format: date-time
+
+    Artifact:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum: ["text", "file", "data"]
+        text:
+          type: string
+        file:
+          type: object
+        data:
+          type: object
+
+    AgentCard:
+      type: object
+      required:
+        - name
+        - version
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        capabilities:
+          type: object
+          properties:
+            streaming:
+              type: boolean
+            pushNotifications:
+              type: boolean
+            taskManagement:
+              type: boolean
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillSummary'
+        did:
+          type: string
+        endpoints:
+          type: object
+          additionalProperties:
+            type: string
+
+    DidDocument:
+      type: object
+      required:
+        - "@context"
+        - id
+      properties:
+        "@context":
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+          description: The DID
+        created:
+          type: string
+          format: date-time
+        authentication:
+          type: array
+          items:
+            type: object
+        bindu:
+          type: object
+          description: Bindu-specific metadata
+        service:
+          type: array
+          items:
+            type: object
+
+    SkillSummary:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+
+    SkillDetails:
+      type: object
+      required:
+        - id
+        - name
+        - version
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        inputSchema:
+          type: object
+          description: JSON Schema for input
+        outputSchema:
+          type: object
+          description: JSON Schema for output
+
+    PaymentSession:
+      type: object
+      required:
+        - sessionId
+        - paymentRequirements
+      properties:
+        sessionId:
+          type: string
+        paymentRequirements:
+          $ref: '#/components/schemas/PaymentRequirements'
+        expiresAt:
+          type: string
+          format: date-time
+
+    PaymentRequirements:
+      type: object
+      required:
+        - resource
+        - scheme
+        - network
+        - asset
+        - payTo
+        - amount
+      properties:
+        resource:
+          type: string
+          description: Resource being paid for
+        scheme:
+          type: string
+          enum: ["exact", "range"]
+        network:
+          type: string
+          description: Blockchain network
+          example: "base-sepolia"
+        asset:
+          type: string
+          description: Token contract address
+        payTo:
+          type: string
+          description: Recipient address
+        amount:
+          type: string
+          description: Amount in atomic units
+        description:
+          type: string
+
+    PaymentStatus:
+      type: object
+      required:
+        - sessionId
+        - status
+      properties:
+        sessionId:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "completed", "failed", "expired"]
+        transactionHash:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+        details:
+          type: string

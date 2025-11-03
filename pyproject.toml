@@ -48,6 +48,7 @@ dependencies = [
     "cdp-sdk>=0.21.0",
     "coinbase-advanced-py>=1.8.2",
     "detect-secrets>=1.5.0",
+    "ddgs>=9.6.1",
 ]
 
 [tool.hatch.build.targets.wheel]

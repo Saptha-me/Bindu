@@ -266,19 +266,19 @@ We are grateful to the following projects for the development of bindu:
 
 Here's what's next for bindu:
 
-- [ ] GRPC transport support
-- [ ] Sentry Error Tracking.
-- [ ] Ag-Ui Integration.
-- [ ] Retry Mechanism add.
-- [ ] Increase Test Coverage to 80%.
-- [ ] Redis Scheduler Implementation.
-- [ ] Postgres Database Implementation for Memory Storage.
-- [ ] Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra).
-- [ ] Negotiation Support.
-- [ ] AP2 End to End Support.
-- [ ] Dspy Addition.
-- [ ] MLTS Support.
-- [ ] X402 Support with other facilitators.
+- [ ] [GRPC transport support](http://docs.saptha.me/roadmap/grpc-transport)
+- [ ] [Sentry Error Tracking](http://docs.saptha.me/roadmap/sentry-integration)
+- [ ] [Ag-Ui Integration](http://docs.saptha.me/roadmap/ag-ui-integration)
+- [ ] [Retry Mechanism add](http://docs.saptha.me/roadmap/retry-mechanism)
+- [ ] [Increase Test Coverage to 80%](http://docs.saptha.me/roadmap/test-coverage)
+- [ ] [Redis Scheduler Implementation](http://docs.saptha.me/roadmap/redis-scheduler)
+- [ ] [Postgres Database Implementation for Memory Storage](http://docs.saptha.me/roadmap/postgres-memory)
+- [ ] [Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra)](http://docs.saptha.me/roadmap/authentication)
+- [ ] [Negotiation Support](http://docs.saptha.me/roadmap/negotiation)
+- [ ] [AP2 End to End Support](http://docs.saptha.me/roadmap/ap2-support)
+- [ ] [Dspy Addition](http://docs.saptha.me/roadmap/dspy)
+- [ ] [MLTS Support](http://docs.saptha.me/roadmap/mlts)
+- [ ] [X402 Support with other facilitators](http://docs.saptha.me/roadmap/x402)
 
 
 Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zuYUuwt)!

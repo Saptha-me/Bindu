@@ -99,7 +99,7 @@ class TestConfigValidator:
         """Test error when required field is missing."""
         config = {
             "author": "test@example.com",
-            # Missing capabilities, deployment, storage, scheduler
+            # Missing deployment (capabilities, storage, scheduler have defaults)
         }
 
         with pytest.raises(ValueError, match="Missing required fields"):
@@ -115,10 +115,9 @@ class TestConfigValidator:
             ConfigValidator.validate_and_process(config)
 
         error_msg = str(exc_info.value)
-        assert "capabilities" in error_msg
         assert "deployment" in error_msg
-        assert "storage" in error_msg
-        assert "scheduler" in error_msg
+        # Only deployment is required now (author is already provided)
+        # capabilities, storage, and scheduler have defaults
 
     def test_process_skills_from_dict(self, minimal_config):
         """Test processing skills from dictionary list."""
@@ -421,14 +420,35 @@ class TestConfigValidatorDefaults:
         assert ConfigValidator.DEFAULTS["recreate_keys"] is True
         assert ConfigValidator.DEFAULTS["debug_mode"] is False
         assert ConfigValidator.DEFAULTS["telemetry"] is True
+        assert ConfigValidator.DEFAULTS["capabilities"] == {}
+        assert ConfigValidator.DEFAULTS["storage"] == {"type": "memory"}
+        assert ConfigValidator.DEFAULTS["scheduler"] == {"type": "memory"}
 
     def test_required_fields(self):
         """Test that required fields list is correct."""
         expected_required = [
             "author",
-            "capabilities",
             "deployment",
-            "storage",
-            "scheduler",
         ]
         assert ConfigValidator.REQUIRED_FIELDS == expected_required
+
+    def test_minimal_config_with_defaults(self):
+        """Test that minimal config with only required fields works with defaults."""
+        minimal_config = {
+            "author": "test@example.com",
+            "deployment": {"url": "http://localhost:3773", "expose": True},
+        }
+
+        result = ConfigValidator.validate_and_process(minimal_config)
+
+        # Verify required fields are present
+        assert result["author"] == "test@example.com"
+        assert result["deployment"]["url"] == "http://localhost:3773"
+
+        # Verify defaults are applied
+        assert result["capabilities"] == {}
+        assert result["storage"] == {"type": "memory"}
+        assert result["scheduler"] == {"type": "memory"}
+        assert result["name"] == "bindu-agent"
+        assert result["version"] == "1.0.0"
+        assert result["telemetry"] is True

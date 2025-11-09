@@ -83,7 +83,7 @@ paths:
                       acceptedOutputModes:
                         - "application/json"
                   id: "550e8400-e29b-41d4-a716-446655440024"
-              
+
               messageSendWithPayment:
                 summary: Send a message with x402 payment
                 value:
@@ -115,7 +115,7 @@ paths:
                       acceptedOutputModes:
                         - "application/json"
                   id: "550e8400-e29b-41d4-a716-446655440025"
-              
+
               messageSendWithReference:
                 summary: Send a message with reference to previous task
                 value:
@@ -137,7 +137,7 @@ paths:
                       acceptedOutputModes:
                         - "application/json"
                   id: "550e8400-e29b-41d4-a716-446655440024"
-              
+
               tasksGet:
                 summary: Get task status
                 value:
@@ -146,7 +146,7 @@ paths:
                   params:
                     taskId: "550e8400-e29b-41d4-a716-446655440013"
                   id: "550e8400-e29b-41d4-a716-446655440014"
-              
+
               tasksList:
                 summary: List all tasks
                 value:
@@ -154,7 +154,7 @@ paths:
                   method: "tasks/list"
                   params: {}
                   id: "550e8400-e29b-41d4-a716-446655440099"
-              
+
               tasksFeedback:
                 summary: Submit task feedback
                 value:
@@ -169,7 +169,7 @@ paths:
                       source: "user"
                       helpful: true
                   id: "550e8400-e29b-41d4-a716-446655440024"
-              
+
               contextsList:
                 summary: List contexts
                 value:
@@ -178,7 +178,7 @@ paths:
                   params:
                     length: 10
                   id: "550e8400-e29b-41d4-a716-446655440025"
-              
+
               contextsClear:
                 summary: Clear a context
                 value:
@@ -212,7 +212,7 @@ paths:
                           - kind: "text"
                             text: "The sunset paints the sky with hope for tomorrow."
                     id: "550e8400-e29b-41d4-a716-446655440024"
-                
+
                 error:
                   summary: Error response
                   value:
@@ -426,15 +426,15 @@ paths:
                 type: string
               example: |
                 # Question Answering Skill
-                
+
                 This skill allows the agent to answer questions based on provided context.
-                
+
                 ## Usage
-                
+
                 Send a message with your question and the agent will respond with an answer.
-                
+
                 ## Examples
-                
+
                 - "What is the capital of France?"
                 - "Explain quantum computing"
         '404':
@@ -463,7 +463,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentSession'
               example:
-                sessionId: "Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8"
+                sessionId: "Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8"  # pragma: allowlist secret
                 paymentRequirements:
                   resource: "/agent/first Agent"
                   scheme: "exact"

@@ -21,6 +21,9 @@ class ConfigValidator:
         "version": "1.0.0",
         "recreate_keys": True,
         "skills": [],
+        "capabilities": {},
+        "storage": {"type": "memory"},
+        "scheduler": {"type": "memory"},
         "kind": "agent",
         "debug_mode": False,
         "debug_level": 1,
@@ -44,7 +47,7 @@ class ConfigValidator:
     }
 
     # Required fields that must be present
-    REQUIRED_FIELDS = ["author", "capabilities", "deployment", "storage", "scheduler"]
+    REQUIRED_FIELDS = ["author", "deployment"]
 
     @classmethod
     def validate_and_process(cls, config: Dict[str, Any]) -> Dict[str, Any]:

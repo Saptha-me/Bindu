@@ -221,9 +221,10 @@ def bindufy(
 
     validated_config = ConfigValidator.validate_and_process(config)
 
-    # Update app_settings.auth if auth config is provided
-    if "auth" in validated_config and validated_config["auth"].get("enabled"):
-        auth_config = validated_config["auth"]
+    # Update app_settings.auth based on config
+    auth_config = validated_config.get("auth")
+    if auth_config and auth_config.get("enabled"):
+        # Auth is enabled - configure all settings
         app_settings.auth.enabled = True
         app_settings.auth.domain = auth_config.get("domain", "")
         app_settings.auth.audience = auth_config.get("audience", "")
@@ -243,6 +244,10 @@ def bindufy(
         logger.info(
             f"Auth0 configuration loaded: domain={auth_config.get('domain')}, audience={auth_config.get('audience')}"
         )
+    else:
+        # Auth is not provided or disabled - ensure it's disabled
+        app_settings.auth.enabled = False
+        logger.info("Authentication disabled")
 
     # Generate agent_id if not provided
     agent_id = validated_config.get("id", uuid4().hex)
@@ -297,7 +302,7 @@ def bindufy(
 
     # Update capabilities to include DID extension
     capabilities = add_extension_to_capabilities(
-        validated_config["capabilities"], did_extension
+        validated_config.get("capabilities", {}), did_extension
     )
 
     # Only add x402 extension if execution_cost is configured
@@ -378,9 +383,6 @@ def bindufy(
     storage_instance = _create_storage_instance(storage_config)
     scheduler_instance = _create_scheduler_instance(scheduler_config)
 
-    # Check if auth is enabled in config
-    auth_enabled = validated_config.get("auth", {}).get("enabled", False)
-
     # Create telemetry configuration
     telemetry_config = TelemetryConfig(
         enabled=validated_config["telemetry"],
@@ -411,7 +413,7 @@ def bindufy(
         penguin_id=agent_id,
         manifest=_manifest,
         version=validated_config["version"],
-        auth_enabled=auth_enabled,
+        auth_enabled=app_settings.auth.enabled,
         telemetry_config=telemetry_config,
     )
 

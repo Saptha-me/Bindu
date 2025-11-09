@@ -27,13 +27,7 @@
 
 ## Translating Agents to Production Level in 3 Minutes 🚀
 
-<div align="center">
-  <a href="https://www.loom.com/share/1bceb23638c6477da2342a78662a7881">
-    <img src="https://cdn.loom.com/sessions/thumbnails/1bceb23638c6477da2342a78662a7881-with-play.gif" alt="Watch Demo Video" width="600">
-  </a>
-  <p><em>Click to watch the demo</em></p>
-</div>
-
+[![Agents to Production in 3 Minutes 🚀](https://cdn.loom.com/sessions/thumbnails/1bceb23638c6477da2342a78662a7881-0355d13faf9459a1-full-play.gif)](https://www.loom.com/share/1bceb23638c6477da2342a78662a7881)
 <br/>
 
 # The Idea

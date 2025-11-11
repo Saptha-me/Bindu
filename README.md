@@ -25,11 +25,6 @@
 
 <br/>
 
-## Translating Agents to Production Level in 3 Minutes 🚀
-
-[![Agents to Production in 3 Minutes 🚀](https://cdn.loom.com/sessions/thumbnails/1bceb23638c6477da2342a78662a7881-0355d13faf9459a1-full-play.gif)](https://www.loom.com/share/1bceb23638c6477da2342a78662a7881)
-<br/>
-
 # The Idea
 
 Integration was the problem.
@@ -238,10 +233,6 @@ For more details about maintainers, including how to become a maintainer, see ou
 
 <br/>
 
-## Weekly Meetup
-
-Every Thursday - at [1700 AMS time](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MDlhZzBwNTNxdDQ2dG5mNzlxM2czcm52ZmlfMjAyNTExMTNUMTYwMDAwWiByYWFodWxAc2FwdGhhLm1l&tmsrc=raahul%40saptha.me&scp=ALL)
-
 ## License
 
 Bindu is proudly open-source and licensed under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/).
@@ -254,6 +245,12 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 
 - Join our [Discord](https://discord.gg/3w5zuYUuwt) for discussions and support
 - Star the repository if you find it useful!
+
+<br/>
+
+## We do meet regularly :)
+
+<a target="_blank" href="https://calendar.google.com/calendar/event?action=TEMPLATE&amp;tmeid=MDlhZzBwNTNxdDQ2dG5mNzlxM2czcm52ZmlfMjAyNTExMTNUMTYwMDAwWiByYWFodWxAc2FwdGhhLm1l&amp;tmsrc=raahul%40saptha.me&amp;scp=ALL"><img border="0" src="https://calendar.google.com/calendar/images/ext/gc_button1_en.gif" alt="Google Calendar"></a>
 
 <br/>
 
@@ -275,19 +272,19 @@ We are grateful to the following projects for the development of bindu:
 
 Here's what's next for bindu:
 
-- [ ] <a href="http://docs.saptha.me/roadmap/grpc-transport" target="_blank">GRPC transport support</a>
-- [x] <a href="http://docs.saptha.me/roadmap/sentry-integration" target="_blank">Sentry Error Tracking</a> (In Progress)
-- [ ] <a href="http://docs.saptha.me/roadmap/ag-ui-integration" target="_blank">Ag-Ui Integration</a>
-- [x] <a href="http://docs.saptha.me/roadmap/retry-mechanism" target="_blank">Retry Mechanism add</a>(In Progress)
-- [ ] <a href="http://docs.saptha.me/roadmap/test-coverage" target="_blank">Increase Test Coverage to 80%</a>
-- [x] <a href="http://docs.saptha.me/roadmap/redis-scheduler" target="_blank">Redis Scheduler Implementation</a>(In Progress)
-- [x] <a href="http://docs.saptha.me/roadmap/postgres-memory" target="_blank">Postgres Database Implementation for Memory Storage</a>(In Progress)
-- [ ] <a href="http://docs.saptha.me/roadmap/authentication" target="_blank">Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra)</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/negotiation" target="_blank">Negotiation Support</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/ap2-support" target="_blank">AP2 End to End Support</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/dspy" target="_blank">Dspy Addition</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/mlts" target="_blank">MLTS Support</a>
-- [ ] <a href="http://docs.saptha.me/roadmap/x402" target="_blank">X402 Support with other facilitators</a>
+- [ ] GRPC transport support
+- [ ] Sentry Error Tracking.
+- [ ] Ag-Ui Integration.
+- [ ] Retry Mechanism add.
+- [ ] Increase Test Coverage to 80%.
+- [ ] Redis Scheduler Implementation.
+- [ ] Postgres Database Implementation for Memory Storage.
+- [ ] Authentication Support AuthKit, GitHub, AWS Cognito, Google, Azure (Microsoft Entra).
+- [ ] Negotiation Support.
+- [ ] AP2 End to End Support.
+- [ ] Dspy Addition.
+- [ ] MLTS Support.
+- [ ] X402 Support with other facilitators.
 
 
 Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zuYUuwt)!
@@ -297,6 +294,8 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zu
 ## Workshops
 
 - [AI Native in Action: Agent Symphony, AI Co-Authors & A Special Book Signing!](https://www.meetup.com/ai-native-amsterdam/events/311066899/?eventOrigin=group_upcoming_events): [Google Slides](https://docs.google.com/presentation/d/1SqGXI0Gv_KCWZ1Mw2SOx_kI0u-LLxwZq7lMSONdl8oQ/edit?slide=id.g36905aa74c1_0_3217#slide=id.g36905aa74c1_0_3217)
+
+#
 
 ## Star History
 

@@ -5,29 +5,17 @@
 <h1 align="center"> Bindu 🌻</h1>
 
 <p align="center">
-  <em>“We imagine a world of agents where they can communicate with each other seamlessly.<br/>
-  And Bindu turns your agent into a living server , the dot (Bindu) in the Internet of Agents.”</em>
+  <em>"We imagine a world of agents where they can communicate with each other seamlessly.<br/>
+  And Bindu turns your agent into a living server , the dot (Bindu) in the Internet of Agents."</em>
 </p>
 
-## We do meet regularly :)
-
-Join our **🌻 Bindu Community Meetup** - happening every Thursday!
-
-<iframe
-  src="https://luma.com/embed/event/evt-9oFargorKaWuxtH/simple"
-  width="600"
-  height="450"
-  frameborder="0"
-  style="border: 1px solid #bfcbda88; border-radius: 4px;"
-  allow="fullscreen; payment"
-  aria-hidden="false"
-  tabindex="0"
-></iframe>
-
-**What we discuss:**
-- Getting to know each other 🌍
-- Sharing what everyone's building 🤖
-- Discussing what's next for the community 🚀
+<p align="center">
+  <strong>🌻 Bindu Community Meetup - Every Thursday!</strong><br/>
+  <br/>
+  <a href="https://luma.com/j9ivvunr" target="_blank">
+    <img src="https://img.shields.io/badge/📅_RSVP_on_Luma-Join_Meetup-6366f1?style=for-the-badge" alt="RSVP on Luma">
+  </a>
+</p>
 
 <br/>
 
@@ -265,28 +253,6 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 
 - Join our [Discord](https://discord.gg/3w5zuYUuwt) for discussions and support
 - Star the repository if you find it useful!
-
-<br/>
-
-## We do meet regularly :)
-
-Join our **🌻 Bindu Community Meetup** - happening every Thursday!
-
-<iframe
-  src="https://luma.com/embed/event/evt-9oFargorKaWuxtH/simple"
-  width="600"
-  height="450"
-  frameborder="0"
-  style="border: 1px solid #bfcbda88; border-radius: 4px;"
-  allow="fullscreen; payment"
-  aria-hidden="false"
-  tabindex="0"
-></iframe>
-
-**What we discuss:**
-- Getting to know each other 🌍
-- Sharing what everyone's building 🤖
-- Discussing what's next for the community 🚀
 
 <br/>
 

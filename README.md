@@ -238,6 +238,10 @@ For more details about maintainers, including how to become a maintainer, see ou
 
 <br/>
 
+## Weekly Meetup
+
+Every Thursday - at [1700 AMS time](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MDlhZzBwNTNxdDQ2dG5mNzlxM2czcm52ZmlfMjAyNTExMTNUMTYwMDAwWiByYWFodWxAc2FwdGhhLm1l&tmsrc=raahul%40saptha.me&scp=ALL)
+
 ## License
 
 Bindu is proudly open-source and licensed under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/).

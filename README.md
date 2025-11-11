@@ -9,6 +9,26 @@
   And Bindu turns your agent into a living server , the dot (Bindu) in the Internet of Agents.”</em>
 </p>
 
+## We do meet regularly :)
+
+Join our **🌻 Bindu Community Meetup** - happening every Thursday!
+
+<iframe
+  src="https://luma.com/embed/event/evt-9oFargorKaWuxtH/simple"
+  width="600"
+  height="450"
+  frameborder="0"
+  style="border: 1px solid #bfcbda88; border-radius: 4px;"
+  allow="fullscreen; payment"
+  aria-hidden="false"
+  tabindex="0"
+></iframe>
+
+**What we discuss:**
+- Getting to know each other 🌍
+- Sharing what everyone's building 🤖
+- Discussing what's next for the community 🚀
+
 <br/>
 
 [![GitHub License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -250,7 +270,23 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 
 ## We do meet regularly :)
 
-<a target="_blank" href="https://calendar.google.com/calendar/event?action=TEMPLATE&amp;tmeid=MDlhZzBwNTNxdDQ2dG5mNzlxM2czcm52ZmlfMjAyNTExMTNUMTYwMDAwWiByYWFodWxAc2FwdGhhLm1l&amp;tmsrc=raahul%40saptha.me&amp;scp=ALL"><img border="0" src="https://calendar.google.com/calendar/images/ext/gc_button1_en.gif" alt="Google Calendar"></a>
+Join our **🌻 Bindu Community Meetup** - happening every Thursday!
+
+<iframe
+  src="https://luma.com/embed/event/evt-9oFargorKaWuxtH/simple"
+  width="600"
+  height="450"
+  frameborder="0"
+  style="border: 1px solid #bfcbda88; border-radius: 4px;"
+  allow="fullscreen; payment"
+  aria-hidden="false"
+  tabindex="0"
+></iframe>
+
+**What we discuss:**
+- Getting to know each other 🌍
+- Sharing what everyone's building 🤖
+- Discussing what's next for the community 🚀
 
 <br/>
 

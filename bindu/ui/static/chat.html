@@ -7,6 +7,7 @@
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- External Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -19,11 +20,20 @@
         <!-- Header -->
         <div class="header">
             <div class="header-left">
-                <h1 id="agent-name-header">Loading...</h1>
-                <p>Powered by Bindu 🌻</p>
+                <div class="agent-title-group">
+                    <h1 id="agent-name-header">Loading...</h1>
+                    <span class="status-dot"></span>
+                    <span class="status-text">Online</span>
+                </div>
+                <p class="agent-subtitle" id="agent-subtitle">Loading...</p>
+                <div class="agent-metadata" id="agent-metadata">
+                    <span class="metadata-badge">v1.0.0</span>
+                    <span class="metadata-badge">localhost</span>
+                    <span class="metadata-badge paywall-badge" id="paywall-badge" style="display: none;">💰 Behind Paywall</span>
+                </div>
             </div>
             <div class="header-right">
-                <button class="auth-settings-btn" onclick="openAuthSettings()" title="Set JWT Token">🔑 Token</button>
+                <button class="auth-settings-btn" onclick="openAuthSettings()" title="Set JWT Token">Token</button>
             </div>
         </div>
 
@@ -38,19 +48,41 @@
             <!-- Agent Info Tab -->
             <div id="agent-info" class="tab-content">
                 <div class="agent-info-layout">
-                    <!-- Left Column - Agent Info + DID + Skills -->
+                    <!-- Left Column - Sidebar with collapsible sections -->
                     <div class="agent-info-left">
-                        <div class="agent-card">
-                            <div id="agent-card-content" class="loading">Loading agent information...</div>
+                        <!-- Agent Overview Card -->
+                        <div class="info-section">
+                            <div class="section-header" onclick="toggleSection('overview')">
+                                <h3>Agent Overview</h3>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="section-content expanded" id="overview-content">
+                                <div id="agent-card-content" class="loading">Loading agent information...</div>
+                            </div>
                         </div>
-                        <div class="did-summary">
-                            <h3>DID Information</h3>
-                            <div id="did-summary-content" class="loading">Loading DID...</div>
+
+                        <!-- DID Identity Card -->
+                        <div class="info-section">
+                            <div class="section-header" onclick="toggleSection('did')">
+                                <h3>DID Identity</h3>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="section-content expanded" id="did-content">
+                                <div id="did-summary-content" class="loading">Loading DID...</div>
+                            </div>
                         </div>
-                        <div class="skills-summary">
-                            <h3>Skills</h3>
-                            <div id="skills-summary-content" class="loading">Loading skills...</div>
+
+                        <!-- Skills Card -->
+                        <div class="info-section">
+                            <div class="section-header" onclick="toggleSection('skills')">
+                                <h3>Skills</h3>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="section-content expanded" id="skills-content">
+                                <div id="skills-summary-content" class="loading">Loading skills...</div>
+                            </div>
                         </div>
+
                     </div>
 
                     <!-- Right Column - Agent Card JSON -->
@@ -58,7 +90,7 @@
                         <div class="json-panel">
                             <div class="json-panel-header">
                                 <h3>Agent Card (JSON)</h3>
-                                <button class="copy-json-btn" onclick="copyAgentCardJSON()">📋 Copy</button>
+                                <button class="copy-json-btn" onclick="copyAgentCardJSON()">📋 Copy JSON</button>
                             </div>
                             <div class="json-content">
                                 <pre id="agent-json-display" class="loading">Loading...</pre>
@@ -121,6 +153,7 @@
             <span style="color: #999;">We provide heart to your AI, so that it can talk, negotiate, and trade securely</span>
         </div>
         <div class="footer-right">
+            <a href="https://bindus.directory" target="_blank" class="footer-link">Directory</a>
             <a href="https://docs.saptha.me/bindu" target="_blank" class="footer-link">Docs</a>
             <a href="https://github.com/Saptha-me/Bindu" target="_blank" class="footer-link">GitHub</a>
             <div class="footer-made">

@@ -44,7 +44,7 @@ class ContextHandlers:
         # Support both 'length' and 'history_length' for backwards compatibility
         params = request.get("params", {})
         length = params.get("length") or params.get("history_length")
-        
+
         contexts = await self.storage.list_contexts(length)
 
         # Return empty list if no contexts, not an error

@@ -73,7 +73,7 @@ async function loadAgentInfo() {
             // Extract DID from manifest capabilities - look for extension with uri starting with "did:"
             const didExtension = manifest.capabilities?.extensions?.find(ext => ext.uri?.startsWith('did:'));
             console.log('DID Extension found:', didExtension);
-            
+
             if (didExtension && didExtension.uri) {
                 console.log('Resolving DID:', didExtension.uri);
                 const didResponse = await fetch(`${BASE_URL}/did/resolve`, {
@@ -110,22 +110,22 @@ function displayAgentInfo() {
     if (!agentInfo) return;
 
     const { manifest, didDocument } = agentInfo;
-    
+
     // Update header with agent name
     const headerName = document.getElementById('agent-name-header');
     if (headerName) {
         headerName.textContent = manifest.name || 'Bindu Agent';
     }
-    
+
     // 1. Display Minimal Agent Info (Left Column)
     const cardContainer = document.getElementById('agent-card-content');
     const didExtension = manifest.capabilities?.extensions?.find(ext => ext.uri?.startsWith('did:'));
     const author = didExtension?.params?.author || 'Unknown';
-    
+
     let cardHtml = `
         <h2>${manifest.name || 'Unknown Agent'}</h2>
         <p class="agent-description">${manifest.description || 'No description available'}</p>
-        
+
         <table class="info-table">
             <tr>
                 <td>Author</td>
@@ -155,16 +155,16 @@ function displayAgentInfo() {
             ` : ''}
         </table>
     `;
-    
+
     cardContainer.innerHTML = cardHtml;
-    
+
     // 2. Display DID Summary (Left Column, below agent card)
     const didContainer = document.getElementById('did-summary-content');
     if (didDocument) {
         const binduData = didDocument.bindu || {};
         const authKey = didDocument.authentication?.[0];
         const serviceEndpoint = didDocument.service?.[0];
-        
+
         let didHtml = `
             <table class="did-table">
                 <tr>
@@ -203,12 +203,12 @@ function displayAgentInfo() {
                 ` : ''}
             </table>
         `;
-        
+
         didContainer.innerHTML = didHtml;
     } else {
         didContainer.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">DID information not available</div>';
     }
-    
+
     // 3. Display Agent Card JSON (Right Side)
     const agentJsonDisplay = document.getElementById('agent-json-display');
     const agentJsonString = JSON.stringify(manifest, null, 2);
@@ -228,7 +228,7 @@ function escapeHtml(text) {
 
 function copyAgentCardJSON() {
     if (!agentInfo || !agentInfo.manifest) return;
-    
+
     const jsonString = JSON.stringify(agentInfo.manifest, null, 2);
     navigator.clipboard.writeText(jsonString).then(() => {
         const btns = document.querySelectorAll('.copy-json-btn');
@@ -245,7 +245,7 @@ function copyAgentCardJSON() {
 
 function copyDIDJSON() {
     if (!agentInfo || !agentInfo.didDocument) return;
-    
+
     const jsonString = JSON.stringify(agentInfo.didDocument, null, 2);
     navigator.clipboard.writeText(jsonString).then(() => {
         const btns = document.querySelectorAll('.copy-json-btn');
@@ -295,15 +295,15 @@ async function openSkillModal(skillId) {
     const modal = document.getElementById('skill-modal');
     const modalBody = document.getElementById('skill-modal-body');
     const modalTitle = document.getElementById('skill-modal-title');
-    
+
     modal.style.display = 'flex';
     modalBody.innerHTML = '<div class="loading">Loading skill details...</div>';
     modalTitle.textContent = 'Skill Details';
-    
+
     try {
         const response = await fetch(`${BASE_URL}/agent/skills/${skillId}`);
         if (!response.ok) throw new Error('Failed to load skill details');
-        
+
         const skillData = await response.json();
         displaySkillDetails(skillData);
     } catch (error) {
@@ -315,15 +315,15 @@ async function openSkillModal(skillId) {
 function displaySkillDetails(skill) {
     const modalTitle = document.getElementById('skill-modal-title');
     const modalBody = document.getElementById('skill-modal-body');
-    
+
     modalTitle.textContent = skill.name || skill.id;
-    
+
     let html = `
         <div class="skill-detail-section">
             <h3>Description</h3>
             <p>${skill.description || 'No description available'}</p>
         </div>
-        
+
         ${skill.tags && skill.tags.length > 0 ? `
             <div class="skill-detail-section">
                 <h3>Tags</h3>
@@ -332,7 +332,7 @@ function displaySkillDetails(skill) {
                 </div>
             </div>
         ` : ''}
-        
+
         ${skill.examples && skill.examples.length > 0 ? `
             <div class="skill-detail-section">
                 <h3>Example Queries</h3>
@@ -341,28 +341,28 @@ function displaySkillDetails(skill) {
                 </ul>
             </div>
         ` : ''}
-        
+
         ${skill.input_modes && skill.input_modes.length > 0 ? `
             <div class="skill-detail-section">
                 <h3>Input Modes</h3>
                 <p>${skill.input_modes.join(', ')}</p>
             </div>
         ` : ''}
-        
+
         ${skill.output_modes && skill.output_modes.length > 0 ? `
             <div class="skill-detail-section">
                 <h3>Output Modes</h3>
                 <p>${skill.output_modes.join(', ')}</p>
             </div>
         ` : ''}
-        
+
         ${skill.version ? `
             <div class="skill-detail-section">
                 <h3>Version</h3>
                 <p>${skill.version}</p>
             </div>
         ` : ''}
-        
+
         ${skill.performance ? `
             <div class="skill-detail-section">
                 <h3>Performance</h3>
@@ -371,7 +371,7 @@ function displaySkillDetails(skill) {
             </div>
         ` : ''}
     `;
-    
+
     modalBody.innerHTML = html;
 }
 
@@ -389,7 +389,7 @@ async function loadContexts() {
         console.log('Loading contexts...');
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders()
             },
@@ -407,7 +407,7 @@ async function loadContexts() {
 
         const result = await response.json();
         console.log('Contexts result:', result);
-        
+
         if (result.error) {
             console.error('Contexts error:', result.error);
             throw new Error(result.error.message || 'Unknown error');
@@ -415,7 +415,7 @@ async function loadContexts() {
 
         const serverContexts = result.result || [];
         console.log('Server contexts:', serverContexts);
-        
+
         // Transform server contexts to UI format
         contexts = serverContexts.map(ctx => ({
             id: ctx.context_id,
@@ -447,7 +447,7 @@ async function loadContextPreview(ctx) {
         // Get the first task to extract the first message
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders()
             },
@@ -466,7 +466,7 @@ async function loadContextPreview(ctx) {
 
         const task = result.result;
         const history = task.history || [];
-        
+
         // Find first user message
         for (const msg of history) {
             if (msg.role === 'user') {
@@ -513,7 +513,7 @@ function updateContextIndicator() {
 
 function updateContextList() {
     const container = document.getElementById('context-list');
-    
+
     if (contexts.length === 0) {
         container.innerHTML = '<div class="loading">No contexts yet</div>';
         return;
@@ -529,7 +529,7 @@ function updateContextList() {
         const taskCount = ctx.taskCount || 0;
         const contextShortId = ctx.id.substring(0, 8);
         const colorClass = getContextColor(index);
-        
+
         return `
             <div class="context-item ${isActive ? 'active' : ''}" onclick="switchContext('${ctx.id}')">
                 <div class="context-header">
@@ -576,7 +576,7 @@ async function switchContext(ctxId) {
         // Load all tasks for this context
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders()
             },
@@ -594,10 +594,10 @@ async function switchContext(ctxId) {
         if (result.error) throw new Error(result.error.message || 'Unknown error');
 
         const allTasks = result.result || [];
-        
+
         // Filter tasks for this context
         const contextTasks = allTasks.filter(task => task.context_id === ctxId);
-        
+
         // Sort by timestamp
         contextTasks.sort((a, b) => {
             const timeA = new Date(a.status.timestamp).getTime();
@@ -613,7 +613,7 @@ async function switchContext(ctxId) {
                 const textParts = parts
                     .filter(part => part.kind === 'text')
                     .map(part => part.text);
-                
+
                 if (textParts.length > 0) {
                     const text = textParts.join('\n');
                     const sender = msg.role === 'user' ? 'user' : 'agent';
@@ -648,7 +648,7 @@ async function clearContext(ctxId) {
     try {
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders()
             },
@@ -687,7 +687,7 @@ function formatTime(timestamp) {
     const now = new Date();
     const diff = now - date;
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    
+
     if (hours < 24) {
         return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     } else {
@@ -723,10 +723,10 @@ async function sendMessage() {
         // - No current task: CREATE new task
         let taskId;
         const referenceTaskIds = [];
-        
-        const isNonTerminalState = currentTaskState && 
+
+        const isNonTerminalState = currentTaskState &&
             (currentTaskState === 'input-required' || currentTaskState === 'auth-required');
-        
+
         if (replyToTaskId) {
             // Explicit reply to a specific task - always create new task
             taskId = generateId();
@@ -742,10 +742,10 @@ async function sendMessage() {
             // First message in conversation
             taskId = generateId();
         }
-        
+
         const messageId = generateId();
         const newContextId = contextId || generateId();
-        
+
         console.log('Sending message with:', {
             taskId,
             contextId: newContextId,
@@ -755,7 +755,7 @@ async function sendMessage() {
 
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders()
             },
@@ -788,45 +788,45 @@ async function sendMessage() {
         const task = result.result;
         // Server uses snake_case (context_id), not camelCase (contextId)
         const taskContextId = task.context_id || task.contextId;
-        
+
         console.log('Received task:', {
             taskId: task.id,
             contextId: taskContextId,
             context_id: task.context_id,
             previousContextId: contextId
         });
-        
+
         // Update currentTaskId to the NEW task
         currentTaskId = task.id;
-        
+
         // Check if this is a new context
         const isNewContext = taskContextId && !contextId;
-        
+
         if (taskContextId) {
             contextId = taskContextId;
             updateContextIndicator();
         }
-        
+
         console.log('After update:', {
             contextId,
             isNewContext
         });
-        
+
         // Reload contexts if new context was created
         if (isNewContext) {
             await loadContexts();
         }
 
-        const displayMessage = replyToTaskId 
+        const displayMessage = replyToTaskId
             ? `↩️ Replying to task ${replyToTaskId.substring(0, 8)}...\n\n${message}`
             : message;
         addMessage(displayMessage, 'user', task.id);
 
         clearReply();
-        
+
         // Add thinking indicator immediately
         addThinkingIndicator('thinking-indicator', task.id);
-        
+
         pollTaskStatus(task.id);
 
     } catch (error) {
@@ -862,7 +862,7 @@ async function pollTaskStatus(taskId) {
         try {
             const response = await fetch(`${BASE_URL}/`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 },
@@ -902,10 +902,10 @@ async function pollTaskStatus(taskId) {
                 } else {
                     addMessage('⚠️ Task was canceled', 'status');
                 }
-                
+
                 // Reload contexts to update task counts
                 await loadContexts();
-            } 
+            }
             // Non-terminal states - task still MUTABLE, waiting for input
             else if (state === 'input-required' || state === 'auth-required') {
                 removeThinkingIndicator(thinkingId);
@@ -917,10 +917,10 @@ async function pollTaskStatus(taskId) {
                 }
                 const responseText = extractResponse(task);
                 addMessage(responseText, 'agent', taskId, state);
-                
+
                 // Reload contexts to update task counts
                 await loadContexts();
-            } 
+            }
             // Working states - continue polling
             else if (state === 'submitted' || state === 'working') {
                 setTimeout(poll, 1000);
@@ -970,12 +970,12 @@ async function cancelTask(taskId) {
         // Stop polling
         currentPollingTaskId = null;
         removeThinkingIndicator('thinking-indicator');
-        
+
         addMessage('⚠️ Task canceled successfully', 'status');
-        
+
         // Reload contexts to update task counts
         await loadContexts();
-        
+
         return result.result;
     } catch (error) {
         console.error('Error canceling task:', error);
@@ -1016,23 +1016,23 @@ function extractResponse(task) {
 
 function addThinkingIndicator(id, taskId = null) {
     const messagesDiv = document.getElementById('chat-messages');
-    
+
     // Remove any existing thinking indicator
     const existing = document.getElementById(id);
     if (existing) existing.remove();
-    
+
     const thinkingDiv = document.createElement('div');
     thinkingDiv.id = id;
     thinkingDiv.className = 'message agent thinking';
-    
+
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    
+
     const dotsDiv = document.createElement('div');
     dotsDiv.className = 'thinking-dots';
     dotsDiv.innerHTML = '<span>.</span><span>.</span><span>.</span>';
     contentDiv.appendChild(dotsDiv);
-    
+
     // Add cancel button if taskId is provided
     if (taskId) {
         const cancelBtn = document.createElement('button');
@@ -1046,7 +1046,7 @@ function addThinkingIndicator(id, taskId = null) {
         };
         contentDiv.appendChild(cancelBtn);
     }
-    
+
     thinkingDiv.appendChild(contentDiv);
     messagesDiv.appendChild(thinkingDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -1149,7 +1149,7 @@ async function submitFeedback() {
     const taskId = modal.dataset.taskId;
     const feedback = document.getElementById('feedback-text').value.trim();
     const rating = parseInt(document.getElementById('feedback-rating').value);
-    
+
     // Build params - always include feedback field (use default if empty)
     const params = {
         taskId: taskId,
@@ -1160,11 +1160,11 @@ async function submitFeedback() {
             timestamp: new Date().toISOString()
         }
     };
-    
+
     try {
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders()
             },
@@ -1175,9 +1175,9 @@ async function submitFeedback() {
                 id: generateId()
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.error) {
             showError(`Feedback error: ${data.error.message}`);
         } else {
@@ -1218,16 +1218,16 @@ function generateId() {
 document.addEventListener('DOMContentLoaded', () => {
     loadAgentInfo();
     loadContexts();
-    
+
     // Modal event listeners
     const feedbackModal = document.getElementById('feedback-modal');
-    
+
     feedbackModal.addEventListener('click', (e) => {
         if (e.target === feedbackModal) {
             closeFeedbackModal();
         }
     });
-    
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && feedbackModal.style.display === 'flex') {
             closeFeedbackModal();

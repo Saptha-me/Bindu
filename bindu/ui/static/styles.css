@@ -1372,28 +1372,28 @@ textarea.form-control {
     .context-sidebar {
         width: 240px;
     }
-    
+
     .chat-messages {
         padding: 16px;
         padding-bottom: 100px;
     }
-    
+
     .message-content {
         max-width: 85%;
     }
-    
+
     /* Agent Info - Stack vertically on tablets */
     .agent-info-layout {
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
     }
-    
+
     .agent-info-left {
         border-right: none;
         border-bottom: 1px solid #e0e0e0;
         max-height: 40vh;
     }
-    
+
     .agent-info-right {
         display: flex;
         flex-direction: column;
@@ -1404,44 +1404,44 @@ textarea.form-control {
     .context-sidebar {
         display: none;
     }
-    
+
     .header {
         padding: 12px 16px;
         height: 60px;
     }
-    
+
     .tabs {
         padding: 0 16px;
         height: 44px;
     }
-    
+
     .chat-messages {
         padding: 12px;
         padding-bottom: 90px;
     }
-    
+
     .chat-input-container {
         padding: 12px 16px;
         min-height: 70px;
     }
-    
+
     .footer {
         padding: 12px 16px;
         height: 44px;
         font-size: 10px;
     }
-    
+
     .modal-content {
         width: 95%;
         max-width: none;
     }
-    
+
     .modal-header,
     .modal-body,
     .modal-footer {
         padding: 16px;
     }
-    
+
     .feedback-btn-corner {
         font-size: 9px;
         padding: 3px 8px;

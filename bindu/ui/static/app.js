@@ -148,7 +148,7 @@ function toggleSection(sectionId) {
     const content = document.getElementById(`${sectionId}-content`);
     const header = content.previousElementSibling;
     const icon = header.querySelector('.toggle-icon');
-    
+
     if (content.classList.contains('expanded')) {
         content.classList.remove('expanded');
         content.classList.add('collapsed');
@@ -220,45 +220,45 @@ function displayAgentInfo() {
     const headerName = document.getElementById('agent-name-header');
     const headerSubtitle = document.getElementById('agent-subtitle');
     const headerMetadata = document.getElementById('agent-metadata');
-    
+
     if (headerName) {
         headerName.textContent = manifest.name || 'Bindu Agent';
     }
-    
+
     if (headerSubtitle) {
         headerSubtitle.textContent = manifest.description || 'A Bindu agent';
     }
-    
+
     if (headerMetadata) {
         const didExtension = manifest.capabilities?.extensions?.find(ext => ext.uri?.startsWith('did:'));
-        
+
         // Get full URL with port from manifest or current window location
         let urlWithPort = manifest.url || manifest.uri || window.location.origin;
         // Remove protocol but keep host:port
         urlWithPort = urlWithPort.replace(/^https?:\/\//, '');
         // Remove any trailing path
         urlWithPort = urlWithPort.split('/')[0];
-        
+
         // Get Bindu version from manifest metadata or capabilities
         const binduVersion = manifest.bindu_version || manifest.metadata?.bindu_version || '0.1.0';
-        
+
         // Check if agent has x402 payment requirements
-        const hasPaywall = manifest.capabilities?.extensions?.some(ext => 
+        const hasPaywall = manifest.capabilities?.extensions?.some(ext =>
             ext.uri?.includes('x402') || ext.uri?.includes('payment')
         ) || manifest.execution_cost || manifest.paymentRequired;
-        
+
         // Check if agent requires authentication
-        const requiresAuth = manifest.auth?.enabled || 
-            manifest.authentication_required || 
-            manifest.capabilities?.authentication || 
+        const requiresAuth = manifest.auth?.enabled ||
+            manifest.authentication_required ||
+            manifest.capabilities?.authentication ||
             manifest.security?.authentication_required;
-        
+
         headerMetadata.innerHTML = `
             <span class="metadata-badge">Bindu v${binduVersion}</span>
             <span class="metadata-badge">Protocol v${manifest.protocolVersion || '0.2.5'}</span>
             <span class="metadata-badge">${urlWithPort}</span>
         `;
-        
+
         // Show badge if payment or auth is required
         const paywallBadge = document.getElementById('paywall-badge');
         if (paywallBadge && (hasPaywall || requiresAuth)) {
@@ -432,13 +432,13 @@ function displaySkills() {
             'translation': '🌐',
             'summarization': '📝'
         };
-        
+
         let html = skills.map(skill => {
             const skillName = skill.name || skill.id || 'Unknown Skill';
             const icon = skillIcons[skillName] || skillIcons[skill.id] || '⚡';
             const description = skill.description || '';
             const truncatedDesc = description.length > 60 ? description.substring(0, 60) + '...' : description;
-            
+
             return `
                 <div class="skill-item" onclick="openSkillModal('${skill.id}')">
                     <div class="skill-header">

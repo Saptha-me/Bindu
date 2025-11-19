@@ -3,7 +3,8 @@ name: Release to PyPI
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'      # Semantic version tags (v1.0.0)
+      - '20[0-9][0-9].*.*'  # Date-based tags (2025.47.2)
   workflow_dispatch:
 
 jobs:

@@ -50,6 +50,32 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
         app.manifest.id if isinstance(app.manifest.id, UUID) else UUID(app.manifest.id)
     )
 
+    # Convert capabilities to serializable format
+    # Extensions need to be converted from class instances to AgentExtension dicts
+    capabilities = dict(app.manifest.capabilities)
+    if "extensions" in capabilities:
+        serializable_extensions = []
+        for ext in capabilities["extensions"]:
+            # Check if it's a DIDAgentExtension instance
+            if hasattr(ext, "did") and hasattr(ext, "author"):
+                serializable_extensions.append({
+                    "uri": f"did:{ext.did}" if not ext.did.startswith("did:") else ext.did,
+                    "description": f"DID-based identity for {ext.agent_name or 'agent'}",
+                    "required": False,
+                    "params": {
+                        "author": ext.author,
+                        "agent_name": ext.agent_name,
+                        "agent_id": ext.agent_id,
+                    }
+                })
+            elif isinstance(ext, dict):
+                # Already in correct format
+                serializable_extensions.append(ext)
+            else:
+                # Try to convert other extension types
+                logger.warning(f"Unknown extension type: {type(ext)}, skipping")
+        capabilities["extensions"] = serializable_extensions
+
     return AgentCard(
         id=agent_id,
         name=app.manifest.name,
@@ -58,7 +84,7 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
         version=app.version,
         protocol_version="0.2.5",
         skills=minimal_skills,
-        capabilities=app.manifest.capabilities,
+        capabilities=capabilities,
         kind=app.manifest.kind,
         num_history_sessions=app.manifest.num_history_sessions,
         extra_data=app.manifest.extra_data

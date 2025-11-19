@@ -41,15 +41,15 @@ class ContextHandlers:
     @trace_context_operation("list_contexts")
     async def list_contexts(self, request: ListContextsRequest) -> ListContextsResponse:
         """List all contexts in storage."""
-        contexts = await self.storage.list_contexts(request["params"].get("length"))
+        # Support both 'length' and 'history_length' for backwards compatibility
+        params = request.get("params", {})
+        length = params.get("length") or params.get("history_length")
+        
+        contexts = await self.storage.list_contexts(length)
 
+        # Return empty list if no contexts, not an error
         if contexts is None:
-            return self.error_response_creator(
-                ListContextsResponse,
-                request["id"],
-                ContextNotFoundError,
-                "No contexts found",
-            )
+            contexts = []
 
         return ListContextsResponse(jsonrpc="2.0", id=request["id"], result=contexts)
 
@@ -58,7 +58,9 @@ class ContextHandlers:
         self, request: ClearContextsRequest
     ) -> ClearContextsResponse:
         """Clear a context from storage."""
-        context_id = request["params"].get("context_id")
+        # Support both contextId (camelCase) and context_id (snake_case)
+        params = request.get("params", {})
+        context_id = params.get("contextId") or params.get("context_id")
 
         try:
             await self.storage.clear_context(context_id)

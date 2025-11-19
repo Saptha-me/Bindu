@@ -25,8 +25,9 @@ from uuid import UUID, uuid4
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import Response
-from starlette.routing import Route
+from starlette.responses import FileResponse, Response
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
 from starlette.types import Lifespan, Receive, Scope, Send
 
 from bindu.common.models import AgentManifest, TelemetryConfig
@@ -144,6 +145,7 @@ class BinduApplication(Starlette):
 
     def _register_routes(self) -> None:
         """Register all application routes."""
+        from pathlib import Path
         from .endpoints import (
             agent_card_endpoint,
             agent_run_endpoint,
@@ -186,6 +188,15 @@ class BinduApplication(Starlette):
             ["GET"],
             with_app=True,
         )
+
+        # Docs/Chat UI endpoint
+        self._add_route("/docs", self._docs_endpoint, ["GET"], with_app=False)
+        
+        # Static files for CSS/JS
+        static_dir = Path(__file__).parent.parent / "ui" / "static"
+        if static_dir.exists():
+            self.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+            logger.info(f"Serving static files from: {static_dir}")
 
         if self._x402_ext:
             self._register_payment_endpoints()
@@ -242,6 +253,24 @@ class BinduApplication(Starlette):
     async def _wrap_with_app(self, endpoint: Callable, request: Request) -> Response:
         """Wrap endpoint that requires app instance."""
         return await endpoint(self, request)
+
+    async def _docs_endpoint(self, request: Request) -> Response:
+        """Serve the chat UI documentation interface."""
+        from pathlib import Path
+        
+        # Try modular version first, fallback to monolithic
+        docs_path = Path(__file__).parent.parent / "ui" / "static" / "chat.html"
+        
+        if not docs_path.exists():
+            logger.error(f"Chat UI file not found: {docs_path}")
+            return Response(
+                content="Chat UI not available. File not found.",
+                status_code=404,
+                media_type="text/plain"
+            )
+        
+        logger.debug(f"Serving chat UI from: {docs_path}")
+        return FileResponse(docs_path, media_type="text/html")
 
     def _create_default_lifespan(
         self,

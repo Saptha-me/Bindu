@@ -145,6 +145,29 @@ That's it! Your agent is now live at `http://localhost:8030` and ready to commun
 
 <br/>
 
+## 🎨 Chat UI (Optional)
+
+Want a beautiful chat interface for your agent? Just add `ui="gradio"`:
+
+```python
+# Install UI dependencies
+pip install bindu[ui]
+
+# Launch with chat interface
+bindufy(simple_agent, simple_config, simple_handler, ui="gradio")
+```
+
+This will:
+- Start your agent server in the background
+- Launch a Gradio chat interface (usually at http://localhost:7860)
+- Handle all the A2A protocol complexity for you
+
+![Gradio Chat UI](https://gradio.app/assets/img/chatbot-screenshot.png)
+
+See the [Gradio UI documentation](docs/gradio-ui.md) for more details.
+
+<br/>
+
 ## The Vision
 
 ```bash

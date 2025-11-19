@@ -1,7 +1,8 @@
-"""Example of creating a research assistant agent using Bindu and Agno.
+"""Example of creating a research assistant agent using Bindu and Agno with Streamlit UI.
 
 This example demonstrates how to create a simple research assistant agent
-that uses DuckDuckGo for web searches and can be deployed as a Bindu agent.
+that uses DuckDuckGo for web searches and can be deployed as a Bindu agent
+with a Streamlit interface.
 """
 
 from bindu.penguin.bindufy import bindufy
@@ -39,5 +40,7 @@ def handler(messages: list[dict[str, str]]):
     return result
 
 
-# Bindu-fy it
+# Bindu-fy it with Streamlit UI
+# Note: This will start the server. Run Streamlit separately with:
+# streamlit run bindu/ui/streamlit_ui.py
 bindufy(config, handler, ui="streamlit")

@@ -155,6 +155,15 @@ paths:
                   params: {}
                   id: "550e8400-e29b-41d4-a716-446655440099"
 
+              tasksCancel:
+                summary: Cancel a task
+                value:
+                  jsonrpc: "2.0"
+                  method: "tasks/cancel"
+                  params:
+                    taskId: "550e8400-e29b-41d4-a716-446655440042"
+                  id: "550e8400-e29b-41d4-a716-446655440042"
+
               tasksFeedback:
                 summary: Submit task feedback
                 value:
@@ -213,6 +222,29 @@ paths:
                             text: "The sunset paints the sky with hope for tomorrow."
                     id: "550e8400-e29b-41d4-a716-446655440024"
 
+                taskCancelSuccess:
+                  summary: Task canceled successfully
+                  value:
+                    jsonrpc: "2.0"
+                    result:
+                      task:
+                        taskId: "550e8400-e29b-41d4-a716-446655440042"
+                        contextId: "550e8400-e29b-41d4-a716-446655440038"
+                        status:
+                          state: "canceled"
+                          timestamp: "2025-10-26T14:47:52.183416+00:00"
+                        history:
+                          - role: "user"
+                            parts:
+                              - kind: "text"
+                                text: "Generate a long report"
+                            kind: "message"
+                            messageId: "550e8400-e29b-41d4-a716-446655440040"
+                            contextId: "550e8400-e29b-41d4-a716-446655440038"
+                            taskId: "550e8400-e29b-41d4-a716-446655440042"
+                        metadata: {}
+                    id: "550e8400-e29b-41d4-a716-446655440042"
+
                 error:
                   summary: Error response
                   value:
@@ -223,6 +255,24 @@ paths:
                       data:
                         details: "Missing required field: taskId"
                     id: "550e8400-e29b-41d4-a716-446655440024"
+
+                taskNotCancelable:
+                  summary: Cannot cancel completed task
+                  value:
+                    jsonrpc: "2.0"
+                    error:
+                      code: -32002
+                      message: "Task cannot be canceled in 'completed' state. Tasks can only be canceled while pending or running."
+                    id: "550e8400-e29b-41d4-a716-446655440042"
+
+                taskNotFound:
+                  summary: Task not found
+                  value:
+                    jsonrpc: "2.0"
+                    error:
+                      code: -32001
+                      message: "The specified task ID was not found. The task may have been completed, canceled, or expired. Check task status: GET /tasks/{id}"
+                    id: "550e8400-e29b-41d4-a716-446655440042"
 
   /.well-known/agent.json:
     get:

@@ -42,12 +42,41 @@ async function loadAgentInfo() {
         const skillsResponse = await fetch(`${BASE_URL}/agent/skills`);
         const skillsData = skillsResponse.ok ? await skillsResponse.json() : { skills: [] };
 
-        agentInfo = { manifest, skills: skillsData.skills || [] };
+        // Load DID document
+        let didDocument = null;
+        try {
+            // Extract DID from manifest capabilities - look for extension with uri starting with "did:"
+            const didExtension = manifest.capabilities?.extensions?.find(ext => ext.uri?.startsWith('did:'));
+            console.log('DID Extension found:', didExtension);
+            
+            if (didExtension && didExtension.uri) {
+                console.log('Resolving DID:', didExtension.uri);
+                const didResponse = await fetch(`${BASE_URL}/did/resolve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ did: didExtension.uri })
+                });
+                console.log('DID Response status:', didResponse.status);
+                if (didResponse.ok) {
+                    didDocument = await didResponse.json();
+                    console.log('DID Document loaded:', didDocument);
+                } else {
+                    const errorText = await didResponse.text();
+                    console.error('DID resolution failed:', errorText);
+                }
+            } else {
+                console.warn('No DID found in manifest capabilities');
+            }
+        } catch (error) {
+            console.error('Error loading DID document:', error);
+        }
+
+        agentInfo = { manifest, skills: skillsData.skills || [], didDocument };
         displayAgentInfo();
         displaySkills();
     } catch (error) {
         console.error('Error loading agent info:', error);
-        document.getElementById('agent-info-content').innerHTML =
+        document.getElementById('agent-card-content').innerHTML =
             '<div class="error" style="display:block;">Failed to load agent information</div>';
     }
 }
@@ -55,44 +84,110 @@ async function loadAgentInfo() {
 function displayAgentInfo() {
     if (!agentInfo) return;
 
-    const { manifest } = agentInfo;
-    const container = document.getElementById('agent-info-content');
+    const { manifest, didDocument } = agentInfo;
     
-    // Format JSON with syntax highlighting
-    const jsonString = JSON.stringify(manifest, null, 4);
+    // Update header with agent name
+    const headerName = document.getElementById('agent-name-header');
+    if (headerName) {
+        headerName.textContent = manifest.name || 'Bindu Agent';
+    }
     
-    let html = `
-        <div class="info-section">
-            <h3>${manifest.name || 'Unknown Agent'}</h3>
-            <p style="color: #666; font-size: 11px; margin-top: 8px;">${manifest.description || 'No description available'}</p>
-        </div>
+    // 1. Display Minimal Agent Info (Left Column)
+    const cardContainer = document.getElementById('agent-card-content');
+    const didExtension = manifest.capabilities?.extensions?.find(ext => ext.uri?.startsWith('did:'));
+    const author = didExtension?.params?.author || 'Unknown';
+    
+    let cardHtml = `
+        <h2>${manifest.name || 'Unknown Agent'}</h2>
+        <p class="agent-description">${manifest.description || 'No description available'}</p>
         
-        <div class="info-section">
-            <h3>Details</h3>
-            <div class="info-grid">
-                <div class="info-label">Author:</div>
-                <div class="info-value">${manifest.capabilities?.extensions?.[0]?.params?.author || 'Unknown'}</div>
-                
-                <div class="info-label">Version:</div>
-                <div class="info-value">${manifest.version || 'N/A'}</div>
-                
-                ${manifest.url ? `
-                    <div class="info-label">URL:</div>
-                    <div class="info-value">${manifest.url}</div>
-                ` : ''}
-            </div>
-        </div>
-        
-        <div class="info-section">
-            <h3>Complete Agent Card (JSON)</h3>
-            <div class="json-viewer">
-                <button class="copy-json-btn" onclick="copyAgentCardJSON()">📋 Copy JSON</button>
-                <pre><code>${escapeHtml(jsonString)}</code></pre>
-            </div>
-        </div>
+        <table class="info-table">
+            <tr>
+                <td>Author</td>
+                <td>${author}</td>
+            </tr>
+            <tr>
+                <td>Version</td>
+                <td>${manifest.version || 'N/A'}</td>
+            </tr>
+            ${manifest.url ? `
+                <tr>
+                    <td>URL</td>
+                    <td>${manifest.url}</td>
+                </tr>
+            ` : ''}
+            ${manifest.protocolVersion ? `
+                <tr>
+                    <td>Protocol</td>
+                    <td>${manifest.protocolVersion}</td>
+                </tr>
+            ` : ''}
+            ${manifest.capabilities?.streaming ? `
+                <tr>
+                    <td>Streaming</td>
+                    <td>✓ Supported</td>
+                </tr>
+            ` : ''}
+        </table>
     `;
-
-    container.innerHTML = html;
+    
+    cardContainer.innerHTML = cardHtml;
+    
+    // 2. Display DID Summary (Left Column, below agent card)
+    const didContainer = document.getElementById('did-summary-content');
+    if (didDocument) {
+        const binduData = didDocument.bindu || {};
+        const authKey = didDocument.authentication?.[0];
+        const serviceEndpoint = didDocument.service?.[0];
+        
+        let didHtml = `
+            <table class="did-table">
+                <tr>
+                    <td>DID</td>
+                    <td>
+                        <div class="did-value-with-copy">
+                            <div class="did-value">${didDocument.id || 'N/A'}</div>
+                            <button class="copy-inline-btn" onclick="copyToClipboard('${didDocument.id}', this)" title="Copy DID">📋</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Created</td>
+                    <td>${didDocument.created ? new Date(didDocument.created).toLocaleString() : 'N/A'}</td>
+                </tr>
+                ${authKey ? `
+                    <tr>
+                        <td>Key Type</td>
+                        <td>${authKey.type || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td>Public Key</td>
+                        <td>
+                            <div class="did-value-with-copy">
+                                <div class="did-value">${authKey.publicKeyBase58 || 'N/A'}</div>
+                                <button class="copy-inline-btn" onclick="copyToClipboard('${authKey.publicKeyBase58}', this)" title="Copy Public Key">📋</button>
+                            </div>
+                        </td>
+                    </tr>
+                ` : ''}
+                ${serviceEndpoint ? `
+                    <tr>
+                        <td>Endpoint</td>
+                        <td>${serviceEndpoint.serviceEndpoint || 'N/A'}</td>
+                    </tr>
+                ` : ''}
+            </table>
+        `;
+        
+        didContainer.innerHTML = didHtml;
+    } else {
+        didContainer.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">DID information not available</div>';
+    }
+    
+    // 3. Display Agent Card JSON (Right Side)
+    const agentJsonDisplay = document.getElementById('agent-json-display');
+    const agentJsonString = JSON.stringify(manifest, null, 2);
+    agentJsonDisplay.textContent = agentJsonString;
 }
 
 function escapeHtml(text) {
@@ -109,9 +204,10 @@ function escapeHtml(text) {
 function copyAgentCardJSON() {
     if (!agentInfo || !agentInfo.manifest) return;
     
-    const jsonString = JSON.stringify(agentInfo.manifest, null, 4);
+    const jsonString = JSON.stringify(agentInfo.manifest, null, 2);
     navigator.clipboard.writeText(jsonString).then(() => {
-        const btn = document.querySelector('.copy-json-btn');
+        const btns = document.querySelectorAll('.copy-json-btn');
+        const btn = btns[0]; // First button is Agent Card
         const originalText = btn.textContent;
         btn.textContent = '✓ Copied!';
         setTimeout(() => {
@@ -122,25 +218,141 @@ function copyAgentCardJSON() {
     });
 }
 
+function copyDIDJSON() {
+    if (!agentInfo || !agentInfo.didDocument) return;
+    
+    const jsonString = JSON.stringify(agentInfo.didDocument, null, 2);
+    navigator.clipboard.writeText(jsonString).then(() => {
+        const btns = document.querySelectorAll('.copy-json-btn');
+        const btn = btns[1]; // Second button is DID Document
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = button.textContent;
+        button.textContent = '✓';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 1500);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+
 function displaySkills() {
     if (!agentInfo || !agentInfo.skills) return;
 
-    const container = document.getElementById('skills-content');
+    const summaryContainer = document.getElementById('skills-summary-content');
     const { skills } = agentInfo;
 
     if (skills.length === 0) {
-        container.innerHTML = '<div class="loading">No skills available</div>';
-        return;
+        summaryContainer.innerHTML = '<div style="color: #999; font-size: 11px;">No skills available</div>';
+    } else {
+        let html = skills.map(skill => `
+            <div class="skill-item" onclick="openSkillModal('${skill.id}')">
+                <div class="skill-name">${skill.name || skill.id || 'Unknown Skill'}</div>
+                ${skill.description ? `<div class="skill-description">${skill.description.substring(0, 100)}${skill.description.length > 100 ? '...' : ''}</div>` : ''}
+            </div>
+        `).join('');
+        summaryContainer.innerHTML = html;
     }
+}
 
-    let html = skills.map(skill => `
-        <div class="skill-item">
-            <div class="skill-name">${skill.name || skill.id || 'Unknown Skill'}</div>
-            ${skill.description ? `<div class="skill-description">${skill.description}</div>` : ''}
+async function openSkillModal(skillId) {
+    const modal = document.getElementById('skill-modal');
+    const modalBody = document.getElementById('skill-modal-body');
+    const modalTitle = document.getElementById('skill-modal-title');
+    
+    modal.style.display = 'flex';
+    modalBody.innerHTML = '<div class="loading">Loading skill details...</div>';
+    modalTitle.textContent = 'Skill Details';
+    
+    try {
+        const response = await fetch(`${BASE_URL}/agent/skills/${skillId}`);
+        if (!response.ok) throw new Error('Failed to load skill details');
+        
+        const skillData = await response.json();
+        displaySkillDetails(skillData);
+    } catch (error) {
+        console.error('Error loading skill details:', error);
+        modalBody.innerHTML = '<div class="error" style="display:block;">Failed to load skill details</div>';
+    }
+}
+
+function displaySkillDetails(skill) {
+    const modalTitle = document.getElementById('skill-modal-title');
+    const modalBody = document.getElementById('skill-modal-body');
+    
+    modalTitle.textContent = skill.name || skill.id;
+    
+    let html = `
+        <div class="skill-detail-section">
+            <h3>Description</h3>
+            <p>${skill.description || 'No description available'}</p>
         </div>
-    `).join('');
+        
+        ${skill.tags && skill.tags.length > 0 ? `
+            <div class="skill-detail-section">
+                <h3>Tags</h3>
+                <div class="skill-tags">
+                    ${skill.tags.map(tag => `<span class="skill-tag">${tag}</span>`).join('')}
+                </div>
+            </div>
+        ` : ''}
+        
+        ${skill.examples && skill.examples.length > 0 ? `
+            <div class="skill-detail-section">
+                <h3>Example Queries</h3>
+                <ul class="skill-examples">
+                    ${skill.examples.map(ex => `<li>"${ex}"</li>`).join('')}
+                </ul>
+            </div>
+        ` : ''}
+        
+        ${skill.input_modes && skill.input_modes.length > 0 ? `
+            <div class="skill-detail-section">
+                <h3>Input Modes</h3>
+                <p>${skill.input_modes.join(', ')}</p>
+            </div>
+        ` : ''}
+        
+        ${skill.output_modes && skill.output_modes.length > 0 ? `
+            <div class="skill-detail-section">
+                <h3>Output Modes</h3>
+                <p>${skill.output_modes.join(', ')}</p>
+            </div>
+        ` : ''}
+        
+        ${skill.version ? `
+            <div class="skill-detail-section">
+                <h3>Version</h3>
+                <p>${skill.version}</p>
+            </div>
+        ` : ''}
+        
+        ${skill.performance ? `
+            <div class="skill-detail-section">
+                <h3>Performance</h3>
+                <p>Avg Processing Time: ${skill.performance.avg_processing_time_ms}ms</p>
+                <p>Max Concurrent Requests: ${skill.performance.max_concurrent_requests}</p>
+            </div>
+        ` : ''}
+    `;
+    
+    modalBody.innerHTML = html;
+}
 
-    container.innerHTML = html;
+function closeSkillModal() {
+    const modal = document.getElementById('skill-modal');
+    modal.style.display = 'none';
 }
 
 // ============================================================================

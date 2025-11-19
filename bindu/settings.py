@@ -76,7 +76,7 @@ class DIDSettings(BaseSettings):
     info_endpoint: str = "/agent/info"
 
     # DID Key Directory
-    pki_dir: str = ".pebbling"
+    pki_dir: str = ".bindu"
 
     # DID Validation
     prefix: str = "did:"

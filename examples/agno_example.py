@@ -22,7 +22,7 @@ config = {
     "name": "research_agent",
     "description": "A research assistant agent",
     "deployment": {"url": "http://localhost:3773", "expose": True},
-    "skills": ["skills/question-answering","skills/pdf-processing"],
+    "skills": ["skills/question-answering", "skills/pdf-processing"],
     "auth": {
         "enabled": True,
         "provider": "auth0",
@@ -39,7 +39,7 @@ config = {
             "/did/resolve*",
             "/agent/skills",
             "/agent/skills/*",
-            "/static/*"
+            "/static/*",
         ],
         "permissions": {
             "message/send": ["agent:write"],
@@ -47,8 +47,8 @@ config = {
             "tasks/cancel": ["agent:write"],
             "tasks/list": ["agent:read"],
             "contexts/list": ["agent:read"],
-            "tasks/feedback": ["agent:write"]
-        }
+            "tasks/feedback": ["agent:write"],
+        },
     },
     # "execution_cost": {
     #     "amount": "$0.0001",

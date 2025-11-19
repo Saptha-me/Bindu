@@ -58,16 +58,20 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
         for ext in capabilities["extensions"]:
             # Check if it's a DIDAgentExtension instance
             if hasattr(ext, "did") and hasattr(ext, "author"):
-                serializable_extensions.append({
-                    "uri": f"did:{ext.did}" if not ext.did.startswith("did:") else ext.did,
-                    "description": f"DID-based identity for {ext.agent_name or 'agent'}",
-                    "required": False,
-                    "params": {
-                        "author": ext.author,
-                        "agent_name": ext.agent_name,
-                        "agent_id": ext.agent_id,
+                serializable_extensions.append(
+                    {
+                        "uri": f"did:{ext.did}"
+                        if not ext.did.startswith("did:")
+                        else ext.did,
+                        "description": f"DID-based identity for {ext.agent_name or 'agent'}",
+                        "required": False,
+                        "params": {
+                            "author": ext.author,
+                            "agent_name": ext.agent_name,
+                            "agent_id": ext.agent_id,
+                        },
                     }
-                })
+                )
             elif isinstance(ext, dict):
                 # Already in correct format
                 serializable_extensions.append(ext)

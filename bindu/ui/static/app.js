@@ -16,6 +16,31 @@ let taskHistory = [];
 let contexts = [];
 const BASE_URL = window.location.origin;
 
+// Authentication State
+let authToken = localStorage.getItem('bindu_auth_token') || null;
+
+// ============================================================================
+// Authentication Management
+// ============================================================================
+
+function getAuthHeaders() {
+    return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+}
+
+function openAuthSettings() {
+    const token = prompt('Enter JWT token (leave empty to clear):');
+    if (token !== null) {
+        authToken = token || null;
+        if (authToken) {
+            localStorage.setItem('bindu_auth_token', authToken);
+            addMessage('✅ Token saved', 'status');
+        } else {
+            localStorage.removeItem('bindu_auth_token');
+            addMessage('Token cleared', 'status');
+        }
+    }
+}
+
 // ============================================================================
 // Tab Management
 // ============================================================================
@@ -364,7 +389,10 @@ async function loadContexts() {
         console.log('Loading contexts...');
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'contexts/list',
@@ -419,7 +447,10 @@ async function loadContextPreview(ctx) {
         // Get the first task to extract the first message
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'tasks/get',
@@ -545,7 +576,10 @@ async function switchContext(ctxId) {
         // Load all tasks for this context
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'tasks/list',
@@ -614,7 +648,10 @@ async function clearContext(ctxId) {
     try {
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'contexts/clear',
@@ -718,7 +755,10 @@ async function sendMessage() {
 
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'message/send',
@@ -822,7 +862,10 @@ async function pollTaskStatus(taskId) {
         try {
             const response = await fetch(`${BASE_URL}/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify({
                     jsonrpc: '2.0',
                     method: 'tasks/get',
@@ -905,6 +948,7 @@ async function cancelTask(taskId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...getAuthHeaders()
             },
             body: JSON.stringify({
                 jsonrpc: '2.0',
@@ -1120,7 +1164,10 @@ async function submitFeedback() {
     try {
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 jsonrpc: '2.0',
                 method: 'tasks/feedback',
@@ -1173,18 +1220,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loadContexts();
     
     // Modal event listeners
-    const modal = document.getElementById('feedback-modal');
+    const feedbackModal = document.getElementById('feedback-modal');
     
-    // Close modal when clicking outside the modal content
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
+    feedbackModal.addEventListener('click', (e) => {
+        if (e.target === feedbackModal) {
             closeFeedbackModal();
         }
     });
     
-    // Close modal on ESC key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.style.display === 'flex') {
+        if (e.key === 'Escape' && feedbackModal.style.display === 'flex') {
             closeFeedbackModal();
         }
     });

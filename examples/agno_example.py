@@ -22,6 +22,7 @@ config = {
     "name": "research_agent",
     "description": "A research assistant agent",
     "deployment": {"url": "http://localhost:3773", "expose": True},
+    "skills": ["skills/question-answering","skills/pdf-processing"],
 }
 
 

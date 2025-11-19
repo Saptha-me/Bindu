@@ -19,8 +19,8 @@
         <!-- Header -->
         <div class="header">
             <div class="header-left">
-                <h1>Bindu Agent</h1>
-                <p>A2A Protocol Interface</p>
+                <h1 id="agent-name-header">Loading...</h1>
+                <p>Powered by Bindu 🌻</p>
             </div>
         </div>
 
@@ -28,15 +28,40 @@
         <div class="tabs">
             <button class="tab" onclick="switchTab('agent-info')">Agent Info</button>
             <button class="tab active" onclick="switchTab('chat')">Chat</button>
-            <button class="tab" onclick="switchTab('skills')">Skills</button>
         </div>
 
         <!-- Tab Content -->
         <div class="main-content">
             <!-- Agent Info Tab -->
             <div id="agent-info" class="tab-content">
-                <div class="agent-info-container">
-                    <div id="agent-info-content" class="loading">Loading agent information...</div>
+                <div class="agent-info-layout">
+                    <!-- Left Column - Agent Info + DID + Skills -->
+                    <div class="agent-info-left">
+                        <div class="agent-card">
+                            <div id="agent-card-content" class="loading">Loading agent information...</div>
+                        </div>
+                        <div class="did-summary">
+                            <h3>DID Information</h3>
+                            <div id="did-summary-content" class="loading">Loading DID...</div>
+                        </div>
+                        <div class="skills-summary">
+                            <h3>Skills</h3>
+                            <div id="skills-summary-content" class="loading">Loading skills...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column - Agent Card JSON -->
+                    <div class="agent-info-right">
+                        <div class="json-panel">
+                            <div class="json-panel-header">
+                                <h3>Agent Card (JSON)</h3>
+                                <button class="copy-json-btn" onclick="copyAgentCardJSON()">📋 Copy</button>
+                            </div>
+                            <div class="json-content">
+                                <pre id="agent-json-display" class="loading">Loading...</pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -80,12 +105,6 @@
                 </div>
             </div>
 
-            <!-- Skills Tab -->
-            <div id="skills" class="tab-content">
-                <div class="skills-container">
-                    <div id="skills-content" class="loading">Loading skills...</div>
-                </div>
-            </div>
         </div>
 
         <!-- Footer -->
@@ -93,10 +112,10 @@
         <div class="footer-left">
             <div class="footer-protocol">
                 <span class="dot"></span>
-                <span>A2A Protocol</span>
+                <span>Powered by Bindu 🌻</span>
             </div>
             <span style="color: #e0e0e0;">|</span>
-            <span style="color: #999;">Interoperable AI Agents</span>
+            <span style="color: #999;">We provide heart to your AI, so that it can talk, negotiate, and trade securely</span>
         </div>
         <div class="footer-right">
             <a href="https://docs.saptha.me/bindu" target="_blank" class="footer-link">Docs</a>
@@ -105,6 +124,19 @@
                 Built by <a href="https://saptha.me" target="_blank">Saptha</a> in Amsterdam
             </div>
         </div>
+        </div>
+    </div>
+
+    <!-- Skill Detail Modal -->
+    <div id="skill-modal" class="skill-modal">
+        <div class="skill-modal-content">
+            <div class="skill-modal-header">
+                <h2 id="skill-modal-title">Skill Details</h2>
+                <span class="skill-modal-close" onclick="closeSkillModal()">&times;</span>
+            </div>
+            <div class="skill-modal-body" id="skill-modal-body">
+                <div class="loading">Loading skill details...</div>
+            </div>
         </div>
     </div>
 

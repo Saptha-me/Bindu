@@ -161,12 +161,13 @@ def _create_scheduler_config(
 
 
 def bindufy(
-    agent: Any, config: Dict[str, Any], handler: Callable[[list[dict[str, str]]], Any]
+    config: Dict[str, Any],
+    handler: Callable[[list[dict[str, str]]], Any],
+    ui: str | None = None,
 ) -> AgentManifest:
     """Transform an agent instance and handler into a bindu-compatible agent.
 
     Args:
-        agent: The agent instance (e.g., from agno.agent.Agent)
         config: Configuration dictionary containing:
             - author: Agent author email (required for Hibiscus registration)
             - name: Human-readable agent name
@@ -190,16 +191,14 @@ def bindufy(
             - scheduler: Task scheduler configuration dict
         handler: The handler function that processes messages and returns responses.
                 Must have signature: (messages: str) -> str
+        ui: Optional UI type to launch. Currently supports:
+            - "gradio": Launch Gradio chat interface
+            - None: No UI (default)
 
     Returns:
         AgentManifest: The manifest for the bindufied agent
 
     Example:
-        agent = Agent(
-            instructions="You are a helpful assistant",
-            model=OpenAIChat(id="gpt-4")
-        )
-
         def my_handler(messages: str) -> str:
             result = agent.run(input=messages)
             return result.to_dict()["content"]
@@ -420,12 +419,57 @@ def bindufy(
     # Parse deployment URL
     host, port = _parse_deployment_url(deployment_config)
 
-    # Display server startup banner and run
+    # Display server startup banner
     logger.info(
         prepare_server_display(
             host=host, port=port, agent_id=agent_id, agent_did=did_extension.did
         )
     )
-    uvicorn.run(bindu_app, host=host, port=port)
+
+    # Launch UI if requested
+    if ui:
+        ui_type = ui.lower()
+        
+        if ui_type == "gradio":
+            logger.info("Gradio UI requested - will launch after server starts")
+            # Import here to avoid dependency if not using UI
+            from bindu.ui import launch_gradio_ui
+            import threading
+            import time
+
+            # Start server in background thread
+            def run_server():
+                uvicorn.run(bindu_app, host=host, port=port)
+
+            server_thread = threading.Thread(target=run_server, daemon=True)
+            server_thread.start()
+
+            # Wait for server to be ready
+            logger.info("Waiting for server to start...")
+            time.sleep(3)
+
+            # Launch Gradio UI (blocking)
+            agent_url = f"http://{host}:{port}"
+            agent_name = validated_config.get("name", "Bindu Agent")
+            launch_gradio_ui(
+                base_url=agent_url,
+                title=f"{agent_name} - Bindu Interface 🌻",
+                description=validated_config.get("description", "Chat with your Bindu agent"),
+                server_port=port+1,
+            )
+        
+        elif ui_type == "streamlit":
+            logger.info("Streamlit UI requested - starting server only")
+            logger.info(f"Run Streamlit separately with: streamlit run bindu/ui/streamlit_ui.py -- --base-url http://{host}:{port}")
+            # For Streamlit, just run the server
+            # User needs to run Streamlit separately
+            uvicorn.run(bindu_app, host=host, port=port)
+        
+        else:
+            logger.warning(f"Unknown UI type: {ui}. Supported: 'gradio', 'streamlit'")
+            uvicorn.run(bindu_app, host=host, port=port)
+    else:
+        # No UI - run server normally
+        uvicorn.run(bindu_app, host=host, port=port)
 
     return _manifest

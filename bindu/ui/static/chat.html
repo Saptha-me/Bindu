@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bindu Agent</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>Bindu Agent</h1>
+                <p>A2A Protocol Interface</p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab" onclick="switchTab('agent-info')">Agent Info</button>
+            <button class="tab active" onclick="switchTab('chat')">Chat</button>
+            <button class="tab" onclick="switchTab('skills')">Skills</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="main-content">
+            <!-- Agent Info Tab -->
+            <div id="agent-info" class="tab-content">
+                <div class="agent-info-container">
+                    <div id="agent-info-content" class="loading">Loading agent information...</div>
+                </div>
+            </div>
+
+            <!-- Chat Tab -->
+            <div id="chat" class="tab-content active">
+                <div class="chat-layout">
+                    <!-- Context Sidebar -->
+                    <div class="context-sidebar">
+                        <div class="sidebar-header">
+                            <h3>Contexts</h3>
+                            <button class="new-chat-btn" onclick="createNewContext()">+ New</button>
+                        </div>
+                        <div class="context-list" id="context-list">
+                            <div class="loading">No contexts yet</div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Area -->
+                    <div class="chat-area">
+                        <div id="context-indicator" class="context-indicator">
+                            <span id="context-indicator-text">No active context</span>
+                        </div>
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <div id="reply-indicator" class="reply-indicator">
+                                <span id="reply-text"></span>
+                                <span class="reply-close" onclick="clearReply()">✕</span>
+                            </div>
+                            <div class="chat-input">
+                                <input
+                                    type="text"
+                                    id="message-input"
+                                    placeholder="Type your message..."
+                                    onkeypress="handleKeyPress(event)"
+                                >
+                                <button onclick="sendMessage()" id="send-button">Send</button>
+                            </div>
+                        </div>
+                        <div id="chat-error" class="error"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Tab -->
+            <div id="skills" class="tab-content">
+                <div class="skills-container">
+                    <div id="skills-content" class="loading">Loading skills...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+        <div class="footer-left">
+            <div class="footer-protocol">
+                <span class="dot"></span>
+                <span>A2A Protocol</span>
+            </div>
+            <span style="color: #e0e0e0;">|</span>
+            <span style="color: #999;">Interoperable AI Agents</span>
+        </div>
+        <div class="footer-right">
+            <a href="https://docs.saptha.me/bindu" target="_blank" class="footer-link">Docs</a>
+            <a href="https://github.com/Saptha-me/Bindu" target="_blank" class="footer-link">GitHub</a>
+            <div class="footer-made">
+                Built by <a href="https://saptha.me" target="_blank">Saptha</a> in Amsterdam
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Submit Task Feedback</h3>
+                <span class="modal-close" onclick="closeFeedbackModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Task ID:</label>
+                    <div id="feedback-task-id" class="task-id-display"></div>
+                </div>
+                <div class="form-group">
+                    <label for="feedback-rating">Rating (1-5):</label>
+                    <select id="feedback-rating" class="form-control">
+                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                        <option value="4">⭐⭐⭐⭐ Good</option>
+                        <option value="3">⭐⭐⭐ Average</option>
+                        <option value="2">⭐⭐ Poor</option>
+                        <option value="1">⭐ Very Poor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="feedback-text">Feedback <span style="color: #999; font-weight: normal;">(optional)</span>:</label>
+                    <textarea 
+                        id="feedback-text" 
+                        class="form-control" 
+                        rows="4" 
+                        placeholder="Share your thoughts (optional)..."
+                    ></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeFeedbackModal()">Cancel</button>
+                <button class="btn-primary" onclick="submitFeedback()">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

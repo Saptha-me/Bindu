@@ -783,6 +783,10 @@ async function sendMessage() {
         addMessage(displayMessage, 'user', task.id);
 
         clearReply();
+        
+        // Add thinking indicator immediately
+        addThinkingIndicator('thinking-indicator', task.id);
+        
         pollTaskStatus(task.id);
 
     } catch (error) {
@@ -803,10 +807,7 @@ async function pollTaskStatus(taskId) {
     let attempts = 0;
     const maxAttempts = 300;
     currentPollingTaskId = taskId;
-    
-    // Add thinking indicator with cancel button
     const thinkingId = 'thinking-indicator';
-    addThinkingIndicator(thinkingId, taskId);
 
     const poll = async () => {
         if (attempts >= maxAttempts) {

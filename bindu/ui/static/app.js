@@ -141,6 +141,26 @@ function switchTab(tabName) {
 }
 
 // ============================================================================
+// Collapsible Section Management
+// ============================================================================
+
+function toggleSection(sectionId) {
+    const content = document.getElementById(`${sectionId}-content`);
+    const header = content.previousElementSibling;
+    const icon = header.querySelector('.toggle-icon');
+    
+    if (content.classList.contains('expanded')) {
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
+        icon.style.transform = 'rotate(-90deg)';
+    } else {
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+// ============================================================================
 // Agent Info Management
 // ============================================================================
 
@@ -196,21 +216,71 @@ function displayAgentInfo() {
 
     const { manifest, didDocument } = agentInfo;
 
-    // Update header with agent name
+    // Update header with agent name and metadata
     const headerName = document.getElementById('agent-name-header');
+    const headerSubtitle = document.getElementById('agent-subtitle');
+    const headerMetadata = document.getElementById('agent-metadata');
+    
     if (headerName) {
         headerName.textContent = manifest.name || 'Bindu Agent';
     }
+    
+    if (headerSubtitle) {
+        headerSubtitle.textContent = manifest.description || 'A Bindu agent';
+    }
+    
+    if (headerMetadata) {
+        const didExtension = manifest.capabilities?.extensions?.find(ext => ext.uri?.startsWith('did:'));
+        
+        // Get full URL with port from manifest or current window location
+        let urlWithPort = manifest.url || manifest.uri || window.location.origin;
+        // Remove protocol but keep host:port
+        urlWithPort = urlWithPort.replace(/^https?:\/\//, '');
+        // Remove any trailing path
+        urlWithPort = urlWithPort.split('/')[0];
+        
+        // Get Bindu version from manifest metadata or capabilities
+        const binduVersion = manifest.bindu_version || manifest.metadata?.bindu_version || '0.1.0';
+        
+        // Check if agent has x402 payment requirements
+        const hasPaywall = manifest.capabilities?.extensions?.some(ext => 
+            ext.uri?.includes('x402') || ext.uri?.includes('payment')
+        ) || manifest.execution_cost || manifest.paymentRequired;
+        
+        // Check if agent requires authentication
+        const requiresAuth = manifest.auth?.enabled || 
+            manifest.authentication_required || 
+            manifest.capabilities?.authentication || 
+            manifest.security?.authentication_required;
+        
+        headerMetadata.innerHTML = `
+            <span class="metadata-badge">Bindu v${binduVersion}</span>
+            <span class="metadata-badge">Protocol v${manifest.protocolVersion || '0.2.5'}</span>
+            <span class="metadata-badge">${urlWithPort}</span>
+        `;
+        
+        // Show badge if payment or auth is required
+        const paywallBadge = document.getElementById('paywall-badge');
+        if (paywallBadge && (hasPaywall || requiresAuth)) {
+            let badgeText = '';
+            if (hasPaywall && requiresAuth) {
+                badgeText = '💰🔐 Paid + Auth';
+            } else if (hasPaywall) {
+                badgeText = '💰 Behind Paywall';
+            } else if (requiresAuth) {
+                badgeText = '🔐 Behind Auth';
+            }
+            paywallBadge.textContent = badgeText;
+            paywallBadge.style.display = 'inline-block';
+        }
+    }
 
-    // 1. Display Minimal Agent Info (Left Column)
+    // 1. Display Agent Overview (Left Column)
     const cardContainer = document.getElementById('agent-card-content');
     const didExtension = manifest.capabilities?.extensions?.find(ext => ext.uri?.startsWith('did:'));
     const author = didExtension?.params?.author || 'Unknown';
 
     let cardHtml = `
-        <h2>${manifest.name || 'Unknown Agent'}</h2>
-        <p class="agent-description">${manifest.description || 'No description available'}</p>
-
         <table class="info-table">
             <tr>
                 <td>Author</td>
@@ -246,9 +316,7 @@ function displayAgentInfo() {
     // 2. Display DID Summary (Left Column, below agent card)
     const didContainer = document.getElementById('did-summary-content');
     if (didDocument) {
-        const binduData = didDocument.bindu || {};
         const authKey = didDocument.authentication?.[0];
-        const serviceEndpoint = didDocument.service?.[0];
 
         let didHtml = `
             <table class="did-table">
@@ -261,15 +329,7 @@ function displayAgentInfo() {
                         </div>
                     </td>
                 </tr>
-                <tr>
-                    <td>Created</td>
-                    <td>${didDocument.created ? new Date(didDocument.created).toLocaleString() : 'N/A'}</td>
-                </tr>
                 ${authKey ? `
-                    <tr>
-                        <td>Key Type</td>
-                        <td>${authKey.type || 'N/A'}</td>
-                    </tr>
                     <tr>
                         <td>Public Key</td>
                         <td>
@@ -280,18 +340,12 @@ function displayAgentInfo() {
                         </td>
                     </tr>
                 ` : ''}
-                ${serviceEndpoint ? `
-                    <tr>
-                        <td>Endpoint</td>
-                        <td>${serviceEndpoint.serviceEndpoint || 'N/A'}</td>
-                    </tr>
-                ` : ''}
             </table>
         `;
 
         didContainer.innerHTML = didHtml;
     } else {
-        didContainer.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">DID information not available</div>';
+        didContainer.innerHTML = '<div style="color: #9ca3af; text-align: center; padding: 12px;">DID information not available</div>';
     }
 
     // 3. Display Agent Card JSON (Right Side)
@@ -316,13 +370,14 @@ function copyAgentCardJSON() {
 
     const jsonString = JSON.stringify(agentInfo.manifest, null, 2);
     navigator.clipboard.writeText(jsonString).then(() => {
-        const btns = document.querySelectorAll('.copy-json-btn');
-        const btn = btns[0]; // First button is Agent Card
-        const originalText = btn.textContent;
-        btn.textContent = '✓ Copied!';
-        setTimeout(() => {
-            btn.textContent = originalText;
-        }, 2000);
+        const btn = document.querySelector('.copy-json-btn');
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 2000);
+        }
     }).catch(err => {
         console.error('Failed to copy:', err);
     });
@@ -364,14 +419,36 @@ function displaySkills() {
     const { skills } = agentInfo;
 
     if (skills.length === 0) {
-        summaryContainer.innerHTML = '<div style="color: #999; font-size: 11px;">No skills available</div>';
+        summaryContainer.innerHTML = '<div style="color: #9ca3af; font-size: 11px;">No skills available</div>';
     } else {
-        let html = skills.map(skill => `
-            <div class="skill-item" onclick="openSkillModal('${skill.id}')">
-                <div class="skill-name">${skill.name || skill.id || 'Unknown Skill'}</div>
-                ${skill.description ? `<div class="skill-description">${skill.description.substring(0, 100)}${skill.description.length > 100 ? '...' : ''}</div>` : ''}
-            </div>
-        `).join('');
+        // Map skill names to icons
+        const skillIcons = {
+            'question-answering': '💬',
+            'pdf-processing': '📄',
+            'text-generation': '✍️',
+            'image-generation': '🎨',
+            'code-generation': '💻',
+            'data-analysis': '📊',
+            'translation': '🌐',
+            'summarization': '📝'
+        };
+        
+        let html = skills.map(skill => {
+            const skillName = skill.name || skill.id || 'Unknown Skill';
+            const icon = skillIcons[skillName] || skillIcons[skill.id] || '⚡';
+            const description = skill.description || '';
+            const truncatedDesc = description.length > 60 ? description.substring(0, 60) + '...' : description;
+            
+            return `
+                <div class="skill-item" onclick="openSkillModal('${skill.id}')">
+                    <div class="skill-header">
+                        <span class="skill-icon">${icon}</span>
+                        <span class="skill-name">${skillName}</span>
+                    </div>
+                    ${truncatedDesc ? `<div class="skill-description">${truncatedDesc}</div>` : ''}
+                </div>
+            `;
+        }).join('');
         summaryContainer.innerHTML = html;
     }
 }

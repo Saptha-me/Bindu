@@ -19,6 +19,91 @@ const BASE_URL = window.location.origin;
 // Authentication State
 let authToken = localStorage.getItem('bindu_auth_token') || null;
 
+// Payment State
+let paymentToken = null;
+let pendingPaymentRequest = null;
+
+// ============================================================================
+// Payment Management
+// ============================================================================
+
+async function handlePaymentRequired(originalRequest) {
+    try {
+        addMessage('Time to pay the piper!', 'status');
+        
+        // Start payment session (no auth required - public endpoint)
+        const sessionResponse = await fetch(`${BASE_URL}/api/start-payment-session`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!sessionResponse.ok) {
+            throw new Error('Failed to start payment session');
+        }
+        
+        const sessionData = await sessionResponse.json();
+        const { session_id, browser_url } = sessionData;
+        
+        addMessage(`🌐 Opening payment page...`, 'status');
+        
+        // Open payment page in new window
+        const paymentWindow = window.open(browser_url, '_blank', 'width=600,height=800');
+        
+        if (!paymentWindow) {
+            addMessage('❌ Please allow popups to complete payment', 'status');
+            return false;
+        }
+        
+        addMessage('Waiting for your wallet to wake up...', 'status');
+        
+        // Poll for payment completion
+        const maxAttempts = 60; // 5 minutes (5 second intervals)
+        let attempts = 0;
+        
+        while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+            attempts++;
+            
+            const statusResponse = await fetch(`${BASE_URL}/api/payment-status/${session_id}`);
+            
+            if (!statusResponse.ok) continue;
+            
+            const statusData = await statusResponse.json();
+            
+            if (statusData.status === 'completed' && statusData.payment_token) {
+                paymentToken = statusData.payment_token;
+                addMessage('💰 Payment approved! Your agent is now caffeinated.', 'status');
+                
+                // Close payment window if still open
+                if (paymentWindow && !paymentWindow.closed) {
+                    paymentWindow.close();
+                }
+                
+                return true;
+            }
+            
+            if (statusData.status === 'failed') {
+                addMessage('❌ Payment failed: ' + (statusData.error || 'Unknown error'), 'status');
+                return false;
+            }
+        }
+        
+        addMessage('⏱️ Payment timeout. Please try again.', 'status');
+        return false;
+        
+    } catch (error) {
+        console.error('Payment error:', error);
+        addMessage('❌ Payment error: ' + error.message, 'status');
+        return false;
+    }
+}
+
+function getPaymentHeaders() {
+    return paymentToken ? { 'X-PAYMENT': paymentToken } : {};
+}
+
 // ============================================================================
 // Authentication Management
 // ============================================================================
@@ -391,7 +476,8 @@ async function loadContexts() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...getAuthHeaders()
+                ...getAuthHeaders(),
+                ...getPaymentHeaders()
             },
             body: JSON.stringify({
                 jsonrpc: '2.0',
@@ -449,7 +535,8 @@ async function loadContextPreview(ctx) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...getAuthHeaders()
+                ...getAuthHeaders(),
+                ...getPaymentHeaders()
             },
             body: JSON.stringify({
                 jsonrpc: '2.0',
@@ -578,7 +665,8 @@ async function switchContext(ctxId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...getAuthHeaders()
+                ...getAuthHeaders(),
+                ...getPaymentHeaders()
             },
             body: JSON.stringify({
                 jsonrpc: '2.0',
@@ -650,7 +738,8 @@ async function clearContext(ctxId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...getAuthHeaders()
+                ...getAuthHeaders(),
+                ...getPaymentHeaders()
             },
             body: JSON.stringify({
                 jsonrpc: '2.0',
@@ -753,32 +842,92 @@ async function sendMessage() {
             isNewContext: !contextId
         });
 
+        const requestBody = {
+            jsonrpc: '2.0',
+            method: 'message/send',
+            params: {
+                message: {
+                    role: 'user',
+                    parts: [{ kind: 'text', text: message }],
+                    kind: 'message',
+                    messageId: messageId,
+                    contextId: newContextId,
+                    taskId: taskId,
+                    ...(referenceTaskIds.length > 0 && { referenceTaskIds })
+                },
+                configuration: {
+                    acceptedOutputModes: ['application/json']
+                }
+            },
+            id: generateId()
+        };
+
         const response = await fetch(`${BASE_URL}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...getAuthHeaders()
+                ...getAuthHeaders(),
+                ...getPaymentHeaders()
             },
-            body: JSON.stringify({
-                jsonrpc: '2.0',
-                method: 'message/send',
-                params: {
-                    message: {
-                        role: 'user',
-                        parts: [{ kind: 'text', text: message }],
-                        kind: 'message',
-                        messageId: messageId,
-                        contextId: newContextId,
-                        taskId: taskId,
-                        ...(referenceTaskIds.length > 0 && { referenceTaskIds })
-                    },
-                    configuration: {
-                        acceptedOutputModes: ['application/json']
-                    }
-                },
-                id: generateId()
-            })
+            body: JSON.stringify(requestBody)
         });
+
+        // Handle 402 Payment Required
+        if (response.status === 402) {
+            const paymentSuccess = await handlePaymentRequired(requestBody);
+            if (paymentSuccess) {
+                // Retry the exact same request with payment token
+                const retryResponse = await fetch(`${BASE_URL}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders(),
+                        ...getPaymentHeaders()
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!retryResponse.ok) throw new Error('Failed to send message after payment');
+                
+                const result = await retryResponse.json();
+                if (result.error) throw new Error(result.error.message || 'Unknown error');
+                
+                const task = result.result;
+                const taskContextId = task.context_id || task.contextId;
+                
+                console.log('Payment retry successful, received task:', {
+                    taskId: task.id,
+                    contextId: taskContextId
+                });
+                
+                // Continue with normal flow
+                // Keep payment token for this task (will be cleared when task reaches terminal state)
+                currentTaskId = task.id;
+                
+                if (taskContextId) {
+                    const isNewContext = !contextId;
+                    contextId = taskContextId;
+                    updateContextIndicator();
+                    
+                    if (isNewContext) {
+                        await loadContexts();
+                    }
+                }
+                
+                const displayMessage = replyToTaskId
+                    ? `↩️ Replying to task ${replyToTaskId.substring(0, 8)}...\n\n${message}`
+                    : message;
+                addMessage(displayMessage, 'user', task.id);
+                
+                clearReply();
+                addThinkingIndicator('thinking-indicator', task.id);
+                pollTaskStatus(task.id);
+                
+                return;
+            } else {
+                throw new Error('Payment required but not completed');
+            }
+        }
 
         if (!response.ok) throw new Error('Failed to send message');
 
@@ -864,7 +1013,8 @@ async function pollTaskStatus(taskId) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...getAuthHeaders()
+                    ...getAuthHeaders(),
+                    ...getPaymentHeaders()
                 },
                 body: JSON.stringify({
                     jsonrpc: '2.0',
@@ -901,6 +1051,13 @@ async function pollTaskStatus(taskId) {
                     addMessage(`❌ Task failed: ${error}`, 'status');
                 } else {
                     addMessage('⚠️ Task was canceled', 'status');
+                }
+                
+                // Clear payment token when task reaches terminal state
+                // Next message will create NEW task and require NEW payment
+                if (paymentToken) {
+                    console.log('Task completed - clearing payment token for next task');
+                    paymentToken = null;
                 }
 
                 // Reload contexts to update task counts
@@ -948,7 +1105,8 @@ async function cancelTask(taskId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...getAuthHeaders()
+                ...getAuthHeaders(),
+                ...getPaymentHeaders()
             },
             body: JSON.stringify({
                 jsonrpc: '2.0',
@@ -1166,7 +1324,8 @@ async function submitFeedback() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...getAuthHeaders()
+                ...getAuthHeaders(),
+                ...getPaymentHeaders()
             },
             body: JSON.stringify({
                 jsonrpc: '2.0',

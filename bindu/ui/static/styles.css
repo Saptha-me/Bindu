@@ -47,6 +47,29 @@ body {
     color: #666;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.auth-settings-btn {
+    padding: 8px 16px;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.auth-settings-btn:hover {
+    background: #e8e8e8;
+    border-color: #d0d0d0;
+}
+
 /* Tabs */
 .tabs {
     display: flex;

@@ -58,10 +58,8 @@ config = {
         "token": "USDC",
         "network": "base-sepolia",
         "pay_to_address": "0x2654bb8B272f117c514aAc3d4032B1795366BA5d",
-        "protected_methods": [
-            "message/send"
-        ]
-    }
+        "protected_methods": ["message/send"],
+    },
 }
 
 

@@ -1,7 +1,7 @@
 # |---------------------------------------------------------|
 # |                                                         |
 # |                 Give Feedback / Get Help                |
-# | https://github.com/Saptha-me/Bindu/issues/new/choose    |
+# | https://github.com/getbindu/Bindu/issues/new/choose    |
 # |                                                         |
 # |---------------------------------------------------------|
 #
@@ -13,7 +13,7 @@ In the ancient Sanskrit tradition, a bindu represents the point of origin - the 
 everything emerges. Just as a single point connects to form constellations, Bindu connects
 autonomous AI agents into a living, breathing swarm intelligence.
 
-Saptha-me envisions a future where AI agents aren't trapped in silos, but dance together in
+getbindu envisions a future where AI agents aren't trapped in silos, but dance together in
 a decentralized choreography.
 
 Each agent is a sovereign point of intelligence, self-hosted and

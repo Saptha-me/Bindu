@@ -58,7 +58,7 @@ class DIDSettings(BaseSettings):
 
     # DID Document Constants
     w3c_context: str = "https://www.w3.org/ns/did/v1"
-    bindu_context: str = "https://saptha.me/ns/v1"
+    bindu_context: str = "https://getbindu.com/ns/v1"
     verification_key_type: str = "Ed25519VerificationKey2020"
     key_fragment: str = "key-1"
     service_fragment: str = "agent-service"
@@ -70,7 +70,7 @@ class DIDSettings(BaseSettings):
     multibase_prefix: str = "z"  # Base58btc prefix for ed25519
 
     # DID Extension
-    extension_uri: str = "https://github.com/Saptha-me/saptha_me"
+    extension_uri: str = "https://github.com/getbindu/saptha_me"
     extension_description: str = "DID-based identity management for bindu agents"
     resolver_endpoint: str = "/did/resolve"
     info_endpoint: str = "/agent/info"

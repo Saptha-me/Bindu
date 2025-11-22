@@ -39,6 +39,5 @@ def handler(messages: list[dict[str, str]]):
     result = agent.run(input=messages)
     return result
 
-
 # Bindu-fy it
 bindufy(config, handler)

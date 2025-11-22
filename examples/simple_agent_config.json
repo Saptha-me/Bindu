@@ -1,5 +1,5 @@
 {
-  "author": "raahul@saptha.me",
+  "author": "raahul@getbindu.com",
   "name": "first Agent",
   "description": "A basic AI agent for simple question answering",
   "version": "1.0.0",
@@ -28,7 +28,7 @@
   "num_history_sessions": 5,
   "enable_system_message": true,
   "enable_context_based_history": false,
-  "documentation_url": "https://docs.saptha.me/agents/simple",
+  "documentation_url": "https://docs.getbindu.com/agents/simple",
   "extra_metadata": {
     "domain": "general",
     "specialization": "basic_qa"
@@ -40,7 +40,7 @@
     "url": "http://localhost:8030",
     "expose": true,
     "protocol_version": "1.0.0",
-    "proxy_urls": ["https://simple.saptha.me"],
+    "proxy_urls": ["https://simple.getbindu.com"],
     "cors_origins": ["*"]
   },
   "storage": {

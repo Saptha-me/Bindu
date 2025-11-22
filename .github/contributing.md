@@ -24,7 +24,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 - Accept constructive criticism gracefully
 - Show empathy towards other community members
 
-Report any unacceptable behavior to `raahul@saptha.me`.
+Report any unacceptable behavior to `raahul@getbindu.com`.
 
 ## Getting Started
 
@@ -59,7 +59,7 @@ git clone https://github.com/YOUR_USERNAME/Bindu.git
 cd Bindu
 
 # Add upstream remote
-git remote add upstream https://github.com/Saptha-me/Bindu.git
+git remote add upstream https://github.com/getbindu/Bindu.git
 ```
 
 ### 2. Set Up Environment
@@ -101,7 +101,7 @@ coverage report --skip-covered --fail-under=70
 
 ### Finding Issues to Work On
 
-- Check [GitHub Issues](https://github.com/Saptha-me/Bindu/issues) for open tasks
+- Check [GitHub Issues](https://github.com/getbindu/Bindu/issues) for open tasks
 - Look for issues labeled `good first issue` or `help wanted`
 - Join our [Discord](https://discord.gg/3w5zuYUuwt) to discuss ideas
 - Attend weekly community meetups (schedule on Discord)
@@ -340,7 +340,7 @@ By contributing to Bindu, you agree that your contributions will be licensed und
 If you have questions about contributing:
 
 - **Discord**: [Join our community](https://discord.gg/3w5zuYUuwt)
-- **Email**: raahul@saptha.me
-- **GitHub Discussions**: [Start a discussion](https://github.com/Saptha-me/Bindu/discussions)
+- **Email**: raahul@getbindu.com
+- **GitHub Discussions**: [Start a discussion](https://github.com/getbindu/Bindu/discussions)
 
 Thank you for contributing to Bindu and helping build the Internet of Agents! 🌻🚀✨

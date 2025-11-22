@@ -6,7 +6,7 @@ This document outlines the maintainer structure, responsibilities, and processes
 
 ### Lead Maintainer
 
-- **Raahul Dutta** ([@raahul](https://github.com/raahul)) - `raahul@saptha.me`
+- **Raahul Dutta** ([@raahul](https://github.com/raahul)) - `raahul@getbindu.com`
   - Project founder and lead architect
   - Final decision authority on project direction
   - Release management and versioning
@@ -67,7 +67,7 @@ We welcome new maintainers who share our vision for the Internet of Agents. Here
 
 1. **Nomination**
    - Current maintainers can nominate contributors
-   - Self-nomination is also welcome via email to `raahul@saptha.me`
+   - Self-nomination is also welcome via email to `raahul@getbindu.com`
 
 2. **Review**
    - Lead maintainer reviews contribution history
@@ -137,7 +137,7 @@ We welcome new maintainers who share our vision for the Internet of Agents. Here
 - **GitHub Issues**: Bug reports, feature requests
 - **GitHub Discussions**: General questions, ideas
 - **Discord**: Real-time chat, community support - [Join here](https://discord.gg/3w5zuYUuwt)
-- **Email**: Private maintainer discussions - `raahul@saptha.me`
+- **Email**: Private maintainer discussions - `raahul@getbindu.com`
 - **Weekly Community Meetup**: Online meetup every week to discuss project updates, roadmap, and community questions
   - Schedule announced on Discord and GitHub Discussions
   - Open to all contributors and community members
@@ -152,7 +152,7 @@ All maintainers must uphold our community standards:
 - Focus on what's best for the project and community
 - Acknowledge and credit contributions
 
-Violations should be reported to `raahul@saptha.me`.
+Violations should be reported to `raahul@getbindu.com`.
 
 ## Stepping Down
 
@@ -170,7 +170,7 @@ We're grateful for all contributions, regardless of duration.
 If you're interested in becoming a maintainer or have questions about the process, reach out:
 
 - **Discord**: [Join our community](https://discord.gg/3w5zuYUuwt)
-- **Email**: raahul@saptha.me
+- **Email**: raahul@getbindu.com
 - **GitHub**: Open a discussion
 
 We're excited to grow the Bindu maintainer team and build the Internet of Agents together! 🌻

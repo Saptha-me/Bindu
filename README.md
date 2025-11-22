@@ -6,64 +6,44 @@
   </a>
 </div>
 
-<p align="center">
-  <em>"We imagine a world of agents where they can communicate with each other seamlessly.<br/>
-  And Bindu turns your agent into a living server , the dot (Bindu) in the Internet of Agents."</em>
-</p>
+<br/>
 
 <p align="center">
-  <strong>🌻 Bindu Community Meetup - Every Thursday!</strong><br/>
-  <br/>
-  <a href="https://luma.com/j9ivvunr" target="_blank">
-    <img src="https://img.shields.io/badge/📅_RSVP_on_Luma-Join_Meetup-6366f1?style=for-the-badge" alt="RSVP on Luma">
-  </a>
+  <em>The identity, communication & payments layer for AI agents. Dreaming of a world where agents gossip, argue & collaborate like a real society of their own.</em>
 </p>
 
 <br/>
 
 [![GitHub License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg)](https://hits.sh/github.com/Saptha-me/Bindu/)
+[![Hits](https://hits.shields.io/github.com/getbindu/Bindu.svg)](https://hits.shields.io/github.com/getbindu/Bindu/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Coverage Status](https://coveralls.io/repos/github/Saptha-me/Bindu/badge.svg?branch=v0.3.18)](https://coveralls.io/github/Saptha-me/Bindu?branch=v0.3.18)
-[![Tests](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml/badge.svg)](https://github.com/Saptha-me/Bindu/actions/workflows/release.yml)
+[![Coverage Status](https://coveralls.io/repos/github/getbindu/Bindu/badge.svg?branch=v0.3.18)](https://coveralls.io/github/getbindu/Bindu?branch=v0.3.18)
+[![Tests](https://github.com/getbindu/Bindu/actions/workflows/release.yml/badge.svg)](https://github.com/getbindu/Bindu/actions/workflows/release.yml)
 [![PyPI version](https://img.shields.io/pypi/v/bindu.svg)](https://pypi.org/project/bindu/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/bindu)](https://pypi.org/project/bindu/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Saptha-me/Bindu/pulls)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/getbindu/Bindu/pulls)
 [![Join Discord](https://img.shields.io/badge/Join%20Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/3w5zuYUuwt)
-[![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.saptha.me)
-[![GitHub stars](https://img.shields.io/github/stars/Saptha-me/Bindu)](https://github.com/Saptha-me/Bindu/stargazers)
+[![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.getbindu.com)
+[![GitHub stars](https://img.shields.io/github/stars/getbindu/Bindu)](https://github.com/getbindu/Bindu/stargazers)
 
 <br/>
 
-# The Idea
+# What is Bindu 🌻
 
-Integration was the problem.
-And even today, it still is.
+Modern agents can reason, plan, and call tools, but connecting them to each other and to existing systems is still hard. We now have open protocols for this new world: A2A, AP2, and X402. They define how agents talk, trust, and trade yet wiring them together still takes time, code, and complexity.
 
-We built monoliths, then <b>APIs</b>, then <b>microservices</b>, then <b>cloud functions</b>.<br/>
-Each step made systems faster, smaller, and more distributed.
+<b>Bindu solves this.</b>
 
-Then, on <b>30th November 2022</b>, something changed.<br/>
-We entered the age of <b>Large Language Models</b>.<br/>
-Software began reasoning, planning, and calling tools.<br/>
-Suddenly, our code didn’t just execute, it started <b>thinking</b>.
+Bindu is an operating layer that adds auth, payments, observability, distributed execution, and low latency on top of A2A, AP2, and X402, turning your agent into a decentralized, interoperable living server that speaks the language of the open web.
 
-But the old problem stayed the same.<br/>
+Write your agent in <b>any framework</b> you like, then use Bindu to <code>"Bindu‑fy"</code> it and plug directly into the Internet of Agents.
 
-<b>Connection.</b>
+Bring your agent and a simple config - that's it. We take care of the rest.
 
-Now we have the language protocols for this new world:<br/>
-[A2A](https://github.com/a2aproject/A2A), [AP2](https://github.com/google-agentic-commerce/AP2), and [X402](https://github.com/coinbase/x402), how the agents talk, trust, and trade.<br/>
-
-Yet, connecting them still takes time, code, and complexity.
-
-That’s why <b>Bindu exists.</b>
-
-<b>Bindu</b> is a wrapper that turns your agent into a A2A, AP2, and X402 schema-compliant <b>living server</b>,
-And communicate with other agents and microservices across the open web.
-
-Just write your agent in any framework you like, then use <b>Bindu</b>.
-it will <b>Bindu-fy</b> your agent so that it can instantly join the Internet of Agents.
+<p align="center">
+  <img src="assets/agno-simple.png" alt="Bindu" width="640"
+       style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+</p>
 
 <br/>
 
@@ -76,6 +56,8 @@ uv add bindu
 
 <br/>
 
+
+
 ## 🚀 Quick Start
 
 ### Time to first agent: ~2 minutes ⏱️
@@ -84,10 +66,10 @@ On your local machine, navigate to the directory in which you want to
 create a project directory, and run the following command:
 
 ```bash
-uvx cookiecutter https://github.com/Saptha-me/create-bindu-agent.git
+uvx cookiecutter https://github.com/getbindu/create-bindu-agent.git
 ```
 
-More details can be found [here](https://docs.saptha.me).
+More details can be found [here](https://docs.getbindu.com/bindu/create-bindu-agent/overview).
 <br/>
 
 That’s it.
@@ -99,48 +81,54 @@ Your local agent becomes a live, secure, discoverable service, ready to talk wit
 
 ```json
 {
-  "author": "your.email@example.com",
-  "name": "my_first_agent",
-  "description": "A simple agent that answers questions",
-  "version": "1.0.0",
-  "deployment": {
-    "url": "http://localhost:8030",
-    "expose": true
-  }
+  "author": "raahul@getbindu.com",
+  "name": "research_agent",
+  "description": "A research assistant agent",
+  "deployment": {"url": "http://localhost:3773", "expose": True},
+  "skills": ["skills/question-answering", "skills/pdf-processing"]
 }
 ```
-Full Detailed Configuration can be found [here](https://docs.saptha.me).
+Full Detailed Configuration can be found [here](https://docs.getbindu.com).
 
 **Step 2:** Create your agent script `my_agent.py`:
 
 ```python
-from bindu import bindufy
-
+from bindu.penguin.bindufy import bindufy
 from agno.agent import Agent
+from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.models.openai import OpenAIChat
 
-from bindu.penguin.bindufy import bindufy
-
-
-# Load configuration
-def load_config(config_path: str):
-    """Load configuration from JSON with defaults."""
-    full_path = os.path.join(config_path)
-    with open(full_path, "r") as f:
-        return json.load(f)
-
-
-simple_config = load_config("simple_agent_config.json")
-simple_agent = Agent(
-    instructions="Provide helpful responses to user messages",
+# Define your agent
+agent = Agent(
+    instructions="You are a research assistant that finds and summarizes information.",
     model=OpenAIChat(id="gpt-4o"),
+    tools=[DuckDuckGoTools()],
 )
 
-def simple_handler(messages: list[dict[str, str]]) -> Any:
-    result = simple_agent.run(input=messages)
+# Configuration
+config = {
+    "author": "your.email@example.com",
+    "name": "research_agent",
+    "description": "A research assistant agent",
+    "deployment": {"url": "http://localhost:3773", "expose": True},
+    "skills": ["skills/question-answering", "skills/pdf-processing"],
+}
+
+# Handler function
+def handler(messages: list[dict[str, str]]):
+    """Process messages and return agent response.
+
+    Args:
+        messages: List of message dictionaries containing conversation history
+
+    Returns:
+        Agent response result
+    """
+    result = agent.run(input=messages)
     return result
 
-bindufy(simple_agent, simple_config, simple_handler)
+# Bindu-fy it
+bindufy(config, handler)
 ```
 
 That's it! Your agent is now live at `http://localhost:8030` and ready to communicate with other agents.
@@ -149,24 +137,7 @@ That's it! Your agent is now live at `http://localhost:8030` and ready to commun
 
 ## 🎨 Chat UI (Optional)
 
-Want a beautiful chat interface for your agent? Just add `ui="gradio"`:
-
-```python
-# Install UI dependencies
-pip install bindu[ui]
-
-# Launch with chat interface
-bindufy(simple_agent, simple_config, simple_handler, ui="gradio")
-```
-
-This will:
-- Start your agent server in the background
-- Launch a Gradio chat interface (usually at http://localhost:7860)
-- Handle all the A2A protocol complexity for you
-
-![Gradio Chat UI](https://gradio.app/assets/img/chatbot-screenshot.png)
-
-See the [Gradio UI documentation](docs/gradio-ui.md) for more details.
+Want a beautiful chat interface for your agent? - It's available as part of the Bindu ecosystem. - /docs
 
 <br/>
 
@@ -199,21 +170,16 @@ And the single tiny dot is Bindu, the origin point in the Internet of Agents.<br
 
 <br/>
 
-# The Saptha.me Connection [In Progress]
+# The NightSky Connection [In Progress]
 
-Saptha.me is the layer that makes swarms of agents.
+NightSky is the layer that makes swarms of agents.
 
 In this swarm, each Bindu is a dot - annotating agents with the shared language of A2A, AP2, and X402.
 
-Agents can be hosted anywhere — on laptops, clouds, or clusters — yet speak the same protocol, trust each other by design,
+Agents can be hosted anywhere on laptops, clouds, or clusters — yet speak the same protocol, trust each other by design,
 and work together as a single, distributed mind.
 
 **A Goal Without a Plan Is Just a Wish**.
-So Saptha.me takes care <b>Research, Plan and Implement</b>.
-
-Saptha.me gives them the seven layers of connection — mind, memory, trust, task, identity, value, and flow —
-that’s why it’s called Saptha.me.
-(Saptha, meaning “seven”; me, the self-aware network.)
 
 <br/>
 
@@ -244,7 +210,7 @@ We welcome contributions! Here's how to get started:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Saptha-me/Bindu.git
+git clone https://github.com/getbindu/Bindu.git
 cd Bindu
 
 # Install development dependencies
@@ -326,7 +292,7 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zu
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Saptha-me/Bindu&type=Date)](https://www.star-history.com/#Saptha-me/Bindu&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=getbindu/Bindu&type=Date)](https://www.star-history.com/#getbindu/Bindu&Date)
 
 
 ---
@@ -342,7 +308,7 @@ Suggest features or contribute by joining our [Discord](https://discord.gg/3w5zu
 </p>
 
 <p align="center">
-  <a href="https://github.com/Saptha-me/Bindu">⭐ Star us on GitHub</a> •
+  <a href="https://github.com/getbindu/Bindu">⭐ Star us on GitHub</a> •
   <a href="https://discord.gg/3w5zuYUuwt">💬 Join Discord</a> •
-  <a href="https://docs.saptha.me">📚 Read the Docs</a>
+  <a href="https://docs.getbindu.com">📚 Read the Docs</a>
 </p>

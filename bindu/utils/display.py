@@ -82,7 +82,7 @@ def prepare_server_display(
     )
 
     # Create tagline
-    tagline = Text("a bindu, part of Saptha.me", style="italic magenta")
+    tagline = Text("a bindu, part of Night Sky", style="italic magenta")
 
     # Group ASCII art and tagline together
     title = Text("Bindu 🌻", style="bold magenta")
@@ -143,7 +143,7 @@ def prepare_server_display(
         Text("⭐️⭐️⭐️ Star on GitHub! ⭐️⭐️⭐️", style="bold yellow"), highlight=False
     )
     console.print(
-        Text("https://github.com/Saptha-me/Bindu", style="cyan underline"),
+        Text("https://github.com/getbindu/Bindu", style="cyan underline"),
         highlight=False,
     )
     console.print()
@@ -156,6 +156,6 @@ def prepare_server_display(
 
     console.print(Text("Documentation 🌻", style="bold blue"), highlight=False)
     console.print(
-        Text("https://docs.saptha.me", style="cyan underline"), highlight=False
+        Text("https://docs.getbindu.com", style="cyan underline"), highlight=False
     )
     console.print()

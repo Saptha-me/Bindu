@@ -15,9 +15,9 @@
 <br/>
 
 [![GitHub License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Hits](https://hits.shields.io/github.com/getbindu/Bindu.svg)](https://hits.shields.io/github.com/getbindu/Bindu/)
+[![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg)](https://hits.sh/github.com/Saptha-me/Bindu/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Coverage Status](https://coveralls.io/repos/github/getbindu/Bindu/badge.svg?branch=v0.3.18)](https://coveralls.io/github/getbindu/Bindu?branch=v0.3.18)
+[![Coverage Status](https://coveralls.io/repos/github/Saptha-me/Bindu/badge.svg?branch=v0.3.18)](https://coveralls.io/github/Saptha-me/Bindu?branch=v0.3.18)
 [![Tests](https://github.com/getbindu/Bindu/actions/workflows/release.yml/badge.svg)](https://github.com/getbindu/Bindu/actions/workflows/release.yml)
 [![PyPI version](https://img.shields.io/pypi/v/bindu.svg)](https://pypi.org/project/bindu/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/bindu)](https://pypi.org/project/bindu/)

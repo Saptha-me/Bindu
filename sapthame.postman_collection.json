@@ -530,7 +530,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"did\": \"did:bindu:raahul_at_saptha_me:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6\"\n}",
+					"raw": "{\n    \"did\": \"did:bindu:raahul_at_getbindu_com:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"

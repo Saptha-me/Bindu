@@ -1,8 +1,10 @@
-<p align="center">
-  <img src="assets/light.svg" alt="bindu Logo" width="200">
-</p>
-
-<h1 align="center"> Bindu 🌻</h1>
+<div align="center" id="top">
+  <a href="https://getbindu.com">
+    <picture>
+      <img src="assets/bindu.png" alt="Bindu" width="300">
+    </picture>
+  </a>
+</div>
 
 <p align="center">
   <em>"We imagine a world of agents where they can communicate with each other seamlessly.<br/>

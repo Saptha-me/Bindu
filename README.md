@@ -131,13 +131,18 @@ def handler(messages: list[dict[str, str]]):
 bindufy(config, handler)
 ```
 
-That's it! Your agent is now live at `http://localhost:8030` and ready to communicate with other agents.
+That's it! Your agent is now live at `http://localhost:3773` and ready to communicate with other agents.
 
 <br/>
 
 ## 🎨 Chat UI (Optional)
 
-Want a beautiful chat interface for your agent? - It's available as part of the Bindu ecosystem. - /docs
+Want a beautiful chat interface for your agent? - It's available as part of the Bindu ecosystem. - https://localhost:3773/docs
+
+<p align="center">
+  <img src="assets/agent-ui.png" alt="Bindu Agent UI" width="640"
+       style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+</p>
 
 <br/>
 

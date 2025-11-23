@@ -28,6 +28,18 @@
 
 <br/>
 
+## Demo
+
+Watch a short walkthrough of Bindu in action:
+
+<a href="https://www.youtube.com/watch?v=qppafMuw_KI" target="_blank">
+  <img src="https://img.youtube.com/vi/qppafMuw_KI/maxresdefault.jpg" 
+       alt="Bindu Demo" 
+       width="640"
+       style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+</a>
+
+
 # What is Bindu 🌻
 
 Modern agents can reason, plan, and call tools, but connecting them to each other and to existing systems is still hard. We now have open protocols for this new world: A2A, AP2, and X402. They define how agents talk, trust, and trade yet wiring them together still takes time, code, and complexity.

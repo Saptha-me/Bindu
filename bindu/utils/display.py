@@ -132,6 +132,10 @@ def prepare_server_display(
             Text(f"  - Agent Info: http://{host}:{port}/agent/info", style="white"),
             highlight=False,
         )
+        console.print(
+            Text(f"  - Docs: http://{host}:{port}/docs", style="white"),
+            highlight=False,
+        )
         console.print()
 
     # Print community and documentation

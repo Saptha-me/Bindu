@@ -33,8 +33,8 @@
 Watch a short walkthrough of Bindu in action:
 
 <a href="https://www.youtube.com/watch?v=qppafMuw_KI" target="_blank">
-  <img src="https://img.youtube.com/vi/qppafMuw_KI/maxresdefault.jpg" 
-       alt="Bindu Demo" 
+  <img src="https://img.youtube.com/vi/qppafMuw_KI/maxresdefault.jpg"
+       alt="Bindu Demo"
        width="640"
        style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 </a>

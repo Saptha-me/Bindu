@@ -25,6 +25,7 @@ config = {
     "skills": ["skills/question-answering", "skills/pdf-processing"],
 }
 
+
 # Handler function
 def handler(messages: list[dict[str, str]]):
     """Process messages and return agent response.
@@ -37,6 +38,7 @@ def handler(messages: list[dict[str, str]]):
     """
     result = agent.run(input=messages)
     return result
+
 
 # Bindu-fy it
 bindufy(config, handler)

@@ -8,6 +8,7 @@ from uuid import UUID
 from starlette.requests import Request
 from starlette.responses import Response
 
+from bindu import __version__
 from bindu.common.protocol.types import AgentCard, agent_card_ta
 from bindu.extensions.x402.extension import (
     is_activation_requested as x402_is_requested,
@@ -86,7 +87,7 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
         description=app.manifest.description or "An AI agent exposed as an A2A agent.",
         url=app.url,
         version=app.version,
-        protocol_version="0.2.5",
+        protocol_version=__version__,
         skills=minimal_skills,
         capabilities=capabilities,
         kind=app.manifest.kind,

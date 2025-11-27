@@ -20,7 +20,6 @@ dependencies = [
     "pydantic>=1.8.2",
     "loguru>=0.7.3",
     "rich>=13.0.0",
-    "didkit>=0.3.3",
     "cryptography>=44.0.2",
     "orjson>=3.10.18",
     "opentelemetry-instrumentation-httpx>=0.56b0",

@@ -192,6 +192,9 @@ class BinduApplication(Starlette):
         # Docs/Chat UI endpoint
         self._add_route("/docs", self._docs_endpoint, ["GET"], with_app=False)
 
+        # Favicon endpoint
+        self._add_route("/favicon.ico", self._favicon_endpoint, ["GET"], with_app=False)
+
         # Static files for CSS/JS
         static_dir = Path(__file__).parent.parent / "ui" / "static"
         if static_dir.exists():
@@ -271,6 +274,18 @@ class BinduApplication(Starlette):
 
         logger.debug(f"Serving chat UI from: {docs_path}")
         return FileResponse(docs_path, media_type="text/html")
+
+    async def _favicon_endpoint(self, request: Request) -> Response:
+        """Serve the Bindu sunflower SVG as favicon."""
+        from pathlib import Path
+
+        favicon_path = Path(__file__).parent.parent.parent / "assets" / "light.svg"
+
+        if not favicon_path.exists():
+            logger.warning(f"Favicon not found: {favicon_path}")
+            return Response(content="", status_code=404)
+
+        return FileResponse(favicon_path, media_type="image/svg+xml")
 
     def _create_default_lifespan(
         self,

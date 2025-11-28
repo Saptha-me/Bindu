@@ -499,7 +499,17 @@ function displaySkillDetails(skill) {
             <div class="skill-detail-section">
                 <h3>Example Queries</h3>
                 <ul class="skill-examples">
-                    ${skill.examples.map(ex => `<li>"${ex}"</li>`).join('')}
+                    ${skill.examples.map((ex, idx) => {
+                        const escapedEx = ex.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                        return `
+                        <li>
+                            <span class="example-text">"${ex}"</span>
+                            <button class="copy-inline-btn" onclick="copyExampleQuery('${escapedEx}', event)" title="Copy to clipboard">
+                                📋 Copy
+                            </button>
+                        </li>
+                        `;
+                    }).join('')}
                 </ul>
             </div>
         ` : ''}
@@ -540,6 +550,43 @@ function displaySkillDetails(skill) {
 function closeSkillModal() {
     const modal = document.getElementById('skill-modal');
     modal.style.display = 'none';
+}
+
+function copyExampleQuery(text, event) {
+    event.stopPropagation();
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(text).then(() => {
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+
+        // Show feedback
+        button.innerHTML = '✓ Copied!';
+        button.style.background = '#10b981';
+        button.style.color = '#ffffff';
+        button.style.borderColor = '#10b981';
+
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.style.background = '';
+            button.style.color = '';
+            button.style.borderColor = '';
+        }, 2000);
+
+        // Also insert into chat input for convenience
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+            messageInput.value = text;
+            messageInput.focus();
+        }
+
+        // Close modal so user can see the input field
+        closeSkillModal();
+    }).catch(err => {
+        console.error('Failed to copy text:', err);
+        alert('Failed to copy to clipboard');
+    });
 }
 
 // ============================================================================

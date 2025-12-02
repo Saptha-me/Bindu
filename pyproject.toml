@@ -27,11 +27,8 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.35.0",
     "opentelemetry-instrumentation-fastapi>=0.56b0",
     "opentelemetry-sdk>=1.35.0",
-    "psycopg2-binary>=2.9.10",
     "pyyaml>=6.0.2",
     "aiofiles>=24.1.0",
-    "redis>=6.4.0",
-    "sqlalchemy>=2.0.43",
     "opentelemetry-exporter-otlp>=1.35.0",
     "starlette>=0.48.0",
     "base58>=2.1.1",
@@ -40,20 +37,17 @@ dependencies = [
     "requests>=2.31.0",
     "pyperclip>=1.11.0",
     "x402>=0.2.1",
-    "agno>=2.1.9",
-    "openai>=2.6.0",
     "web3>=7.13.0",
     "eth-account>=0.13.7",
     "cdp-sdk>=0.21.0",
-    "coinbase-advanced-py>=1.8.2",
-    "detect-secrets>=1.5.0",
-    "ddgs>=9.6.1",
-    "gradio>=5.49.1",
+    "coinbase-advanced-py>=1.8.2"
 ]
 
 [project.optional-dependencies]
+sec = [
+    "detect-secrets>=1.5.0",
+]
 ui = [
-    "gradio>=5.0.0",
     "httpx>=0.27.0",
 ]
 

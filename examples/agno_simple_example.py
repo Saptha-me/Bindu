@@ -16,6 +16,7 @@ agent = Agent(
     tools=[DuckDuckGoTools()],
 )
 
+
 # Configuration
 config = {
     "author": "your.email@example.com",

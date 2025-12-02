@@ -5,6 +5,7 @@ This module defines the configuration settings for the application using pydanti
 
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices
 
 
 class ProjectSettings(BaseSettings):
@@ -21,7 +22,10 @@ class ProjectSettings(BaseSettings):
         extra="allow",
     )
 
-    environment: str = Field(default="development", env="ENVIRONMENT")
+    environment: str = Field(
+        default="development",
+        validation_alias=AliasChoices("ENVIRONMENT", "PROJECT__ENVIRONMENT"),
+    )
     name: str = "bindu Agent"
     version: str = "0.1.0"
 
@@ -98,8 +102,14 @@ class NetworkSettings(BaseSettings):
     )
 
     # Default Host and URL
-    default_host: str = Field(default="localhost", env="HOST")
-    default_port: int = Field(default=3773, env="PORT")
+    default_host: str = Field(
+        default="localhost",
+        validation_alias=AliasChoices("HOST", "NETWORK__DEFAULT_HOST"),
+    )
+    default_port: int = Field(
+        default=3773,
+        validation_alias=AliasChoices("PORT", "NETWORK__DEFAULT_PORT"),
+    )
 
     # Timeouts (seconds)
     request_timeout: int = 30

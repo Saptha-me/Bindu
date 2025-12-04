@@ -147,6 +147,41 @@ That's it! Your agent is now live at `http://localhost:3773` and ready to commun
 
 <br/>
 
+## Minimal Agent Example (Echo Agent) — sanity check
+
+If you want to test Bindu locally without tools or external dependencies, here is the smallest possible working agent:
+
+```python
+from bindu.penguin.bindufy import bindufy
+
+def handler(messages):
+    return [{"role": "assistant", "content": messages[-1]["content"]}]
+
+config = {
+    "author": "your.email@example.com",
+    "name": "echo_agent",
+    "description": "A basic echo agent for quick testing.",
+    "deployment": {"url": "http://localhost:3773", "expose": True},
+    "skills": []
+}
+
+bindufy(config, handler)
+```
+Run:
+```
+python examples/echo_agent.py
+```
+Test the agent with any message:
+```
+curl -X POST http://localhost:3773/messages \
+-H "Content-Type: application/json" \
+-d '[{"role": "user", "content": "Hello Bindu!"}]'
+```
+Expected response:
+```
+"Hello Bindu!"
+```
+
 ## 🎨 Chat UI (Optional)
 
 Want a beautiful chat interface for your agent? - It's available as part of the Bindu ecosystem. - https://localhost:3773/docs

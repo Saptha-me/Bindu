@@ -1119,14 +1119,25 @@ async function pollTaskStatus(taskId) {
                 if (!taskHistory.includes(taskId)) {
                     taskHistory.push(taskId);
                 }
-
+                 console.log('Task status update:', task);
                 if (state === 'completed') {
                     const responseText = extractResponse(task);
                     addMessage(responseText, 'agent', taskId, state);
-                } else if (state === 'failed') {
-                    const error = task.metadata?.error || 'Task failed';
+                } 
+                else if (state === 'failed') {
+                    const error =
+                        task.metadata?.error ||
+                        task.metadata?.error_message ||
+                        task.status?.error ||
+                        task.error ||
+                        'Task failed';
+
                     addMessage(`❌ Task failed: ${error}`, 'status');
-                } else {
+                    const responseText = extractResponse(task);
+                    addMessage(responseText, 'agent', taskId, state)
+                }
+
+                else {
                     addMessage('⚠️ Task was canceled', 'status');
                 }
 

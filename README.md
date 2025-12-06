@@ -193,6 +193,32 @@ Want a beautiful chat interface for your agent? - It's available as part of the 
 
 <br/>
 
+## 🔧 Troubleshooting
+
+Here are some common setup issues and their fixes to help you get up and running quickly:
+
+| Issue | Cause | Solution |
+|-------|--------|----------|
+| `Python 3.12 not found` | System default Python is lower than 3.12 | Install Python 3.12 and set it in PATH, or use `pyenv` to manage versions |
+| `bindu: command not found` or import errors | Virtual environment not activated | Activate venv before running: `.venv/Scripts/activate` (Windows) or `source .venv/bin/activate` (macOS/Linux) |
+| `Port 3773 already in use` | Another service is running on that port | Change the `url` field in `config` to a different port, e.g. `"url": "http://localhost:4000"` |
+| Pre-commit fails during commit | Code format / lint checks not applied | Run `pre-commit run --all-files` after initial install |
+| Tests fail with missing dependencies | Dev packages not installed | Install with: `uv sync --dev` (not only `pip install bindu`) |
+| Cookiecutter install error | Cookiecutter not found | Install with `uv add cookiecutter` or `pip install cookiecutter` |
+
+### Additional Tips
+- If the agent starts but does not respond, re-create the venv and reinstall dependencies:
+```bash
+  rm -rf .venv
+  uv venv --python 3.12.9
+  uv sync --dev
+```
+- If running on Windows PowerShell, ensure execution policy allows venv activation:
+```bash
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+This section is intended to reduce setup friction and help users quickly verify their environment is working before integrating skills, tools, or frameworks.
+
 ## The Vision
 
 ```bash

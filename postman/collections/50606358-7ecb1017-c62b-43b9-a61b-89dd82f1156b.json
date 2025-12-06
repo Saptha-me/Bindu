@@ -1,0 +1,21 @@
+{
+	"info": {
+		"_postman_id": "50606358-7ecb1017-c62b-43b9-a61b-89dd82f1156b",
+		"name": "bindu",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "New Request",
+			"id": "50606358-a0214017-4efa-46d2-bc37-1b4db1b30f01",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}

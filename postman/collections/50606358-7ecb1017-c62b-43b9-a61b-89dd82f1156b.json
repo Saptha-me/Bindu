@@ -39,14 +39,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:3773/",
-					"protocol": "http",
+					"raw": "{{prodUrl}}/bindu-register",
 					"host": [
-						"localhost"
+						"{{prodUrl}}"
 					],
-					"port": "3773",
 					"path": [
-						""
+						"bindu-register"
 					]
 				}
 			},

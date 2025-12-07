@@ -112,12 +112,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -159,12 +159,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -206,12 +206,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -243,12 +243,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -280,12 +280,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -317,12 +317,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -354,12 +354,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -391,12 +391,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -428,12 +428,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -465,12 +465,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -484,12 +484,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8030/.well-known/agent.json",
+					"raw": "http://localhost:3773/.well-known/agent.json",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						".well-known",
 						"agent.json"
@@ -504,12 +504,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8030/.well-known/agent.json",
+					"raw": "http://localhost:3773/.well-known/agent.json",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						".well-known",
 						"agent.json"
@@ -538,12 +538,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/did/resolve",
+					"raw": "http://localhost:3773/did/resolve",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						"did",
 						"resolve"
@@ -558,12 +558,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8030/agent/skills",
+					"raw": "http://localhost:3773/agent/skills",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						"agent",
 						"skills"
@@ -578,12 +578,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8030/agent/skills/question-answering-v1",
+					"raw": "http://localhost:3773/agent/skills/question-answering-v1",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						"agent",
 						"skills",
@@ -599,12 +599,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8030/agent/skills/question-answering-v1/documentation",
+					"raw": "http://localhost:3773/agent/skills/question-answering-v1/documentation",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						"agent",
 						"skills",
@@ -636,12 +636,12 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:8030/api/start-payment-session",
+					"raw": "http://localhost:3773/api/start-payment-session",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						"api",
 						"start-payment-session"
@@ -666,12 +666,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8030/api/payment-status/Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8",
+					"raw": "http://localhost:3773/api/payment-status/Z_1Y3U3waXK2YUKB6llcIwn9XJcviEBhuFL8WUutAQ8",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						"api",
 						"payment-status",

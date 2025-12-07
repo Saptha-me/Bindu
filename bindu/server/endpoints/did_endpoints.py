@@ -40,6 +40,12 @@ async def did_resolve_endpoint(app: BinduApplication, request: Request) -> Respo
         code, message = extract_error_fields(InvalidParamsError)
         return jsonrpc_error(code, message, "Missing 'did' parameter")
 
+    # Ensure manifest exists
+    if app.manifest is None:
+        logger.warning(f"Manifest not configured (requested by {client_ip})")
+        code, message = extract_error_fields(InternalError)
+        return jsonrpc_error(code, message, "Agent manifest not configured", status=500)
+
     # Get DID extension
     did_extension = app.manifest.did_extension
 

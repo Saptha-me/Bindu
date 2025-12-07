@@ -32,6 +32,12 @@ async def skills_list_endpoint(app: BinduApplication, request: Request) -> Respo
     client_ip = get_client_ip(request)
     logger.debug(f"Serving skills list to {client_ip}")
 
+    # Ensure manifest exists
+    if app.manifest is None:
+        return JSONResponse(
+            content={"error": "Agent manifest not configured"}, status_code=500
+        )
+
     # Get skills from manifest
     skills = app.manifest.skills or []
 
@@ -81,6 +87,11 @@ async def skill_detail_endpoint(app: BinduApplication, request: Request) -> Resp
 
     logger.debug(f"Serving skill detail for '{skill_id}' to {client_ip}")
 
+    # Ensure manifest exists
+    if app.manifest is None:
+        code, message = extract_error_fields(SkillNotFoundError)
+        return jsonrpc_error(code, "Agent manifest not configured", status=500)
+
     # Find skill in manifest
     skills = app.manifest.skills or []
     skill = find_skill_by_id(skills, skill_id)
@@ -124,6 +135,11 @@ async def skill_documentation_endpoint(
         return jsonrpc_error(code, "Skill ID not provided", status=404)
 
     logger.debug(f"Serving skill documentation for '{skill_id}' to {client_ip}")
+
+    # Ensure manifest exists
+    if app.manifest is None:
+        code, message = extract_error_fields(SkillNotFoundError)
+        return jsonrpc_error(code, "Agent manifest not configured", status=500)
 
     # Find skill in manifest
     skills = app.manifest.skills or []

@@ -12,7 +12,7 @@ info:
 servers:
   - url: http://localhost:3773
     description: Development server (default port)
-  - url: http://localhost:8030
+  - url: http://localhost:3773
     description: Development server (alternate port)
 
 security:
@@ -305,8 +305,8 @@ paths:
                     description: "Answer questions based on context"
                 did: "did:bindu:raahul_at_getbindu_com:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6"
                 endpoints:
-                  jsonrpc: "http://localhost:8030/"
-                  did: "http://localhost:8030/did/resolve"
+                  jsonrpc: "http://localhost:3773/"
+                  did: "http://localhost:3773/did/resolve"
 
   /did/resolve:
     post:
@@ -361,7 +361,7 @@ paths:
                 service:
                   - id: "did:bindu:raahul_at_getbindu_com:first_agent:e091ddb0b2c84bd8991fdfd1ecbb9da6#agent-service"
                     type: "BinduAgentService"
-                    serviceEndpoint: "http://localhost:8030"
+                    serviceEndpoint: "http://localhost:3773"
         '400':
           description: Invalid DID format
           content:

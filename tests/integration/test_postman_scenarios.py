@@ -16,6 +16,9 @@ from tests.mocks import MockAgent, MockDIDExtension, MockManifest
 
 def create_test_app(agent_response="Test response", did_extension=None):
     """Helper to create a test app with minimal setup."""
+    from contextlib import asynccontextmanager
+    from bindu.server.task_manager import TaskManager
+
     agent = MockAgent(response=agent_response)
     manifest = MockManifest(agent_fn=agent)
     if did_extension:
@@ -23,12 +26,28 @@ def create_test_app(agent_response="Test response", did_extension=None):
     storage = InMemoryStorage()
     scheduler = InMemoryScheduler()
 
+    # Create custom lifespan that injects test storage and scheduler
+    @asynccontextmanager
+    async def test_lifespan(app: BinduApplication):
+        # Inject test storage and scheduler
+        app._storage = storage
+        app._scheduler = scheduler
+
+        # Start TaskManager
+        task_manager = TaskManager(
+            scheduler=scheduler,
+            storage=storage,
+            manifest=cast(AgentManifest, manifest),
+        )
+        async with task_manager:
+            app.task_manager = task_manager
+            yield
+
     return BinduApplication(
         manifest=cast(AgentManifest, manifest),
-        storage=storage,
-        scheduler=scheduler,
-        url="http://localhost:8030",
+        url="http://localhost:3773",
         version="1.0.0",
+        lifespan=test_lifespan,
     ), storage
 
 

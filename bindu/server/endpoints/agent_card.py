@@ -39,9 +39,12 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
     if app.manifest is None:
         raise ValueError("Application manifest is required to create agent card")
 
+    # Store manifest in local variable for type narrowing
+    manifest = app.manifest
+
     # Minimize skills to just id, name, and documentation_path (URL) - full details via dedicated endpoint
     minimal_skills = []
-    for skill in app.manifest.skills:
+    for skill in manifest.skills:
         minimal_skills.append(
             {
                 "id": skill["id"],
@@ -51,13 +54,11 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
         )
 
     # Ensure id is UUID type (convert from string if needed)
-    agent_id = (
-        app.manifest.id if isinstance(app.manifest.id, UUID) else UUID(app.manifest.id)
-    )
+    agent_id = manifest.id if isinstance(manifest.id, UUID) else UUID(manifest.id)
 
     # Convert capabilities to serializable format
     # Extensions need to be converted from class instances to AgentExtension dicts
-    capabilities = dict(app.manifest.capabilities)
+    capabilities = dict(manifest.capabilities)
     if "extensions" in capabilities:
         serializable_extensions = []
         for ext in capabilities["extensions"]:
@@ -87,22 +88,22 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
 
     return AgentCard(
         id=agent_id,
-        name=app.manifest.name,
-        description=app.manifest.description or "An AI agent exposed as an A2A agent.",
+        name=manifest.name,
+        description=manifest.description or "An AI agent exposed as an A2A agent.",
         url=app.url,
         version=app.version,
         protocol_version=__version__,
         skills=minimal_skills,
         capabilities=capabilities,
-        kind=app.manifest.kind,
-        num_history_sessions=app.manifest.num_history_sessions,
-        extra_data=app.manifest.extra_data
+        kind=manifest.kind,
+        num_history_sessions=manifest.num_history_sessions,
+        extra_data=manifest.extra_data
         or {"created": int(time()), "server_info": "bindu Agent Server"},
-        debug_mode=app.manifest.debug_mode,
-        debug_level=app.manifest.debug_level,
-        monitoring=app.manifest.monitoring,
-        telemetry=app.manifest.telemetry,
-        agent_trust=app.manifest.agent_trust,
+        debug_mode=manifest.debug_mode,
+        debug_level=manifest.debug_level,
+        monitoring=manifest.monitoring,
+        telemetry=manifest.telemetry,
+        agent_trust=manifest.agent_trust,
         default_input_modes=["text/plain", "application/json"],
         default_output_modes=["text/plain", "application/json"],
     )

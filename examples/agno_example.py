@@ -23,6 +23,11 @@ config = {
     "description": "A research assistant agent",
     "deployment": {"url": "http://localhost:3773", "expose": True},
     "skills": ["skills/question-answering", "skills/pdf-processing"],
+    "storage": {
+        "type": "postgres",
+        "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",
+        "run_migrations_on_startup": False,
+    },
     "auth": {
         "enabled": True,
         "provider": "auth0",

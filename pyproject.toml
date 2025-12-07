@@ -43,7 +43,10 @@ dependencies = [
     "coinbase-advanced-py>=1.8.2",
     "asyncpg>=0.29.0",
     "alembic>=1.13.0",
-    "sqlalchemy[asyncio]>=2.0.0"
+    "sqlalchemy[asyncio]>=2.0.0",
+    "agno>=2.3.8",
+    "ddgs>=9.9.3",
+    "openai>=2.9.0",
 ]
 
 [project.optional-dependencies]

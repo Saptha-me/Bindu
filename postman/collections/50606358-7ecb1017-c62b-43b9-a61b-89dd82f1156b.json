@@ -127,12 +127,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
+					"raw": "http://localhost:3773/",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						""
 					]
@@ -244,12 +244,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8030/agent/skills",
+					"raw": "http://localhost:3773/agent/skills",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8030",
+					"port": "3773",
 					"path": [
 						"agent",
 						"skills"

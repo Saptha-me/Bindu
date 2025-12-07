@@ -46,6 +46,12 @@ async def start_payment_session_endpoint(
             content={"error": "Payment sessions not enabled"}, status_code=503
         )
 
+    # Ensure manifest exists
+    if app.manifest is None:
+        return JSONResponse(
+            content={"error": "Agent manifest not configured"}, status_code=500
+        )
+
     session = app._payment_session_manager.create_session()
 
     # Construct browser URL using app's base URL

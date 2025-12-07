@@ -358,13 +358,31 @@ async def bindu_app(
     """Create a BinduApplication for endpoint testing."""
     # Import here to avoid circular import
     from bindu.server.applications import BinduApplication
+    from bindu.server.task_manager import TaskManager
+    from contextlib import asynccontextmanager
+
+    # Create custom lifespan that injects test storage and scheduler
+    @asynccontextmanager
+    async def test_lifespan(app: BinduApplication):
+        # Inject test storage and scheduler
+        app._storage = storage
+        app._scheduler = scheduler
+
+        # Start TaskManager
+        task_manager = TaskManager(
+            scheduler=scheduler,
+            storage=storage,
+            manifest=cast(AgentManifest, mock_manifest),
+        )
+        async with task_manager:
+            app.task_manager = task_manager
+            yield
 
     app = BinduApplication(
         manifest=cast(AgentManifest, mock_manifest),
-        storage=storage,
-        scheduler=scheduler,
-        url="http://localhost:8030",
+        url="http://localhost:3773",
         version="1.0.0",
+        lifespan=test_lifespan,
     )
 
     async with app:

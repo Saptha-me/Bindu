@@ -154,7 +154,7 @@ class MockDIDExtension:
                 {
                     "id": f"{self.did}#agent-service",
                     "type": "binduAgentService",
-                    "serviceEndpoint": "http://localhost:8030",
+                    "serviceEndpoint": "http://localhost:3773",
                 }
             ],
         }
@@ -171,7 +171,7 @@ class MockDIDExtension:
             "capabilities": {},
             "description": "Test agent",
             "version": "1.0.0",
-            "url": "http://localhost:8030",
+            "url": "http://localhost:3773",
         }
 
     def sign_text(self, text: str) -> str:

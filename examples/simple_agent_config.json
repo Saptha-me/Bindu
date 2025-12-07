@@ -37,7 +37,7 @@
     "enabled": false
   },
   "deployment": {
-    "url": "http://localhost:8030",
+    "url": "http://localhost:3773",
     "expose": true,
     "protocol_version": "1.0.0",
     "proxy_urls": ["https://simple.getbindu.com"],

@@ -216,7 +216,7 @@ alembic upgrade head
    ```bash
    # Staging
    DATABASE_URL=postgresql://staging alembic upgrade head
-   
+
    # Production (after testing)
    DATABASE_URL=postgresql://production alembic upgrade head
    ```

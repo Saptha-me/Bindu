@@ -59,6 +59,7 @@ def _parse_deployment_url(
 
     return host, port
 
+
 def _create_deployment_config(
     validated_config: Dict[str, Any],
 ) -> DeploymentConfig | None:

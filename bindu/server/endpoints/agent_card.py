@@ -35,6 +35,10 @@ def create_agent_card(app: BinduApplication) -> AgentCard:
         Excludes skill documentation_content from agent card to reduce payload size.
         Full documentation is available via /agent/skills/{skill_id}/documentation
     """
+    # Ensure manifest exists
+    if app.manifest is None:
+        raise ValueError("Application manifest is required to create agent card")
+
     # Minimize skills to just id, name, and documentation_path (URL) - full details via dedicated endpoint
     minimal_skills = []
     for skill in app.manifest.skills:

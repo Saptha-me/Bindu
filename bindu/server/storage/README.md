@@ -479,11 +479,11 @@ from bindu.server.storage import InMemoryStorage, PostgresStorage
 @pytest.mark.asyncio
 async def test_task_lifecycle():
     storage = InMemoryStorage()
-    
+
     # Submit task
     task = await storage.submit_task(context_id, message)
     assert task["status"]["state"] == "submitted"
-    
+
     # Update task
     task = await storage.update_task(task["id"], "completed")
     assert task["status"]["state"] == "completed"
@@ -496,7 +496,7 @@ async def test_task_lifecycle():
 async def test_postgres_storage():
     storage = PostgresStorage(database_url="postgresql://test:test@localhost/test_db")
     await storage.connect()
-    
+
     try:
         # Test operations
         task = await storage.submit_task(context_id, message)

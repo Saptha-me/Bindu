@@ -32,7 +32,7 @@ from uuid import UUID
 
 from sqlalchemy import delete, func, select, update, cast
 from sqlalchemy.dialects.postgresql import insert, JSONB
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from typing_extensions import TypeVar
 
@@ -50,10 +50,10 @@ ContextT = TypeVar("ContextT", default=Any)
 
 def _serialize_for_jsonb(obj: Any) -> Any:
     """Recursively convert UUID objects to strings for JSONB serialization.
-    
+
     Args:
         obj: Object to serialize (dict, list, or primitive)
-        
+
     Returns:
         Object with all UUIDs converted to strings
     """
@@ -366,7 +366,8 @@ class PostgresStorage(Storage[ContextT]):
                             .where(tasks_table.c.id == task_id)
                             .values(
                                 history=func.jsonb_concat(
-                                    tasks_table.c.history, cast([serialized_message], JSONB)
+                                    tasks_table.c.history,
+                                    cast([serialized_message], JSONB),
                                 ),
                                 state="submitted",
                                 state_timestamp=datetime.now(timezone.utc),
@@ -383,16 +384,20 @@ class PostgresStorage(Storage[ContextT]):
                     # Serialize message to convert UUIDs to strings
                     serialized_message = _serialize_for_jsonb(message)
                     now = datetime.now(timezone.utc)
-                    stmt = insert(tasks_table).values(
-                        id=task_id,
-                        context_id=context_id,
-                        kind="task",
-                        state="submitted",
-                        state_timestamp=now,
-                        history=[serialized_message],
-                        artifacts=[],
-                        metadata={},
-                    ).returning(tasks_table)
+                    stmt = (
+                        insert(tasks_table)
+                        .values(
+                            id=task_id,
+                            context_id=context_id,
+                            kind="task",
+                            state="submitted",
+                            state_timestamp=now,
+                            history=[serialized_message],
+                            artifacts=[],
+                            metadata={},
+                        )
+                        .returning(tasks_table)
+                    )
                     result = await session.execute(stmt)
                     new_row = result.first()
 
@@ -615,7 +620,9 @@ class PostgresStorage(Storage[ContextT]):
                 async with session.begin():
                     # Upsert context
                     # Serialize context data to convert UUIDs to strings
-                    serialized_context = _serialize_for_jsonb(context if isinstance(context, dict) else {})
+                    serialized_context = _serialize_for_jsonb(
+                        context if isinstance(context, dict) else {}
+                    )
                     stmt = insert(contexts_table).values(
                         id=context_id,
                         context_data=serialized_context,
@@ -672,7 +679,8 @@ class PostgresStorage(Storage[ContextT]):
                         .where(contexts_table.c.id == context_id)
                         .values(
                             message_history=func.jsonb_concat(
-                                contexts_table.c.message_history, cast(serialized_messages, JSONB)
+                                contexts_table.c.message_history,
+                                cast(serialized_messages, JSONB),
                             ),
                             updated_at=datetime.now(timezone.utc),
                         )
@@ -700,11 +708,15 @@ class PostgresStorage(Storage[ContextT]):
                         contexts_table.c.id.label("context_id"),
                         func.count(tasks_table.c.id).label("task_count"),
                         func.coalesce(
-                            func.json_agg(tasks_table.c.id).filter(tasks_table.c.id.isnot(None)),
+                            func.json_agg(tasks_table.c.id).filter(
+                                tasks_table.c.id.isnot(None)
+                            ),
                             cast("[]", JSONB),
                         ).label("task_ids"),
                     )
-                    .outerjoin(tasks_table, contexts_table.c.id == tasks_table.c.context_id)
+                    .outerjoin(
+                        tasks_table, contexts_table.c.id == tasks_table.c.context_id
+                    )
                     .group_by(contexts_table.c.id)
                     .order_by(contexts_table.c.created_at.desc())
                 )
@@ -751,7 +763,9 @@ class PostgresStorage(Storage[ContextT]):
             async with self._session_factory() as session:
                 async with session.begin():
                     # Check if context exists
-                    stmt = select(contexts_table).where(contexts_table.c.id == context_id)
+                    stmt = select(contexts_table).where(
+                        contexts_table.c.id == context_id
+                    )
                     result = await session.execute(stmt)
                     context = result.first()
 
@@ -759,12 +773,16 @@ class PostgresStorage(Storage[ContextT]):
                         raise ValueError(f"Context {context_id} not found")
 
                     # Delete tasks (cascade will delete feedback)
-                    stmt = delete(tasks_table).where(tasks_table.c.context_id == context_id)
+                    stmt = delete(tasks_table).where(
+                        tasks_table.c.context_id == context_id
+                    )
                     result = await session.execute(stmt)
                     deleted_count = result.rowcount
 
                     # Delete context
-                    stmt = delete(contexts_table).where(contexts_table.c.id == context_id)
+                    stmt = delete(contexts_table).where(
+                        contexts_table.c.id == context_id
+                    )
                     await session.execute(stmt)
 
                     logger.info(

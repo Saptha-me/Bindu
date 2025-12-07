@@ -6,10 +6,10 @@ without changing application code.
 
 Usage:
     from bindu.server.storage.factory import create_storage
-    
+
     # Create storage based on settings
     storage = await create_storage()
-    
+
     # Use storage
     task = await storage.load_task(task_id)
 """
@@ -25,6 +25,7 @@ from .memory_storage import InMemoryStorage
 # Import PostgresStorage conditionally
 try:
     from .postgres_storage import PostgresStorage
+
     POSTGRES_AVAILABLE = True
 except ImportError:
     PostgresStorage = None  # type: ignore[assignment]  # SQLAlchemy not installed
@@ -68,7 +69,7 @@ async def create_storage() -> Storage:
                 "PostgreSQL storage requires SQLAlchemy. "
                 "Install with: pip install sqlalchemy[asyncio] asyncpg"
             )
-        
+
         logger.info("Using PostgreSQL storage with SQLAlchemy (persistent)")
         storage = PostgresStorage(
             database_url=app_settings.storage.postgres_url,
@@ -96,8 +97,7 @@ async def create_storage() -> Storage:
 
     else:
         raise ValueError(
-            f"Unknown storage backend: {backend}. "
-            f"Supported backends: memory, postgres"
+            f"Unknown storage backend: {backend}. Supported backends: memory, postgres"
         )
 
 

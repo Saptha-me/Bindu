@@ -16,7 +16,6 @@ with both ORM queries and the protocol TypedDicts.
 
 from __future__ import annotations as _annotations
 
-from datetime import datetime
 
 from sqlalchemy import (
     TIMESTAMP,
@@ -44,7 +43,12 @@ tasks_table = Table(
     # Primary key
     Column("id", PG_UUID(as_uuid=True), primary_key=True, nullable=False),
     # Foreign keys
-    Column("context_id", PG_UUID(as_uuid=True), nullable=False),
+    Column(
+        "context_id",
+        PG_UUID(as_uuid=True),
+        ForeignKey("contexts.id", ondelete="CASCADE"),
+        nullable=False,
+    ),
     # Task metadata
     Column("kind", String(50), nullable=False, default="task"),
     Column("state", String(50), nullable=False),

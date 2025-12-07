@@ -14,6 +14,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 # Import Bindu settings to get database URL
 from bindu.settings import app_settings
 
+# Import metadata for autogenerate support
+from bindu.server.storage.schema import metadata
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -28,8 +31,7 @@ if config.config_file_name is not None:
 config.set_main_option("sqlalchemy.url", app_settings.storage.postgres_url)
 
 # Add your model's MetaData object here for 'autogenerate' support
-# For now, we'll use manual migrations since we're using JSONB heavily
-target_metadata = None
+target_metadata = metadata
 
 
 def run_migrations_offline() -> None:

@@ -30,12 +30,16 @@ from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
 from starlette.types import Lifespan, Receive, Scope, Send
 
-from bindu.common.models import AgentManifest, TelemetryConfig, StorageConfig, SchedulerConfig
+from bindu.common.models import (
+    AgentManifest,
+    TelemetryConfig,
+    StorageConfig,
+    SchedulerConfig,
+)
 from bindu.settings import app_settings
 
 from .middleware import Auth0Middleware
 from .scheduler.memory_scheduler import InMemoryScheduler
-from .storage.memory_storage import InMemoryStorage
 from .storage.base import Storage
 from .task_manager import TaskManager
 from bindu.utils.logging import get_logger
@@ -301,28 +305,33 @@ class BinduApplication(Starlette):
             # Initialize storage in the correct event loop
             logger.info("🔧 Initializing storage...")
             from .storage.factory import create_storage
-            
+
             # Override settings if storage_config is provided
             if self._storage_config:
-                if self._storage_config.type == "postgres" and self._storage_config.database_url:
+                if (
+                    self._storage_config.type == "postgres"
+                    and self._storage_config.database_url
+                ):
                     app_settings.storage.backend = "postgres"
-                    app_settings.storage.postgres_url = self._storage_config.database_url
+                    app_settings.storage.postgres_url = (
+                        self._storage_config.database_url
+                    )
                     app_settings.storage.run_migrations_on_startup = getattr(
-                        self._storage_config, 'run_migrations_on_startup', False
+                        self._storage_config, "run_migrations_on_startup", False
                     )
                 elif self._storage_config.type == "memory":
                     app_settings.storage.backend = "memory"
-            
+
             storage = await create_storage()
             app._storage = storage
             logger.info(f"✅ Storage initialized: {type(storage).__name__}")
-            
+
             # Initialize scheduler
             logger.info("🔧 Initializing scheduler...")
             scheduler = InMemoryScheduler()  # TODO: Support other schedulers
             app._scheduler = scheduler
             logger.info(f"✅ Scheduler initialized: {type(scheduler).__name__}")
-            
+
             # Setup observability if enabled
             if self._telemetry_config.enabled:
                 self._setup_observability()
@@ -348,10 +357,11 @@ class BinduApplication(Starlette):
             # Stop payment session manager cleanup task
             if app._payment_session_manager:
                 await app._payment_session_manager.stop_cleanup_task()
-            
+
             # Cleanup storage
             logger.info("🧹 Cleaning up storage...")
             from .storage.factory import close_storage
+
             await close_storage(storage)
             logger.info("✅ Storage cleanup complete")
 

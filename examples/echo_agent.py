@@ -26,10 +26,10 @@ config = {
     "deployment": {"url": "http://localhost:3773", "expose": True},
     "skills": [],
     "storage": {
-        "type": "postgres", 
+        "type": "postgres",
         "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",
-        "run_migrations_on_startup": False
-    }
+        "run_migrations_on_startup": False,
+    },
 }
 
 bindufy(config, handler)

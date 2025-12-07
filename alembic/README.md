@@ -13,10 +13,10 @@ Set the database URL in your environment:
 
 ```bash
 # .env file or environment variable
-DATABASE_URL=postgresql://user:password@localhost:5432/bindu
+DATABASE_URL=postgresql://user:password@localhost:5432/bindu  # pragma: allowlist secret
 
 # Or using STORAGE__ prefix
-STORAGE__POSTGRES_URL=postgresql://user:password@localhost:5432/bindu
+STORAGE__POSTGRES_URL=postgresql://user:password@localhost:5432/bindu  # pragma: allowlist secret
 ```
 
 ## Quick Start

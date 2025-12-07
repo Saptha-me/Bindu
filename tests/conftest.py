@@ -120,6 +120,13 @@ class _PaymentRequirements:
     def model_dump(self, by_alias: bool = True):  # noqa: ARG002
         return dict(self._data)
 
+    def model_copy(self, update: dict | None = None):  # noqa: ARG002
+        """Mock Pydantic model_copy method."""
+        new_data = dict(self._data)
+        if update:
+            new_data.update(update)
+        return _PaymentRequirements(**new_data)
+
 
 class _PaymentPayload:
     """Mock PaymentPayload for testing."""

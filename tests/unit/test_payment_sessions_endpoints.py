@@ -31,6 +31,7 @@ class MockPaymentSession:
         self.expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
         self.payment_token = None
         self.payment_payload = None
+        self.error = None
 
     def is_completed(self) -> bool:
         return self.status == "completed"
@@ -40,7 +41,10 @@ class MockPaymentSession:
 
     def complete(self, payment_token: str, payment_payload: dict):
         self.payment_token = payment_token
-        self.payment_payload = payment_payload
+        self.payment_payload = MagicMock()
+        self.payment_payload.model_dump_json = MagicMock(
+            return_value='{"test": "payload"}'
+        )
         self.status = "completed"
 
 
@@ -58,6 +62,23 @@ class MockPaymentSessionManager:
 
     def get_session(self, session_id: str) -> MockPaymentSession | None:
         return self.sessions.get(session_id)
+
+    def complete_session(self, session_id: str, payment_payload: dict):
+        """Complete a payment session with the given payload."""
+        session = self.sessions.get(session_id)
+        if session:
+            session.complete("payment_token", payment_payload)
+
+    def fail_session(self, session_id: str, error: str):
+        """Mark a payment session as failed."""
+        session = self.sessions.get(session_id)
+        if session:
+            session.status = "failed"
+            session.error = error
+
+    async def wait_for_completion(self, session_id: str, timeout_seconds: int = 300):
+        """Wait for a payment session to complete (mock implementation)."""
+        return self.get_session(session_id)
 
 
 class TestStartPaymentSessionEndpoint:
@@ -335,7 +356,13 @@ class TestPaymentStatusEndpoint:
 
         content = json.loads(response.body.decode())
         assert content["status"] == "completed"
-        assert content["payment_token"] == "test_token"
+        # The payment_token should be base64-encoded JSON
+        import base64
+
+        assert "payment_token" in content
+        # Decode and verify it's the correct payload
+        decoded = base64.b64decode(content["payment_token"]).decode("utf-8")
+        assert json.loads(decoded) == {"test": "payload"}
 
     @pytest.mark.asyncio
     async def test_payment_status_expired(self):

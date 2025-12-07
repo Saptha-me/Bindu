@@ -1,4 +1,4 @@
-"""Initial schema for Bindu storage
+"""Initial schema for Bindu storage.
 
 Revision ID: 20251207_0001
 Revises:
@@ -25,7 +25,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade database schema - create initial tables."""
-
     # Create tasks table
     op.create_table(
         "tasks",
@@ -212,7 +211,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema - drop all tables and functions."""
-
     # Drop triggers
     op.execute("DROP TRIGGER IF EXISTS update_contexts_updated_at ON contexts")
     op.execute("DROP TRIGGER IF EXISTS update_tasks_updated_at ON tasks")

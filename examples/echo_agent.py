@@ -27,7 +27,7 @@ config = {
     "skills": [],
     "storage": {
         "type": "postgres",
-        "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",
+        "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",  # pragma: allowlist secret
         "run_migrations_on_startup": False,
     },
 }

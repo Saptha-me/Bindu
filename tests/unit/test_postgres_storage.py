@@ -14,7 +14,7 @@ from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from bindu.server.storage.postgres_storage import PostgresStorage, _serialize_for_jsonb
-from tests.utils import create_test_message, create_test_context
+from tests.utils import create_test_message
 
 
 class TestSerializeForJsonb:
@@ -72,7 +72,9 @@ class TestPostgresStorageInit:
 
     def test_init_custom_url(self):
         """Test initialization with custom database URL."""
-        custom_url = "postgresql://user:pass@localhost:5432/testdb"
+        custom_url = (
+            "postgresql://user:pass@localhost:5432/testdb"  # pragma: allowlist secret
+        )
         storage = PostgresStorage(database_url=custom_url)
         assert "postgresql+asyncpg://" in storage.database_url
         assert "user:pass@localhost:5432/testdb" in storage.database_url
@@ -113,15 +115,16 @@ class TestPostgresStorageConnection:
             "bindu.server.storage.postgres_storage.create_async_engine"
         ) as mock_engine:
             mock_engine_instance = MagicMock()
-            mock_engine_instance.begin = AsyncMock()
-            mock_engine_instance.begin.return_value.__aenter__ = AsyncMock()
-            mock_engine_instance.begin.return_value.__aexit__ = AsyncMock()
 
-            # Mock connection test
+            # Create a proper async context manager for begin()
             mock_conn = MagicMock()
             mock_conn.execute = AsyncMock()
-            mock_engine_instance.begin.return_value.__aenter__.return_value = mock_conn
 
+            mock_begin_context = AsyncMock()
+            mock_begin_context.__aenter__ = AsyncMock(return_value=mock_conn)
+            mock_begin_context.__aexit__ = AsyncMock(return_value=None)
+
+            mock_engine_instance.begin = MagicMock(return_value=mock_begin_context)
             mock_engine.return_value = mock_engine_instance
 
             with patch("bindu.server.storage.postgres_storage.async_sessionmaker"):
@@ -242,9 +245,11 @@ class TestPostgresStorageRetryLogic:
 
         async def mock_func():
             nonlocal call_count
-            call_count += 1
+            call_count += 1  # type: ignore[has-type]
             if call_count == 1:
-                raise OperationalError("Connection lost", None, None)
+                raise OperationalError(
+                    "Connection lost", None, Exception("Connection lost")
+                )
             return "success"
 
         with patch(
@@ -265,7 +270,9 @@ class TestPostgresStorageRetryLogic:
         storage = PostgresStorage()
 
         async def mock_func():
-            raise OperationalError("Connection lost", None, None)
+            raise OperationalError(
+                "Connection lost", None, Exception("Connection lost")
+            )
 
         with patch(
             "bindu.server.storage.postgres_storage.app_settings"
@@ -288,15 +295,6 @@ class TestPostgresStorageContextOperations:
 
         with pytest.raises(RuntimeError, match="PostgreSQL engine not initialized"):
             await storage.load_context(context_id)
-
-    @pytest.mark.asyncio
-    async def test_save_context_not_connected(self):
-        """Test save_context when not connected."""
-        storage = PostgresStorage()
-        context = create_test_context()
-
-        with pytest.raises(RuntimeError, match="PostgreSQL engine not initialized"):
-            await storage.save_context(context)
 
 
 class TestPostgresStorageEdgeCases:

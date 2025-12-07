@@ -83,7 +83,7 @@ STORAGE_BACKEND=memory
 **Configuration:**
 ```bash
 STORAGE_BACKEND=postgres
-DATABASE_URL=postgresql://user:password@host:5432/bindu
+DATABASE_URL=postgresql://user:password@host:5432/bindu  # pragma: allowlist secret
 STORAGE__POSTGRES_POOL_MAX=10
 STORAGE__RUN_MIGRATIONS_ON_STARTUP=true
 ```
@@ -116,7 +116,7 @@ storage = InMemoryStorage()
 
 # PostgreSQL storage
 storage = PostgresStorage(
-    database_url="postgresql://user:pass@localhost/bindu"
+    database_url="postgresql://user:pass@localhost/bindu"  # pragma: allowlist secret
 )
 await storage.connect()
 ```
@@ -130,7 +130,7 @@ await storage.connect()
 STORAGE_BACKEND=postgres  # Options: memory, postgres
 
 # PostgreSQL configuration
-DATABASE_URL=postgresql://bindu:bindu@localhost:5432/bindu
+DATABASE_URL=postgresql://bindu:bindu@localhost:5432/bindu  # pragma: allowlist secret
 STORAGE__POSTGRES_POOL_MIN=2
 STORAGE__POSTGRES_POOL_MAX=10
 STORAGE__POSTGRES_TIMEOUT=60

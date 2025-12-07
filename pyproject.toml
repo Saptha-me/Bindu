@@ -47,6 +47,7 @@ dependencies = [
     "agno>=2.3.8",
     "ddgs>=9.9.3",
     "openai>=2.9.0",
+    "detect-secrets>=1.5.0",
 ]
 
 [project.optional-dependencies]

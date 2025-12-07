@@ -528,7 +528,7 @@ class StorageSettings(BaseSettings):
     backend: Literal["memory", "postgres"] = "memory"
 
     # PostgreSQL Configuration
-    postgres_url: str = "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu"
+    postgres_url: str = "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu"  # pragma: allowlist secret
     postgres_pool_min: int = 2
     postgres_pool_max: int = 10
     postgres_timeout: int = 60

@@ -1,4 +1,4 @@
-"""Add foreign key constraint from tasks to contexts
+"""Add foreign key constraint from tasks to contexts.
 
 Revision ID: ef0d61440935
 Revises: 20251207_0001
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "ef0d61440935"
+revision: str = "ef0d61440935"  # pragma: allowlist secret
 down_revision: Union[str, None] = "20251207_0001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

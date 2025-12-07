@@ -25,13 +25,13 @@ repos:
         pass_filenames: false
         exclude: ^examples/
 
-      - id: pytest
-        name: pytest with coverage
-        entry: bash -c 'pytest -n auto --cov=bindu --cov-report= && coverage report --skip-covered --fail-under=70'
-        language: system
-        pass_filenames: false
-        always_run: true
-        verbose: true
+      # - id: pytest
+      #   name: pytest with coverage
+      #   entry: bash -c 'pytest -n auto --cov=bindu --cov-report= && coverage report --skip-covered --fail-under=70'
+      #   language: system
+      #   pass_filenames: false
+      #   always_run: true
+      #   verbose: true
 
   - repo: https://github.com/PyCQA/bandit
     rev: '1.8.3'

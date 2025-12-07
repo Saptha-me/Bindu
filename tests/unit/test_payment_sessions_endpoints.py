@@ -7,14 +7,12 @@ This module tests the x402 payment session endpoints:
 """
 
 import pytest
-import pytest_asyncio
 from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, HTMLResponse
-from starlette.testclient import TestClient
 
 from bindu.server.endpoints.payment_sessions import (
     start_payment_session_endpoint,
@@ -22,8 +20,6 @@ from bindu.server.endpoints.payment_sessions import (
     payment_status_endpoint,
 )
 from bindu.server.applications import BinduApplication
-from bindu.common.models import AgentManifest
-from tests.mocks import MockManifest
 
 
 class MockPaymentSession:
@@ -81,9 +77,10 @@ class TestStartPaymentSessionEndpoint:
 
         assert isinstance(response, JSONResponse)
         assert response.status_code == 200
-        
+
         # Parse response content
         import json
+
         content = json.loads(response.body.decode())
         assert "session_id" in content
         assert "browser_url" in content
@@ -103,8 +100,9 @@ class TestStartPaymentSessionEndpoint:
 
         assert isinstance(response, JSONResponse)
         assert response.status_code == 503
-        
+
         import json
+
         content = json.loads(response.body.decode())
         assert "error" in content
         assert "not enabled" in content["error"]
@@ -122,8 +120,9 @@ class TestStartPaymentSessionEndpoint:
 
         assert isinstance(response, JSONResponse)
         assert response.status_code == 500
-        
+
         import json
+
         content = json.loads(response.body.decode())
         assert "error" in content
         assert "manifest not configured" in content["error"]
@@ -198,7 +197,7 @@ class TestPaymentCaptureEndpoint:
         app = MagicMock(spec=BinduApplication)
         app.manifest = MagicMock()
         app.manifest.x402_config = {"facilitator_url": "http://test"}
-        
+
         manager = MockPaymentSessionManager()
         session = manager.create_session()
         app._payment_session_manager = manager
@@ -207,13 +206,19 @@ class TestPaymentCaptureEndpoint:
         request.query_params = {"session_id": session.session_id}
         request.headers = {"X-PAYMENT": "test_payment_token"}
 
-        with patch('bindu.server.endpoints.payment_sessions.safe_base64_decode') as mock_decode:
+        with patch(
+            "bindu.server.endpoints.payment_sessions.safe_base64_decode"
+        ) as mock_decode:
             mock_decode.return_value = b'{"test": "payload"}'
-            
-            with patch('bindu.server.endpoints.payment_sessions.PaymentPayload') as mock_payload:
+
+            with patch(
+                "bindu.server.endpoints.payment_sessions.PaymentPayload"
+            ) as mock_payload:
                 mock_payload.model_validate.return_value = MagicMock()
-                mock_payload.model_validate.return_value.model_dump.return_value = {"test": "payload"}
-                
+                mock_payload.model_validate.return_value.model_dump.return_value = {
+                    "test": "payload"
+                }
+
                 response = await payment_capture_endpoint(app, request)
 
                 assert isinstance(response, HTMLResponse)
@@ -225,7 +230,7 @@ class TestPaymentCaptureEndpoint:
         app = MagicMock(spec=BinduApplication)
         app.manifest = MagicMock()
         app.manifest.x402_config = {"facilitator_url": "http://test"}
-        
+
         manager = MockPaymentSessionManager()
         session = manager.create_session()
         app._payment_session_manager = manager
@@ -233,17 +238,23 @@ class TestPaymentCaptureEndpoint:
         request = MagicMock(spec=Request)
         request.query_params = {
             "session_id": session.session_id,
-            "payment": "test_payment_token"
+            "payment": "test_payment_token",
         }
         request.headers = {}
 
-        with patch('bindu.server.endpoints.payment_sessions.safe_base64_decode') as mock_decode:
+        with patch(
+            "bindu.server.endpoints.payment_sessions.safe_base64_decode"
+        ) as mock_decode:
             mock_decode.return_value = b'{"test": "payload"}'
-            
-            with patch('bindu.server.endpoints.payment_sessions.PaymentPayload') as mock_payload:
+
+            with patch(
+                "bindu.server.endpoints.payment_sessions.PaymentPayload"
+            ) as mock_payload:
                 mock_payload.model_validate.return_value = MagicMock()
-                mock_payload.model_validate.return_value.model_dump.return_value = {"test": "payload"}
-                
+                mock_payload.model_validate.return_value.model_dump.return_value = {
+                    "test": "payload"
+                }
+
                 response = await payment_capture_endpoint(app, request)
 
                 assert isinstance(response, HTMLResponse)
@@ -296,8 +307,9 @@ class TestPaymentStatusEndpoint:
 
         assert isinstance(response, JSONResponse)
         assert response.status_code == 200
-        
+
         import json
+
         content = json.loads(response.body.decode())
         assert content["status"] == "pending"
         assert "payment_token" not in content
@@ -318,8 +330,9 @@ class TestPaymentStatusEndpoint:
 
         assert isinstance(response, JSONResponse)
         assert response.status_code == 200
-        
+
         import json
+
         content = json.loads(response.body.decode())
         assert content["status"] == "completed"
         assert content["payment_token"] == "test_token"
@@ -353,7 +366,7 @@ class TestPaymentSessionErrorHandling:
         app = MagicMock(spec=BinduApplication)
         app.manifest = MagicMock()
         app.manifest.x402_config = {"facilitator_url": "http://test"}
-        
+
         manager = MockPaymentSessionManager()
         session = manager.create_session()
         app._payment_session_manager = manager
@@ -362,9 +375,11 @@ class TestPaymentSessionErrorHandling:
         request.query_params = {"session_id": session.session_id}
         request.headers = {"X-PAYMENT": "invalid_token"}
 
-        with patch('bindu.server.endpoints.payment_sessions.safe_base64_decode') as mock_decode:
+        with patch(
+            "bindu.server.endpoints.payment_sessions.safe_base64_decode"
+        ) as mock_decode:
             mock_decode.side_effect = Exception("Invalid base64")
-            
+
             response = await payment_capture_endpoint(app, request)
 
             # Should handle error gracefully
@@ -375,7 +390,9 @@ class TestPaymentSessionErrorHandling:
         """Test start_payment_session with unexpected exception."""
         app = MagicMock(spec=BinduApplication)
         app._payment_session_manager = MagicMock()
-        app._payment_session_manager.create_session.side_effect = Exception("Unexpected error")
+        app._payment_session_manager.create_session.side_effect = Exception(
+            "Unexpected error"
+        )
         app.manifest = MagicMock()
         app.manifest.url = "http://localhost:3773"
 
@@ -383,6 +400,6 @@ class TestPaymentSessionErrorHandling:
 
         # The handle_endpoint_errors decorator should catch this
         response = await start_payment_session_endpoint(app, request)
-        
+
         # Should return error response
         assert isinstance(response, JSONResponse)

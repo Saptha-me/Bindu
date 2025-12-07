@@ -177,6 +177,28 @@
 			"response": []
 		},
 		{
+			"name": "agent card",
+			"id": "50606358-a349c165-0069-4d8f-b0a4-2ec70c98b902",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{bindu_local}}/.well-known/agent.json",
+					"host": [
+						"{{bindu_local}}"
+					],
+					"path": [
+						".well-known",
+						"agent.json"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "List skills",
 			"id": "50606358-e5d56944-7256-4fc5-b3cf-7bd555b98ec1",
 			"protocolProfileBehavior": {

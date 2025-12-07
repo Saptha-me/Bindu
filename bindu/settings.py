@@ -6,6 +6,7 @@ This module defines the configuration settings for the application using pydanti
 from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AliasChoices
+from typing import Literal
 
 
 class ProjectSettings(BaseSettings):
@@ -515,6 +516,32 @@ class AuthSettings(BaseSettings):
     }
 
 
+class StorageSettings(BaseSettings):
+    """Storage backend configuration settings.
+
+    Supports multiple storage backends:
+    - memory: In-memory storage (default, non-persistent)
+    - postgres: PostgreSQL storage (persistent)
+    """
+
+    # Storage backend selection
+    backend: Literal["memory", "postgres"] = "memory"
+
+    # PostgreSQL Configuration
+    postgres_url: str = "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu"
+    postgres_pool_min: int = 2
+    postgres_pool_max: int = 10
+    postgres_timeout: int = 60
+    postgres_command_timeout: int = 30
+
+    # Connection retry settings
+    postgres_max_retries: int = 3
+    postgres_retry_delay: float = 1.0
+
+    # Migration settings
+    run_migrations_on_startup: bool = True
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -533,6 +560,7 @@ class Settings(BaseSettings):
     x402: X402Settings = X402Settings()
     agent: AgentSettings = AgentSettings()
     auth: AuthSettings = AuthSettings()
+    storage: StorageSettings = StorageSettings()
 
 
 app_settings = Settings()

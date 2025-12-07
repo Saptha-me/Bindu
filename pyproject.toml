@@ -40,7 +40,10 @@ dependencies = [
     "web3>=7.13.0",
     "eth-account>=0.13.7",
     "cdp-sdk>=0.21.0",
-    "coinbase-advanced-py>=1.8.2"
+    "coinbase-advanced-py>=1.8.2",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+    "sqlalchemy[asyncio]>=2.0.0"
 ]
 
 [project.optional-dependencies]

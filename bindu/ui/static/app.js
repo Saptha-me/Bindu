@@ -1123,7 +1123,7 @@ async function pollTaskStatus(taskId) {
                 if (state === 'completed') {
                     const responseText = extractResponse(task);
                     addMessage(responseText, 'agent', taskId, state);
-                } 
+                }
                 else if (state === 'failed') {
                     const error =
                         task.metadata?.error ||

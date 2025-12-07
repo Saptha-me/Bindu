@@ -59,31 +59,6 @@ def _parse_deployment_url(
 
     return host, port
 
-
-def _create_storage_instance(storage_config: StorageConfig | None):
-    """Create storage instance based on configuration.
-
-    Note: Currently only InMemoryStorage is supported.
-    Future implementations will support PostgreSQL and other backends.
-    """
-    from bindu.server import InMemoryStorage
-
-    # TODO: Implement PostgreSQL and other storage backends
-    return InMemoryStorage()
-
-
-def _create_scheduler_instance(scheduler_config: SchedulerConfig | None):
-    """Create scheduler instance based on configuration.
-
-    Note: Currently only InMemoryScheduler is supported.
-    Future implementations will support Redis and other backends.
-    """
-    from bindu.server import InMemoryScheduler
-
-    # TODO: Implement Redis and other scheduler backends
-    return InMemoryScheduler()
-
-
 def _create_deployment_config(
     validated_config: Dict[str, Any],
 ) -> DeploymentConfig | None:
@@ -134,7 +109,7 @@ def _create_storage_config(validated_config: Dict[str, Any]) -> StorageConfig | 
 
     return StorageConfig(
         type=storage_dict["type"],
-        connection_string=storage_dict.get("connection_string"),
+        database_url=storage_dict.get("database_url"),
     )
 
 
@@ -373,9 +348,8 @@ def bindufy(
     # Import server components (deferred to avoid circular import)
     from bindu.server import BinduApplication
 
-    # Create server components
-    storage_instance = _create_storage_instance(storage_config)
-    scheduler_instance = _create_scheduler_instance(scheduler_config)
+    # Storage and scheduler will be initialized in BinduApplication's lifespan
+    # No need to create instances here - just pass the config
 
     # Create telemetry configuration
     telemetry_config = TelemetryConfig(
@@ -399,11 +373,11 @@ def bindufy(
         ),
     )
 
-    # Create Bindu application with telemetry config
-    # Telemetry will be initialized in the application lifespan context
+    # Create Bindu application with configs
+    # Storage and scheduler will be initialized in the application lifespan context
     bindu_app = BinduApplication(
-        storage=storage_instance,
-        scheduler=scheduler_instance,
+        storage_config=storage_config,
+        scheduler_config=scheduler_config,
         penguin_id=agent_id,
         manifest=_manifest,
         version=validated_config["version"],

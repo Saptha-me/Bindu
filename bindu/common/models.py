@@ -53,8 +53,8 @@ class StorageConfig:
     This defines where that memory lives.
     """
 
-    type: Literal["postgres", "qdrant", "memory"]
-    connection_string: str | None = None
+    type: Literal["postgres", "memory"]
+    database_url: str | None = None
 
 
 @dataclass(frozen=True)

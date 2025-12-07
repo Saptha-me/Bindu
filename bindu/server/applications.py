@@ -30,12 +30,13 @@ from starlette.routing import Route
 from starlette.staticfiles import StaticFiles
 from starlette.types import Lifespan, Receive, Scope, Send
 
-from bindu.common.models import AgentManifest, TelemetryConfig
+from bindu.common.models import AgentManifest, TelemetryConfig, StorageConfig, SchedulerConfig
 from bindu.settings import app_settings
 
 from .middleware import Auth0Middleware
 from .scheduler.memory_scheduler import InMemoryScheduler
 from .storage.memory_storage import InMemoryStorage
+from .storage.base import Storage
 from .task_manager import TaskManager
 from bindu.utils.logging import get_logger
 
@@ -47,9 +48,9 @@ class BinduApplication(Starlette):
 
     def __init__(
         self,
-        storage: InMemoryStorage,
-        scheduler: InMemoryScheduler,
-        manifest: AgentManifest,
+        storage_config: StorageConfig | None = None,
+        scheduler_config: SchedulerConfig | None = None,
+        manifest: AgentManifest | None = None,
         penguin_id: UUID | None = None,
         url: str = "http://localhost",
         port: int = 3773,
@@ -65,9 +66,9 @@ class BinduApplication(Starlette):
         """Initialize Bindu application.
 
         Args:
+            storage_config: Storage configuration (will be initialized in lifespan)
+            scheduler_config: Scheduler configuration (will be initialized in lifespan)
             manifest: Agent manifest to serve
-            storage: Storage backend (defaults to InMemoryStorage)
-            scheduler: Task scheduler (defaults to InMemoryScheduler)
             penguin_id: Unique server identifier (auto-generated if not provided)
             url: Server URL
             version: Server version
@@ -83,12 +84,14 @@ class BinduApplication(Starlette):
         if penguin_id is None:
             penguin_id = uuid4()
 
-        # Store telemetry config for lifespan
+        # Store configs for lifespan initialization
+        self._storage_config = storage_config
+        self._scheduler_config = scheduler_config
         self._telemetry_config = telemetry_config or TelemetryConfig()
 
         # Create default lifespan if none provided
         if lifespan is None:
-            lifespan = self._create_default_lifespan(storage, scheduler, manifest)
+            lifespan = self._create_default_lifespan(manifest)
 
         # Setup middleware chain
         from bindu.utils import get_x402_extension_from_capabilities
@@ -122,8 +125,8 @@ class BinduApplication(Starlette):
         self.manifest = manifest
         self.default_input_modes = ["application/json"]
         self.task_manager: TaskManager | None = None
-        self._storage = storage
-        self._scheduler = scheduler
+        self._storage: Storage | None = None
+        self._scheduler: InMemoryScheduler | None = None
         self._agent_card_json_schema: bytes | None = None
         self._x402_ext = x402_ext
         self._payment_session_manager = None
@@ -289,14 +292,37 @@ class BinduApplication(Starlette):
 
     def _create_default_lifespan(
         self,
-        storage: InMemoryStorage,
-        scheduler: InMemoryScheduler,
-        manifest: AgentManifest,
+        manifest: AgentManifest | None,
     ) -> Lifespan:
-        """Create default Lifespan that manages TaskManager lifecycle and observability."""
+        """Create default Lifespan that manages storage, scheduler, TaskManager lifecycle and observability."""
 
         @asynccontextmanager
         async def lifespan(app: BinduApplication) -> AsyncIterator[None]:
+            # Initialize storage in the correct event loop
+            logger.info("🔧 Initializing storage...")
+            from .storage.factory import create_storage
+            
+            # Override settings if storage_config is provided
+            if self._storage_config:
+                if self._storage_config.type == "postgres" and self._storage_config.database_url:
+                    app_settings.storage.backend = "postgres"
+                    app_settings.storage.postgres_url = self._storage_config.database_url
+                    app_settings.storage.run_migrations_on_startup = getattr(
+                        self._storage_config, 'run_migrations_on_startup', False
+                    )
+                elif self._storage_config.type == "memory":
+                    app_settings.storage.backend = "memory"
+            
+            storage = await create_storage()
+            app._storage = storage
+            logger.info(f"✅ Storage initialized: {type(storage).__name__}")
+            
+            # Initialize scheduler
+            logger.info("🔧 Initializing scheduler...")
+            scheduler = InMemoryScheduler()  # TODO: Support other schedulers
+            app._scheduler = scheduler
+            logger.info(f"✅ Scheduler initialized: {type(scheduler).__name__}")
+            
             # Setup observability if enabled
             if self._telemetry_config.enabled:
                 self._setup_observability()
@@ -306,16 +332,28 @@ class BinduApplication(Starlette):
                 await app._payment_session_manager.start_cleanup_task()
 
             # Start TaskManager
-            task_manager = TaskManager(
-                scheduler=scheduler, storage=storage, manifest=manifest
-            )
-            async with task_manager:
-                app.task_manager = task_manager
+            if manifest:
+                logger.info("🔧 Starting TaskManager...")
+                task_manager = TaskManager(
+                    scheduler=scheduler, storage=storage, manifest=manifest
+                )
+                async with task_manager:
+                    app.task_manager = task_manager
+                    logger.info("✅ TaskManager started")
+                    yield
+                logger.info("🛑 TaskManager stopped")
+            else:
                 yield
 
             # Stop payment session manager cleanup task
             if app._payment_session_manager:
                 await app._payment_session_manager.stop_cleanup_task()
+            
+            # Cleanup storage
+            logger.info("🧹 Cleaning up storage...")
+            from .storage.factory import close_storage
+            await close_storage(storage)
+            logger.info("✅ Storage cleanup complete")
 
         return lifespan
 

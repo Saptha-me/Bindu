@@ -30,8 +30,8 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import delete, func, select, update
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import delete, func, select, update, cast
+from sqlalchemy.dialects.postgresql import insert, JSONB
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from typing_extensions import TypeVar
@@ -46,6 +46,25 @@ from .schema import tasks_table, contexts_table, task_feedback_table
 logger = get_logger("bindu.server.storage.postgres_storage")
 
 ContextT = TypeVar("ContextT", default=Any)
+
+
+def _serialize_for_jsonb(obj: Any) -> Any:
+    """Recursively convert UUID objects to strings for JSONB serialization.
+    
+    Args:
+        obj: Object to serialize (dict, list, or primitive)
+        
+    Returns:
+        Object with all UUIDs converted to strings
+    """
+    if isinstance(obj, UUID):
+        return str(obj)
+    elif isinstance(obj, dict):
+        return {k: _serialize_for_jsonb(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_serialize_for_jsonb(item) for item in obj]
+    else:
+        return obj
 
 
 class PostgresStorage(Storage[ContextT]):
@@ -340,12 +359,14 @@ class PostgresStorage(Storage[ContextT]):
                         )
 
                         # Update using JSONB concatenation
+                        # Serialize message to convert UUIDs to strings
+                        serialized_message = _serialize_for_jsonb(message)
                         stmt = (
                             update(tasks_table)
                             .where(tasks_table.c.id == task_id)
                             .values(
                                 history=func.jsonb_concat(
-                                    tasks_table.c.history, [message]
+                                    tasks_table.c.history, cast([serialized_message], JSONB)
                                 ),
                                 state="submitted",
                                 state_timestamp=datetime.now(timezone.utc),
@@ -359,6 +380,8 @@ class PostgresStorage(Storage[ContextT]):
                         return self._row_to_task(updated_row)
 
                     # Create new task
+                    # Serialize message to convert UUIDs to strings
+                    serialized_message = _serialize_for_jsonb(message)
                     now = datetime.now(timezone.utc)
                     stmt = insert(tasks_table).values(
                         id=task_id,
@@ -366,7 +389,7 @@ class PostgresStorage(Storage[ContextT]):
                         kind="task",
                         state="submitted",
                         state_timestamp=now,
-                        history=[message],
+                        history=[serialized_message],
                         artifacts=[],
                         metadata={},
                     ).returning(tasks_table)
@@ -436,14 +459,16 @@ class PostgresStorage(Storage[ContextT]):
 
                     # Update metadata (merge with existing)
                     if metadata:
+                        serialized_metadata = _serialize_for_jsonb(metadata)
                         update_values["metadata"] = func.jsonb_concat(
-                            tasks_table.c.metadata, metadata
+                            tasks_table.c.metadata, cast(serialized_metadata, JSONB)
                         )
 
                     # Append artifacts
                     if new_artifacts:
+                        serialized_artifacts = _serialize_for_jsonb(new_artifacts)
                         update_values["artifacts"] = func.jsonb_concat(
-                            tasks_table.c.artifacts, new_artifacts
+                            tasks_table.c.artifacts, cast(serialized_artifacts, JSONB)
                         )
 
                     # Append messages
@@ -457,8 +482,9 @@ class PostgresStorage(Storage[ContextT]):
                             message["task_id"] = task_id
                             message["context_id"] = task_row.context_id
 
+                        serialized_messages = _serialize_for_jsonb(new_messages)
                         update_values["history"] = func.jsonb_concat(
-                            tasks_table.c.history, new_messages
+                            tasks_table.c.history, cast(serialized_messages, JSONB)
                         )
 
                     # Execute update
@@ -588,15 +614,17 @@ class PostgresStorage(Storage[ContextT]):
             async with self._session_factory() as session:
                 async with session.begin():
                     # Upsert context
+                    # Serialize context data to convert UUIDs to strings
+                    serialized_context = _serialize_for_jsonb(context if isinstance(context, dict) else {})
                     stmt = insert(contexts_table).values(
                         id=context_id,
-                        context_data=context if isinstance(context, dict) else {},
+                        context_data=serialized_context,
                         message_history=[],
                     )
                     stmt = stmt.on_conflict_do_update(
                         index_elements=["id"],
                         set_={
-                            "context_data": context if isinstance(context, dict) else {},
+                            "context_data": serialized_context,
                             "updated_at": datetime.now(timezone.utc),
                         },
                     )
@@ -637,12 +665,14 @@ class PostgresStorage(Storage[ContextT]):
                     await session.execute(stmt)
 
                     # Append messages
+                    # Serialize messages to convert UUIDs to strings
+                    serialized_messages = _serialize_for_jsonb(messages)
                     stmt = (
                         update(contexts_table)
                         .where(contexts_table.c.id == context_id)
                         .values(
                             message_history=func.jsonb_concat(
-                                contexts_table.c.message_history, messages
+                                contexts_table.c.message_history, cast(serialized_messages, JSONB)
                             ),
                             updated_at=datetime.now(timezone.utc),
                         )
@@ -671,7 +701,7 @@ class PostgresStorage(Storage[ContextT]):
                         func.count(tasks_table.c.id).label("task_count"),
                         func.coalesce(
                             func.json_agg(tasks_table.c.id).filter(tasks_table.c.id.isnot(None)),
-                            "[]",
+                            cast("[]", JSONB),
                         ).label("task_ids"),
                     )
                     .outerjoin(tasks_table, contexts_table.c.id == tasks_table.c.context_id)
@@ -789,8 +819,10 @@ class PostgresStorage(Storage[ContextT]):
         async def _store():
             async with self._session_factory() as session:
                 async with session.begin():
+                    # Serialize feedback data to convert UUIDs to strings
+                    serialized_feedback = _serialize_for_jsonb(feedback_data)
                     stmt = insert(task_feedback_table).values(
-                        task_id=task_id, feedback_data=feedback_data
+                        task_id=task_id, feedback_data=serialized_feedback
                     )
                     await session.execute(stmt)
 

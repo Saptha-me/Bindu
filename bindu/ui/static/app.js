@@ -101,7 +101,19 @@ async function handlePaymentRequired(originalRequest) {
 }
 
 function getPaymentHeaders() {
-    return paymentToken ? { 'X-PAYMENT': paymentToken } : {};
+    if (!paymentToken) return {};
+
+    // Ensure payment token is properly encoded
+    const cleanToken = paymentToken.trim();
+
+    // Check for non-ASCII characters
+    if (!/^[\x00-\x7F]*$/.test(cleanToken)) {
+        console.error('Payment token contains non-ASCII characters');
+        paymentToken = null;
+        return {};
+    }
+
+    return { 'X-PAYMENT': cleanToken };
 }
 
 // ============================================================================
@@ -109,7 +121,21 @@ function getPaymentHeaders() {
 // ============================================================================
 
 function getAuthHeaders() {
-    return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+    if (!authToken) return {};
+
+    // Ensure token is properly encoded (trim and validate ASCII)
+    const cleanToken = authToken.trim();
+
+    // Check for non-ASCII characters that would cause ISO-8859-1 errors
+    if (!/^[\x00-\x7F]*$/.test(cleanToken)) {
+        console.error('Auth token contains non-ASCII characters');
+        addMessage('⚠️ Invalid auth token format. Please re-enter your token.', 'status');
+        authToken = null;
+        localStorage.removeItem('bindu_auth_token');
+        return {};
+    }
+
+    return { 'Authorization': `Bearer ${cleanToken}` };
 }
 
 function openAuthSettings() {
@@ -566,6 +592,13 @@ async function loadContexts() {
 
         console.log('Contexts response status:', response.status);
 
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+            console.warn('Authentication required for contexts');
+            addMessage('🔒 Authentication required to load contexts. Please provide your JWT token.', 'status');
+            return;
+        }
+
         if (!response.ok) throw new Error('Failed to load contexts');
 
         const result = await response.json();
@@ -948,6 +981,13 @@ async function sendMessage() {
             },
             body: JSON.stringify(requestBody)
         });
+
+        // Handle 401 Unauthorized (Auth Required)
+        if (response.status === 401) {
+            addMessage('🔒 Authentication required. Please provide your JWT token.', 'status');
+            openAuthSettings();
+            throw new Error('Authentication required');
+        }
 
         // Handle 402 Payment Required
         if (response.status === 402) {

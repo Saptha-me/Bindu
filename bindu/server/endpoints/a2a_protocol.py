@@ -74,10 +74,24 @@ async def agent_run_endpoint(app: BinduApplication, request: Request) -> Respons
                     message["metadata"] = {}
 
                 # Add payment context to message metadata (internal use only)
+                # Serialize Pydantic models and dataclasses to dicts for JSON compatibility
+                from dataclasses import asdict, is_dataclass
+
+                def serialize_to_dict(obj):
+                    """Serialize Pydantic models or dataclasses to dict."""
+                    if hasattr(obj, "model_dump"):
+                        return obj.model_dump()
+                    elif is_dataclass(obj):
+                        return asdict(obj)
+                    else:
+                        return dict(obj)
+
                 message["metadata"]["_payment_context"] = {
-                    "payment_payload": request.state.payment_payload,
-                    "payment_requirements": request.state.payment_requirements,
-                    "verify_response": request.state.verify_response,
+                    "payment_payload": serialize_to_dict(request.state.payment_payload),
+                    "payment_requirements": serialize_to_dict(
+                        request.state.payment_requirements
+                    ),
+                    "verify_response": serialize_to_dict(request.state.verify_response),
                 }
 
         jsonrpc_response = await handler(a2a_request)
@@ -97,8 +111,6 @@ async def agent_run_endpoint(app: BinduApplication, request: Request) -> Respons
         return resp
 
     except Exception as e:
-        logger.error(
-            f"Error processing A2A request from {client_ip}: {e}", exc_info=True
-        )
+        logger.error(f"Error processing A2A request from {client_ip}", exc_info=True)
         code, message = extract_error_fields(InternalError)
         return jsonrpc_error(code, message, str(e), request_id, 500)

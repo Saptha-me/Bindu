@@ -4,12 +4,19 @@ import argparse
 import json
 import os
 import sys
+from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import pyperclip
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
+
+# Load environment variables from .env file
+env_path = Path(__file__).parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
 
 console = Console()
 

@@ -31,7 +31,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import delete, func, select, update, cast
-from sqlalchemy.dialects.postgresql import insert, JSONB
+from sqlalchemy.dialects.postgresql import insert, JSONB, JSON
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from typing_extensions import TypeVar
@@ -380,6 +380,15 @@ class PostgresStorage(Storage[ContextT]):
 
                         return self._row_to_task(updated_row)
 
+                    # Ensure context exists BEFORE creating task (foreign key constraint)
+                    stmt = insert(contexts_table).values(
+                        id=context_id,
+                        context_data={},
+                        message_history=[],
+                    )
+                    stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
+                    await session.execute(stmt)
+
                     # Create new task
                     # Serialize message to convert UUIDs to strings
                     serialized_message = _serialize_for_jsonb(message)
@@ -400,15 +409,6 @@ class PostgresStorage(Storage[ContextT]):
                     )
                     result = await session.execute(stmt)
                     new_row = result.first()
-
-                    # Ensure context exists (upsert)
-                    stmt = insert(contexts_table).values(
-                        id=context_id,
-                        context_data={},
-                        message_history=[],
-                    )
-                    stmt = stmt.on_conflict_do_nothing(index_elements=["id"])
-                    await session.execute(stmt)
 
                     return self._row_to_task(new_row)
 
@@ -711,7 +711,7 @@ class PostgresStorage(Storage[ContextT]):
                             func.json_agg(tasks_table.c.id).filter(
                                 tasks_table.c.id.isnot(None)
                             ),
-                            cast("[]", JSONB),
+                            cast("[]", JSON),
                         ).label("task_ids"),
                     )
                     .outerjoin(

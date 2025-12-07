@@ -73,7 +73,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"instagram\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440041\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"output of it?\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440042\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -81,14 +81,9 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8030/",
-					"protocol": "http",
+					"raw": "{{bindu_local}}",
 					"host": [
-						"localhost"
-					],
-					"port": "8030",
-					"path": [
-						""
+						"{{bindu_local}}"
 					]
 				}
 			},

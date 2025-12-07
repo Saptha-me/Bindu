@@ -31,7 +31,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Suggest some thriller movies to watch with a rating of 8 or above on IMDB. \"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440080\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Suggest some thriller movies to watch with a rating of 8 or above on IMDB. \"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440081\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -39,12 +39,14 @@
 					}
 				},
 				"url": {
-					"raw": "{{prodUrl}}/bindu-register",
+					"raw": "http://localhost:3773/",
+					"protocol": "http",
 					"host": [
-						"{{prodUrl}}"
+						"localhost"
 					],
+					"port": "3773",
 					"path": [
-						"bindu-register"
+						""
 					]
 				}
 			},

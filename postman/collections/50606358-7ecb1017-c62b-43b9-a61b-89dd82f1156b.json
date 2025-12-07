@@ -6,6 +6,90 @@
 	},
 	"item": [
 		{
+			"name": "first send message",
+			"id": "50606358-f25b4380-777c-4693-bb44-fcb402f2dbda",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "<>",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Suggest some thriller movies to watch with a rating of 8 or above on IMDB. \"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440081\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{bindu_local}}",
+					"host": [
+						"{{bindu_local}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "task status",
+			"id": "50606358-1596e426-9ac0-4361-924e-3f531a330522",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "<>",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"tasks/get\",\n    \"params\": {\n        \"taskId\": \"550e8400-e29b-41d4-a716-446655440082\"\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440025\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{bindu_local}}",
+					"host": [
+						"{{bindu_local}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "New Request",
 			"id": "50606358-a0214017-4efa-46d2-bc37-1b4db1b30f01",
 			"protocolProfileBehavior": {
@@ -13,7 +97,10 @@
 			},
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": ""
+				}
 			},
 			"response": []
 		}

@@ -48,6 +48,53 @@
 			"response": []
 		},
 		{
+			"name": "task status",
+			"id": "50606358-1596e426-9ac0-4361-924e-3f531a330522",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "<>",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"instagram\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440041\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8030/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "New Request",
 			"id": "50606358-a0214017-4efa-46d2-bc37-1b4db1b30f01",
 			"protocolProfileBehavior": {

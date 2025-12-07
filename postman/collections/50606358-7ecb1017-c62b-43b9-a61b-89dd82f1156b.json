@@ -177,6 +177,47 @@
 			"response": []
 		},
 		{
+			"name": "reference add",
+			"id": "50606358-3812bd9c-546e-44d3-a95c-531831246b9b",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer <>"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"make it shorter\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440027\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440042\",\n            \"referenceTaskIds\": [\"550e8400-e29b-41d4-a716-446655440041\"]\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8030/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8030",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "agent card",
 			"id": "50606358-a349c165-0069-4d8f-b0a4-2ec70c98b902",
 			"protocolProfileBehavior": {

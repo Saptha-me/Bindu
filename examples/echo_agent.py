@@ -30,6 +30,19 @@ config = {
         "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",  # pragma: allowlist secret
         "run_migrations_on_startup": False,
     },
+    # Scheduler configuration (optional)
+    # Use "memory" for single-process (default) or "redis" for distributed multi-process
+    # "scheduler": {
+    #     "type": "redis",
+    #     "redis_url": "redis://localhost:6379/0",  # Or use individual params below
+    #     # "redis_host": "localhost",
+    #     # "redis_port": 6379,
+    #     # "redis_password": None,
+    #     # "redis_db": 0,
+    #     # "queue_name": "bindu:tasks",
+    #     # "max_connections": 10,
+    #     # "retry_on_timeout": True,
+    # },
 }
 
 bindufy(config, handler)

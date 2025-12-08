@@ -39,7 +39,7 @@ from bindu.common.models import (
 from bindu.settings import app_settings
 
 from .middleware import Auth0Middleware
-from .scheduler.memory_scheduler import InMemoryScheduler
+from .scheduler.base import Scheduler
 from .storage.base import Storage
 from .task_manager import TaskManager
 from bindu.utils.logging import get_logger
@@ -130,7 +130,7 @@ class BinduApplication(Starlette):
         self.default_input_modes = ["application/json"]
         self.task_manager: TaskManager | None = None
         self._storage: Storage | None = None
-        self._scheduler: InMemoryScheduler | None = None
+        self._scheduler: Scheduler | None = None
         self._agent_card_json_schema: bytes | None = None
         self._x402_ext = x402_ext
         self._payment_session_manager = None
@@ -328,7 +328,9 @@ class BinduApplication(Starlette):
 
             # Initialize scheduler
             logger.info("🔧 Initializing scheduler...")
-            scheduler = InMemoryScheduler()  # TODO: Support other schedulers
+            from .scheduler.factory import create_scheduler
+
+            scheduler = await create_scheduler(self._scheduler_config)
             app._scheduler = scheduler
             logger.info(f"✅ Scheduler initialized: {type(scheduler).__name__}")
 

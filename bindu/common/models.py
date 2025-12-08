@@ -66,6 +66,14 @@ class SchedulerConfig:
     """
 
     type: Literal["redis", "memory"]
+    redis_url: str | None = None
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str | None = None
+    redis_db: int = 0
+    queue_name: str = "bindu:tasks"
+    max_connections: int = 10
+    retry_on_timeout: bool = True
 
 
 @dataclass(frozen=True)

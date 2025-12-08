@@ -181,6 +181,26 @@ Expected response:
 ```
 "Hello Bindu!"
 ```
+## Summarizer Agent Example
+
+This example shows how to build a more practical Bindu agent that transforms text.
+It takes long input from the user and returns a concise summary.
+
+```bash
+python examples/summarizer_agent.py
+```
+Test using cURL:
+
+```bash
+curl -X POST http://localhost:3774/messages \
+     -H "Content-Type: application/json" \
+     -d '[{"role": "user", "content": "Provide a summary of the following text... <long input>"}]'
+```
+Expected response (example):
+
+```bash
+The text is summarized into 2–3 sentences focusing on key points.
+```
 
 ## 🎨 Chat UI (Optional)
 

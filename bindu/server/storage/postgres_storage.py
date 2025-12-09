@@ -129,7 +129,7 @@ class PostgresStorage(Storage[ContextT]):
             URL with password masked (e.g., postgresql+asyncpg://user:***@host:port/db)  # pragma: allowlist secret
         """
         try:
-            # Handle URLs like postgresql+asyncpg://user:password@host:port/db
+            # Handle URLs like postgresql+asyncpg://user:password@host:port/db  # pragma: allowlist secret
             if "://" in url and "@" in url:
                 scheme, rest = url.split("://", 1)
                 if "@" in rest:

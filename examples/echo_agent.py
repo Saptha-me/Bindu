@@ -32,10 +32,18 @@ config = {
     },
     # Scheduler configuration (optional)
     # Use "memory" for single-process (default) or "redis" for distributed multi-process
-    # Option 2: Specify in config (overrides environment variables)
     "scheduler": {
         "type": "redis",
         "redis_url": "redis://localhost:6379/0",
+    },
+    # Sentry error tracking (optional)
+    # Configure Sentry directly in code instead of environment variables
+    "sentry": {
+        "enabled": True,
+        "dsn": "https://252c0197ddeafb621f91abdbb59fa819@o4510504294612992.ingest.de.sentry.io/4510504299069520",
+        "environment": "development",
+        "traces_sample_rate": 1.0,
+        "profiles_sample_rate": 0.1,
     },
 }
 

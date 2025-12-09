@@ -78,5 +78,23 @@ See `openinference.py` for the complete list.
 """
 
 from .openinference import setup
+from .sentry import (
+    init_sentry,
+    capture_exception,
+    capture_message,
+    set_user,
+    set_context,
+    add_breadcrumb,
+    start_transaction,
+)
 
-__all__ = ["setup"]
+__all__ = [
+    "setup",
+    "init_sentry",
+    "capture_exception",
+    "capture_message",
+    "set_user",
+    "set_context",
+    "add_breadcrumb",
+    "start_transaction",
+]

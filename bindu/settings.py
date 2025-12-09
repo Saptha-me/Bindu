@@ -559,6 +559,91 @@ class SchedulerSettings(BaseSettings):
     retry_on_timeout: bool = True
 
 
+class SentrySettings(BaseSettings):
+    """Sentry error tracking and performance monitoring configuration.
+
+    Sentry provides real-time error tracking, performance monitoring,
+    and release health tracking for production deployments.
+    """
+
+    # Enable/disable Sentry
+    enabled: bool = False
+
+    # Sentry DSN (Data Source Name)
+    # Get this from your Sentry project settings
+    dsn: str = ""
+
+    # Environment name (e.g., production, staging, development)
+    environment: str = Field(
+        default="development",
+        validation_alias=AliasChoices("SENTRY__ENVIRONMENT", "ENVIRONMENT"),
+    )
+
+    # Release version (for tracking deployments)
+    # Defaults to project version if not specified
+    release: str = ""
+
+    # Sample rate for error events (0.0 to 1.0)
+    # 1.0 = capture all errors
+    traces_sample_rate: float = 1.0
+
+    # Sample rate for performance monitoring (0.0 to 1.0)
+    # 0.1 = capture 10% of transactions for performance monitoring
+    profiles_sample_rate: float = 0.1
+
+    # Enable performance monitoring
+    enable_tracing: bool = True
+
+    # Enable profiling
+    enable_profiling: bool = False
+
+    # Send default PII (Personally Identifiable Information)
+    # Set to False in production for privacy compliance
+    send_default_pii: bool = False
+
+    # Maximum breadcrumbs to capture
+    max_breadcrumbs: int = 100
+
+    # Attach stack trace to messages
+    attach_stacktrace: bool = True
+
+    # Integrations to enable
+    # Available: starlette, sqlalchemy, redis, asyncio
+    # Note: Bindu uses Starlette (not FastAPI), so starlette integration covers all endpoints
+    # Note: Loguru integration is disabled due to conflict with Bindu's custom loguru setup
+    integrations: list[str] = [
+        "starlette",  # Covers all HTTP endpoints in bindu/server/endpoints/
+        "sqlalchemy",  # PostgreSQL storage integration
+        "redis",  # Redis scheduler integration
+        "asyncio",  # Async task integration
+    ]
+
+    # Tags to add to all events
+    # Useful for filtering and grouping in Sentry UI
+    default_tags: dict[str, str] = {}
+
+    # Before send hook - filter events before sending to Sentry
+    # Can be used to scrub sensitive data or filter out noise
+    filter_transactions: list[str] = [
+        "/healthz",
+        "/health",
+        "/metrics",
+        "/favicon.ico",
+    ]
+
+    # Ignore specific errors by exception type
+    ignore_errors: list[str] = [
+        "KeyboardInterrupt",
+        "SystemExit",
+    ]
+
+    # Server name (defaults to hostname)
+    server_name: str = ""
+
+    # Debug mode (logs Sentry SDK debug info)
+    debug: bool = False
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -579,6 +664,7 @@ class Settings(BaseSettings):
     auth: AuthSettings = AuthSettings()
     storage: StorageSettings = StorageSettings()
     scheduler: SchedulerSettings = SchedulerSettings()
+    sentry: SentrySettings = SentrySettings()
 
 
 app_settings = Settings()

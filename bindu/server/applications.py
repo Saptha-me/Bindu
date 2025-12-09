@@ -35,6 +35,7 @@ from bindu.common.models import (
     TelemetryConfig,
     StorageConfig,
     SchedulerConfig,
+    SentryConfig,
 )
 from bindu.settings import app_settings
 
@@ -66,6 +67,7 @@ class BinduApplication(Starlette):
         middleware: Sequence[Middleware] | None = None,
         auth_enabled: bool = False,
         telemetry_config: TelemetryConfig | None = None,
+        sentry_config: SentryConfig | None = None,
     ):
         """Initialize Bindu application.
 
@@ -83,6 +85,7 @@ class BinduApplication(Starlette):
             middleware: Optional middleware
             auth_enabled: Enable Auth0 authentication middleware
             telemetry_config: Optional telemetry configuration (defaults to disabled)
+            sentry_config: Optional Sentry configuration (defaults to disabled)
         """
         # Generate penguin_id if not provided
         if penguin_id is None:
@@ -92,6 +95,7 @@ class BinduApplication(Starlette):
         self._storage_config = storage_config
         self._scheduler_config = scheduler_config
         self._telemetry_config = telemetry_config or TelemetryConfig()
+        self._sentry_config = sentry_config or SentryConfig()
 
         # Create default lifespan if none provided
         if lifespan is None:
@@ -337,6 +341,49 @@ class BinduApplication(Starlette):
             # Setup observability if enabled
             if self._telemetry_config.enabled:
                 self._setup_observability()
+
+            # Initialize Sentry error tracking
+            # Override settings if sentry_config is provided
+            if self._sentry_config.enabled:
+                logger.info("🔧 Initializing Sentry...")
+
+                # Override app_settings with config values
+                if self._sentry_config.dsn:
+                    app_settings.sentry.enabled = True
+                    app_settings.sentry.dsn = self._sentry_config.dsn
+                    app_settings.sentry.environment = self._sentry_config.environment
+                    if self._sentry_config.release:
+                        app_settings.sentry.release = self._sentry_config.release
+                    app_settings.sentry.traces_sample_rate = (
+                        self._sentry_config.traces_sample_rate
+                    )
+                    app_settings.sentry.profiles_sample_rate = (
+                        self._sentry_config.profiles_sample_rate
+                    )
+                    app_settings.sentry.enable_tracing = (
+                        self._sentry_config.enable_tracing
+                    )
+                    app_settings.sentry.send_default_pii = (
+                        self._sentry_config.send_default_pii
+                    )
+                    app_settings.sentry.debug = self._sentry_config.debug
+
+                from bindu.observability import init_sentry
+
+                sentry_initialized = init_sentry()
+                if sentry_initialized:
+                    logger.info("✅ Sentry initialized successfully")
+                else:
+                    logger.debug("Sentry not initialized (disabled or not configured)")
+            else:
+                # Try to initialize from environment variables
+                from bindu.observability import init_sentry
+
+                sentry_initialized = init_sentry()
+                if sentry_initialized:
+                    logger.info("✅ Sentry initialized from environment variables")
+                else:
+                    logger.debug("Sentry not initialized (disabled or not configured)")
 
             # Start payment session manager cleanup task if x402 enabled
             if app._payment_session_manager:

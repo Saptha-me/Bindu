@@ -144,7 +144,11 @@ async def close_storage(storage: Storage) -> None:
         >>> # ... use storage ...
         >>> await close_storage(storage)
     """
-    if isinstance(storage, PostgresStorage):
+    if (
+        POSTGRES_AVAILABLE
+        and PostgresStorage is not None
+        and isinstance(storage, PostgresStorage)
+    ):
         await storage.disconnect()
         logger.info("PostgreSQL storage connection closed")
     else:

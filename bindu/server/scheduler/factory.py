@@ -63,7 +63,8 @@ async def create_scheduler(config: SchedulerConfig | None = None) -> Scheduler:
 
     # Use settings if no config provided
     if config is None:
-        backend = app_settings.scheduler.backend
+        scheduler_settings = app_settings.scheduler
+        backend = scheduler_settings.backend
         logger.info(f"No scheduler config provided, using settings: {backend}")
 
         if backend == "memory":
@@ -72,14 +73,14 @@ async def create_scheduler(config: SchedulerConfig | None = None) -> Scheduler:
             # Build config from settings
             config = SchedulerConfig(
                 type="redis",
-                redis_url=app_settings.scheduler.redis_url,
-                redis_host=app_settings.scheduler.redis_host,
-                redis_port=app_settings.scheduler.redis_port,
-                redis_password=app_settings.scheduler.redis_password,
-                redis_db=app_settings.scheduler.redis_db,
-                queue_name=app_settings.scheduler.queue_name,
-                max_connections=app_settings.scheduler.max_connections,
-                retry_on_timeout=app_settings.scheduler.retry_on_timeout,
+                redis_url=scheduler_settings.redis_url,
+                redis_host=scheduler_settings.redis_host,
+                redis_port=scheduler_settings.redis_port,
+                redis_password=scheduler_settings.redis_password,
+                redis_db=scheduler_settings.redis_db,
+                queue_name=scheduler_settings.queue_name,
+                max_connections=scheduler_settings.max_connections,
+                retry_on_timeout=scheduler_settings.retry_on_timeout,
             )
         else:
             raise ValueError(f"Unknown scheduler backend in settings: {backend}")

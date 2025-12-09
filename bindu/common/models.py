@@ -107,6 +107,25 @@ class TelemetryConfig:
     batch_export_timeout_millis: int = 30000
 
 
+@dataclass
+class SentryConfig:
+    """Configuration for Sentry error tracking and performance monitoring.
+
+    Allows developers to configure Sentry directly in their agent code
+    instead of relying solely on environment variables.
+    """
+
+    enabled: bool = False
+    dsn: str | None = None
+    environment: str = "development"
+    release: str | None = None
+    traces_sample_rate: float = 1.0
+    profiles_sample_rate: float = 0.1
+    enable_tracing: bool = True
+    send_default_pii: bool = False
+    debug: bool = False
+
+
 @dataclass(frozen=True)
 class AgentFrameworkSpec:
     """Specification for an agent framework.

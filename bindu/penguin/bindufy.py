@@ -23,6 +23,7 @@ from bindu.common.models import (
     AgentManifest,
     DeploymentConfig,
     SchedulerConfig,
+    SentryConfig,
     StorageConfig,
     TelemetryConfig,
 )
@@ -136,6 +137,32 @@ def _create_scheduler_config(
     return SchedulerConfig(type=scheduler_dict["type"])
 
 
+def _create_sentry_config(validated_config: Dict[str, Any]) -> SentryConfig | None:
+    """Create SentryConfig from validated configuration.
+
+    Args:
+        validated_config: Validated configuration dictionary
+
+    Returns:
+        SentryConfig object or None if not configured
+    """
+    sentry_dict = validated_config.get("sentry")
+    if not sentry_dict:
+        return None
+
+    return SentryConfig(
+        enabled=sentry_dict.get("enabled", False),
+        dsn=sentry_dict.get("dsn"),
+        environment=sentry_dict.get("environment", "development"),
+        release=sentry_dict.get("release"),
+        traces_sample_rate=sentry_dict.get("traces_sample_rate", 1.0),
+        profiles_sample_rate=sentry_dict.get("profiles_sample_rate", 0.1),
+        enable_tracing=sentry_dict.get("enable_tracing", True),
+        send_default_pii=sentry_dict.get("send_default_pii", False),
+        debug=sentry_dict.get("debug", False),
+    )
+
+
 def bindufy(
     config: Dict[str, Any], handler: Callable[[list[dict[str, str]]], Any]
 ) -> AgentManifest:
@@ -226,6 +253,7 @@ def bindufy(
     deployment_config = _create_deployment_config(validated_config)
     storage_config = _create_storage_config(validated_config)
     scheduler_config = _create_scheduler_config(validated_config)
+    sentry_config = _create_sentry_config(validated_config)
 
     # Validate that this is a protocol-compliant function
     handler_name = getattr(handler, "__name__", "<unknown>")
@@ -384,6 +412,7 @@ def bindufy(
         version=validated_config["version"],
         auth_enabled=app_settings.auth.enabled,
         telemetry_config=telemetry_config,
+        sentry_config=sentry_config,
     )
 
     # Parse deployment URL

@@ -25,14 +25,12 @@ Features:
 
 from __future__ import annotations as _annotations
 
-import asyncio
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import delete, func, select, update, cast
 from sqlalchemy.dialects.postgresql import insert, JSONB, JSON
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from typing_extensions import TypeVar
 
@@ -202,7 +200,7 @@ class PostgresStorage(Storage[ContextT]):
             )
 
     async def _retry_on_connection_error(self, func, *args, **kwargs):
-        """Retry function on connection errors.
+        """Retry function on connection errors using Tenacity.
 
         Args:
             func: Async function to retry
@@ -215,21 +213,20 @@ class PostgresStorage(Storage[ContextT]):
         Raises:
             Exception: If all retries fail
         """
+        # Use Tenacity-based retry with storage configuration
+        from bindu.utils.retry import execute_with_retry
+
         max_retries = app_settings.storage.postgres_max_retries
         retry_delay = app_settings.storage.postgres_retry_delay
 
-        for attempt in range(max_retries):
-            try:
-                return await func(*args, **kwargs)
-            except OperationalError as e:
-                if attempt < max_retries - 1:
-                    logger.warning(
-                        f"Connection error (attempt {attempt + 1}/{max_retries}): {e}. Retrying..."
-                    )
-                    await asyncio.sleep(retry_delay * (attempt + 1))
-                else:
-                    logger.error(f"Connection failed after {max_retries} attempts")
-                    raise
+        return await execute_with_retry(
+            func,
+            *args,
+            max_attempts=max_retries,
+            min_wait=retry_delay,
+            max_wait=retry_delay * max_retries,
+            **kwargs,
+        )
 
     def _row_to_task(self, row) -> Task:
         """Convert database row to Task protocol type.

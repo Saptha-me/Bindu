@@ -1,7 +1,6 @@
 """Unit tests for Sentry integration."""
 
-from unittest.mock import MagicMock, patch, call
-import pytest
+from unittest.mock import patch
 
 from bindu.observability import sentry
 from bindu.settings import app_settings
@@ -18,30 +17,37 @@ class TestSentryInit:
 
     def test_init_sentry_no_dsn(self):
         """Test that Sentry doesn't initialize without DSN."""
-        with patch.object(app_settings.sentry, "enabled", True), patch.object(
-            app_settings.sentry, "dsn", ""
+        with (
+            patch.object(app_settings.sentry, "enabled", True),
+            patch.object(app_settings.sentry, "dsn", ""),
         ):
             result = sentry.init_sentry()
             assert result is False
 
     def test_init_sentry_success(self):
         """Test successful Sentry initialization."""
-        with patch("sentry_sdk.init") as mock_init, patch("sentry_sdk.set_tag"), patch.object(
-            app_settings.sentry, "enabled", True
-        ), patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"), patch.object(
-            app_settings.sentry, "environment", "test"
-        ), patch.object(app_settings.sentry, "integrations", ["starlette", "asyncio"]):
+        with (
+            patch("sentry_sdk.init") as mock_init,
+            patch("sentry_sdk.set_tag"),
+            patch.object(app_settings.sentry, "enabled", True),
+            patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"),
+            patch.object(app_settings.sentry, "environment", "test"),
+            patch.object(app_settings.sentry, "integrations", ["starlette", "asyncio"]),
+        ):
             result = sentry.init_sentry()
             assert result is True
             mock_init.assert_called_once()
 
     def test_init_sentry_with_release(self):
         """Test Sentry initialization with custom release."""
-        with patch("sentry_sdk.init") as mock_init, patch("sentry_sdk.set_tag"), patch.object(
-            app_settings.sentry, "enabled", True
-        ), patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"), patch.object(
-            app_settings.sentry, "release", "my-app@1.0.0"
-        ), patch.object(app_settings.sentry, "integrations", ["starlette"]):
+        with (
+            patch("sentry_sdk.init") as mock_init,
+            patch("sentry_sdk.set_tag"),
+            patch.object(app_settings.sentry, "enabled", True),
+            patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"),
+            patch.object(app_settings.sentry, "release", "my-app@1.0.0"),
+            patch.object(app_settings.sentry, "integrations", ["starlette"]),
+        ):
             result = sentry.init_sentry()
             assert result is True
             # Check that release was passed
@@ -50,17 +56,21 @@ class TestSentryInit:
 
     def test_init_sentry_import_error(self):
         """Test Sentry initialization handles import errors."""
-        with patch("sentry_sdk.init", side_effect=ImportError("sentry_sdk not found")), patch.object(
-            app_settings.sentry, "enabled", True
-        ), patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"):
+        with (
+            patch("sentry_sdk.init", side_effect=ImportError("sentry_sdk not found")),
+            patch.object(app_settings.sentry, "enabled", True),
+            patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"),
+        ):
             result = sentry.init_sentry()
             assert result is False
 
     def test_init_sentry_general_error(self):
         """Test Sentry initialization handles general errors."""
-        with patch("sentry_sdk.init", side_effect=Exception("Unexpected error")), patch.object(
-            app_settings.sentry, "enabled", True
-        ), patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"):
+        with (
+            patch("sentry_sdk.init", side_effect=Exception("Unexpected error")),
+            patch.object(app_settings.sentry, "enabled", True),
+            patch.object(app_settings.sentry, "dsn", "https://test@sentry.io/123"),
+        ):
             result = sentry.init_sentry()
             assert result is False
 
@@ -70,14 +80,16 @@ class TestSentryCapture:
 
     def test_capture_exception(self):
         """Test capturing exceptions."""
-        with patch("sentry_sdk.capture_exception") as mock_capture, patch("sentry_sdk.push_scope"), patch.object(
-            app_settings.sentry, "enabled", True
+        with (
+            patch("sentry_sdk.capture_exception") as mock_capture,
+            patch("sentry_sdk.push_scope"),
+            patch.object(app_settings.sentry, "enabled", True),
         ):
             error = ValueError("Test error")
             event_id = sentry.capture_exception(
                 error, tags={"test": "true"}, extra={"data": "value"}
             )
-            
+
             mock_capture.assert_called_once_with(error)
             assert event_id is not None
 
@@ -90,16 +102,16 @@ class TestSentryCapture:
 
     def test_capture_message(self):
         """Test capturing messages."""
-        with patch("sentry_sdk.capture_message") as mock_capture, patch("sentry_sdk.push_scope"), patch.object(
-            app_settings.sentry, "enabled", True
+        with (
+            patch("sentry_sdk.capture_message") as mock_capture,
+            patch("sentry_sdk.push_scope"),
+            patch.object(app_settings.sentry, "enabled", True),
         ):
             event_id = sentry.capture_message(
                 "Test message", level="warning", tags={"test": "true"}
             )
-            
-            mock_capture.assert_called_once_with(
-                "Test message", level="warning"
-            )
+
+            mock_capture.assert_called_once_with("Test message", level="warning")
             assert event_id is not None
 
     def test_capture_message_disabled(self):
@@ -110,11 +122,12 @@ class TestSentryCapture:
 
     def test_set_user(self):
         """Test setting user context."""
-        with patch("sentry_sdk.set_user") as mock_set_user, patch.object(
-            app_settings.sentry, "enabled", True
+        with (
+            patch("sentry_sdk.set_user") as mock_set_user,
+            patch.object(app_settings.sentry, "enabled", True),
         ):
             sentry.set_user(user_id="123", email="test@example.com")
-            
+
             mock_set_user.assert_called_once_with(
                 {"id": "123", "email": "test@example.com"}
             )
@@ -127,11 +140,12 @@ class TestSentryCapture:
 
     def test_set_context(self):
         """Test setting custom context."""
-        with patch("sentry_sdk.set_context") as mock_set_context, patch.object(
-            app_settings.sentry, "enabled", True
+        with (
+            patch("sentry_sdk.set_context") as mock_set_context,
+            patch.object(app_settings.sentry, "enabled", True),
         ):
             sentry.set_context("task", {"task_id": "123", "status": "working"})
-            
+
             mock_set_context.assert_called_once_with(
                 "task", {"task_id": "123", "status": "working"}
             )
@@ -144,8 +158,9 @@ class TestSentryCapture:
 
     def test_add_breadcrumb(self):
         """Test adding breadcrumbs."""
-        with patch("sentry_sdk.add_breadcrumb") as mock_add_breadcrumb, patch.object(
-            app_settings.sentry, "enabled", True
+        with (
+            patch("sentry_sdk.add_breadcrumb") as mock_add_breadcrumb,
+            patch.object(app_settings.sentry, "enabled", True),
         ):
             sentry.add_breadcrumb(
                 message="Task started",
@@ -153,7 +168,7 @@ class TestSentryCapture:
                 level="info",
                 data={"task_id": "123"},
             )
-            
+
             mock_add_breadcrumb.assert_called_once_with(
                 message="Task started",
                 category="task",
@@ -169,14 +184,14 @@ class TestSentryCapture:
 
     def test_start_transaction(self):
         """Test starting a transaction."""
-        with patch("sentry_sdk.start_transaction") as mock_start_transaction, patch.object(
-            app_settings.sentry, "enabled", True
-        ), patch.object(app_settings.sentry, "enable_tracing", True):
-            transaction = sentry.start_transaction(name="test_task", op="task")
-            
-            mock_start_transaction.assert_called_once_with(
-                name="test_task", op="task"
-            )
+        with (
+            patch("sentry_sdk.start_transaction") as mock_start_transaction,
+            patch.object(app_settings.sentry, "enabled", True),
+            patch.object(app_settings.sentry, "enable_tracing", True),
+        ):
+            _transaction = sentry.start_transaction(name="test_task", op="task")
+
+            mock_start_transaction.assert_called_once_with(name="test_task", op="task")
 
     def test_start_transaction_disabled(self):
         """Test that start_transaction returns nullcontext when disabled."""
@@ -188,8 +203,9 @@ class TestSentryCapture:
 
     def test_start_transaction_tracing_disabled(self):
         """Test that start_transaction returns nullcontext when tracing disabled."""
-        with patch.object(app_settings.sentry, "enabled", True), patch.object(
-            app_settings.sentry, "enable_tracing", False
+        with (
+            patch.object(app_settings.sentry, "enabled", True),
+            patch.object(app_settings.sentry, "enable_tracing", False),
         ):
             transaction = sentry.start_transaction(name="test_task")
             # Should return a context manager (nullcontext)
@@ -212,9 +228,9 @@ class TestSentryHooks:
                 }
             }
         }
-        
+
         result = sentry._before_send(event, {})
-        
+
         assert result is not None
         assert result["request"]["headers"]["authorization"] == "[Filtered]"
         assert result["request"]["headers"]["x-api-key"] == "[Filtered]"
@@ -226,16 +242,16 @@ class TestSentryHooks:
         event = {
             "request": {
                 "data": {
-                    "password": "secret123",
+                    "password": "secret123",  # pragma: allowlist secret
                     "token": "token_abc",
-                    "api_key": "key_xyz",
+                    "api_key": "key_xyz",  # pragma: allowlist secret
                     "username": "john_doe",
                 }
             }
         }
-        
+
         result = sentry._before_send(event, {})
-        
+
         assert result is not None
         assert result["request"]["data"]["password"] == "[Filtered]"
         assert result["request"]["data"]["token"] == "[Filtered]"
@@ -251,12 +267,12 @@ class TestSentryHooks:
             event = {"transaction": "/healthz"}
             result = sentry._before_send_transaction(event, {})
             assert result is None
-            
+
             # Metrics should be filtered
             event = {"transaction": "/metrics"}
             result = sentry._before_send_transaction(event, {})
             assert result is None
-            
+
             # Normal endpoint should not be filtered
             event = {"transaction": "/api/tasks"}
             result = sentry._before_send_transaction(event, {})

@@ -38,6 +38,7 @@ from bindu.common.models import (
     SentryConfig,
 )
 from bindu.settings import app_settings
+from bindu.utils.retry import execute_with_retry
 
 from .middleware import Auth0Middleware
 from .scheduler.base import Scheduler
@@ -326,7 +327,13 @@ class BinduApplication(Starlette):
                 elif self._storage_config.type == "memory":
                     app_settings.storage.backend = "memory"
 
-            storage = await create_storage()
+            # Retry storage initialization for transient connection failures
+            storage = await execute_with_retry(
+                create_storage,
+                max_attempts=app_settings.retry.storage_max_attempts,
+                min_wait=app_settings.retry.storage_min_wait,
+                max_wait=app_settings.retry.storage_max_wait,
+            )
             app._storage = storage
             logger.info(f"✅ Storage initialized: {type(storage).__name__}")
 
@@ -334,7 +341,14 @@ class BinduApplication(Starlette):
             logger.info("🔧 Initializing scheduler...")
             from .scheduler.factory import create_scheduler
 
-            scheduler = await create_scheduler(self._scheduler_config)
+            # Retry scheduler initialization for transient connection failures
+            scheduler = await execute_with_retry(
+                create_scheduler,
+                self._scheduler_config,
+                max_attempts=app_settings.retry.scheduler_max_attempts,
+                min_wait=app_settings.retry.scheduler_min_wait,
+                max_wait=app_settings.retry.scheduler_max_wait,
+            )
             app._scheduler = scheduler
             logger.info(f"✅ Scheduler initialized: {type(scheduler).__name__}")
 

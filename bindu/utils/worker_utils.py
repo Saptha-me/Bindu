@@ -218,7 +218,7 @@ class TaskStateManager:
         current_state = task["status"]["state"]
         if current_state != expected_state:
             raise ValueError(
-                f"Task {task['task_id']} already processed (state: {current_state}, expected: {expected_state})"
+                f"Task {task['id']} already processed (state: {current_state}, expected: {expected_state})"
             )
 
     @staticmethod

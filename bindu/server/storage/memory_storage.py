@@ -26,6 +26,7 @@ from typing_extensions import TypeVar
 from bindu.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
+from bindu.utils.retry import retry_storage_operation
 
 from .base import Storage
 
@@ -52,6 +53,7 @@ class InMemoryStorage(Storage[ContextT]):
         self.contexts: dict[UUID, list[UUID]] = {}
         self.task_feedback: dict[UUID, list[dict[str, Any]]] = {}
 
+    @retry_storage_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def load_task(
         self, task_id: UUID, history_length: int | None = None
     ) -> Task | None:
@@ -80,6 +82,7 @@ class InMemoryStorage(Storage[ContextT]):
 
         return task_copy
 
+    @retry_storage_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def submit_task(self, context_id: UUID, message: Message) -> Task:
         """Create a new task or continue an existing non-terminal task.
 
@@ -194,6 +197,7 @@ class InMemoryStorage(Storage[ContextT]):
 
         return task
 
+    @retry_storage_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def update_task(
         self,
         task_id: UUID,

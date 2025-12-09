@@ -219,7 +219,7 @@ class TestTaskStateManager:
     async def test_validate_task_state_failure(self):
         """Test validating task state when it doesn't match."""
         task = {
-            "task_id": str(uuid4()),
+            "id": str(uuid4()),
             "status": {"state": "completed"},
         }
 

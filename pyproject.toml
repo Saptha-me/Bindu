@@ -50,6 +50,7 @@ dependencies = [
     "detect-secrets>=1.5.0",
     "redis[hiredis]>=5.0.0",
     "sentry-sdk>=2.0.0",
+    "tenacity>=9.0.0",
 ]
 
 [project.optional-dependencies]

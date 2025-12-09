@@ -553,10 +553,46 @@ class SchedulerSettings(BaseSettings):
     # Scheduler backend selection
     backend: Literal["memory", "redis"] = "memory"
 
-    # Redis Configuration
+    # Redis Configuration - passed from user config
+    redis_url: str | None = None
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str | None = None
+    redis_db: int = 0
     queue_name: str = "bindu:tasks"
     max_connections: int = 10
     retry_on_timeout: bool = True
+
+
+class RetrySettings(BaseSettings):
+    """Retry mechanism configuration settings using Tenacity.
+
+    Configures retry behavior for different operation types:
+    - Worker operations (task execution)
+    - Storage operations (database, redis)
+    - Scheduler operations (task scheduling)
+    - API calls (external services)
+    """
+
+    # Worker task execution retries
+    worker_max_attempts: int = 3
+    worker_min_wait: float = 1.0  # seconds
+    worker_max_wait: float = 10.0  # seconds
+
+    # Storage operation retries (database, redis)
+    storage_max_attempts: int = 5
+    storage_min_wait: float = 0.5  # seconds
+    storage_max_wait: float = 5.0  # seconds
+
+    # Scheduler operation retries
+    scheduler_max_attempts: int = 3
+    scheduler_min_wait: float = 1.0  # seconds
+    scheduler_max_wait: float = 8.0  # seconds
+
+    # External API call retries
+    api_max_attempts: int = 4
+    api_min_wait: float = 1.0  # seconds
+    api_max_wait: float = 15.0  # seconds
 
 
 class SentrySettings(BaseSettings):
@@ -607,10 +643,6 @@ class SentrySettings(BaseSettings):
     # Attach stack trace to messages
     attach_stacktrace: bool = True
 
-    # Integrations to enable
-    # Available: starlette, sqlalchemy, redis, asyncio
-    # Note: Bindu uses Starlette (not FastAPI), so starlette integration covers all endpoints
-    # Note: Loguru integration is disabled due to conflict with Bindu's custom loguru setup
     integrations: list[str] = [
         "starlette",  # Covers all HTTP endpoints in bindu/server/endpoints/
         "sqlalchemy",  # PostgreSQL storage integration
@@ -664,6 +696,7 @@ class Settings(BaseSettings):
     auth: AuthSettings = AuthSettings()
     storage: StorageSettings = StorageSettings()
     scheduler: SchedulerSettings = SchedulerSettings()
+    retry: RetrySettings = RetrySettings()
     sentry: SentrySettings = SentrySettings()
 
 

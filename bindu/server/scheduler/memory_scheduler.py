@@ -19,6 +19,7 @@ from bindu.server.scheduler.base import (
     _RunTask,
 )
 from bindu.utils.logging import get_logger
+from bindu.utils.retry import retry_scheduler_operation
 
 logger = get_logger("bindu.server.scheduler.memory_scheduler")
 
@@ -43,6 +44,7 @@ class InMemoryScheduler(Scheduler):
         """Exit async context manager."""
         await self.aexit_stack.__aexit__(exc_type, exc_value, traceback)
 
+    @retry_scheduler_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def run_task(self, params: TaskSendParams) -> None:
         """Schedule a task for execution."""
         logger.debug(f"Running task: {params}")
@@ -50,6 +52,7 @@ class InMemoryScheduler(Scheduler):
             _RunTask(operation="run", params=params, _current_span=get_current_span())
         )
 
+    @retry_scheduler_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Cancel a scheduled task."""
         logger.debug(f"Canceling task: {params}")
@@ -59,6 +62,7 @@ class InMemoryScheduler(Scheduler):
             )
         )
 
+    @retry_scheduler_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def pause_task(self, params: TaskIdParams) -> None:
         """Pause a running task."""
         logger.debug(f"Pausing task: {params}")
@@ -68,6 +72,7 @@ class InMemoryScheduler(Scheduler):
             )
         )
 
+    @retry_scheduler_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def resume_task(self, params: TaskIdParams) -> None:
         """Resume a paused task."""
         logger.debug(f"Resuming task: {params}")

@@ -11,6 +11,7 @@ from opentelemetry.trace import get_current_span
 
 from bindu.common.protocol.types import TaskIdParams, TaskSendParams
 from bindu.utils.logging import get_logger
+from bindu.utils.retry import retry_scheduler_operation
 
 from .base import (
     Scheduler,
@@ -81,6 +82,7 @@ class RedisScheduler(Scheduler):
             logger.info("Redis scheduler connection closed")
             self._redis_client = None
 
+    @retry_scheduler_operation()
     async def run_task(self, params: TaskSendParams) -> None:
         """Send a run task operation to Redis queue."""
         logger.debug(f"Scheduling run task: {params}")
@@ -89,6 +91,7 @@ class RedisScheduler(Scheduler):
         )
         await self._push_task_operation(task_operation)
 
+    @retry_scheduler_operation()
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Send a cancel task operation to Redis queue."""
         logger.debug(f"Scheduling cancel task: {params}")
@@ -97,6 +100,7 @@ class RedisScheduler(Scheduler):
         )
         await self._push_task_operation(task_operation)
 
+    @retry_scheduler_operation()
     async def pause_task(self, params: TaskIdParams) -> None:
         """Send a pause task operation to Redis queue."""
         logger.debug(f"Scheduling pause task: {params}")
@@ -105,6 +109,7 @@ class RedisScheduler(Scheduler):
         )
         await self._push_task_operation(task_operation)
 
+    @retry_scheduler_operation()
     async def resume_task(self, params: TaskIdParams) -> None:
         """Send a resume task operation to Redis queue."""
         logger.debug(f"Scheduling resume task: {params}")

@@ -48,6 +48,7 @@ from bindu.penguin.manifest import AgentManifest
 from bindu.server.workers.base import Worker
 from bindu.server.workers.helpers import ResponseDetector, ResultProcessor
 from bindu.utils.logging import get_logger
+from bindu.utils.retry import retry_worker_operation
 from bindu.utils.worker_utils import ArtifactBuilder, MessageConverter, TaskStateManager
 
 tracer = get_tracer("bindu.server.workers.manifest_worker")
@@ -85,6 +86,7 @@ class ManifestWorker(Worker):
     )
     """Optional callback for task lifecycle notifications (task_id, context_id, state, final)."""
 
+    @retry_worker_operation()
     async def run_task(self, params: TaskSendParams) -> None:
         """Execute a task using the AgentManifest.
 
@@ -241,6 +243,7 @@ class ManifestWorker(Worker):
             raise
         return
 
+    @retry_worker_operation(max_attempts=2)
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Cancel a running task.
 

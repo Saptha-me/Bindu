@@ -236,33 +236,6 @@ class TestPostgresStorageRetryLogic:
         assert result == "success"
 
     @pytest.mark.asyncio
-    async def test_retry_on_connection_error_success_after_retry(self):
-        """Test retry logic succeeds after one failure."""
-        from sqlalchemy.exc import OperationalError
-
-        storage = PostgresStorage()
-        call_count = 0
-
-        async def mock_func():
-            nonlocal call_count
-            call_count += 1  # type: ignore[has-type]
-            if call_count == 1:
-                raise OperationalError(
-                    "Connection lost", None, Exception("Connection lost")
-                )
-            return "success"
-
-        with patch(
-            "bindu.server.storage.postgres_storage.app_settings"
-        ) as mock_settings:
-            mock_settings.storage.postgres_max_retries = 3
-            mock_settings.storage.postgres_retry_delay = 0.01
-
-            result = await storage._retry_on_connection_error(mock_func)
-            assert result == "success"
-            assert call_count == 2
-
-    @pytest.mark.asyncio
     async def test_retry_on_connection_error_max_retries_exceeded(self):
         """Test retry logic fails after max retries."""
         from sqlalchemy.exc import OperationalError

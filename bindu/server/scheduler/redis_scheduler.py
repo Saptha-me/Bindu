@@ -173,6 +173,8 @@ class RedisScheduler(Scheduler):
 
     def _serialize_task_operation(self, task_operation: TaskOperation) -> str:
         """Serialize task operation to JSON string for Redis storage."""
+        from uuid import UUID
+
         # Convert span to string representation (spans are not JSON serializable)
         span = task_operation["_current_span"]
 
@@ -195,9 +197,20 @@ class RedisScheduler(Scheduler):
             # If we can't get span context, just use None values
             pass
 
+        # Convert UUIDs to strings in params
+        def convert_uuids(obj):
+            """Recursively convert UUIDs to strings in nested structures."""
+            if isinstance(obj, UUID):
+                return str(obj)
+            elif isinstance(obj, dict):
+                return {k: convert_uuids(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_uuids(item) for item in obj]
+            return obj
+
         serializable_task = {
             "operation": task_operation["operation"],
-            "params": task_operation["params"],
+            "params": convert_uuids(task_operation["params"]),
             "span_id": format(span_id, "016x") if span_id else None,
             "trace_id": format(trace_id, "032x") if trace_id else None,
         }
@@ -205,12 +218,29 @@ class RedisScheduler(Scheduler):
 
     def _deserialize_task_operation(self, task_data: str) -> TaskOperation:
         """Deserialize task operation from JSON string."""
+        from uuid import UUID
+
         data = json.loads(task_data)
+
+        # Convert string UUIDs back to UUID objects in params
+        def convert_strings_to_uuids(obj):
+            """Recursively convert UUID strings back to UUID objects."""
+            if isinstance(obj, str):
+                # Try to parse as UUID
+                try:
+                    return UUID(obj)
+                except (ValueError, AttributeError):
+                    return obj
+            elif isinstance(obj, dict):
+                return {k: convert_strings_to_uuids(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_strings_to_uuids(item) for item in obj]
+            return obj
 
         # Reconstruct the task operation (span will be recreated by the worker)
         # TODO: Properly propagate span context using trace_id/span_id
         operation_type = data["operation"]
-        params = data["params"]
+        params = convert_strings_to_uuids(data["params"])
         current_span = get_current_span()
 
         if operation_type == "run":

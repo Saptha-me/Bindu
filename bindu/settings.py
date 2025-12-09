@@ -542,6 +542,23 @@ class StorageSettings(BaseSettings):
     run_migrations_on_startup: bool = True
 
 
+class SchedulerSettings(BaseSettings):
+    """Scheduler backend configuration settings.
+
+    Supports multiple scheduler backends:
+    - memory: In-memory scheduler (default, single-process)
+    - redis: Redis scheduler (distributed, multi-process)
+    """
+
+    # Scheduler backend selection
+    backend: Literal["memory", "redis"] = "memory"
+
+    # Redis Configuration
+    queue_name: str = "bindu:tasks"
+    max_connections: int = 10
+    retry_on_timeout: bool = True
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -561,6 +578,7 @@ class Settings(BaseSettings):
     agent: AgentSettings = AgentSettings()
     auth: AuthSettings = AuthSettings()
     storage: StorageSettings = StorageSettings()
+    scheduler: SchedulerSettings = SchedulerSettings()
 
 
 app_settings = Settings()

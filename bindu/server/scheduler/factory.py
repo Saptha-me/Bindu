@@ -38,13 +38,14 @@ async def create_scheduler(config: SchedulerConfig | None = None) -> Scheduler:
     """Create scheduler backend based on configuration.
 
     Reads the scheduler type from config and creates the appropriate scheduler instance.
+    If no config is provided, uses app_settings.scheduler defaults.
 
     Supported backends:
     - "memory": InMemoryScheduler (default, single-process)
     - "redis": RedisScheduler (distributed, multi-process)
 
     Args:
-        config: Scheduler configuration. If None, defaults to InMemoryScheduler.
+        config: Scheduler configuration. If None, uses app_settings.scheduler.
 
     Returns:
         Scheduler instance ready to use
@@ -58,10 +59,30 @@ async def create_scheduler(config: SchedulerConfig | None = None) -> Scheduler:
         >>> scheduler = await create_scheduler(config)
         >>> await scheduler.run_task(params)
     """
-    # Default to memory scheduler if no config provided
+    from bindu.settings import app_settings
+
+    # Use settings if no config provided
     if config is None:
-        logger.info("No scheduler config provided, using in-memory scheduler")
-        return InMemoryScheduler()
+        backend = app_settings.scheduler.backend
+        logger.info(f"No scheduler config provided, using settings: {backend}")
+
+        if backend == "memory":
+            return InMemoryScheduler()
+        elif backend == "redis":
+            # Build config from settings
+            config = SchedulerConfig(
+                type="redis",
+                redis_url=app_settings.scheduler.redis_url,
+                redis_host=app_settings.scheduler.redis_host,
+                redis_port=app_settings.scheduler.redis_port,
+                redis_password=app_settings.scheduler.redis_password,
+                redis_db=app_settings.scheduler.redis_db,
+                queue_name=app_settings.scheduler.queue_name,
+                max_connections=app_settings.scheduler.max_connections,
+                retry_on_timeout=app_settings.scheduler.retry_on_timeout,
+            )
+        else:
+            raise ValueError(f"Unknown scheduler backend in settings: {backend}")
 
     backend = config.type.lower()
 
@@ -93,14 +114,6 @@ async def create_scheduler(config: SchedulerConfig | None = None) -> Scheduler:
             max_connections=config.max_connections,
             retry_on_timeout=config.retry_on_timeout,
         )
-
-        # Test connection by entering context manager
-        try:
-            await scheduler.__aenter__()
-            logger.info("Redis scheduler connected successfully")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
-            raise ConnectionError(f"Unable to connect to Redis at {redis_url}: {e}")
 
         return scheduler
 

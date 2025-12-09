@@ -118,6 +118,30 @@ class PostgresStorage(Storage[ContextT]):
         self._engine = None
         self._session_factory = None
 
+    @staticmethod
+    def _mask_password(url: str) -> str:
+        """Mask password in database URL for safe logging.
+
+        Args:
+            url: Database URL (e.g., postgresql+asyncpg://user:password@host:port/db)  # pragma: allowlist secret
+
+        Returns:
+            URL with password masked (e.g., postgresql+asyncpg://user:***@host:port/db)  # pragma: allowlist secret
+        """
+        try:
+            # Handle URLs like postgresql+asyncpg://user:password@host:port/db
+            if "://" in url and "@" in url:
+                scheme, rest = url.split("://", 1)
+                if "@" in rest:
+                    auth, host_part = rest.rsplit("@", 1)
+                    if ":" in auth:
+                        user, _ = auth.split(":", 1)
+                        return f"{scheme}://{user}:***@{host_part}"
+            return url
+        except Exception:
+            # If parsing fails, return as-is (better than crashing)
+            return url
+
     async def connect(self) -> None:
         """Initialize SQLAlchemy engine and session factory.
 
@@ -125,6 +149,8 @@ class PostgresStorage(Storage[ContextT]):
             ConnectionError: If unable to connect to database
         """
         try:
+            # Mask password in URL for logging
+            masked_url = self._mask_password(self.database_url)
             logger.info("Connecting to PostgreSQL database with SQLAlchemy...")
 
             # Create async engine
@@ -149,7 +175,7 @@ class PostgresStorage(Storage[ContextT]):
                 await conn.execute(select(1))
 
             logger.info(
-                f"PostgreSQL connection established (pool_size={self.pool_max})"
+                f"PostgreSQL storage connected to {masked_url} (pool_size={self.pool_max})"
             )
 
         except Exception as e:

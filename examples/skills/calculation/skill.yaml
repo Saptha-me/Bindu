@@ -1,0 +1,222 @@
+# Calculation Skill
+# Performs basic arithmetic operations
+
+# Basic Metadata
+id: calculation-v1
+name: calculation
+version: 1.0.0
+author: your.email@example.com
+
+# Description
+description: |
+  Performs basic arithmetic calculations including addition, subtraction, multiplication,
+  and division. Handles expressions with parentheses and decimal numbers.
+  Evaluates mathematical expressions safely without requiring external dependencies.
+
+# Tags and Modes
+tags:
+  - math
+  - calculator
+  - arithmetic
+  - computation
+
+input_modes:
+  - text/plain
+  - application/json
+
+output_modes:
+  - text/plain
+
+# Example Queries
+examples:
+  - "What is 25 + 17?"
+  - "Calculate 144 / 12"
+  - "What's (10 + 5) * 3?"
+  - "Solve 100 - 47"
+  - "Compute 2.5 * 4"
+
+# Detailed Capabilities
+capabilities_detail:
+  basic_operations:
+    supported: true
+    operations:
+      - addition
+      - subtraction
+      - multiplication
+      - division
+    handles_decimals:  true
+    handles_parentheses: true
+    order_of_operations: "Follows standard PEMDAS rules"
+
+  advanced_features:
+    exponents: false
+    trigonometry: false
+    logarithms:  false
+    square_roots: false
+    planned_version: "2.0.0"
+
+  natural_language:
+    supported: true
+    accepted_phrases:
+      - "what is"
+      - "calculate"
+      - "compute"
+      - "solve"
+    description:  "Extracts mathematical expressions from natural language queries"
+
+# Requirements
+requirements:
+  packages:  []
+  system: []
+  min_memory_mb: 10
+
+# Performance Metrics
+performance:
+  avg_processing_time_ms: 5
+  max_concurrent_requests: 100
+  memory_per_request_mb:  1
+  scalability: horizontal
+
+# Tool Restrictions
+allowed_tools:
+  - Read
+  - Compute
+
+# Rich Documentation
+documentation:
+  overview: |
+    This skill provides lightweight arithmetic calculation capabilities without requiring
+    any external dependencies or API keys. It's designed for quick mathematical operations
+    and is ideal for testing Bindu locally.
+
+    Uses Python's eval with strict input sanitization to safely evaluate mathematical
+    expressions.  Only allows mathematical operators and numeric values.
+
+  use_cases:
+    when_to_use:
+      - User asks to calculate a mathematical expression
+      - User provides arithmetic operations
+      - Quick calculations needed without complex math functions
+      - Testing Bindu without API setup
+      - Educational demonstrations
+
+    when_not_to_use:
+      - Complex mathematical functions (use scipy-math skill)
+      - Statistical analysis (use stats-agent)
+      - Symbolic mathematics (use sympy-agent)
+      - Unit conversions (use converter-agent)
+      - Financial calculations with precision requirements (use finance-calculator)
+
+  input_structure: |
+    Accepts natural language or direct mathematical expressions:
+
+    Natural language:
+    "What is 100 divided by 4?"
+    "Calculate 5 times 7"
+
+    Direct expression:
+    "100 / 4"
+    "5 * 7"
+    "(10 + 5) * 3"
+
+    JSON format:
+    {
+      "expression": "100 / 4",
+      "format": "natural|direct"
+    }
+
+  output_format:  |
+    Text response with result:
+    "The answer is: 42"
+
+    Error messages:
+    "Can't divide by zero!"
+    "That doesn't look like valid math"
+    "Couldn't find any math in that message"
+
+  error_handling:
+    - "Division by zero: Returns friendly error message"
+    - "Invalid syntax: Returns 'That doesn't look like valid math'"
+    - "Empty expression: Returns 'Couldn't find any math in that message'"
+    - "Non-mathematical input:  Strips invalid characters and attempts calculation"
+
+  examples:
+    - title: "Basic Addition"
+      input: "What is 15 + 27?"
+      output: "The answer is: 42"
+
+    - title: "Division"
+      input: "Calculate 100 / 4"
+      output:  "The answer is: 25.0"
+
+    - title: "Complex Expression with Parentheses"
+      input: "(10 + 5) * 3"
+      output: "The answer is:  45"
+
+    - title:  "Decimal Numbers"
+      input: "Compute 2.5 * 4"
+      output: "The answer is: 10.0"
+
+    - title: "Division by Zero Error"
+      input: "What is 10 / 0?"
+      output:  "Can't divide by zero!"
+
+    - title: "Invalid Expression"
+      input: "Calculate abc + xyz"
+      output: "That doesn't look like valid math to me."
+
+  security:
+    input_sanitization: |
+      - Strips all non-mathematical characters
+      - Whitelist approach: only allows [0-9 + - * / ( ) . space]
+      - Removes any Python keywords or function calls
+      - Prevents code injection attacks
+
+    safe_evaluation: |
+      - Uses restricted eval with no __builtins__
+      - No access to Python built-in functions
+      - Cannot import modules
+      - Cannot execute arbitrary code
+
+  limitations:
+    - "Order of operations:  Follows standard PEMDAS"
+    - "Precision: Python's default float precision (~16 decimal places)"
+    - "No variable storage: Each calculation is independent"
+    - "No functions: Cannot use sqrt, sin, cos, etc."
+    - "Expression length:  Reasonable limits (no enforced maximum)"
+    - "Number range: Limited by Python's float range"
+
+  quality_guidelines:
+    - "Accuracy: Correct mathematical evaluation"
+    - "Safety: Strict input sanitization"
+    - "Clarity: Clear error messages"
+    - "Simplicity:  Straightforward calculation without complexity"
+
+  best_practices:
+    for_developers:
+      - "Validate input before sending to calculation skill"
+      - "Handle error responses gracefully"
+      - "Display results in user-friendly format"
+      - "Consider rounding for display purposes"
+
+    for_orchestrators:
+      - "Route basic arithmetic to this skill"
+      - "Chain with unit-converter for measurement calculations"
+      - "Use for quick sanity checks in multi-step workflows"
+      - "Suitable for high-volume, low-latency scenarios"
+      - "Can handle concurrent requests efficiently"
+
+  installation: |
+    No installation required!  Uses Python standard library only.
+
+    Just include this skill in your agent configuration:
+    skills:
+      - skills/calculation
+
+  versioning:
+    - version: "1.0.0"
+      date: "2025-01-21"
+      changes: "Initial release with basic arithmetic operations"
+    - version: "2.0.0"
+      status: "planned"
+      changes: "Add support for exponents, square roots, and scientific notation"

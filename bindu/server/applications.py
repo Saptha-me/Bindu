@@ -166,6 +166,8 @@ class BinduApplication(Starlette):
             skill_documentation_endpoint,
             skills_list_endpoint,
         )
+            # Add health endpoint import
+        from .endpoints.health import health_endpoint
 
         # Protocol endpoints
         self._add_route(
@@ -200,6 +202,8 @@ class BinduApplication(Starlette):
             ["GET"],
             with_app=True,
         )
+        # Register health endpoint
+        self._add_route("/health", health_endpoint, ["GET"], with_app=True)
 
         # Docs/Chat UI endpoint
         self._add_route("/docs", self._docs_endpoint, ["GET"], with_app=False)

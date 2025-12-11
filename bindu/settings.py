@@ -676,6 +676,49 @@ class SentrySettings(BaseSettings):
     debug: bool = False
 
 
+class CircuitBreakerSettings(BaseSettings):
+    """Circuit breaker configuration for resilience patterns.
+
+    Circuit breakers prevent cascade failures when external services
+    (LLMs, APIs, databases) are degraded or unavailable.
+
+    States:
+        - CLOSED: Normal operation, requests pass through
+        - OPEN: Fail-fast mode, requests rejected immediately
+        - HALF_OPEN: Testing mode, limited requests allowed to test recovery
+
+    Reference: Michael T. Nygard's "Release It!" pattern
+    """
+
+    # Default failure threshold before circuit opens
+    # After this many consecutive failures, circuit trips to OPEN
+    failure_threshold: int = 5
+
+    # Recovery timeout in seconds
+    # How long to wait in OPEN state before trying HALF_OPEN
+    recovery_timeout: float = 30.0
+
+    # Maximum calls allowed in HALF_OPEN state
+    # If all succeed, circuit closes; if any fail, circuit reopens
+    half_open_max_calls: int = 1
+
+    # Exceptions that should NOT trip the circuit breaker
+    # Business logic errors vs infrastructure failures
+    # Format: list of fully qualified exception class names
+    excluded_exceptions: list[str] = [
+        "ValueError",
+        "TypeError",
+        "KeyError",
+        "AttributeError",
+    ]
+
+    # Enable Sentry notifications on state changes
+    notify_sentry: bool = True
+
+    # Enable logging of state changes
+    log_state_changes: bool = True
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -698,6 +741,7 @@ class Settings(BaseSettings):
     scheduler: SchedulerSettings = SchedulerSettings()
     retry: RetrySettings = RetrySettings()
     sentry: SentrySettings = SentrySettings()
+    circuit_breaker: CircuitBreakerSettings = CircuitBreakerSettings()
 
 
 app_settings = Settings()

@@ -68,7 +68,66 @@ uv add bindu
 
 <br/>
 
+## 📋 Prerequisites
 
+Before installing Bindu, ensure you have:
+
+- **Python 3.12 or higher** - [Download here](https://www.python.org/downloads/)
+- **UV package manager** - [Installation guide](https://github.com/astral-sh/uv)
+- **Git** - [Download here](https://git-scm.com/downloads)
+
+### Verify Your Setup
+
+```bash
+# Check Python version
+python --version  # Should show 3.12 or higher
+
+# Check UV installation
+uv --version
+
+# Check Git
+git --version
+```
+
+### Windows Users
+
+If you're on Windows, we recommend using **PowerShell** (not CMD) for all commands.
+
+## 🐛 Common Installation Issues
+
+### Issue: "uv: command not found"
+**Solution:** 
+- Restart your terminal after installing UV
+- On Windows, make sure you used PowerShell for installation
+
+### Issue: "Python version not supported"
+**Solution:** 
+- Install Python 3.12+ from [python.org](https://www.python.org/downloads/)
+- Verify with: `python --version`
+
+### Issue: Virtual environment not activating on Windows
+**Solution:** 
+- Use PowerShell (not CMD)
+- Run: `.venv\Scripts\activate`
+- You should see `(.venv)` at the start of your prompt
+
+### Issue: Installation fails with "Microsoft Visual C++ required"
+**Solution:** 
+- Download Visual C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+- Or use: `uv pip install -e .` for core installation only
+
+### Issue: ModuleNotFoundError after installation
+**Solution:**
+```bash
+# Make sure virtual environment is activated
+.venv\Scripts\activate  # Windows
+source .venv/bin/activate  # Mac/Linux
+
+# Reinstall dependencies
+uv sync --dev
+```
+
+<br/>
 
 ## 🚀 Quick Start
 
@@ -84,7 +143,7 @@ uvx cookiecutter https://github.com/getbindu/create-bindu-agent.git
 More details can be found [here](https://docs.getbindu.com/bindu/create-bindu-agent/overview).
 <br/>
 
-That’s it.
+That's it.
 Your local agent becomes a live, secure, discoverable service, ready to talk with other agents anywhere.
 
 ### Manual Setup - Create Your First Agent

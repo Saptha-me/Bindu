@@ -1,0 +1,443 @@
+
+
+# Project name (used as prefix for container names)
+name: bindu-orchestrator
+
+# Services definition
+services:
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Build args (optional)
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: bindu-orchestrator
+    image: bindu/orchestrator:latest
+    
+    # Port mappings (container:host)
+    ports:
+      - "${API_PORT:-8000}:8000"
+    
+    # Environment variables (from .env file)
+    environment:
+      # Python runtime
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      
+      # Orchestrator config
+      - ORCHESTRATOR_DID=${ORCHESTRATOR_DID:-did:bindu:orchestrator:main:001}
+      - BINDU_ENV=${BINDU_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # Database
+      - DB_URL=${DB_URL:-postgresql://bindu:bindupass@postgres:5432/orchestrator}
+      - SQLALCHEMY_POOL_SIZE=20
+      - SQLALCHEMY_MAX_OVERFLOW=40
+      
+      # Cache
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - CACHE_TTL=3600
+      
+      # X402 Payment
+      - X402_ENABLED=${X402_ENABLED:-true}
+      - X402_SETTLEMENT_INTERVAL=${X402_SETTLEMENT_INTERVAL:-3600}
+      - X402_AUTO_SETTLE=${X402_AUTO_SETTLE:-true}
+    
+    # Volume mounts
+    # volumes:
+      # Application code (for development, remove for production)
+      # - .:/app
+    
+    # Service dependencies (wait for these services to be healthy)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # research-agent:
+      #   condition: service_healthy
+      # analysis-agent:
+      #   condition: service_healthy
+      # generation-agent:
+      #   condition: service_healthy
+      # verification-agent:
+      #   condition: service_healthy
+    
+    # Network configuration
+    networks:
+      - bindu-network
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Logging driver
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  # The following agent services have been commented out because their build contexts
+  # point to directories that do not exist in the project structure.
+  # research-agent:
+  #   build:
+  #     context: ./agents/research
+  #     dockerfile: Dockerfile
+  #   container_name: bindu-agent-research
+  #   image: bindu/agent-research:latest
+  #   ports:
+  #     - "3001:3001"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - AGENT_DID=${RESEARCH_AGENT_DID:-did:bindu:agent:research:docker:001}
+  #     - AGENT_PORT=3001
+  #     - AGENT_TYPE=research
+  #     - LOG_LEVEL=${LOG_LEVEL:-INFO}
+  #   volumes:
+  #     - ./agents/research:/app
+  #     - ./.bindu:/app/.bindu:ro
+  #     - ./logs/research-agent:/app/logs
+  #   networks:
+  #     - bindu-network
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '1'
+  #         memory: 1G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "100m"
+  #       max-file: "10"
+
+
+  # analysis-agent:
+  #   build:
+  #     context: ./agents/analysis
+  #     dockerfile: Dockerfile
+  #   container_name: bindu-agent-analysis
+  #   image: bindu/agent-analysis:latest
+  #   ports:
+  #     - "3002:3002"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - AGENT_DID=${ANALYSIS_AGENT_DID:-did:bindu:agent:analysis:docker:001}
+  #     - AGENT_PORT=3002
+  #     - AGENT_TYPE=analysis
+  #     - LOG_LEVEL=${LOG_LEVEL:-INFO}
+  #   volumes:
+  #     - ./agents/analysis:/app
+  #     - ./.bindu:/app/.bindu:ro
+  #     - ./logs/analysis-agent:/app/logs
+  #   networks:
+  #     - bindu-network
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '1'
+  #         memory: 1G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "100m"
+  #       max-file: "10"
+
+
+  # generation-agent:
+  #   build:
+  #     context: ./agents/generation
+  #     dockerfile: Dockerfile
+  #   container_name: bindu-agent-generation
+  #   image: bindu/agent-generation:latest
+  #   ports:
+  #     - "3003:3003"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - AGENT_DID=${GENERATION_AGENT_DID:-did:bindu:agent:generation:docker:001}
+  #     - AGENT_PORT=3003
+  #     - AGENT_TYPE=generation
+  #     - LOG_LEVEL=${LOG_LEVEL:-INFO}
+  #   volumes:
+  #     - ./agents/generation:/app
+  #     - ./.bindu:/app/.bindu:ro
+  #     - ./logs/generation-agent:/app/logs
+  #   networks:
+  #     - bindu-network
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '1'
+  #         memory: 1G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "100m"
+  #       max-file: "10"
+
+
+  # verification-agent:
+  #   build:
+  #     context: ./agents/verification
+  #     dockerfile: Dockerfile
+  #   container_name: bindu-agent-verification
+  #   image: bindu/agent-verification:latest
+  #   ports:
+  #     - "3004:3004"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - AGENT_DID=${VERIFICATION_AGENT_DID:-did:bindu:agent:verification:docker:001}
+  #     - AGENT_PORT=3004
+  #     - AGENT_TYPE=verification
+  #     - LOG_LEVEL=${LOG_LEVEL:-INFO}
+  #   volumes:
+  #     - ./agents/verification:/app
+  #     - ./.bindu:/app/.bindu:ro
+  #     - ./logs/verification-agent:/app/logs
+  #   networks:
+  #     - bindu-network
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '1'
+  #         memory: 1G
+  #       reservations:
+  #         cpus: '0.5'
+  #         memory: 512M
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "100m"
+  #       max-file: "10"
+
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: bindu-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-bindu}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-bindupass}
+      - POSTGRES_DB=${POSTGRES_DB:-orchestrator}
+      # Performance tuning
+      - POSTGRES_INITDB_ARGS=-c max_connections=100 -c shared_buffers=256MB
+    volumes:
+      # Database data persistence
+      - postgres_data:/var/lib/postgresql/data
+      # Initialization script (optional)
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - bindu-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bindu}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+
+  redis:
+    image: redis:7-alpine
+    container_name: bindu-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      # Data persistence
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - bindu-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: bindu-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@bindu.io}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+      - SCRIPT_NAME=/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bindu-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bindu-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      # Prometheus configuration
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Time series database storage
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - bindu-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+
+  grafana:
+     image: grafana/grafana:latest
+     container_name: bindu-grafana
+     environment:
+       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+       - GF_INSTALL_PLUGINS=grafana-piechart-panel
+     volumes:
+       - grafana_data:/var/lib/grafana
+     ports:
+       - "3000:3000"
+     depends_on:
+       - prometheus
+     networks:
+       - bindu-network
+     restart: unless-stopped
+
+networks:
+  bindu-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+
+
+volumes:
+  # PostgreSQL data persistence
+  postgres_data:
+    driver: local
+  
+  # Redis data persistence
+  redis_data:
+    driver: local
+  
+  # Prometheus time series database
+  prometheus_data:
+    driver: local
+  
+  # Optional: Grafana data
+  grafana_data:
+     driver: local

@@ -13,13 +13,15 @@ repos:
     hooks:
       - id: ruff
         args: ["--fix"]
+        files: ^(bindu|tests|Orchestrator_Agent)/
       - id: ruff-format
+        files: ^(bindu|tests|Orchestrator_Agent)/
 
   - repo: local
     hooks:
       - id: ty
         name: ty type checker
-        entry: uv run ty check bindu/ tests/
+        entry: uv run ty check bindu/ tests/ Orchestrator_Agent/
         language: system
         types: [python]
         pass_filenames: false

@@ -17,7 +17,7 @@ Usage:
 
 Then visit: http://localhost:3774/docs to interact with the agent
 
-Author: Your Name <your.email@example.com>
+Author: Shaikh Aman <shaikhamanksf@gmail.com>
 """
 
 from bindu.penguin.bindufy import bindufy
@@ -39,7 +39,7 @@ PROGRAMMING_JOKES = [
 
 # Agent configuration
 config = {
-    "author": "your.email@example.com",  # Replace with your email
+    "author": "shaikhamanksf@gmail.com",  
     "name": "joke_agent",
     "description": "A friendly agent that tells programming jokes on demand",
     "version": "1.0.0",

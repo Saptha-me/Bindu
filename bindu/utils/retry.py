@@ -22,7 +22,6 @@ from typing import Any, Callable, TypeVar
 
 from tenacity import (
     AsyncRetrying,
-    RetryError,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
@@ -87,10 +86,12 @@ def retry_worker_operation(
             _max_attempts = max_attempts or app_settings.retry.worker_max_attempts
             _min_wait = min_wait or app_settings.retry.worker_min_wait
             _max_wait = max_wait or app_settings.retry.worker_max_wait
-            
+
             async for attempt in AsyncRetrying(
                 stop=stop_after_attempt(_max_attempts),
-                wait=wait_random_exponential(multiplier=1, min=_min_wait, max=_max_wait),
+                wait=wait_random_exponential(
+                    multiplier=1, min=_min_wait, max=_max_wait
+                ),
                 retry=retry_if_exception_type(TRANSIENT_EXCEPTIONS),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),
@@ -137,7 +138,7 @@ def retry_storage_operation(
             _max_attempts = max_attempts or app_settings.retry.storage_max_attempts
             _min_wait = min_wait or app_settings.retry.storage_min_wait
             _max_wait = max_wait or app_settings.retry.storage_max_wait
-            
+
             async for attempt in AsyncRetrying(
                 stop=stop_after_attempt(_max_attempts),
                 wait=wait_exponential(multiplier=1, min=_min_wait, max=_max_wait),
@@ -188,10 +189,12 @@ def retry_scheduler_operation(
             _max_attempts = max_attempts or app_settings.retry.scheduler_max_attempts
             _min_wait = min_wait or app_settings.retry.scheduler_min_wait
             _max_wait = max_wait or app_settings.retry.scheduler_max_wait
-            
+
             async for attempt in AsyncRetrying(
                 stop=stop_after_attempt(_max_attempts),
-                wait=wait_random_exponential(multiplier=1, min=_min_wait, max=_max_wait),
+                wait=wait_random_exponential(
+                    multiplier=1, min=_min_wait, max=_max_wait
+                ),
                 retry=retry_if_exception_type(TRANSIENT_EXCEPTIONS),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),
@@ -239,10 +242,12 @@ def retry_api_call(
             _max_attempts = max_attempts or app_settings.retry.api_max_attempts
             _min_wait = min_wait or app_settings.retry.api_min_wait
             _max_wait = max_wait or app_settings.retry.api_max_wait
-            
+
             async for attempt in AsyncRetrying(
                 stop=stop_after_attempt(_max_attempts),
-                wait=wait_random_exponential(multiplier=1, min=_min_wait, max=_max_wait),
+                wait=wait_random_exponential(
+                    multiplier=1, min=_min_wait, max=_max_wait
+                ),
                 retry=retry_if_exception_type(TRANSIENT_EXCEPTIONS),
                 before_sleep=before_sleep_log(logger, logging.WARNING),
                 after=after_log(logger, logging.INFO),

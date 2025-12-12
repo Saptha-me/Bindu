@@ -1508,6 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Modal event listeners
     const feedbackModal = document.getElementById('feedback-modal');
+    const skillModal = document.getElementById('skill-modal');
 
     feedbackModal.addEventListener('click', (e) => {
         if (e.target === feedbackModal) {
@@ -1518,6 +1519,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && feedbackModal.style.display === 'flex') {
             closeFeedbackModal();
+        }
+
+        if (skillModal && skillModal.style.display === 'flex') {
+            closeSkillModal();
         }
     });
 });

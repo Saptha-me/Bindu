@@ -39,6 +39,9 @@ from .auth import Auth0Middleware, AuthMiddleware, CognitoMiddleware
 # Export payment middleware from x402/ subdirectory
 from .x402 import X402Middleware
 
+# Export rate limit middleware
+from .rate_limit import RateLimitMiddleware
+
 __all__ = [
     # Base interface
     "AuthMiddleware",
@@ -47,4 +50,6 @@ __all__ = [
     "CognitoMiddleware",
     # Payment middleware
     "X402Middleware",
+    # Rate limit middleware
+    "RateLimitMiddleware",
 ]

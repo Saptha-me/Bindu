@@ -553,6 +553,13 @@ class BinduApplication(Starlette):
             # Add auth middleware after X402 (if present)
             middleware_list.insert(1 if x402_ext else 0, auth_middleware)
 
+        # Add Rate Limit middleware if enabled
+        if app_settings.rate_limit.enabled:
+            from .middleware.rate_limit import RateLimitMiddleware
+            rate_limit_middleware = Middleware(RateLimitMiddleware)
+            # Add rate limit middleware early in the chain
+            middleware_list.insert(0, rate_limit_middleware)
+
         return middleware_list
 
     def _create_auth_middleware(self) -> Middleware:

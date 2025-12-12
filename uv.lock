@@ -79,6 +79,15 @@ wheels = [
 ]
 
 [[package]]
+name = "aiomcache"
+version = "0.8.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/0a/914d8df1002d88ca70679d192f6e16d113e6b5cbcc13c51008db9230025f/aiomcache-0.8.2.tar.gz", hash = "sha256:43b220d7f499a32a71871c4f457116eb23460fa216e69c1d32b81e3209e51359", size = 10640, upload-time = "2024-05-07T15:03:14.434Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a1/f8/78455f6377cbe85f335f4dbd40a807dafb72bd5fa05eb946f2ad0cec3d40/aiomcache-0.8.2-py3-none-any.whl", hash = "sha256:9d78d6b6e74e775df18b350b1cddfa96bd2f0a44d49ad27fa87759a3469cef5e", size = 10145, upload-time = "2024-05-07T15:03:12.003Z" },
+]
+
+[[package]]
 name = "aiosignal"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -235,6 +244,7 @@ source = { editable = "." }
 dependencies = [
     { name = "agno" },
     { name = "aiofiles" },
+    { name = "aiomcache" },
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "base58" },
@@ -298,6 +308,7 @@ dev = [
 requires-dist = [
     { name = "agno", specifier = ">=2.3.8" },
     { name = "aiofiles", specifier = ">=24.1.0" },
+    { name = "aiomcache", specifier = ">=0.8.0" },
     { name = "alembic", specifier = ">=1.13.0" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "base58", specifier = ">=2.1.1" },

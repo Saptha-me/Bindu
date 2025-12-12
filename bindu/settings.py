@@ -676,6 +676,29 @@ class SentrySettings(BaseSettings):
     debug: bool = False
 
 
+class RateLimitSettings(BaseSettings):
+    """Rate limiting configuration settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="RATE_LIMIT__",
+        extra="allow",
+    )
+
+    # Enable/disable rate limiting
+    enabled: bool = False
+
+    # Backend selection: memory, redis, memcached
+    backend: Literal["memory", "redis", "memcached"] = "memory"
+
+    # Default rate limit (requests per minute)
+    default_limit: int = 60
+
+    # Memcached Configuration
+    memcached_host: str = "localhost"
+    memcached_port: int = 11211
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -698,6 +721,7 @@ class Settings(BaseSettings):
     scheduler: SchedulerSettings = SchedulerSettings()
     retry: RetrySettings = RetrySettings()
     sentry: SentrySettings = SentrySettings()
+    rate_limit: RateLimitSettings = RateLimitSettings()
 
 
 app_settings = Settings()

@@ -70,8 +70,6 @@ from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import Any, Dict
 
-from opentelemetry import trace
-
 from ..utils.logging import get_logger
 from .handlers import ContextHandlers, MessageHandlers, TaskHandlers
 from .notifications import PushNotificationManager

@@ -96,23 +96,23 @@ If you're on Windows, we recommend using **PowerShell** (not CMD) for all comman
 ## 🐛 Common Installation Issues
 
 ### Issue: "uv: command not found"
-**Solution:** 
+**Solution:**
 - Restart your terminal after installing UV
 - On Windows, make sure you used PowerShell for installation
 
 ### Issue: "Python version not supported"
-**Solution:** 
+**Solution:**
 - Install Python 3.12+ from [python.org](https://www.python.org/downloads/)
 - Verify with: `python --version`
 
 ### Issue: Virtual environment not activating on Windows
-**Solution:** 
+**Solution:**
 - Use PowerShell (not CMD)
 - Run: `.venv\Scripts\activate`
 - You should see `(.venv)` at the start of your prompt
 
 ### Issue: Installation fails with "Microsoft Visual C++ required"
-**Solution:** 
+**Solution:**
 - Download Visual C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 - Or use: `uv pip install -e .` for core installation only
 
@@ -284,6 +284,10 @@ Here are some common setup issues and their fixes to help you get up and running
 | Pre-commit fails during commit | Code format / lint checks not applied | Run `pre-commit run --all-files` after initial install |
 | Tests fail with missing dependencies | Dev packages not installed | Install with: `uv sync --dev` (not only `pip install bindu`) |
 | Cookiecutter install error | Cookiecutter not found | Install with `uv add cookiecutter` or `pip install cookiecutter` |
+
+| **Microsoft Visual C++ 14.0 or greater required** error during 'uv sync --dev' | Windows needs c++ compiler to build `ed25519-blake2b` package | 1.Download from: https://visualstudio.microsoft.com/visual-cpp-build-tools/ 2.Install C++ build tools (workload only) 3.Restart powershell 4. `uv sync --dev` again |
+
+| **password authentication failed for user bindu** when starting `echo_agent.py` | Bindu tries to use postgreSQL database by default but can't connect | ** Quick fix (no postgres needed): ** 1.create `.env` file in root, set correct postgres credentials in an evn var. 2. Add: `BINDU_STORAGE_BACKEND=memory` this way we can use a pure in-memory storage mode for quick local testing (docs should show a "no postgres" path) 3. Restart agent, now we can use in-memory storage for testing |
 
 ### Additional Tips
 - If the agent starts but does not respond, re-create the venv and reinstall dependencies:

@@ -15,9 +15,9 @@
 <br/>
 
 [![GitHub License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Hits](https://hits.sh/github.com/Saptha-me/Bindu.svg)](https://hits.sh/github.com/Saptha-me/Bindu/)
+[![Hits](https://hits.sh/github.com/getbindu/Bindu.svg)](https://hits.sh/github.com/getbindu/Bindu/)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Coverage Status](https://coveralls.io/repos/github/Saptha-me/Bindu/badge.svg?branch=v0.3.18)](https://coveralls.io/github/Saptha-me/Bindu?branch=v0.3.18)
+[![Coverage Status](https://coveralls.io/repos/github/getbindu/Bindu/badge.svg?branch=v0.3.18)](https://coveralls.io/github/getbindu/Bindu?branch=v0.3.18)
 [![Tests](https://github.com/getbindu/Bindu/actions/workflows/release.yml/badge.svg)](https://github.com/getbindu/Bindu/actions/workflows/release.yml)
 [![PyPI version](https://img.shields.io/pypi/v/bindu.svg)](https://pypi.org/project/bindu/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/bindu)](https://pypi.org/project/bindu/)
@@ -240,6 +240,26 @@ Expected response:
 ```
 "Hello Bindu!"
 ```
+
+## Simple Identity Agent Example
+
+A basic agent that identifies itself and echoes your message:
+
+```python
+python examples/simple_identity_agent.py
+```
+
+Test:
+```
+curl -X POST http://localhost:3775/messages \
+-H "Content-Type: application/json" \
+-d '[{"role": "user", "content": "Who are you?"}]'
+```
+
+Expected response:
+```
+"I am a simple Bindu agent. You said: Who are you?"
+```
 ## Summarizer Agent Example
 
 This example shows how to build a more practical Bindu agent that transforms text.
@@ -284,6 +304,8 @@ Here are some common setup issues and their fixes to help you get up and running
 | Pre-commit fails during commit | Code format / lint checks not applied | Run `pre-commit run --all-files` after initial install |
 | Tests fail with missing dependencies | Dev packages not installed | Install with: `uv sync --dev` (not only `pip install bindu`) |
 | Cookiecutter install error | Cookiecutter not found | Install with `uv add cookiecutter` or `pip install cookiecutter` |
+| `uv: command not found` | uv package manager not installed | Install with `pip install uv` |
+| `No pyproject.toml found` | Running uv commands from wrong directory | Ensure you're in the `bindu/` subdirectory containing `pyproject.toml` |
 
 ### Additional Tips
 - If the agent starts but does not respond, re-create the venv and reinstall dependencies:

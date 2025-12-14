@@ -73,10 +73,9 @@ from typing import Any, Dict
 from ..utils.logging import get_logger
 from .handlers import ContextHandlers, MessageHandlers, TaskHandlers
 from .notifications import PushNotificationManager
-from .scheduler import Scheduler, TaskSendParams
+from .scheduler import Scheduler
 from .storage import Storage
 from .workers import ManifestWorker
-
 
 logger = get_logger("pebbling.server.task_manager")
 

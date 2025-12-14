@@ -68,7 +68,7 @@ import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from opentelemetry import trace
 
@@ -79,6 +79,10 @@ from .scheduler import Scheduler, TaskSendParams
 from .storage import Storage
 from .workers import ManifestWorker
 
+
+logger = get_logger("pebbling.server.task_manager")
+
+
 class TaskPriority(IntEnum):
     """Task priority levels.
     
@@ -88,8 +92,6 @@ class TaskPriority(IntEnum):
     NORMAL = 2
     HIGH = 3
     URGENT = 4
-
-logger = get_logger("pebbling.server.task_manager")
 
 
 @dataclass

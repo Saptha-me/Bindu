@@ -206,7 +206,19 @@ That's it! Your agent is now live at `http://localhost:3773` and ready to commun
 
 <br/>
 
-## Minimal Agent Example (Echo Agent) — sanity check
+# Minimal Agent Example (Echo Agent) — sanity check
+⚠️ **Important Note (Local Setup)**
+
+By default, Bindu initializes a PostgreSQL-backed persistent storage.
+If PostgreSQL is not running locally, the echo agent may start successfully
+but fail during application startup with a `Connection refused` error.
+
+For a quick local sanity check, you can:
+- Run PostgreSQL locally or via Docker
+- Or configure a non-persistent / in-memory storage backend for testing
+
+This note helps first-time users understand the storage requirement
+when running the minimal echo agent.
 
 If you want to test Bindu locally without tools or external dependencies, here is the smallest possible working agent:
 

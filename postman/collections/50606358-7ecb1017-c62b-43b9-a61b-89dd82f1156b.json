@@ -299,14 +299,25 @@
 			]
 		},
 		{
-			"name": "New Request",
+			"name": "health",
 			"id": "50606358-3625e553-09e8-4b86-a3c4-76c46c0ac896",
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3773/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3773",
+					"path": [
+						"health"
+					]
+				}
 			},
 			"response": []
 		}

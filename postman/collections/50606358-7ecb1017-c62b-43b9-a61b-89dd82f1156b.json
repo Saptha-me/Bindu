@@ -171,12 +171,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{bindu_local}}/.well-known/agent.json",
+					"raw": "{{bindu_local}}.well-known/agent.json",
 					"host": [
-						"{{bindu_local}}"
+						"{{bindu_local}}",
+						"well-known"
 					],
 					"path": [
-						".well-known",
 						"agent.json"
 					]
 				}

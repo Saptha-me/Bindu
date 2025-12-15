@@ -361,6 +361,7 @@ def bindufy(
         enable_context_based_history=validated_config.get(
             "enable_context_based_history", False
         ),
+        negotiation=validated_config.get("negotiation"),
         documentation_url=validated_config["documentation_url"],
         extra_metadata=validated_config["extra_metadata"],
     )

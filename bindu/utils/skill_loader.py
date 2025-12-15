@@ -64,22 +64,14 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
     }
 
     # Add optional fields
-    if "examples" in skill_data:
-        skill["examples"] = skill_data["examples"]
-
     if "version" in skill_data:
         skill["version"] = skill_data["version"]
 
-    # Store relative path to YAML file
-    try:
-        skill["documentation_path"] = str(yaml_path.relative_to(caller_dir.parent))
-    except ValueError:
-        # If relative path fails, use absolute
-        skill["documentation_path"] = str(yaml_path)
+    if "author" in skill_data:
+        skill["author"] = skill_data["author"]
 
-    # Store raw YAML content as documentation
-    with open(yaml_path, "r", encoding="utf-8") as f:
-        skill["documentation_content"] = f.read()
+    if "examples" in skill_data:
+        skill["examples"] = skill_data["examples"]
 
     if "capabilities_detail" in skill_data:
         skill["capabilities_detail"] = skill_data["capabilities_detail"]
@@ -92,6 +84,23 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
 
     if "allowed_tools" in skill_data:
         skill["allowed_tools"] = skill_data["allowed_tools"]
+
+    if "documentation" in skill_data:
+        skill["documentation"] = skill_data["documentation"]
+
+    if "assessment" in skill_data:
+        skill["assessment"] = skill_data["assessment"]
+
+    # Store relative path to YAML file
+    try:
+        skill["documentation_path"] = str(yaml_path.relative_to(caller_dir.parent))
+    except ValueError:
+        # If relative path fails, use absolute
+        skill["documentation_path"] = str(yaml_path)
+
+    # Store raw YAML content as documentation
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        skill["documentation_content"] = f.read()
 
     logger.info(
         f"Loaded skill: {skill['name']} v{skill.get('version', 'unknown')} from {skill_path}"

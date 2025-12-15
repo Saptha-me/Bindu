@@ -595,6 +595,48 @@ class RetrySettings(BaseSettings):
     api_max_wait: float = 15.0  # seconds
 
 
+class NegotiationSettings(BaseSettings):
+    """Negotiation and capability assessment configuration settings.
+    
+    Controls how agents assess their ability to handle tasks during
+    the negotiation phase of agent-to-agent communication.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="NEGOTIATION__",
+        extra="allow",
+    )
+
+    # Scoring weights for capability assessment
+    # All weights are normalized to sum to 1.0 during calculation
+    skill_match_weight: float = 0.55
+    io_compatibility_weight: float = 0.20
+    performance_weight: float = 0.15
+    load_weight: float = 0.05
+    cost_weight: float = 0.05
+
+    # Default latency estimate when no performance data available
+    default_latency_ms: int = 5000
+
+    # Keyword extraction limits
+    max_keyword_length: int = 100
+    max_task_text_length: int = 10000
+
+    # Minimum score threshold for acceptance
+    min_score_threshold: float = 0.0
+
+    # Embedding-based semantic matching
+    use_embeddings: bool = True
+    embedding_provider: str = "openrouter"  # Options: openrouter, sentence-transformers
+    embedding_model: str = "text-embedding-3-small"  # OpenRouter model
+    embedding_api_key: str = ""  # OpenRouter API key (set via config or env)
+    embedding_weight: float = 0.7  # Weight for embedding score in hybrid matching
+    keyword_weight: float = 0.3  # Weight for keyword score in hybrid matching
+    embedding_batch_size: int = 32
+    embedding_cache_size: int = 1000  # Max task embeddings to cache
+
+
 class SentrySettings(BaseSettings):
     """Sentry error tracking and performance monitoring configuration.
 
@@ -697,6 +739,7 @@ class Settings(BaseSettings):
     storage: StorageSettings = StorageSettings()
     scheduler: SchedulerSettings = SchedulerSettings()
     retry: RetrySettings = RetrySettings()
+    negotiation: NegotiationSettings = NegotiationSettings()
     sentry: SentrySettings = SentrySettings()
 
 

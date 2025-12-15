@@ -316,3 +316,52 @@ documentation:
     - version: "1.2.0"
       status: "planned"
       changes: "Enhanced OCR with multiple language support and confidence scoring"
+
+# Assessment fields for skill negotiation
+assessment:
+  keywords:
+    - pdf
+    - extract
+    - extraction
+    - document
+    - form
+    - table
+    - scanned
+    - ocr
+    - parse
+    - fill
+  
+  specializations:
+    - domain: invoice_processing
+      confidence_boost: 0.3
+    - domain: form_filling
+      confidence_boost: 0.3
+    - domain: table_extraction
+      confidence_boost: 0.2
+    - domain: ocr
+      confidence_boost: 0.2
+  
+  anti_patterns:
+    - "pdf editing"
+    - "pdf creation"
+    - "create pdf"
+    - "generate pdf"
+    - "merge pdf"
+    - "split pdf"
+    - "image extraction"
+    - "extract images"
+  
+  complexity_indicators:
+    simple:
+      - "single page"
+      - "extract text"
+      - "read pdf"
+    medium:
+      - "multiple pages"
+      - "fill form"
+      - "extract table"
+    complex:
+      - "scanned document"
+      - "ocr"
+      - "hundreds of pages"
+      - "batch processing"

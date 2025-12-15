@@ -29,8 +29,47 @@ from bindu.server.negotiation.capability_calculator import (
 )
 from bindu.utils.request_utils import handle_endpoint_errors, get_client_ip
 from bindu.utils.logging import get_logger
+from bindu.utils.capabilities import get_x402_extension_from_capabilities
+from bindu.settings import app_settings
 
 logger = get_logger("bindu.server.endpoints.negotiation")
+
+
+def _get_or_create_calculator(app: BinduApplication) -> CapabilityCalculator:
+    """Get or create cached calculator instance.
+    
+    Caches calculator in app instance to avoid repeated initialization.
+    Invalidates cache if manifest changes.
+    """
+    # Check if calculator exists and manifest hasn't changed
+    if (
+        hasattr(app, "_negotiation_calculator")
+        and hasattr(app, "_negotiation_calculator_manifest_id")
+        and app._negotiation_calculator_manifest_id == id(app.manifest)
+    ):
+        return app._negotiation_calculator
+    
+    # Create new calculator
+    skills = app.manifest.skills or [] if app.manifest else []
+    x402_extension = get_x402_extension_from_capabilities(app.manifest) if app.manifest else None
+    
+    # Get embedding API key from manifest negotiation config if available
+    embedding_api_key = None
+    if app.manifest and hasattr(app.manifest, 'negotiation') and app.manifest.negotiation:
+        embedding_api_key = app.manifest.negotiation.get('embedding_api_key')
+    
+    calculator = CapabilityCalculator(
+        skills=skills,
+        x402_extension=x402_extension,
+        embedding_api_key=embedding_api_key,
+    )
+    
+    # Cache calculator and manifest ID
+    app._negotiation_calculator = calculator
+    app._negotiation_calculator_manifest_id = id(app.manifest)
+    
+    logger.debug("Created and cached new CapabilityCalculator instance")
+    return calculator
 
 
 @handle_endpoint_errors("task assessment")
@@ -43,13 +82,13 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
     client_ip = get_client_ip(request)
     logger.debug(f"Negotiation request from {client_ip}")
 
-    # Ensure manifest exists
+    # Early validation: manifest exists
     if app.manifest is None:
         return JSONResponse(
             content={"error": "Agent manifest not configured"}, status_code=500
         )
 
-    # Parse request body
+    # Early validation: parse request body
     try:
         body = await request.json()
     except Exception as e:
@@ -58,11 +97,18 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
             content={"error": "Invalid JSON payload"}, status_code=400
         )
 
-    # Extract required field
+    # Early validation: required field
     task_summary = body.get("task_summary")
     if not task_summary:
         return JSONResponse(
             content={"error": "'task_summary' is required"}, status_code=400
+        )
+    
+    # Early validation: task_summary length
+    if len(task_summary) > 10000:
+        return JSONResponse(
+            content={"error": "task_summary exceeds maximum length of 10000 characters"},
+            status_code=400
         )
 
     # Extract optional fields
@@ -92,22 +138,21 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
                 content={"error": f"Invalid weights: {e}"}, status_code=400
             )
 
-    # Get queue depth from scheduler if available
+    # Get queue depth by counting non-terminal tasks from storage
     queue_depth = None
-    if app.scheduler and hasattr(app.scheduler, "get_queue_length"):
+    if app.task_manager and app.task_manager.storage:
         try:
-            queue_depth = await app.scheduler.get_queue_length()
+            tasks = await app.task_manager.storage.list_tasks()
+            # Count tasks in non-terminal states (from agent settings)
+            queue_depth = sum(
+                1 for task in tasks 
+                if task.get("state") in app_settings.agent.non_terminal_states
+            )
         except Exception as e:
-            logger.warning(f"Failed to get queue depth: {e}")
+            logger.warning(f"Failed to get queue depth from storage: {e}")
 
-    # Get x402 extension if available
-    x402_extension = None
-    if app.manifest.x402:
-        x402_extension = app.manifest.x402
-
-    # Initialize calculator
-    skills = app.manifest.skills or []
-    calculator = CapabilityCalculator(skills=skills, x402_extension=x402_extension)
+    # Get or create cached calculator instance
+    calculator = _get_or_create_calculator(app)
 
     # Run calculation
     result = calculator.calculate(
@@ -124,41 +169,45 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
         min_score=min_score,
     )
 
-    # Format response
+    # Format response (optimized with dict comprehension)
     response_data = {
         "accepted": result.accepted,
         "score": result.score,
         "confidence": result.confidence,
-    }
-
-    if result.rejection_reason:
-        response_data["rejection_reason"] = result.rejection_reason
-
-    if result.skill_matches:
-        response_data["skill_matches"] = [
+        **(
+            {"rejection_reason": result.rejection_reason}
+            if result.rejection_reason
+            else {}
+        ),
+        **(
             {
-                "skill_id": m.skill_id,
-                "skill_name": m.skill_name,
-                "score": m.score,
-                "reasons": m.reasons,
+                "skill_matches": [
+                    {
+                        "skill_id": m.skill_id,
+                        "skill_name": m.skill_name,
+                        "score": m.score,
+                        "reasons": m.reasons,
+                    }
+                    for m in result.skill_matches
+                ]
             }
-            for m in result.skill_matches
-        ]
-
-    if result.matched_tags:
-        response_data["matched_tags"] = result.matched_tags
-
-    if result.matched_capabilities:
-        response_data["matched_capabilities"] = result.matched_capabilities
-
-    if result.latency_estimate_ms is not None:
-        response_data["latency_estimate_ms"] = result.latency_estimate_ms
-
-    if result.queue_depth is not None:
-        response_data["queue_depth"] = result.queue_depth
-
-    if result.subscores:
-        response_data["subscores"] = result.subscores
+            if result.skill_matches
+            else {}
+        ),
+        **({"matched_tags": result.matched_tags} if result.matched_tags else {}),
+        **(
+            {"matched_capabilities": result.matched_capabilities}
+            if result.matched_capabilities
+            else {}
+        ),
+        **(
+            {"latency_estimate_ms": result.latency_estimate_ms}
+            if result.latency_estimate_ms is not None
+            else {}
+        ),
+        **({"queue_depth": result.queue_depth} if result.queue_depth is not None else {}),
+        **({"subscores": result.subscores} if result.subscores else {}),
+    }
 
     logger.info(
         f"Assessment for '{task_summary[:50]}...': "

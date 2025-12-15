@@ -4,10 +4,16 @@ This example demonstrates how to create a simple research assistant agent
 that uses DuckDuckGo for web searches and can be deployed as a Bindu agent.
 """
 
+import os
+from dotenv import load_dotenv
+
 from bindu.penguin.bindufy import bindufy
 from agno.agent import Agent
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.models.openai import OpenAIChat
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Define your agent
 agent = Agent(
@@ -28,6 +34,9 @@ config = {
         "type": "postgres",
         "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",  # pragma: allowlist secret
         "run_migrations_on_startup": False,
+    },
+    "negotiation": {
+        "embedding_api_key": os.getenv("OPENROUTER_API_KEY"),  # Load from environment
     },
 }
 

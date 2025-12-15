@@ -194,6 +194,9 @@ class AgentManifest:
     # Optional Metadata
     documentation_url: str | None = None
 
+    # Negotiation
+    negotiation: dict[str, Any] | None = None
+
     # Runtime Execution (injected by framework)
     run: Callable[..., Any] | None = field(default=None, init=False)
 
@@ -223,6 +226,7 @@ class AgentManifest:
             telemetry=self.telemetry,
             default_input_modes=["text/plain", "application/json"],
             default_output_modes=["text/plain", "application/json"],
+            negotiation=self.negotiation,
         )
 
     def __repr__(self) -> str:

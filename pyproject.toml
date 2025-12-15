@@ -51,6 +51,7 @@ dependencies = [
     "redis[hiredis]>=5.0.0",
     "sentry-sdk>=2.0.0",
     "tenacity>=9.0.0",
+    "dspy>=2.5.0",
 ]
 
 [project.optional-dependencies]

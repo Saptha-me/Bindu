@@ -90,57 +90,6 @@
 			"response": []
 		},
 		{
-			"name": "second send message Copy",
-			"id": "50606358-1f86443d-1acd-496b-9ad0-8bc6b1a20df3",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "<>",
-							"type": "string"
-						}
-					]
-				},
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					},
-					{
-						"key": "Authorization",
-						"value": "Bearer <>"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"provide sunset quote\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440039\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440078\",\n            \"metadata\": {\n                \"x402.payment.status\": \"payment-submitted\",\n                \"x402.payment.payload\": {\n                    \"resource\": \"/agent/first Agent\",\n                    \"scheme\": \"exact\",\n                    \"network\": \"base-sepolia\",\n                    \"asset\": \"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\n                    \"payTo\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0\",\n                    \"amount\": \"10000000000\",\n                    \"signature\": \"0x<YOUR_WALLET_SIGNATURE_HERE>\",\n                    \"timestamp\": \"2025-10-26T14:47:52.183416+00:00\",\n                    \"payer\": \"0x<YOUR_WALLET_ADDRESS>\"\n                }\n            }\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440025\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:3773/",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "3773",
-					"path": [
-						""
-					]
-				}
-			},
-			"response": []
-		},
-		{
 			"name": "submit feeback",
 			"id": "50606358-275a55d6-4475-4cad-87bb-6c9153039a0b",
 			"protocolProfileBehavior": {

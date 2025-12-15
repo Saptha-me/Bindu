@@ -125,7 +125,7 @@ class CapabilityCalculator:
         embedding_api_key: str | None = None,
     ):
         """Initialize calculator with agent skills and optional pricing.
-        
+
         Args:
             skills: List of skill definitions
             x402_extension: Optional x402 payment extension config
@@ -137,13 +137,9 @@ class CapabilityCalculator:
         self._embedder = None
         self._skill_embeddings = None
         self._use_embeddings = app_settings.negotiation.use_embeddings
-        
+
         # Pre-compute skill metadata for faster matching
         self._skill_metadata = self._precompute_skill_metadata()
-        
-        # Pre-compute IO mode sets for faster compatibility checks
-        self._all_input_modes = self._compute_all_input_modes()
-        self._all_output_modes = self._compute_all_output_modes()
 
     def calculate(
         self,
@@ -161,7 +157,7 @@ class CapabilityCalculator:
     ) -> AssessmentResult:
         """Calculate capability score for a task."""
         weights = weights or ScoringWeights()
-        normalized_weights = weights.normalized()
+        normalized_weights = weights.normalized
 
         # No skills = immediate rejection
         if not self._skills:
@@ -179,8 +175,8 @@ class CapabilityCalculator:
         hard_fail = self._check_hard_constraints(
             input_mime_types=input_mime_types,
             output_mime_types=output_mime_types,
-            required_tools=required_tools,
-            forbidden_tools=forbidden_tools,
+            required_tools=None,
+            forbidden_tools=None,
         )
         if hard_fail:
             return AssessmentResult(
@@ -199,21 +195,8 @@ class CapabilityCalculator:
             )
         )
         io_score = self._calculate_io_compatibility(input_mime_types, output_mime_types)
-        perf_score, latency_estimate = self._calculate_performance_score(
-            max_latency_ms, skill_matches
-        )
         load_score = self._calculate_load_score(queue_depth)
         cost_score = self._calculate_cost_score(max_cost_amount)
-
-        # Reject if latency is too high
-        if max_latency_ms and latency_estimate and latency_estimate > max_latency_ms * 2:
-            return AssessmentResult(
-                accepted=False,
-                score=0.0,
-                confidence=0.8,
-                rejection_reason="latency_exceeds_constraint",
-                latency_estimate_ms=latency_estimate,
-            )
 
         # Reject if cost too high
         if max_cost_amount and cost_score == 0.0:
@@ -228,13 +211,10 @@ class CapabilityCalculator:
         subscores = {
             "skill_match": skill_match_score,
             "io_compatibility": io_score,
-            "performance": perf_score,
             "load": load_score,
             "cost": cost_score,
         }
-        final_score = sum(
-            normalized_weights[key] * subscores[key] for key in subscores
-        )
+        final_score = sum(normalized_weights[key] * subscores[key] for key in subscores)
 
         # Calculate confidence based on data quality
         confidence = self._calculate_confidence(
@@ -255,7 +235,6 @@ class CapabilityCalculator:
             skill_matches=skill_matches,
             matched_tags=matched_tags,
             matched_capabilities=matched_caps,
-            latency_estimate_ms=latency_estimate,
             queue_depth=queue_depth,
             subscores=subscores,
         )
@@ -266,11 +245,7 @@ class CapabilityCalculator:
         if details:
             text = f"{text} {details[: self.MAX_TASK_TEXT_LENGTH]}"
         tokens = _TOKEN_SPLIT_PATTERN.split(text.lower())
-        return {
-            token
-            for token in tokens
-            if 2 <= len(token) <= self.MAX_KEYWORD_LENGTH
-        }
+        return {token for token in tokens if 2 <= len(token) <= self.MAX_KEYWORD_LENGTH}
 
     def _check_hard_constraints(
         self,
@@ -296,30 +271,11 @@ class CapabilityCalculator:
             ):
                 return "output_mime_unsupported"
 
-        # Check for forbidden tools
-        if forbidden_tools:
-            for skill in self._skills:
-                allowed = set(skill.get("allowed_tools", []))
-                if allowed and allowed.intersection(forbidden_tools):
-                    return "forbidden_tool_present"
-
-        # Check for required tools
-        if required_tools:
-            required_set = set(required_tools)
-            if not any(
-                required_set.issubset(set(skill.get("allowed_tools", [])))
-                for skill in self._skills
-                if skill.get("allowed_tools")
-            ):
-                skills_with_tools = [s for s in self._skills if s.get("allowed_tools")]
-                if skills_with_tools:
-                    return "required_tool_missing"
-
         return None
 
     def _precompute_skill_metadata(self) -> list[dict[str, Any]]:
         """Pre-compute skill metadata at initialization for faster matching.
-        
+
         Returns list of dicts with:
         - skill_id, skill_name, tags, caps_detail, assessment
         - keywords: pre-extracted keyword set
@@ -333,68 +289,59 @@ class CapabilityCalculator:
             tags = skill.get("tags", [])
             caps_detail = skill.get("capabilities_detail", {})
             assessment = skill.get("assessment", {})
-            
+
             # Pre-extract keywords
             keywords: set[str] = set()
-            
+
             # Assessment keywords (highest priority)
             if isinstance(assessment, dict) and "keywords" in assessment:
                 keywords.update(k.lower() for k in assessment.get("keywords", []))
-            
+
             # Tags
             for tag in tags:
                 keywords.update(
-                    t for t in _TOKEN_SPLIT_PATTERN.split(tag.lower())
+                    t
+                    for t in _TOKEN_SPLIT_PATTERN.split(tag.lower())
                     if 2 <= len(t) <= self.MAX_KEYWORD_LENGTH
                 )
-            
+
             # Skill name
             keywords.update(
-                t for t in _TOKEN_SPLIT_PATTERN.split(skill_name.lower())
+                t
+                for t in _TOKEN_SPLIT_PATTERN.split(skill_name.lower())
                 if 2 <= len(t) <= self.MAX_KEYWORD_LENGTH
             )
-            
+
             # Capability names
             if isinstance(caps_detail, dict):
                 for cap_key in caps_detail.keys():
                     keywords.update(
-                        t for t in _TOKEN_SPLIT_PATTERN.split(cap_key.lower())
+                        t
+                        for t in _TOKEN_SPLIT_PATTERN.split(cap_key.lower())
                         if 2 <= len(t) <= self.MAX_KEYWORD_LENGTH
                     )
-            
+
             # Extract assessment fields
             anti_patterns = []
             specializations = []
             if isinstance(assessment, dict):
                 anti_patterns = assessment.get("anti_patterns", [])
                 specializations = assessment.get("specializations", [])
-            
-            metadata.append({
-                "skill_id": skill_id,
-                "skill_name": skill_name,
-                "tags": tags,
-                "caps_detail": caps_detail,
-                "assessment": assessment,
-                "keywords": keywords,
-                "anti_patterns": anti_patterns,
-                "specializations": specializations,
-            })
-        
+
+            metadata.append(
+                {
+                    "skill_id": skill_id,
+                    "skill_name": skill_name,
+                    "tags": tags,
+                    "caps_detail": caps_detail,
+                    "assessment": assessment,
+                    "keywords": keywords,
+                    "anti_patterns": anti_patterns,
+                    "specializations": specializations,
+                }
+            )
+
         return metadata
-
-    def _compute_all_input_modes(self) -> set[str]:
-        """Pre-compute all supported input modes."""
-        modes = set()
-        for skill in self._skills:
-            modes.update(skill.get("input_modes", []))
-        return modes
-
-    def _compute_all_output_modes(self) -> set[str]:
-        """Pre-compute all supported output modes."""
-        modes = set()
-        for skill in self._skills:
-            modes.update(skill.get("output_modes", []))
-        return modes
 
     def _ensure_embeddings(self) -> None:
         """Lazy load embedder and compute skill embeddings on first use."""
@@ -408,7 +355,9 @@ class CapabilityCalculator:
             from bindu.server.negotiation.embedder import SkillEmbedder
 
             self._embedder = SkillEmbedder(api_key=self._embedding_api_key)
-            self._skill_embeddings = self._embedder.compute_skill_embeddings(self._skills)
+            self._skill_embeddings = self._embedder.compute_skill_embeddings(
+                self._skills
+            )
         except ImportError:
             logger = get_logger("bindu.server.negotiation.capability_calculator")
             logger.warning(
@@ -417,7 +366,9 @@ class CapabilityCalculator:
             self._use_embeddings = False
         except Exception as e:
             logger = get_logger("bindu.server.negotiation.capability_calculator")
-            logger.warning(f"Failed to initialize embeddings: {e}. Using keyword matching.")
+            logger.warning(
+                f"Failed to initialize embeddings: {e}. Using keyword matching."
+            )
             self._use_embeddings = False
 
     def _calculate_skill_match(
@@ -427,7 +378,7 @@ class CapabilityCalculator:
         task_details: str | None = None,
     ) -> tuple[float, list[SkillMatchResult], list[str], list[str]]:
         """Calculate skill match score using hybrid approach.
-        
+
         Uses embeddings for semantic matching (if enabled) combined with
         keyword matching and assessment field boosting.
         """
@@ -445,9 +396,13 @@ class CapabilityCalculator:
             if self._embedder and self._skill_embeddings:
                 try:
                     task_text = task_details or ""
-                    task_embedding = self._embedder.embed_task_cached(task_summary, task_text)
+                    task_embedding = self._embedder.embed_task_cached(
+                        task_summary, task_text
+                    )
                 except Exception as e:
-                    logger = get_logger("bindu.server.negotiation.capability_calculator")
+                    logger = get_logger(
+                        "bindu.server.negotiation.capability_calculator"
+                    )
                     logger.warning(f"Failed to embed task: {e}")
 
         for skill_meta in self._skill_metadata:
@@ -459,7 +414,7 @@ class CapabilityCalculator:
             anti_patterns = skill_meta["anti_patterns"]
             specializations = skill_meta["specializations"]
             skill_keywords = skill_meta["keywords"]  # Pre-computed!
-            
+
             # Check anti-patterns first (early rejection)
             if anti_patterns and task_summary:
                 task_lower = task_summary.lower()
@@ -470,8 +425,13 @@ class CapabilityCalculator:
 
             # Calculate embedding similarity if available
             embedding_score = 0.0
-            if task_embedding is not None and self._skill_embeddings and skill_id in self._skill_embeddings:
+            if (
+                task_embedding is not None
+                and self._skill_embeddings
+                and skill_id in self._skill_embeddings
+            ):
                 from bindu.server.negotiation.embedder import cosine_similarity
+
                 skill_emb = self._skill_embeddings[skill_id]["embedding"]
                 embedding_score = cosine_similarity(task_embedding, skill_emb)
 
@@ -484,7 +444,9 @@ class CapabilityCalculator:
             if task_embedding is not None and embedding_score > 0:
                 emb_weight = app_settings.negotiation.embedding_weight
                 kw_weight = app_settings.negotiation.keyword_weight
-                base_score = (emb_weight * embedding_score) + (kw_weight * keyword_score)
+                base_score = (emb_weight * embedding_score) + (
+                    kw_weight * keyword_score
+                )
             else:
                 base_score = keyword_score
 
@@ -495,7 +457,11 @@ class CapabilityCalculator:
                     if isinstance(spec, dict):
                         domain = spec.get("domain", "")
                         boost = spec.get("confidence_boost", 0.0)
-                        if domain and task_summary and domain.lower() in task_summary.lower():
+                        if (
+                            domain
+                            and task_summary
+                            and domain.lower() in task_summary.lower()
+                        ):
                             base_score = min(1.0, base_score + boost)
 
             match_score = base_score
@@ -504,7 +470,7 @@ class CapabilityCalculator:
             reasons: list[str] = []
             if task_embedding is not None and embedding_score > 0:
                 reasons.append(f"semantic similarity: {embedding_score:.2f}")
-            
+
             matched_tags_for_skill = [
                 tag
                 for tag in tags
@@ -516,7 +482,8 @@ class CapabilityCalculator:
 
             matched_caps_for_skill = [
                 cap
-                for cap in caps_detail.keys() if isinstance(caps_detail, dict)
+                for cap in caps_detail.keys()
+                if isinstance(caps_detail, dict)
                 if any(t in intersection for t in cap.lower().split("_"))
             ]
             if matched_caps_for_skill:
@@ -544,7 +511,7 @@ class CapabilityCalculator:
         input_mime_types: list[str] | None,
         output_mime_types: list[str] | None,
     ) -> float:
-        """Calculate IO compatibility score using pre-computed mode sets."""
+        """Calculate IO compatibility score."""
         if not input_mime_types and not output_mime_types:
             return 1.0
 
@@ -552,12 +519,16 @@ class CapabilityCalculator:
         output_match = False
 
         if input_mime_types:
-            # Use pre-computed set for O(1) lookup instead of nested loops
-            input_match = any(im in self._all_input_modes for im in input_mime_types)
+            input_match = any(
+                any(im in skill.get("input_modes", []) for im in input_mime_types)
+                for skill in self._skills
+            )
 
         if output_mime_types:
-            # Use pre-computed set for O(1) lookup instead of nested loops
-            output_match = any(om in self._all_output_modes for om in output_mime_types)
+            output_match = any(
+                any(om in skill.get("output_modes", []) for om in output_mime_types)
+                for skill in self._skills
+            )
 
         if input_mime_types and output_mime_types:
             if input_match and output_match:
@@ -569,43 +540,6 @@ class CapabilityCalculator:
             return 1.0 if input_match else 0.0
         else:
             return 1.0 if output_match else 0.0
-
-    def _calculate_performance_score(
-        self,
-        max_latency_ms: int | None,
-        skill_matches: list[SkillMatchResult],
-    ) -> tuple[float, int | None]:
-        """Calculate performance score based on latency estimation."""
-        latency_estimate: int | None = None
-
-        # Find the best (lowest) latency from matched skills
-        for match in skill_matches:
-            skill = next(
-                (s for s in self._skills if s.get("id") == match.skill_id), None
-            )
-            if skill and skill.get("performance"):
-                perf = skill["performance"]
-                if "avg_processing_time_ms" in perf:
-                    est = int(perf["avg_processing_time_ms"])
-                    if latency_estimate is None or est < latency_estimate:
-                        latency_estimate = est
-
-        if latency_estimate is None:
-            latency_estimate = self.DEFAULT_LATENCY_MS
-
-        # Score based on constraint
-        if max_latency_ms is None:
-            # No constraint: gentle decay function
-            score = 1.0 / (1.0 + latency_estimate / 10000.0)
-        else:
-            if latency_estimate <= max_latency_ms:
-                score = 1.0
-            elif latency_estimate <= max_latency_ms * 2:
-                score = 1.0 - (latency_estimate - max_latency_ms) / max_latency_ms
-            else:
-                score = 0.0
-
-        return round(score, 4), latency_estimate
 
     def _calculate_load_score(self, queue_depth: int | None) -> float:
         """Calculate load score based on queue depth."""
@@ -622,7 +556,9 @@ class CapabilityCalculator:
             return 0.5
 
         try:
-            agent_cost = self._parse_cost_amount(self._x402_extension.get("amount", "0"))
+            agent_cost = self._parse_cost_amount(
+                self._x402_extension.get("amount", "0")
+            )
             max_cost = self._parse_cost_amount(max_cost_amount)
 
             if max_cost <= 0:

@@ -31,14 +31,14 @@ logger = get_logger("bindu.server.negotiation.embedder")
 
 class SkillEmbedder:
     """Lazy-loading embedder for semantic skill matching.
-    
+
     Computes embeddings using OpenRouter API.
     Automatically recalculated when skills change.
     """
 
     def __init__(self, api_key: str | None = None):
         """Initialize embedder with OpenRouter API key.
-        
+
         Args:
             api_key: OpenRouter API key (optional, falls back to settings)
         """
@@ -55,10 +55,10 @@ class SkillEmbedder:
 
     def _embed_with_openrouter(self, texts: list[str]) -> np.ndarray:
         """Embed texts using OpenRouter API.
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             Array of embedding vectors
         """
@@ -69,7 +69,7 @@ class SkillEmbedder:
             )
 
         client = self._get_client()
-        
+
         try:
             response = client.post(
                 "https://openrouter.ai/api/v1/embeddings",
@@ -84,11 +84,11 @@ class SkillEmbedder:
             )
             response.raise_for_status()
             data = response.json()
-            
+
             # Extract embeddings from response
             embeddings = [item["embedding"] for item in data["data"]]
             return np.array(embeddings, dtype=np.float32)
-            
+
         except httpx.HTTPError as e:
             logger.error(f"OpenRouter API error: {e}")
             raise
@@ -98,27 +98,27 @@ class SkillEmbedder:
 
     def _embed_with_sentence_transformers(self, texts: list[str]) -> np.ndarray:
         """Embed texts using sentence-transformers (fallback).
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             Array of embedding vectors
         """
         try:
             from sentence_transformers import SentenceTransformer
-            
-            if not hasattr(self, '_model') or self._model is None:
+
+            if not hasattr(self, "_model") or self._model is None:
                 logger.info(f"Loading sentence-transformers model: {self._model_name}")
                 self._model = SentenceTransformer(self._model_name)
                 logger.info("Model loaded successfully")
-            
+
             batch_size = app_settings.negotiation.embedding_batch_size
             return self._model.encode(
                 texts,
                 batch_size=batch_size,
                 convert_to_numpy=True,
-                show_progress_bar=False
+                show_progress_bar=False,
             )
         except ImportError:
             logger.error(
@@ -132,10 +132,10 @@ class SkillEmbedder:
 
     def embed_text(self, text: str) -> np.ndarray:
         """Embed a single text string.
-        
+
         Args:
             text: Text to embed
-            
+
         Returns:
             Embedding vector as numpy array
         """
@@ -143,10 +143,10 @@ class SkillEmbedder:
 
     def embed_texts(self, texts: list[str]) -> np.ndarray:
         """Embed multiple text strings in batch.
-        
+
         Args:
             texts: List of texts to embed
-            
+
         Returns:
             Array of embedding vectors
         """
@@ -159,24 +159,26 @@ class SkillEmbedder:
         elif self._provider == "sentence-transformers":
             return self._embed_with_sentence_transformers(texts)
         else:
-            logger.warning(f"Unknown embedding provider: {self._provider}, falling back to OpenRouter")
+            logger.warning(
+                f"Unknown embedding provider: {self._provider}, falling back to OpenRouter"
+            )
             return self._embed_with_openrouter(texts)
 
     def compute_skill_embeddings(
         self, skills: list[Skill]
     ) -> dict[str, dict[str, Any]]:
         """Compute embeddings for all skills.
-        
+
         For each skill, creates a composite text from:
         - Skill name
         - Description
         - Tags
         - Assessment keywords (if available)
         - Capability names
-        
+
         Args:
             skills: List of skill definitions
-            
+
         Returns:
             Dict mapping skill_id to embedding data:
             {
@@ -197,18 +199,18 @@ class SkillEmbedder:
         for skill in skills:
             # Build composite text for embedding
             parts = []
-            
+
             # Add name and description
             if skill.get("name"):
                 parts.append(skill["name"])
             if skill.get("description"):
                 parts.append(skill["description"])
-            
+
             # Add tags
             tags = skill.get("tags", [])
             if tags:
                 parts.append(" ".join(tags))
-            
+
             # Add assessment keywords if available
             assessment = skill.get("assessment", {})
             if isinstance(assessment, dict):
@@ -220,12 +222,12 @@ class SkillEmbedder:
                     skill_keywords.append(set())
             else:
                 skill_keywords.append(set())
-            
+
             # Add capability names
             caps = skill.get("capabilities_detail", {})
             if isinstance(caps, dict):
                 parts.append(" ".join(caps.keys()))
-            
+
             text = " ".join(parts)
             skill_texts.append(text)
             skill_ids.append(skill.get("id", "unknown"))
@@ -249,13 +251,15 @@ class SkillEmbedder:
         return result
 
     @lru_cache(maxsize=1000)
-    def embed_task_cached(self, task_summary: str, task_details: str = "") -> np.ndarray:
+    def embed_task_cached(
+        self, task_summary: str, task_details: str = ""
+    ) -> np.ndarray:
         """Embed task with LRU caching.
-        
+
         Args:
             task_summary: Task summary text
             task_details: Optional task details
-            
+
         Returns:
             Task embedding vector
         """
@@ -267,19 +271,19 @@ class SkillEmbedder:
 
 def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     """Compute cosine similarity between two vectors.
-    
+
     Args:
         a: First vector
         b: Second vector
-        
+
     Returns:
         Cosine similarity score (0.0 to 1.0)
     """
     dot_product = np.dot(a, b)
     norm_a = np.linalg.norm(a)
     norm_b = np.linalg.norm(b)
-    
+
     if norm_a == 0 or norm_b == 0:
         return 0.0
-    
+
     return float(dot_product / (norm_a * norm_b))

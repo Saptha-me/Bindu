@@ -53,7 +53,7 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in {yaml_path}: {e}")
 
-    # Build Skill object from YAML data
+    # Build Skill object from YAML data - start with required fields
     skill: Dict[str, Any] = {
         "id": skill_data.get("id", skill_data["name"]),
         "name": skill_data["name"],
@@ -63,33 +63,22 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
         "output_modes": skill_data.get("output_modes", ["text/plain"]),
     }
 
-    # Add optional fields
-    if "version" in skill_data:
-        skill["version"] = skill_data["version"]
+    # Add all optional fields from YAML if present
+    optional_fields = [
+        "version",
+        "author",
+        "examples",
+        "capabilities_detail",
+        "requirements",
+        "performance",
+        "allowed_tools",
+        "documentation",
+        "assessment",
+    ]
 
-    if "author" in skill_data:
-        skill["author"] = skill_data["author"]
-
-    if "examples" in skill_data:
-        skill["examples"] = skill_data["examples"]
-
-    if "capabilities_detail" in skill_data:
-        skill["capabilities_detail"] = skill_data["capabilities_detail"]
-
-    if "requirements" in skill_data:
-        skill["requirements"] = skill_data["requirements"]
-
-    if "performance" in skill_data:
-        skill["performance"] = skill_data["performance"]
-
-    if "allowed_tools" in skill_data:
-        skill["allowed_tools"] = skill_data["allowed_tools"]
-
-    if "documentation" in skill_data:
-        skill["documentation"] = skill_data["documentation"]
-
-    if "assessment" in skill_data:
-        skill["assessment"] = skill_data["assessment"]
+    for field in optional_fields:
+        if field in skill_data:
+            skill[field] = skill_data[field]
 
     # Store relative path to YAML file
     try:

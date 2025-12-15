@@ -205,7 +205,7 @@ if name in ("assess_task", "get_assessment"):
 async def assess_task_endpoint(app: BinduApplication, request: Request) -> Response:
     """
     Assess agent capability for a task.
-    
+
     Request Body:
     {
       "task": {
@@ -217,7 +217,7 @@ async def assess_task_endpoint(app: BinduApplication, request: Request) -> Respo
         }
       }
     }
-    
+
     Returns:
     - 200: Assessment response
     - 400: Invalid request
@@ -348,17 +348,17 @@ assessment:
     - language
     - español
     - spanish
-  
+
   specializations:
     - domain: technical
       confidence_boost: 0.2
     - domain: legal
       confidence_boost: 0.1
-  
+
   anti_patterns:
     - "real-time voice"
     - "simultaneous interpretation"
-  
+
   complexity_indicators:
     simple:
       - "short text"
@@ -391,17 +391,17 @@ class LLMCapabilityAnalyzer:
     async def analyze_task(self, task_description: str, agent_skills: list) -> dict:
         """
         Use LLM to deeply understand task requirements.
-        
+
         Prompt:
         "You are {agent_name} with skills: {skills}.
         Analyze this task: {task_description}
-        
+
         Provide:
         1. Confidence (0-1) you can handle it
         2. Which skills you'll use
         3. Estimated complexity
         4. Any concerns or limitations
-        
+
         Return JSON."
         """
 ```
@@ -450,7 +450,7 @@ class PerformanceTracker:
         confidence_claimed: float
     ):
         """Track actual vs claimed performance."""
-    
+
     async def get_skill_performance(self, skill_id: str) -> dict:
         """
         Returns:
@@ -494,24 +494,24 @@ class DynamicPricingCalculator:
             "recommended_price": float
         }
         """
-        
+
         # Higher confidence = can charge more
         confidence_multiplier = 0.8 + (confidence * 0.4)
-        
+
         # Higher load = charge more
         load_multiplier = 1.0 + (queue_length * 0.1)
-        
+
         # Complex tasks = charge more
         complexity_multipliers = {
             "simple": 0.8,
             "medium": 1.0,
             "complex": 1.5
         }
-        
+
         final_price = (
-            base_price * 
-            confidence_multiplier * 
-            load_multiplier * 
+            base_price *
+            confidence_multiplier *
+            load_multiplier *
             complexity_multipliers[task_complexity]
         )
 ```
@@ -897,6 +897,6 @@ For questions or clarifications about this implementation plan:
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** December 14, 2025  
+**Document Version:** 1.0
+**Last Updated:** December 14, 2025
 **Status:** Draft - Ready for Review

@@ -597,7 +597,7 @@ class RetrySettings(BaseSettings):
 
 class NegotiationSettings(BaseSettings):
     """Negotiation and capability assessment configuration settings.
-    
+
     Controls how agents assess their ability to handle tasks during
     the negotiation phase of agent-to-agent communication.
     """

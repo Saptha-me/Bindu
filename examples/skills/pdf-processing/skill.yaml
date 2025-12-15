@@ -330,7 +330,7 @@ assessment:
     - ocr
     - parse
     - fill
-  
+
   specializations:
     - domain: invoice_processing
       confidence_boost: 0.3
@@ -340,7 +340,7 @@ assessment:
       confidence_boost: 0.2
     - domain: ocr
       confidence_boost: 0.2
-  
+
   anti_patterns:
     - "pdf editing"
     - "pdf creation"
@@ -350,7 +350,7 @@ assessment:
     - "split pdf"
     - "image extraction"
     - "extract images"
-  
+
   complexity_indicators:
     simple:
       - "single page"

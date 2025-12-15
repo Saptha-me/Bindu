@@ -12,10 +12,8 @@
 import pytest
 
 from bindu.server.negotiation.capability_calculator import (
-    AssessmentResult,
     CapabilityCalculator,
     ScoringWeights,
-    SkillMatchResult,
 )
 
 
@@ -124,7 +122,7 @@ def test_required_tools():
         }
     ]
     calculator = CapabilityCalculator(skills=skills, x402_extension=None)
-    
+
     # Should accept when required tool is available and keywords match
     result = calculator.calculate(
         task_summary="scrape website", required_tools=["web_browser"]
@@ -169,11 +167,9 @@ def test_latency_constraint():
         }
     ]
     calculator = CapabilityCalculator(skills=skills, x402_extension=None)
-    
+
     # Should reject when latency exceeds constraint by 2x
-    result = calculator.calculate(
-        task_summary="process data", max_latency_ms=2000
-    )
+    result = calculator.calculate(task_summary="process data", max_latency_ms=2000)
     assert result.accepted is False
     assert result.rejection_reason == "latency_exceeds_constraint"
     # Should use skill's actual latency
@@ -191,11 +187,9 @@ def test_cost_constraint():
     ]
     x402_ext = {"amount": "100.00", "currency": "USD"}
     calculator = CapabilityCalculator(skills=skills, x402_extension=x402_ext)
-    
+
     # Should reject when cost exceeds budget
-    result = calculator.calculate(
-        task_summary="process data", max_cost_amount="50.00"
-    )
+    result = calculator.calculate(task_summary="process data", max_cost_amount="50.00")
     assert result.accepted is False
     assert result.rejection_reason == "cost_exceeds_budget"
 
@@ -210,11 +204,11 @@ def test_queue_depth_scoring():
         }
     ]
     calculator = CapabilityCalculator(skills=skills, x402_extension=None)
-    
+
     # Low queue depth should give better score
     result_low = calculator.calculate(task_summary="process data", queue_depth=0)
     result_high = calculator.calculate(task_summary="process data", queue_depth=10)
-    
+
     assert result_low.subscores["load"] > result_high.subscores["load"]
 
 
@@ -228,7 +222,7 @@ def test_custom_weights():
         }
     ]
     calculator = CapabilityCalculator(skills=skills, x402_extension=None)
-    
+
     # Heavy skill match weight
     weights = ScoringWeights(
         skill_match=0.9,
@@ -237,10 +231,8 @@ def test_custom_weights():
         load=0.025,
         cost=0.025,
     )
-    result = calculator.calculate(
-        task_summary="processor task", weights=weights
-    )
-    
+    result = calculator.calculate(task_summary="processor task", weights=weights)
+
     # Skill match subscore should dominate
     assert result.subscores["skill_match"] > 0
     # Final score should be heavily influenced by skill match
@@ -257,12 +249,12 @@ def test_min_score_threshold():
         }
     ]
     calculator = CapabilityCalculator(skills=skills, x402_extension=None)
-    
+
     # With high threshold, should reject weak matches
     result = calculator.calculate(
         task_summary="highly specific unusual task", min_score=0.8
     )
-    
+
     if result.score < 0.8:
         assert result.accepted is False
         assert result.rejection_reason == "score_below_threshold"
@@ -281,7 +273,7 @@ def test_confidence_calculation():
         }
     ]
     calculator = CapabilityCalculator(skills=skills, x402_extension=None)
-    
+
     # More constraints = higher confidence
     result = calculator.calculate(
         task_summary="process text",
@@ -290,7 +282,7 @@ def test_confidence_calculation():
         max_latency_ms=5000,
         queue_depth=2,
     )
-    
+
     # Should have high confidence with many constraints
     assert result.confidence > 0.7
 
@@ -310,11 +302,13 @@ def test_matched_tags_and_capabilities():
     ]
     calculator = CapabilityCalculator(skills=skills, x402_extension=None)
     result = calculator.calculate(task_summary="classify images using machine learning")
-    
+
     # Check that skill match occurred and reasons were populated
     assert len(result.skill_matches) > 0
     assert result.skill_matches[0].score > 0
     # Reasons should show what matched
     if result.skill_matches[0].reasons:
         # If there are reasons, at least one should mention tags or capabilities
-        assert any("tags" in r or "capabilities" in r for r in result.skill_matches[0].reasons)
+        assert any(
+            "tags" in r or "capabilities" in r for r in result.skill_matches[0].reasons
+        )

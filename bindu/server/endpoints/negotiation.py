@@ -37,7 +37,7 @@ logger = get_logger("bindu.server.endpoints.negotiation")
 
 def _get_or_create_calculator(app: BinduApplication) -> CapabilityCalculator:
     """Get or create cached calculator instance.
-    
+
     Caches calculator in app instance to avoid repeated initialization.
     Invalidates cache if manifest changes.
     """
@@ -48,26 +48,32 @@ def _get_or_create_calculator(app: BinduApplication) -> CapabilityCalculator:
         and app._negotiation_calculator_manifest_id == id(app.manifest)
     ):
         return app._negotiation_calculator
-    
+
     # Create new calculator
     skills = app.manifest.skills or [] if app.manifest else []
-    x402_extension = get_x402_extension_from_capabilities(app.manifest) if app.manifest else None
-    
+    x402_extension = (
+        get_x402_extension_from_capabilities(app.manifest) if app.manifest else None
+    )
+
     # Get embedding API key from manifest negotiation config if available
     embedding_api_key = None
-    if app.manifest and hasattr(app.manifest, 'negotiation') and app.manifest.negotiation:
-        embedding_api_key = app.manifest.negotiation.get('embedding_api_key')
-    
+    if (
+        app.manifest
+        and hasattr(app.manifest, "negotiation")
+        and app.manifest.negotiation
+    ):
+        embedding_api_key = app.manifest.negotiation.get("embedding_api_key")
+
     calculator = CapabilityCalculator(
         skills=skills,
         x402_extension=x402_extension,
         embedding_api_key=embedding_api_key,
     )
-    
+
     # Cache calculator and manifest ID
     app._negotiation_calculator = calculator
     app._negotiation_calculator_manifest_id = id(app.manifest)
-    
+
     logger.debug("Created and cached new CapabilityCalculator instance")
     return calculator
 
@@ -93,9 +99,7 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
         body = await request.json()
     except Exception as e:
         logger.warning(f"Invalid JSON in negotiation request: {e}")
-        return JSONResponse(
-            content={"error": "Invalid JSON payload"}, status_code=400
-        )
+        return JSONResponse(content={"error": "Invalid JSON payload"}, status_code=400)
 
     # Early validation: required field
     task_summary = body.get("task_summary")
@@ -103,12 +107,14 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
         return JSONResponse(
             content={"error": "'task_summary' is required"}, status_code=400
         )
-    
+
     # Early validation: task_summary length
     if len(task_summary) > 10000:
         return JSONResponse(
-            content={"error": "task_summary exceeds maximum length of 10000 characters"},
-            status_code=400
+            content={
+                "error": "task_summary exceeds maximum length of 10000 characters"
+            },
+            status_code=400,
         )
 
     # Extract optional fields
@@ -145,7 +151,8 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
             tasks = await app.task_manager.storage.list_tasks()
             # Count tasks in non-terminal states (from agent settings)
             queue_depth = sum(
-                1 for task in tasks 
+                1
+                for task in tasks
                 if task.get("state") in app_settings.agent.non_terminal_states
             )
         except Exception as e:
@@ -205,7 +212,11 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
             if result.latency_estimate_ms is not None
             else {}
         ),
-        **({"queue_depth": result.queue_depth} if result.queue_depth is not None else {}),
+        **(
+            {"queue_depth": result.queue_depth}
+            if result.queue_depth is not None
+            else {}
+        ),
         **({"subscores": result.subscores} if result.subscores else {}),
     }
 

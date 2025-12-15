@@ -96,23 +96,23 @@ If you're on Windows, we recommend using **PowerShell** (not CMD) for all comman
 ## 🐛 Common Installation Issues
 
 ### Issue: "uv: command not found"
-**Solution:** 
+**Solution:**
 - Restart your terminal after installing UV
 - On Windows, make sure you used PowerShell for installation
 
 ### Issue: "Python version not supported"
-**Solution:** 
+**Solution:**
 - Install Python 3.12+ from [python.org](https://www.python.org/downloads/)
 - Verify with: `python --version`
 
 ### Issue: Virtual environment not activating on Windows
-**Solution:** 
+**Solution:**
 - Use PowerShell (not CMD)
 - Run: `.venv\Scripts\activate`
 - You should see `(.venv)` at the start of your prompt
 
 ### Issue: Installation fails with "Microsoft Visual C++ required"
-**Solution:** 
+**Solution:**
 - Download Visual C++ Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
 - Or use: `uv pip install -e .` for core installation only
 

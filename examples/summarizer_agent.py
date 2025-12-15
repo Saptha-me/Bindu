@@ -14,6 +14,7 @@ agent = Agent(
     model=OpenAIChat(id="gpt-4o"),
 )
 
+
 def handler(messages):
     """Return a summary of the user's latest input message."""
     user_input = messages[-1]["content"]

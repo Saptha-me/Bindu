@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from starlette.testclient import TestClient
 from bindu.server.applications import BinduApplication
 
+
 def make_minimal_manifest():
     """
     Return a minimal manifest-like object that satisfies the
@@ -13,6 +14,7 @@ def make_minimal_manifest():
         name="test_agent",
     )
 
+
 def make_dummy_task_manager():
     """
     Return a minimal dummy TaskManager-like object with the attributes
@@ -20,6 +22,7 @@ def make_dummy_task_manager():
     """
     # The app checks `task_manager is None or not task_manager.is_running`
     return SimpleNamespace(is_running=True)
+
 
 def test_health_endpoint_ok():
     # Provide a minimal manifest so BinduApplication doesn't try to access attributes on None

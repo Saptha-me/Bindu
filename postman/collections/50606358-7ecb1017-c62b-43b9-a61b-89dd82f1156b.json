@@ -223,7 +223,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"task_summary\": \"Extract tables and text from PDF invoices and text\",\n    \"task_details\": \"Need to process multiple invoice PDFs and extract structured data including line items, totals, and vendor information\",\n    \"input_mime_types\": [\"application/pdf\"],\n    \"output_mime_types\": [\"application/json\"],\n    \"max_latency_ms\": 5000,\n    \"max_cost_amount\": \"0.001\",\n    \"required_tools\": [],\n    \"forbidden_tools\": [],\n    \"min_score\": 0.7,\n    \"weights\": {\n      \"skill_match\": 0.6,\n      \"io_compatibility\": 0.2,\n      \"performance\": 0.1,\n      \"load\": 0.05,\n      \"cost\": 0.05\n    }\n  }",
+					"raw": "{\n    \"task_summary\": \"Extract tables and text from PDF invoices and text\",\n    \"task_details\": \"Need to process multiple invoice PDFs and extract structured data including line items, totals, and vendor information\",\n    \"input_mime_types\": [\n        \"application/pdf\"\n    ],\n    \"output_mime_types\": [\n        \"application/json\"\n    ],\n    \"max_latency_ms\": 5000,\n    \"max_cost_amount\": \"0.001\",\n    \"required_tools\": [],\n    \"forbidden_tools\": [],\n    \"min_score\": 0.7,\n    \"weights\": {\n        \"skill_match\": 0.6,\n        \"io_compatibility\": 0.2,\n        \"performance\": 0.1,\n        \"load\": 0.05,\n        \"cost\": 0.05\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -240,7 +240,63 @@
 					]
 				}
 			},
-			"response": []
+			"response": [
+				{
+					"id": "50606358-1150a89d-5e35-4efa-a291-3675aaa4bd3a",
+					"name": "Negotiation",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"task_summary\": \"Extract tables and text from PDF invoices and text\",\n    \"task_details\": \"Need to process multiple invoice PDFs and extract structured data including line items, totals, and vendor information\",\n    \"input_mime_types\": [\n        \"application/pdf\"\n    ],\n    \"output_mime_types\": [\n        \"application/json\"\n    ],\n    \"max_latency_ms\": 5000,\n    \"max_cost_amount\": \"0.001\",\n    \"required_tools\": [],\n    \"forbidden_tools\": [],\n    \"min_score\": 0.7,\n    \"weights\": {\n        \"skill_match\": 0.6,\n        \"io_compatibility\": 0.2,\n        \"performance\": 0.1,\n        \"load\": 0.05,\n        \"cost\": 0.05\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{bindu_local}}agent/negotiation",
+							"host": [
+								"{{bindu_local}}agent"
+							],
+							"path": [
+								"negotiation"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": null,
+					"header": [
+						{
+							"key": "date",
+							"value": "Mon, 15 Dec 2025 14:02:48 GMT"
+						},
+						{
+							"key": "server",
+							"value": "uvicorn"
+						},
+						{
+							"key": "content-length",
+							"value": "604"
+						},
+						{
+							"key": "content-type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"responseTime": null,
+					"body": "{\n    \"accepted\": false,\n    \"score\": 0.586,\n    \"confidence\": 1,\n    \"rejection_reason\": \"score_below_threshold\",\n    \"skill_matches\": [\n        {\n            \"skill_id\": \"pdf-processing-v1\",\n            \"skill_name\": \"pdf-processing\",\n            \"score\": 0.4766,\n            \"reasons\": [\n                \"semantic similarity: 0.63\",\n                \"tags: pdf, tables\",\n                \"capabilities: text_extraction\"\n            ]\n        },\n        {\n            \"skill_id\": \"question-answering-v1\",\n            \"skill_name\": \"question-answering\",\n            \"score\": 0.0878,\n            \"reasons\": [\n                \"semantic similarity: 0.13\"\n            ]\n        }\n    ],\n    \"matched_tags\": [\n        \"tables\",\n        \"pdf\"\n    ],\n    \"matched_capabilities\": [\n        \"text_extraction\"\n    ],\n    \"latency_estimate_ms\": 2000,\n    \"queue_depth\": 0,\n    \"subscores\": {\n        \"skill_match\": 0.4766,\n        \"io_compatibility\": 1,\n        \"load\": 1,\n        \"cost\": 1\n    }\n}"
+				}
+			]
 		}
 	]
 }

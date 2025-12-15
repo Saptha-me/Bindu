@@ -167,7 +167,8 @@ class BinduApplication(Starlette):
             skill_documentation_endpoint,
             skills_list_endpoint,
         )
-            # Add health endpoint import
+
+        # Add health endpoint import
         from .endpoints.health import health_endpoint
 
         # Protocol endpoints

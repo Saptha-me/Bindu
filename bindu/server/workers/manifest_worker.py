@@ -322,9 +322,13 @@ class ManifestWorker(Worker):
 
         if reference_task_ids:
             # Strategy 1: Explicit references (A2A refinement pattern)
+            from uuid import UUID
+
             referenced_messages: list[Message] = []
             for task_id in reference_task_ids:
-                ref_task = await self.storage.load_task(task_id)
+                # Ensure task_id is UUID object
+                task_id_uuid = UUID(task_id) if isinstance(task_id, str) else task_id
+                ref_task = await self.storage.load_task(task_id_uuid)
                 if ref_task and ref_task.get("history"):
                     referenced_messages.extend(ref_task["history"])
 

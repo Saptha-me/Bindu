@@ -71,8 +71,8 @@ def _get_or_create_calculator(app: BinduApplication) -> CapabilityCalculator:
     )
 
     # Cache calculator and manifest ID
-    app._negotiation_calculator = calculator
-    app._negotiation_calculator_manifest_id = id(app.manifest)
+    app._negotiation_calculator = calculator  # type: ignore[attr-defined]
+    app._negotiation_calculator_manifest_id = id(app.manifest)  # type: ignore[attr-defined]
 
     logger.debug("Created and cached new CapabilityCalculator instance")
     return calculator
@@ -123,6 +123,7 @@ async def negotiation_endpoint(app: BinduApplication, request: Request) -> Respo
     output_mime_types = body.get("output_mime_types")
     max_latency_ms = body.get("max_latency_ms")
     max_cost_amount = body.get("max_cost_amount")
+
     required_tools = body.get("required_tools")
     forbidden_tools = body.get("forbidden_tools")
     min_score = body.get("min_score", 0.0)

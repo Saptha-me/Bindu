@@ -1,5 +1,5 @@
-"""
-Summarizer Agent — generates a concise summary of the user's message.
+"""Summarizer Agent — generates a concise summary of the user's message.
+
 Useful as a practical example of using Bindu for text transformation.
 """
 

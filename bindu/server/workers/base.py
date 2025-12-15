@@ -139,7 +139,10 @@ class Worker(ABC):
                         )
         except Exception as e:
             # Update task status to failed on any exception
-            task_id = task_operation["params"]["task_id"]
+            from uuid import UUID
+
+            task_id_raw = task_operation["params"]["task_id"]
+            task_id = UUID(task_id_raw) if isinstance(task_id_raw, str) else task_id_raw
             logger.error(f"Task {task_id} failed: {e}", exc_info=True)
             await self.storage.update_task(task_id, state="failed")
 

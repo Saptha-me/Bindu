@@ -96,40 +96,6 @@ class SkillEmbedder:
             logger.error(f"Failed to get embeddings from OpenRouter: {e}")
             raise
 
-    def _embed_with_sentence_transformers(self, texts: list[str]) -> np.ndarray:
-        """Embed texts using sentence-transformers (fallback).
-
-        Args:
-            texts: List of texts to embed
-
-        Returns:
-            Array of embedding vectors
-        """
-        try:
-            from sentence_transformers import SentenceTransformer  # type: ignore[import-untyped]
-
-            if not hasattr(self, "_model") or self._model is None:
-                logger.info(f"Loading sentence-transformers model: {self._model_name}")
-                self._model = SentenceTransformer(self._model_name)
-                logger.info("Model loaded successfully")
-
-            batch_size = app_settings.negotiation.embedding_batch_size
-            return self._model.encode(
-                texts,
-                batch_size=batch_size,
-                convert_to_numpy=True,
-                show_progress_bar=False,
-            )
-        except ImportError:
-            logger.error(
-                "sentence-transformers not installed. "
-                "Install with: pip install sentence-transformers"
-            )
-            raise
-        except Exception as e:
-            logger.error(f"Failed to load sentence-transformers model: {e}")
-            raise
-
     def embed_text(self, text: str) -> np.ndarray:
         """Embed a single text string.
 
@@ -161,7 +127,7 @@ class SkillEmbedder:
                 f"Unknown embedding provider: {self._provider}, falling back to OpenRouter"
             )
             return self._embed_with_openrouter(texts)
-            #return self._embed_with_sentence_transformers(texts)
+            # return self._embed_with_sentence_transformers(texts)
         else:
             logger.warning(
                 f"Unknown embedding provider: {self._provider}, falling back to OpenRouter"

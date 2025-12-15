@@ -30,7 +30,7 @@ def test_scoring_weights_defaults():
 def test_scoring_weights_normalized():
     """Test weight normalization."""
     weights = ScoringWeights(skill_match=2.0, io_compatibility=1.0, performance=1.0)
-    normalized = weights.normalized()
+    normalized = weights.normalized
     # Total is 4.05, so normalized should sum to 1.0
     total = sum(normalized.values())
     assert abs(total - 1.0) < 0.001

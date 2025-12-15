@@ -22,6 +22,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from bindu.settings import app_settings
+from bindu.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from bindu.common.protocol.types import Skill
@@ -175,8 +176,8 @@ class CapabilityCalculator:
         hard_fail = self._check_hard_constraints(
             input_mime_types=input_mime_types,
             output_mime_types=output_mime_types,
-            required_tools=None,
-            forbidden_tools=None,
+            required_tools=required_tools,
+            forbidden_tools=forbidden_tools,
         )
         if hard_fail:
             return AssessmentResult(
@@ -207,6 +208,30 @@ class CapabilityCalculator:
                 rejection_reason="cost_exceeds_budget",
             )
 
+        # Calculate latency estimate and check constraint
+        latency_estimate_ms = None
+        if skill_matches:
+            latencies = []
+            for skill in self._skills:
+                perf = skill.get("performance", {})
+                if isinstance(perf, dict) and "avg_processing_time_ms" in perf:
+                    latencies.append(perf["avg_processing_time_ms"])
+            if latencies:
+                latency_estimate_ms = max(latencies)
+            else:
+                latency_estimate_ms = self.DEFAULT_LATENCY_MS
+
+        # Reject if latency exceeds constraint by 2x
+        if max_latency_ms and latency_estimate_ms:
+            if latency_estimate_ms > max_latency_ms * 2:
+                return AssessmentResult(
+                    accepted=False,
+                    score=0.0,
+                    confidence=0.9,
+                    rejection_reason="latency_exceeds_constraint",
+                    latency_estimate_ms=latency_estimate_ms,
+                )
+
         # Compute weighted final score
         subscores = {
             "skill_match": skill_match_score,
@@ -235,6 +260,7 @@ class CapabilityCalculator:
             skill_matches=skill_matches,
             matched_tags=matched_tags,
             matched_capabilities=matched_caps,
+            latency_estimate_ms=latency_estimate_ms,
             queue_depth=queue_depth,
             subscores=subscores,
         )
@@ -270,6 +296,21 @@ class CapabilityCalculator:
                 for skill in self._skills
             ):
                 return "output_mime_unsupported"
+
+        # Check required tools
+        if required_tools:
+            available_tools = set()
+            for skill in self._skills:
+                available_tools.update(skill.get("allowed_tools", []))
+            if not all(tool in available_tools for tool in required_tools):
+                return "required_tool_missing"
+
+        # Check forbidden tools
+        if forbidden_tools:
+            for skill in self._skills:
+                skill_tools = set(skill.get("allowed_tools", []))
+                if any(tool in skill_tools for tool in forbidden_tools):
+                    return "forbidden_tool_present"
 
         return None
 

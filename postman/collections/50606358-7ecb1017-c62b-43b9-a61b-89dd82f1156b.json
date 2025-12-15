@@ -31,7 +31,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Suggest some thriller movies to watch with a rating of 8 or above on IMDB. \"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440081\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Inspirational\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440200\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -73,7 +73,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"tasks/get\",\n    \"params\": {\n        \"taskId\": \"550e8400-e29b-41d4-a716-446655440082\"\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440025\"\n}",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"tasks/get\",\n    \"params\": {\n        \"taskId\": \"550e8400-e29b-41d4-a716-446655440200\"\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440025\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -109,7 +109,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"tasks/feedback\",\n    \"params\": {\n        \"taskId\": \"550e8400-e29b-41d4-a716-446655440045\",\n        \"feedback\": \"Great job! The response was very helpful and accurate.\",\n        \"rating\": 5,\n        \"metadata\": {\n            \"category\": \"quality\",\n            \"source\": \"user\",\n            \"helpful\": true\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"tasks/feedback\",\n    \"params\": {\n        \"taskId\": \"550e8400-e29b-41d4-a716-446655440200\",\n        \"feedback\": \"Great job! The response was very helpful and accurate.\",\n        \"rating\": 5,\n        \"metadata\": {\n            \"category\": \"quality\",\n            \"source\": \"user\",\n            \"helpful\": true\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"

@@ -419,10 +419,8 @@ def bindufy(
     host, port = _parse_deployment_url(deployment_config)
 
     # Display server startup banner
-    logger.info(
-        prepare_server_display(
-            host=host, port=port, agent_id=agent_id, agent_did=did_extension.did
-        )
+    prepare_server_display(
+        host=host, port=port, agent_id=agent_id, agent_did=did_extension.did
     )
     uvicorn.run(bindu_app, host=host, port=port)
     return _manifest

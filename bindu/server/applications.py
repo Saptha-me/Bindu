@@ -162,6 +162,7 @@ class BinduApplication(Starlette):
             agent_card_endpoint,
             agent_run_endpoint,
             did_resolve_endpoint,
+            negotiation_endpoint,
             skill_detail_endpoint,
             skill_documentation_endpoint,
             skills_list_endpoint,
@@ -198,6 +199,14 @@ class BinduApplication(Starlette):
             "/agent/skills/{skill_id}/documentation",
             skill_documentation_endpoint,
             ["GET"],
+            with_app=True,
+        )
+
+        # Negotiation endpoint
+        self._add_route(
+            "/agent/negotiation",
+            negotiation_endpoint,
+            ["POST"],
             with_app=True,
         )
 

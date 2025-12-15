@@ -12,6 +12,7 @@
 from .a2a_protocol import agent_run_endpoint
 from .agent_card import agent_card_endpoint
 from .did_endpoints import did_resolve_endpoint
+from .negotiation import negotiation_endpoint
 from .payment_sessions import (
     payment_capture_endpoint,
     payment_status_endpoint,
@@ -31,6 +32,8 @@ __all__ = [
     # DID Endpoints
     "did_resolve_endpoint",
     "did_info_endpoint",
+    # Negotiation
+    "negotiation_endpoint",
     # Payment Sessions
     "start_payment_session_endpoint",
     "payment_capture_endpoint",

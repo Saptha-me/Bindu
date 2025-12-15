@@ -260,16 +260,13 @@
 		},
 		{
 			"name": "New Request",
-			"id": "50606358-a0214017-4efa-46d2-bc37-1b4db1b30f01",
+			"id": "50606358-71667bd3-ddd3-436e-aeb9-7e8beecc1733",
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
 			"request": {
 				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": ""
-				}
+				"header": []
 			},
 			"response": []
 		}

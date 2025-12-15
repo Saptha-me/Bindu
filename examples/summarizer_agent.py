@@ -1,5 +1,5 @@
-"""
-Summarizer Agent — generates a concise summary of the user's message.
+"""Summarizer Agent — generates a concise summary of the user's message.
+
 Useful as a practical example of using Bindu for text transformation.
 """
 
@@ -13,6 +13,7 @@ agent = Agent(
     instructions="You are a summarization assistant. Summarize the input text in 2-3 sentences.",
     model=OpenAIChat(id="gpt-4o"),
 )
+
 
 def handler(messages):
     """Return a summary of the user's latest input message."""

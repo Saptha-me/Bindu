@@ -99,6 +99,7 @@ def create_manifest(
     oltp_endpoint: str | None = None,
     oltp_service_name: str | None = None,
     num_history_sessions: int = 10,
+    negotiation: dict[str, Any] | None = None,
     enable_system_message: bool = True,
     enable_context_based_history: bool = False,
     documentation_url: str | None = None,
@@ -133,6 +134,7 @@ def create_manifest(
         monitoring: Enable monitoring and metrics collection (default: False).
         telemetry: Enable telemetry data collection (default: True).
         num_history_sessions: Number of conversation history sessions to maintain (default: 10).
+        negotiation: Negotiation configuration (optional).
         enable_system_message: Enable system message/prompt in agent execution (default: True).
         enable_context_based_history: Enable context-based history in agent execution (default: False).
         documentation_url: URL to agent documentation (optional).
@@ -196,6 +198,7 @@ def create_manifest(
         oltp_endpoint=oltp_endpoint,
         oltp_service_name=oltp_service_name,
         documentation_url=documentation_url,
+        negotiation=negotiation,
     )
 
     # Create execution method based on function type

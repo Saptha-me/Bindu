@@ -41,8 +41,9 @@ def _make_request(body: dict, headers: dict | None = None) -> object:
 
 def _make_app_with_manifest(skills: list, x402: dict | None = None) -> object:
     """Create a minimal mock app with skills and optional x402."""
-    manifest = SimpleNamespace(skills=skills, x402=x402)
-    return SimpleNamespace(manifest=manifest, scheduler=None)
+    capabilities = {"extensions": [x402] if x402 else []}
+    manifest = SimpleNamespace(skills=skills, x402=x402, capabilities=capabilities)
+    return SimpleNamespace(manifest=manifest, scheduler=None, task_manager=None)
 
 
 @pytest.mark.asyncio

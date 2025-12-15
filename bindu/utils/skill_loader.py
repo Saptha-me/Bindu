@@ -53,7 +53,7 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in {yaml_path}: {e}")
 
-    # Build Skill object from YAML data
+    # Build Skill object from YAML data - start with required fields
     skill: Dict[str, Any] = {
         "id": skill_data.get("id", skill_data["name"]),
         "name": skill_data["name"],
@@ -63,12 +63,22 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
         "output_modes": skill_data.get("output_modes", ["text/plain"]),
     }
 
-    # Add optional fields
-    if "examples" in skill_data:
-        skill["examples"] = skill_data["examples"]
+    # Add all optional fields from YAML if present
+    optional_fields = [
+        "version",
+        "author",
+        "examples",
+        "capabilities_detail",
+        "requirements",
+        "performance",
+        "allowed_tools",
+        "documentation",
+        "assessment",
+    ]
 
-    if "version" in skill_data:
-        skill["version"] = skill_data["version"]
+    for field in optional_fields:
+        if field in skill_data:
+            skill[field] = skill_data[field]
 
     # Store relative path to YAML file
     try:
@@ -80,18 +90,6 @@ def load_skill_from_directory(skill_path: Union[str, Path], caller_dir: Path) ->
     # Store raw YAML content as documentation
     with open(yaml_path, "r", encoding="utf-8") as f:
         skill["documentation_content"] = f.read()
-
-    if "capabilities_detail" in skill_data:
-        skill["capabilities_detail"] = skill_data["capabilities_detail"]
-
-    if "requirements" in skill_data:
-        skill["requirements"] = skill_data["requirements"]
-
-    if "performance" in skill_data:
-        skill["performance"] = skill_data["performance"]
-
-    if "allowed_tools" in skill_data:
-        skill["allowed_tools"] = skill_data["allowed_tools"]
 
     logger.info(
         f"Loaded skill: {skill['name']} v{skill.get('version', 'unknown')} from {skill_path}"

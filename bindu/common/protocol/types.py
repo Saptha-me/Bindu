@@ -1802,6 +1802,24 @@ class Skill(TypedDict):
     Example: ["Read", "Write", "Execute"]
     """
 
+    assessment: NotRequired[dict[str, Any]]
+    """Assessment metadata for skill negotiation and matching.
+
+    Example:
+    {
+        "keywords": ["pdf", "extract", "document"],
+        "specializations": [
+            {"domain": "invoice_processing", "confidence_boost": 0.3}
+        ],
+        "anti_patterns": ["pdf editing", "create pdf"],
+        "complexity_indicators": {
+            "simple": ["single page", "extract text"],
+            "medium": ["multiple pages", "fill form"],
+            "complex": ["scanned document", "ocr"]
+        }
+    }
+    """
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class AgentCapabilities(TypedDict):

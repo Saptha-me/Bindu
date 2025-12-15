@@ -209,3 +209,64 @@ documentation:
       - "Combine with document-analysis for context-aware answers"
       - "Use confidence scores for answer validation"
       - "Consider caching common questions for performance"
+
+# Assessment fields for skill negotiation
+assessment:
+  keywords:
+    - question
+    - answer
+    - what
+    - why
+    - how
+    - who
+    - where
+    - when
+    - explain
+    - explanation
+    - knowledge
+    - fact
+    - factual
+    - reasoning
+    - understand
+
+  specializations:
+    - domain: science_questions
+      confidence_boost: 0.3
+    - domain: history_questions
+      confidence_boost: 0.3
+    - domain: technology_questions
+      confidence_boost: 0.2
+    - domain: general_knowledge
+      confidence_boost: 0.2
+
+  anti_patterns:
+    - "real-time data"
+    - "current events"
+    - "latest news"
+    - "today's weather"
+    - "stock prices"
+    - "live scores"
+    - "code generation"
+    - "write code"
+    - "calculate"
+    - "solve equation"
+
+  complexity_indicators:
+    simple:
+      - "what is"
+      - "who is"
+      - "where is"
+      - "define"
+      - "capital of"
+    medium:
+      - "how does"
+      - "why do"
+      - "explain"
+      - "difference between"
+      - "compare"
+    complex:
+      - "analyze"
+      - "multi-step"
+      - "comprehensive explanation"
+      - "detailed reasoning"
+      - "in-depth"

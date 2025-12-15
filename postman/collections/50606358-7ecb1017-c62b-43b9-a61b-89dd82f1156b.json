@@ -265,8 +265,31 @@
 				"disableBodyPruning": true
 			},
 			"request": {
-				"method": "GET",
-				"header": []
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"task_summary\": \"Extract tables and text from PDF invoices\",\n    \"task_details\": \"Need to process multiple invoice PDFs and extract structured data including line items, totals, and vendor information\",\n    \"input_mime_types\": [\"application/pdf\"],\n    \"output_mime_types\": [\"application/json\"],\n    \"max_latency_ms\": 5000,\n    \"max_cost_amount\": \"0.001\",\n    \"required_tools\": [\"Read\", \"Write\"],\n    \"forbidden_tools\": [\"Execute\"],\n    \"min_score\": 0.7,\n    \"weights\": {\n      \"skill_match\": 0.6,\n      \"io_compatibility\": 0.2,\n      \"performance\": 0.1,\n      \"load\": 0.05,\n      \"cost\": 0.05\n    }\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{bindu_local}}agent/negotiation",
+					"host": [
+						"{{bindu_local}}agent"
+					],
+					"path": [
+						"negotiation"
+					]
+				}
 			},
 			"response": []
 		}

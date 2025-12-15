@@ -1,0 +1,28 @@
+import random
+
+class RandomAdviceAgent:
+    """
+    A simple agent that returns a random piece of advice.
+    """
+
+    def __init__(self):
+        self.advice_list = [
+            "Take breaks and stay hydrated.",
+            "Keep learning something new every day.",
+            "Focus on progress, not perfection.",
+            "Stay curious and ask questions.",
+            "Don't be afraid to experiment."
+        ]
+
+    def ping(self, message=None):
+        """
+        Respond to a ping with a random advice.
+        """
+        return random.choice(self.advice_list)
+
+#example usage
+
+if __name__ == "__main__":
+    agent = RandomAdviceAgent()
+    print("Ping agent...")
+    print("Agent says:", agent.ping())

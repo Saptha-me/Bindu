@@ -47,7 +47,7 @@ def _get_or_create_calculator(app: BinduApplication) -> CapabilityCalculator:
         and hasattr(app, "_negotiation_calculator_manifest_id")
         and app._negotiation_calculator_manifest_id == id(app.manifest)
     ):
-        return app._negotiation_calculator
+        return app._negotiation_calculator  # type: ignore[return-value]
 
     # Create new calculator
     skills = app.manifest.skills or [] if app.manifest else []

@@ -106,7 +106,7 @@ class SkillEmbedder:
             Array of embedding vectors
         """
         try:
-            from sentence_transformers import SentenceTransformer
+            from sentence_transformers import SentenceTransformer  # type: ignore[import-untyped]
 
             if not hasattr(self, "_model") or self._model is None:
                 logger.info(f"Loading sentence-transformers model: {self._model_name}")
@@ -157,7 +157,11 @@ class SkillEmbedder:
         if self._provider == "openrouter":
             return self._embed_with_openrouter(texts)
         elif self._provider == "sentence-transformers":
-            return self._embed_with_sentence_transformers(texts)
+            logger.warning(
+                f"Unknown embedding provider: {self._provider}, falling back to OpenRouter"
+            )
+            return self._embed_with_openrouter(texts)
+            #return self._embed_with_sentence_transformers(texts)
         else:
             logger.warning(
                 f"Unknown embedding provider: {self._provider}, falling back to OpenRouter"

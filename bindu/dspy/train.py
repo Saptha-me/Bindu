@@ -26,15 +26,13 @@ from .config import (
     DEFAULT_DSPY_MODEL,
     NUM_PROMPT_CANDIDATES,
     MAX_BOOTSTRAPPED_DEMOS,
+    MIN_FEEDBACK_THRESHOLD,
 )
-from .dataset import (
-    convert_to_dspy_examples,
-    filter_high_quality_interactions,
-    prepare_golden_dataset,
-)
+from .dataset import build_golden_dataset, convert_to_dspy_examples
+from .extractor import ExtractionStrategy
 from .models import PromptCandidate
 from .optimizer import optimize
-from .postgres import fetch_interactions
+from .postgres import fetch_raw_task_data
 from .program import AgentProgram
 
 logger = get_logger("bindu.dspy.train")
@@ -43,38 +41,51 @@ logger = get_logger("bindu.dspy.train")
 def train(
     agent_name: str | None = None,
     optimizer: Any = None,
+    strategy: ExtractionStrategy = ExtractionStrategy.LAST_TURN,
+    require_feedback: bool = True,
 ) -> list[PromptCandidate]:
     """Train and optimize agent prompts using DSPy.
 
     This function orchestrates the complete training pipeline:
     1. Configures DSPy with the default language model
-    2. Fetches interaction data from PostgreSQL
-    3. Filters high-quality training examples
-    4. Prepares golden dataset with input-output pairs
-    5. Converts dataset to DSPy Example format
-    6. Loads the agent program
-    7. Runs DSPy optimization with the provided optimizer
-    8. Extracts and scores optimized prompts
-    9. Returns top prompt candidates
+    2. Fetches raw task data with feedback from PostgreSQL
+    3. Builds golden dataset using the complete pipeline:
+       - Normalize feedback
+       - Extract interactions (with configurable strategy)
+       - Filter by feedback quality
+       - Validate and clean
+       - Deduplicate
+    4. Converts dataset to DSPy Example format
+    5. Loads the agent program
+    6. Runs DSPy optimization with the provided optimizer
+    7. Extracts and scores optimized prompts
+    8. Returns top prompt candidates
 
     Args:
-        agent_name: Optional agent identifier for filtering interactions
+        agent_name: Optional agent identifier for filtering interactions (not yet implemented)
         optimizer: DSPy optimizer instance to use for training.
             If None, uses BootstrapFewShot with default settings.
+        strategy: Extraction strategy (LAST_TURN or FULL_HISTORY)
+        require_feedback: Whether to require feedback for inclusion in dataset
 
     Returns:
         List of exactly NUM_PROMPT_CANDIDATES PromptCandidate objects,
         sorted by quality score in descending order
 
     Raises:
-        RuntimeError: If DATABASE_URL environment variable is not set
+        RuntimeError: If STORAGE__POSTGRES_URL environment variable is not set
         ConnectionError: If unable to connect to database
-        ValueError: If no high-quality interactions are found
+        ValueError: If golden dataset pipeline fails
 
     Example:
         >>> from dspy.teleprompt import MIPRO
+        >>> from bindu.dspy.extractor import ExtractionStrategy
         >>> optimizer = MIPRO(num_candidates=10, metric=my_metric)
-        >>> candidates = train(agent_name="support_agent", optimizer=optimizer)
+        >>> candidates = train(
+        ...     agent_name="support_agent",
+        ...     optimizer=optimizer,
+        ...     strategy=ExtractionStrategy.FULL_HISTORY
+        ... )
         >>> best_prompt = candidates[0]
     """
     logger.info("Starting DSPy training pipeline")
@@ -84,38 +95,39 @@ def train(
     lm = dspy.LM(DEFAULT_DSPY_MODEL)
     dspy.configure(lm=lm)
 
-    # Step 2: Fetch interactions from database (async operation)
-    logger.info("Fetching interactions from database")
-    interactions = asyncio.run(fetch_interactions())
+    # Step 2: Fetch raw task data from database (async operation)
+    logger.info("Fetching raw task data from database")
+    raw_tasks = asyncio.run(fetch_raw_task_data())
 
-    if not interactions:
-        raise ValueError("No interactions found in database")
+    if not raw_tasks:
+        raise ValueError("No tasks found in database")
 
-    logger.info(f"Fetched {len(interactions)} total interactions")
+    logger.info(f"Fetched {len(raw_tasks)} raw tasks")
 
-    # Step 3: Filter high-quality interactions
-    logger.info("Filtering high-quality interactions")
-    filtered_interactions = filter_high_quality_interactions(interactions)
+    # Step 3: Build golden dataset using complete pipeline
+    logger.info(
+        f"Building golden dataset (strategy={strategy.value}, "
+        f"require_feedback={require_feedback}, "
+        f"threshold={MIN_FEEDBACK_THRESHOLD})"
+    )
+    golden_dataset = build_golden_dataset(
+        raw_tasks=raw_tasks,
+        strategy=strategy,
+        require_feedback=require_feedback,
+        min_feedback_threshold=MIN_FEEDBACK_THRESHOLD,
+    )
 
-    if not filtered_interactions:
-        raise ValueError(
-            "No high-quality interactions found after filtering. "
-            "Adjust quality thresholds or collect more training data."
-        )
+    logger.info(f"Golden dataset prepared with {len(golden_dataset)} examples")
 
-    # Step 4: Prepare golden dataset
-    logger.info("Preparing golden dataset")
-    golden_dataset = prepare_golden_dataset(filtered_interactions)
-
-    # Step 5: Convert to DSPy examples
+    # Step 4: Convert to DSPy examples
     logger.info("Converting to DSPy examples")
     dspy_examples = convert_to_dspy_examples(golden_dataset)
 
-    # Step 6: Load agent program
+    # Step 5: Load agent program
     logger.info("Initializing agent program")
     program = AgentProgram()
 
-    # Step 7: Create default optimizer if none provided
+    # Step 6: Create default optimizer if none provided
     if optimizer is None:
         logger.info(
             f"No optimizer provided, using default BootstrapFewShot "
@@ -125,7 +137,7 @@ def train(
             max_bootstrapped_demos=MAX_BOOTSTRAPPED_DEMOS
         )
 
-    # Step 8: Run optimization
+    # Step 7: Run optimization
     logger.info(f"Running optimization with {type(optimizer).__name__}")
     optimized_program = optimize(
         program=program,
@@ -133,7 +145,7 @@ def train(
         optimizer=optimizer,
     )
 
-    # Step 9: Extract prompt candidates from optimized program
+    # Step 8: Extract prompt candidates from optimized program
     logger.info("Extracting prompt candidates from optimized program")
     candidates = _extract_prompt_candidates(optimized_program, dspy_examples)
 

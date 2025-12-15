@@ -20,11 +20,24 @@ DEFAULT_DSPY_MODEL = "gpt-3.5-turbo"
 """Default language model for DSPy optimization."""
 
 # Dataset Filtering Thresholds
-MIN_RATING_THRESHOLD = 4
-"""Minimum rating for interactions to be included in training dataset (1-5 scale)."""
+MIN_FEEDBACK_THRESHOLD = 0.8
+"""Minimum normalized feedback score [0.0, 1.0] for interactions to be included in training dataset."""
 
-MIN_SCORE_THRESHOLD = 0.7
-"""Minimum score for interactions to be included in training dataset (0.0-1.0 scale)."""
+# Golden Dataset Constraints
+MIN_EXAMPLES = 10
+"""Minimum number of examples required in golden dataset."""
+
+MAX_EXAMPLES = 10000
+"""Maximum number of examples allowed in golden dataset."""
+
+MIN_INPUT_LENGTH = 10
+"""Minimum character length for user input."""
+
+MIN_OUTPUT_LENGTH = 10
+"""Minimum character length for agent output."""
+
+MAX_FULL_HISTORY_LENGTH = 10000
+"""Maximum character length for full history extraction strategy."""
 
 # Prompt Optimization Parameters
 NUM_PROMPT_CANDIDATES = 3

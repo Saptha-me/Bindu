@@ -17,6 +17,7 @@ queries to fetch and convert task data into training examples.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
@@ -27,25 +28,37 @@ from bindu.server.storage.schema import tasks_table, task_feedback_table
 from bindu.utils.logging import get_logger
 
 from .config import MAX_INTERACTIONS_QUERY_LIMIT
-from .models import Interaction
 
 logger = get_logger("bindu.dspy.postgres")
 
 
-async def fetch_interactions(
-    limit: int = MAX_INTERACTIONS_QUERY_LIMIT,
-) -> list[Interaction]:
-    """Fetch interaction data from PostgreSQL for training.
+@dataclass
+class RawTaskData:
+    """Raw task data fetched from the database.
+    
+    This represents the raw data before interaction extraction.
+    """
 
-    This function reads task data from the database and converts it into
-    Interaction objects suitable for DSPy training. It joins tasks with
-    their feedback to create complete training examples.
+    id: UUID
+    history: list[dict[str, Any]]
+    created_at: Any
+    feedback_data: dict[str, Any] | None = None
+
+
+async def fetch_raw_task_data(
+    limit: int = MAX_INTERACTIONS_QUERY_LIMIT,
+) -> list[RawTaskData]:
+    """Fetch raw task data with feedback from PostgreSQL.
+
+    This function reads task data from the database along with associated
+    feedback using a LEFT JOIN. It returns raw data that needs to be
+    processed by the extraction and filtering pipeline.
 
     Args:
-        limit: Maximum number of interactions to fetch
+        limit: Maximum number of tasks to fetch
 
     Returns:
-        List of Interaction objects containing task data
+        List of RawTaskData objects containing task history and feedback
 
     Raises:
         RuntimeError: If STORAGE__POSTGRES_URL environment variable is not set
@@ -61,7 +74,7 @@ async def fetch_interactions(
     elif not database_url.startswith("postgresql+asyncpg://"):
         database_url = f"postgresql+asyncpg://{database_url}"
 
-    logger.info(f"Fetching up to {limit} interactions from database")
+    logger.info(f"Fetching up to {limit} tasks from database")
 
     try:
         # Create async engine
@@ -80,17 +93,23 @@ async def fetch_interactions(
             expire_on_commit=False,
         )
 
-        interactions: list[Interaction] = []
+        raw_tasks: list[RawTaskData] = []
 
         async with session_factory() as session:
-            # Simple query: fetch tasks with their metadata
-            # We assume tasks.history contains the interaction text
-            # and tasks.metadata contains additional context
+            # Query tasks with LEFT JOIN to feedback
+            # This gets all tasks and their associated feedback (if any)
             stmt = (
                 select(
                     tasks_table.c.id,
                     tasks_table.c.history,
-                    tasks_table.c.metadata,
+                    tasks_table.c.created_at,
+                    task_feedback_table.c.feedback_data,
+                )
+                .select_from(
+                    tasks_table.outerjoin(
+                        task_feedback_table,
+                        tasks_table.c.id == task_feedback_table.c.task_id,
+                    )
                 )
                 .order_by(tasks_table.c.created_at.desc())
                 .limit(limit)
@@ -100,29 +119,19 @@ async def fetch_interactions(
             rows = result.fetchall()
 
             for row in rows:
-                # Extract text from history (last message)
-                history = row.history or []
-                if not history:
-                    continue
-
-                # Get the last message content as the interaction text
-                last_message = history[-1] if history else {}
-                text = last_message.get("content", "")
-                if not text:
-                    continue
-
-                interactions.append(
-                    Interaction(
+                raw_tasks.append(
+                    RawTaskData(
                         id=row.id,
-                        text=text,
-                        metadata=row.metadata or {},
+                        history=row.history or [],
+                        created_at=row.created_at,
+                        feedback_data=row.feedback_data,
                     )
                 )
 
         await engine.dispose()
-        logger.info(f"Fetched {len(interactions)} interactions from database")
-        return interactions
+        logger.info(f"Fetched {len(raw_tasks)} raw tasks from database")
+        return raw_tasks
 
     except Exception as e:
-        logger.error(f"Failed to fetch interactions from database: {e}")
-        raise ConnectionError(f"Failed to fetch interactions: {e}") from e
+        logger.error(f"Failed to fetch raw task data from database: {e}")
+        raise ConnectionError(f"Failed to fetch raw task data: {e}") from e

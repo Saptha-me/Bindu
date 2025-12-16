@@ -335,6 +335,10 @@ Here are some common setup issues and their fixes to help you get up and running
 | Cookiecutter install error | Cookiecutter not found | Install with `uv add cookiecutter` or `pip install cookiecutter` |
 | `Permission denied` or `@ symbols in ls -l output` (macOS) | Extended attributes on files | Run `xattr -cr .` to clear extended attributes |
 
+| **Microsoft Visual C++ 14.0 or greater required** error during 'uv sync --dev' | Windows needs c++ compiler to build `ed25519-blake2b` package | 1.Download from: https://visualstudio.microsoft.com/visual-cpp-build-tools/ 2.Install C++ build tools (workload only) 3.Restart powershell 4. `uv sync --dev` again |
+
+| **password authentication failed for user bindu** when starting `echo_agent.py` | Bindu tries to use postgreSQL database by default but can't connect | ** Quick fix (no postgres needed): ** 1.create `.env` file in root, set correct postgres credentials in an evn var. 2. Add: `BINDU_STORAGE_BACKEND=memory` this way we can use a pure in-memory storage mode for quick local testing (docs should show a "no postgres" path) 3. Restart agent, now we can use in-memory storage for testing |
+
 ### Additional Tips
 - If the agent starts but does not respond, re-create the venv and reinstall dependencies:
 ```bash

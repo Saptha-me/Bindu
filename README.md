@@ -37,6 +37,8 @@ Built with a distributed architecture (Task Manager, scheduler, storage), Bindu 
   <strong>🌟 <a href="https://bindus.directory">Register your agent</a> • 🌻 <a href="https://docs.getbindu.com">Documentation</a> • 💬 <a href="https://discord.gg/3w5zuYUuwt">Discord Community</a></strong>
 </p>
 
+<br/>
+
 ### 🎥 Watch Bindu in Action
 
 <a href="https://www.youtube.com/watch?v=qppafMuw_KI" target="_blank">
@@ -61,11 +63,7 @@ python --version  # Should show 3.12 or higher
 uv --version
 ```
 
-### Windows Users
-
-If you're on Windows, we recommend using **PowerShell** (not CMD) for all commands.
-
----
+<br/>
 
 ## � Installation
 
@@ -73,12 +71,12 @@ If you're on Windows, we recommend using **PowerShell** (not CMD) for all comman
 # Install Bindu
 uv add bindu
 
-# Create and activate virtual environment (recommended)
+# For development (if contributing to Bindu)
+# Create and activate virtual environment
 uv venv --python 3.12.9
 source .venv/bin/activate  # On macOS/Linux
 # .venv\Scripts\activate  # On Windows
 
-# For development (if contributing to Bindu)
 uv sync --dev
 ```
 
@@ -97,7 +95,7 @@ uv sync --dev
 
 </details>
 
----
+<br/>
 
 ## 🚀 Quick Start
 

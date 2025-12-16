@@ -193,6 +193,7 @@ python examples/echo_agent.py
 
 <br/>
 
+Input:
 ```bash
 curl --location 'http://localhost:3773/' \
 --header 'Content-Type: application/json' \
@@ -205,7 +206,7 @@ curl --location 'http://localhost:3773/' \
             "parts": [
                 {
                     "kind": "text",
-                    "text": "Hello Bindu!"
+                    "text": "Quote"
                 }
             ],
             "kind": "message",
@@ -223,6 +224,111 @@ curl --location 'http://localhost:3773/' \
 }'
 ```
 
+Output:
+```bash
+{
+    "jsonrpc": "2.0",
+    "id": "550e8400-e29b-41d4-a716-446655440024",
+    "result": {
+        "id": "550e8400-e29b-41d4-a716-446655440301",
+        "context_id": "550e8400-e29b-41d4-a716-446655440038",
+        "kind": "task",
+        "status": {
+            "state": "submitted",
+            "timestamp": "2025-12-16T17:10:32.116980+00:00"
+        },
+        "history": [
+            {
+                "message_id": "550e8400-e29b-41d4-a716-446655440038",
+                "context_id": "550e8400-e29b-41d4-a716-446655440038",
+                "task_id": "550e8400-e29b-41d4-a716-446655440301",
+                "kind": "message",
+                "parts": [
+                    {
+                        "kind": "text",
+                        "text": "Quote"
+                    }
+                ],
+                "role": "user"
+            }
+        ]
+    }
+}
+```
+
+Check the status of the task
+```bash
+curl --location 'http://localhost:3773/' \
+--header 'Content-Type: application/json' \
+--data '{
+    "jsonrpc": "2.0",
+    "method": "tasks/get",
+    "params": {
+        "taskId": "550e8400-e29b-41d4-a716-446655440301"
+    },
+    "id": "550e8400-e29b-41d4-a716-446655440025"
+}'
+```
+
+Output:
+```bash
+{
+    "jsonrpc": "2.0",
+    "id": "550e8400-e29b-41d4-a716-446655440025",
+    "result": {
+        "id": "550e8400-e29b-41d4-a716-446655440301",
+        "context_id": "550e8400-e29b-41d4-a716-446655440038",
+        "kind": "task",
+        "status": {
+            "state": "completed",
+            "timestamp": "2025-12-16T17:10:32.122360+00:00"
+        },
+        "history": [
+            {
+                "message_id": "550e8400-e29b-41d4-a716-446655440038",
+                "context_id": "550e8400-e29b-41d4-a716-446655440038",
+                "task_id": "550e8400-e29b-41d4-a716-446655440301",
+                "kind": "message",
+                "parts": [
+                    {
+                        "kind": "text",
+                        "text": "Quote"
+                    }
+                ],
+                "role": "user"
+            },
+            {
+                "role": "assistant",
+                "parts": [
+                    {
+                        "kind": "text",
+                        "text": "Quote"
+                    }
+                ],
+                "kind": "message",
+                "message_id": "2f2c1a8e-68fa-4bb7-91c2-eac223e6650b",
+                "task_id": "550e8400-e29b-41d4-a716-446655440301",
+                "context_id": "550e8400-e29b-41d4-a716-446655440038"
+            }
+        ],
+        "artifacts": [
+            {
+                "artifact_id": "22ac0080-804e-4ff6-b01c-77e6b5aea7e8",
+                "name": "result",
+                "parts": [
+                    {
+                        "kind": "text",
+                        "text": "Quote",
+                        "metadata": {
+                            "did.message.signature": "5opJuKrBDW4woezujm88FzTqRDWAB62qD3wxKz96Bt2izfuzsneo3zY7yqHnV77cq3BDKepdcro2puiGTVAB52qf"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
 </details>
 
 <br/>
@@ -253,22 +359,11 @@ When you create an agent using the cookiecutter template, it includes a pre-conf
 2. **Push to GitHub** - The GitHub Action triggers automatically
 3. **Your agent appears** in the [Bindu Directory](https://bindus.directory)
 
-No manual registration required! The GitHub Action handles:
-- ✅ Agent metadata submission
-- ✅ Endpoint verification
-- ✅ Directory listing updates
-- ✅ Status monitoring
+You need to collect the BINDU_PAT_TOKEN from bindus.directory and use it to register your agent.
 
 ### Manual Registration
 
-If you're not using the cookiecutter template, you can manually register your agent at [bindus.directory](https://bindus.directory).
-
-### Benefits of Directory Listing
-
-- **Discoverability**: Other agents and developers can find your agent
-- **Interoperability**: Join the Internet of Agents ecosystem
-- **Visibility**: Showcase your agent's capabilities
-- **Network Effects**: Enable agent-to-agent collaboration
+We are working on a manual registration process.
 
 ---
 

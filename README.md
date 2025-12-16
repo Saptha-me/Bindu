@@ -33,7 +33,9 @@
 
 Built with a distributed architecture (Task Manager, scheduler, storage), Bindu makes it fast to develop and easy to integrate with any AI framework. Transform any agent framework into a fully interoperable service for communication, collaboration, and commerce in the Internet of Agents.
 
-**🌟 [Register your agent](https://bindus.directory) • 🌻 [Documentation](https://docs.getbindu.com) • 💬 [Discord Community](https://discord.gg/3w5zuYUuwt)**
+<p align="center">
+  <strong>🌟 <a href="https://bindus.directory">Register your agent</a> • 🌻 <a href="https://docs.getbindu.com">Documentation</a> • 💬 <a href="https://discord.gg/3w5zuYUuwt">Discord Community</a></strong>
+</p>
 
 ### 🎥 Watch Bindu in Action
 
@@ -112,6 +114,8 @@ uvx cookiecutter https://github.com/getbindu/create-bindu-agent.git
 ```
 
 That's it! Your local agent becomes a live, secure, discoverable service. [Learn more →](https://docs.getbindu.com/bindu/create-bindu-agent/overview)
+
+> **💡 Pro Tip:** Agents created with cookiecutter include GitHub Actions that automatically register your agent in the [Bindu Directory](https://bindus.directory) when you push to your repository. No manual registration needed!
 
 ### Option 2: Manual Setup
 
@@ -225,26 +229,6 @@ curl --location 'http://localhost:3773/' \
 
 <br/>
 
-
-
----
-
-## � Examples
-
-### Echo Agent
-
-```bash
-python examples/echo_agent.py
-```
-
-Echoes back any message sent to it. Useful for verifying your setup.
-
-### Summarizer Agent
-
-```bash
-python examples/summarizer_agent.py
-```
-
 ---
 
 ## 🎨 Chat UI
@@ -254,6 +238,39 @@ Bindu includes a beautiful chat interface at `http://localhost:3773/docs`
 <p align="center">
   <img src="assets/agent-ui.png" alt="Bindu Agent UI" width="640" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 </p>
+
+<br/>
+
+---
+
+## 🌐 Bindu Directory
+
+The [**Bindu Directory**](https://bindus.directory) is a public registry of all Bindu agents, making them discoverable and accessible to the broader agent ecosystem.
+
+### Automatic Registration with Cookiecutter
+
+When you create an agent using the cookiecutter template, it includes a pre-configured GitHub Action that automatically registers your agent in the directory:
+
+1. **Create your agent** using cookiecutter
+2. **Push to GitHub** - The GitHub Action triggers automatically
+3. **Your agent appears** in the [Bindu Directory](https://bindus.directory)
+
+No manual registration required! The GitHub Action handles:
+- ✅ Agent metadata submission
+- ✅ Endpoint verification
+- ✅ Directory listing updates
+- ✅ Status monitoring
+
+### Manual Registration
+
+If you're not using the cookiecutter template, you can manually register your agent at [bindus.directory](https://bindus.directory).
+
+### Benefits of Directory Listing
+
+- **Discoverability**: Other agents and developers can find your agent
+- **Interoperability**: Join the Internet of Agents ecosystem
+- **Visibility**: Showcase your agent's capabilities
+- **Network Effects**: Enable agent-to-agent collaboration
 
 ---
 
@@ -279,6 +296,8 @@ uv sync --dev
 ```bash
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
+
+<br/>
 
 ---
 
@@ -314,6 +333,8 @@ NightSky enables swarms of agents. Each Bindu is a dot annotating agents with th
 
 **A Goal Without a Plan Is Just a Wish.**
 
+<br/>
+
 ---
 
 ## 🛠️ Supported Agent Frameworks
@@ -328,6 +349,8 @@ Bindu is **framework-agnostic** and tested with:
 
 Want integration with your favorite framework? [Let us know on Discord](https://discord.gg/3w5zuYUuwt)!
 
+<br/>
+
 ---
 
 ## Testing
@@ -337,6 +360,8 @@ Bindu maintains **70%+ test coverage**:
 ```bash
 pytest -n auto --cov=bindu --cov-report= && coverage report --skip-covered --fail-under=70
 ```
+
+<br/>
 
 ---
 
@@ -353,13 +378,19 @@ uv sync --dev
 pre-commit run --all-files
 ```
 
+<br/>
+
 📖 [Contributing Guidelines](.github/contributing.md) • 👥 [Maintainers](maintainers.md)
+
+<br/>
 
 ---
 
 ## 📜 License
 
 Bindu is open-source under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/).
+
+<br/>
 
 ---
 
@@ -369,6 +400,8 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 
 - 💬 [Join Discord](https://discord.gg/3w5zuYUuwt) for discussions and support
 - ⭐ [Star the repository](https://github.com/getbindu/Bindu) if you find it useful!
+
+<br/>
 
 ---
 
@@ -383,6 +416,8 @@ Grateful to these projects:
 - [X402](https://github.com/coinbase/x402)
 - [Bindu Logo](https://openmoji.org/library/emoji-1F33B/)
 - [ASCII Space Art](https://www.asciiart.eu/space/other)
+
+<br />
 
 ---
 
@@ -403,11 +438,15 @@ Grateful to these projects:
 
 [Suggest features on Discord](https://discord.gg/3w5zuYUuwt)!
 
+<br/>
+
 ---
 
 ## 🎓 Workshops
 
 - [AI Native in Action: Agent Symphony](https://www.meetup.com/ai-native-amsterdam/events/311066899/) - [Slides](https://docs.google.com/presentation/d/1SqGXI0Gv_KCWZ1Mw2SOx_kI0u-LLxwZq7lMSONdl8oQ/edit)
+
+<br/>
 
 ---
 
@@ -432,3 +471,7 @@ Grateful to these projects:
   <a href="https://discord.gg/3w5zuYUuwt">💬 Join Discord</a> •
   <a href="https://docs.getbindu.com">📚 Read the Docs</a>
 </p>
+
+<br/>
+
+---

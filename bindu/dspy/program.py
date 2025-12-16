@@ -35,10 +35,14 @@ class AgentProgram(dspy.Module):
     logic without training, evaluation, or instrumentation concerns.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, current_prompt_text: str) -> None:
         """Initialize the agent program with a predictor."""
         super().__init__()
         self.predictor = dspy.Predict(AgentSignature)
+        # self.predictor = dspy.Predict(
+        #     AgentSignature,
+        #     instructions=current_prompt_text,
+        # )
 
     def forward(self, input: str) -> dspy.Prediction:
         """Generate a response for the given input.

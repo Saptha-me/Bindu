@@ -16,7 +16,7 @@ including model settings, filtering thresholds, and optimization parameters.
 from __future__ import annotations
 
 # DSPy Model Configuration
-DEFAULT_DSPY_MODEL = "gpt-3.5-turbo"
+DEFAULT_DSPY_MODEL = "openai/gpt-3.5-turbo"
 """Default language model for DSPy optimization."""
 
 # Dataset Filtering Thresholds

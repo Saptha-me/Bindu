@@ -13,10 +13,13 @@ This module provides the main training pipeline that coordinates all steps
 of the prompt optimization process, from data collection to candidate generation.
 """
 
+
 from __future__ import annotations
 
 import asyncio
 from typing import Any
+
+import os
 
 import dspy
 
@@ -37,12 +40,11 @@ from .program import AgentProgram
 
 logger = get_logger("bindu.dspy.train")
 
-
-def train(
-    agent_name: str | None = None,
+async def train_async(
     optimizer: Any = None,
     strategy: ExtractionStrategy = ExtractionStrategy.LAST_TURN,
     require_feedback: bool = True,
+    current_prompt_text: str = "",
 ) -> list[PromptCandidate]:
     """Train and optimize agent prompts using DSPy.
 
@@ -80,13 +82,18 @@ def train(
     Example:
         >>> from dspy.teleprompt import MIPRO
         >>> from bindu.dspy.extractor import ExtractionStrategy
+        >>> import asyncio
         >>> optimizer = MIPRO(num_candidates=10, metric=my_metric)
-        >>> candidates = train(
+        >>> candidates = asyncio.run(train_async(
         ...     agent_name="support_agent",
         ...     optimizer=optimizer,
         ...     strategy=ExtractionStrategy.FULL_HISTORY
-        ... )
+        ... ))
         >>> best_prompt = candidates[0]
+        
+    Note:
+        This is an async function. When calling from async code, use await.
+        For sync contexts, use the train() wrapper function instead.
     """
     logger.info("Starting DSPy training pipeline")
 
@@ -95,9 +102,16 @@ def train(
     lm = dspy.LM(DEFAULT_DSPY_MODEL)
     dspy.configure(lm=lm)
 
+    # api_key = os.getenv("GOOGLE_API_KEY")
+    # if not api_key:
+    #     raise RuntimeError("GOOGLE_API_KEY is not set")
+    
+    # lm = dspy.LM('google/gemini-1.5-flash', api_key=api_key, litellm_provider="google")
+    # dspy.configure(lm=lm)
+
     # Step 2: Fetch raw task data from database (async operation)
     logger.info("Fetching raw task data from database")
-    raw_tasks = asyncio.run(fetch_raw_task_data())
+    raw_tasks = await fetch_raw_task_data()
 
     if not raw_tasks:
         raise ValueError("No tasks found in database")
@@ -125,7 +139,7 @@ def train(
 
     # Step 5: Load agent program
     logger.info("Initializing agent program")
-    program = AgentProgram()
+    program = AgentProgram(current_prompt_text)
 
     # Step 6: Create default optimizer if none provided
     if optimizer is None:
@@ -230,3 +244,36 @@ def _extract_prompt_candidates(
     # Sort by score descending and return exactly NUM_PROMPT_CANDIDATES
     candidates.sort(key=lambda c: c.score, reverse=True)
     return candidates[:NUM_PROMPT_CANDIDATES]
+
+
+def train(
+    optimizer: Any = None,
+    strategy: ExtractionStrategy = ExtractionStrategy.LAST_TURN,
+    require_feedback: bool = True,
+) -> list[PromptCandidate]:
+    """Synchronous wrapper for train_async().
+    
+    This function provides a synchronous interface to the async training pipeline.
+    For use in async contexts, call train_async() directly.
+    
+    Args:
+        agent_name: Optional agent identifier for filtering interactions
+        optimizer: DSPy optimizer instance (default: BootstrapFewShot)
+        strategy: Extraction strategy (LAST_TURN or FULL_HISTORY)
+        require_feedback: Whether to require feedback for inclusion in dataset
+    
+    Returns:
+        List of prompt candidates sorted by quality score
+        
+    Raises:
+        RuntimeError: If called from within an async event loop. Use train_async() instead.
+    """
+    try:
+        return asyncio.run(train_async(optimizer, strategy, require_feedback))
+    except RuntimeError as e:
+        if "event loop" in str(e):
+            raise RuntimeError(
+                "train() cannot be called from an async context. "
+                "Use 'await train_async()' instead."
+            ) from e
+        raise

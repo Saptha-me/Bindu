@@ -333,7 +333,7 @@ Output:
 
 <br/>
 
----
+
 
 ## 🎨 Chat UI
 
@@ -345,7 +345,7 @@ Bindu includes a beautiful chat interface at `http://localhost:3773/docs`
 
 <br/>
 
----
+
 
 ## 🌐 Bindu Directory
 
@@ -367,7 +367,10 @@ We are working on a manual registration process.
 
 ---
 
-## 🔧 Troubleshooting
+<details>
+<summary><h2>🔧 Troubleshooting</h2></summary>
+
+<br/>
 
 | Issue | Solution |
 |-------|----------|
@@ -390,9 +393,9 @@ uv sync --dev
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-<br/>
+</details>
 
----
+<br/>
 
 ## 🌌 The Vision
 
@@ -428,7 +431,6 @@ NightSky enables swarms of agents. Each Bindu is a dot annotating agents with th
 
 <br/>
 
----
 
 ## 🛠️ Supported Agent Frameworks
 
@@ -444,7 +446,6 @@ Want integration with your favorite framework? [Let us know on Discord](https://
 
 <br/>
 
----
 
 ## Testing
 
@@ -456,11 +457,10 @@ pytest -n auto --cov=bindu --cov-report= && coverage report --skip-covered --fai
 
 <br/>
 
----
 
 ## 🤝 Contributing
 
-We welcome contributions!
+We welcome contributions! Join us on [Discord](https://discord.gg/3w5zuYUuwt). Pick the channel that best matches your contribution.
 
 ```bash
 git clone https://github.com/getbindu/Bindu.git
@@ -473,11 +473,10 @@ pre-commit run --all-files
 
 <br/>
 
-📖 [Contributing Guidelines](.github/contributing.md) • 👥 [Maintainers](maintainers.md)
+📖 [Contributing Guidelines](.github/contributing.md)
 
 <br/>
 
----
 
 ## 📜 License
 
@@ -485,7 +484,6 @@ Bindu is open-source under the [Apache License 2.0](https://choosealicense.com/l
 
 <br/>
 
----
 
 ## 💬 Community
 
@@ -496,7 +494,6 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 
 <br/>
 
----
 
 ## 🙏 Acknowledgements
 
@@ -512,7 +509,6 @@ Grateful to these projects:
 
 <br />
 
----
 
 ## 🗺️ Roadmap
 
@@ -533,7 +529,7 @@ Grateful to these projects:
 
 <br/>
 
----
+
 
 ## 🎓 Workshops
 
@@ -541,7 +537,7 @@ Grateful to these projects:
 
 <br/>
 
----
+
 
 ## ⭐ Star History
 

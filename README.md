@@ -37,13 +37,15 @@ Built with a distributed architecture (Task Manager, scheduler, storage), Bindu 
   <strong>🌟 <a href="https://bindus.directory">Register your agent</a> • 🌻 <a href="https://docs.getbindu.com">Documentation</a> • 💬 <a href="https://discord.gg/3w5zuYUuwt">Discord Community</a></strong>
 </p>
 
-<br/>
+---
 
-### 🎥 Watch Bindu in Action
+## 🎥 Watch Bindu in Action
 
-<a href="https://www.youtube.com/watch?v=qppafMuw_KI" target="_blank">
-  <img src="https://img.youtube.com/vi/qppafMuw_KI/maxresdefault.jpg" alt="Bindu Demo" width="640" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
-</a>
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=qppafMuw_KI" target="_blank">
+    <img src="https://img.youtube.com/vi/qppafMuw_KI/maxresdefault.jpg" alt="Bindu Demo" width="640" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+  </a>
+</div>
 
 
 ## 📋 Prerequisites
@@ -63,9 +65,9 @@ python --version  # Should show 3.12 or higher
 uv --version
 ```
 
-<br/>
+---
 
-## � Installation
+## 📦 Installation
 <details>
 <summary><b>Windows users note (Git & GitHub Desktop)</b></summary>
 
@@ -110,7 +112,7 @@ uv sync --dev
 
 </details>
 
-<br/>
+---
 
 ## 🚀 Quick Start
 
@@ -174,6 +176,8 @@ bindufy(config, handler)
 ```
 
 Your agent is now live at `http://localhost:3773` and ready to communicate with other agents.
+
+---
 
 ### Option 3: Minimal Echo Agent (Testing)
 
@@ -344,17 +348,18 @@ Output:
     }
 }
 ```
+
 </details>
 
-<br/>
+---
 
 ## [Postgres Storage](https://docs.getbindu.com/bindu/learn/storage/overview)
 
 Bindu uses PostgreSQL as its persistent storage backend for production deployments. The storage layer is built with SQLAlchemy's async engine and uses imperative mapping with protocol TypedDicts.
 
-Its Optional  - InMemoryStorage is used by default. 
+Its Optional  - InMemoryStorage is used by default.
 
-### Storage Structure
+### 📊 Storage Structure
 
 The storage layer uses three main tables:
 
@@ -362,7 +367,7 @@ The storage layer uses three main tables:
 2. **contexts_table**: Maintains context metadata and message history
 3. **task_feedback_table**: Optional feedback storage for tasks
 
-### Configuration
+### ⚙️ Configuration
 
 Configure PostgreSQL connection in your environment or settings:
 provide the connection string in the config of the agent.
@@ -383,9 +388,9 @@ config = {
 ```
 
 
-**Task-First Pattern**: The storage supports Bindu's task-first approach where tasks can be continued by appending messages to non-terminal tasks, enabling incremental refinements and multi-turn conversations.
+> **💡 Task-First Pattern**: The storage supports Bindu's task-first approach where tasks can be continued by appending messages to non-terminal tasks, enabling incremental refinements and multi-turn conversations.
 
-<br/>
+---
 
 ## [Redis Scheduler](https://docs.getbindu.com/bindu/learn/scheduler/overview)
 
@@ -393,7 +398,7 @@ Bindu uses Redis as its distributed task scheduler for coordinating work across 
 
 Its Optional - InMemoryScheduler is used by default.
 
-### Configuration
+### ⚙️ Configuration
 
 Configure Redis connection in your agent config:
 
@@ -413,7 +418,7 @@ config = {
 
 All operations are queued in Redis and processed by available workers using a blocking pop mechanism, ensuring efficient distribution without polling overhead.
 
-<br/>
+---
 
 ## [Retry Mechanism](https://docs.getbindu.com/bindu/learn/retry/overview)
 
@@ -422,7 +427,7 @@ All operations are queued in Redis and processed by available workers using a bl
 Bindu includes a built-in Tenacity-based retry mechanism to handle transient failures gracefully across workers, storage, schedulers, and API calls. This ensures your agents remain resilient in production environments.
 
 
-### Default Settings
+### ⚙️ Default Settings
 
 If not configured, Bindu uses these defaults:
 
@@ -433,8 +438,7 @@ If not configured, Bindu uses these defaults:
 | Scheduler      | 3            | 1.0s     | 8.0s     |
 | API            | 4            | 1.0s     | 15.0s    |
 
-
-<br/>
+---
 
 ## [Sentry Integration](https://docs.getbindu.com/bindu/learn/sentry/overview)
 
@@ -442,7 +446,7 @@ If not configured, Bindu uses these defaults:
 
 Sentry is a real-time error tracking and performance monitoring platform that helps you identify, diagnose, and fix issues in production. Bindu includes built-in Sentry integration to provide comprehensive observability for your AI agents.
 
-### Configuration
+### ⚙️ Configuration
 
 Configure Sentry directly in your `bindufy()` config:
 
@@ -482,16 +486,16 @@ def handler(messages):
 bindufy(config, handler)
 ```
 
-### Getting Started
+### 🚀 Getting Started
 
 1. **Create Sentry Account**: Sign up at [sentry.io](https://sentry.io)
 2. **Get Your DSN**: Copy from project settings
 3. **Configure Bindu**: Add `sentry` config (see above)
 4. **Run Your Agent**: Sentry initializes automatically
 
-See the [full Sentry documentation](https://docs.getbindu.com/bindu/learn/sentry/overview) for complete details.
+> 📚 See the [full Sentry documentation](https://docs.getbindu.com/bindu/learn/sentry/overview) for complete details.
 
-<br/>
+---
 
 ## [Skills System](https://docs.getbindu.com/bindu/skills/introduction/overview)
 
@@ -499,7 +503,7 @@ See the [full Sentry documentation](https://docs.getbindu.com/bindu/learn/sentry
 
 The Bindu Skills System provides rich agent capability advertisement for intelligent orchestration and agent discovery. Inspired by Claude's skills architecture, it enables agents to provide detailed documentation about their capabilities for orchestrators to make informed routing decisions.
 
-### What are Skills?
+### 💡 What are Skills?
 
 Skills in Bindu serve as **rich advertisement metadata** that help orchestrators:
 
@@ -509,9 +513,9 @@ Skills in Bindu serve as **rich advertisement metadata** that help orchestrators
 * 📊 **Estimate** performance and resource needs
 * 🔗 **Chain** multiple agents intelligently
 
-**Note**: Skills are not executable code—they're structured metadata that describe what your agent can do.
+> **Note**: Skills are not executable code—they're structured metadata that describe what your agent can do.
 
-### Complete Skill Structure
+### 📋 Complete Skill Structure
 
 A skill.yaml file contains all metadata needed for intelligent orchestration:
 
@@ -691,7 +695,7 @@ assessment:
       - "batch processing"
 ```
 
-### API Endpoints
+### 🔌 API Endpoints
 
 **List All Skills**:
 ```bash
@@ -708,9 +712,9 @@ GET /agent/skills/{skill_id}
 GET /agent/skills/{skill_id}/documentation
 ```
 
-See the [Skills Documentation](https://github.com/getbindu/Bindu/tree/main/examples/skills) for complete examples.
+> 📚 See the [Skills Documentation](https://github.com/getbindu/Bindu/tree/main/examples/skills) for complete examples.
 
-<br/>
+---
 
 ## Negotiation
 
@@ -718,14 +722,14 @@ See the [Skills Documentation](https://github.com/getbindu/Bindu/tree/main/examp
 
 Bindu's negotiation system enables orchestrators to query multiple agents and intelligently select the best one for a task based on skills, performance, load, and cost.
 
-### How It Works
+### 🔄 How It Works
 
 1. **Orchestrator broadcasts** assessment request to multiple agents
 2. **Agents self-assess** capability using skill matching and load analysis
 3. **Orchestrator ranks** responses using multi-factor scoring
 4. **Best agent selected** and task executed
 
-### Assessment Endpoint
+### 🔌 Assessment Endpoint
 
 ```bash
 POST /agent/negotiation
@@ -783,7 +787,7 @@ POST /agent/negotiation
 }
 ```
 
-### Scoring Algorithm
+### 📊 Scoring Algorithm
 
 Agents calculate a confidence score based on multiple factors:
 
@@ -797,7 +801,7 @@ score = (
 )
 ```
 
-### Skill Assessment
+### 🎯 Skill Assessment
 
 Skills include assessment metadata for intelligent matching:
 
@@ -828,7 +832,7 @@ assessment:
       - "batch processing"
 ```
 
-### Example: Multi-Agent Selection
+### 💡 Example: Multi-Agent Selection
 
 ```bash
 # Query 10 translation agents
@@ -842,7 +846,7 @@ for agent in translation-agents:
 # Agent 3: score=0.65 (no technical specialization)
 ```
 
-### Configuration
+### ⚙️ Configuration
 
 Enable negotiation in your agent config:
 
@@ -864,10 +868,9 @@ config = {
 }
 ```
 
+> 📚 See the [Negotiation Documentation](https://docs.getbindu.com/bindu/negotiation/overview) for complete details.
 
-See the [Negotiation Documentation](https://docs.getbindu.com/bindu/negotiation/overview) for complete details.
-
-<br/>
+---
 
 ## 🎨 Chat UI
 
@@ -877,15 +880,13 @@ Bindu includes a beautiful chat interface at `http://localhost:3773/docs`
   <img src="assets/agent-ui.png" alt="Bindu Agent UI" width="640" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 </p>
 
-<br/>
-
-
+---
 
 ## 🌐 Bindu Directory
 
 The [**Bindu Directory**](https://bindus.directory) is a public registry of all Bindu agents, making them discoverable and accessible to the broader agent ecosystem.
 
-### Automatic Registration with Cookiecutter
+### ✨ Automatic Registration with Cookiecutter
 
 When you create an agent using the cookiecutter template, it includes a pre-configured GitHub Action that automatically registers your agent in the directory:
 
@@ -893,9 +894,9 @@ When you create an agent using the cookiecutter template, it includes a pre-conf
 2. **Push to GitHub** - The GitHub Action triggers automatically
 3. **Your agent appears** in the [Bindu Directory](https://bindus.directory)
 
-You need to collect the BINDU_PAT_TOKEN from bindus.directory and use it to register your agent.
+> **🔑 Note**: You need to collect the BINDU_PAT_TOKEN from bindus.directory and use it to register your agent.
 
-### Manual Registration
+### 📝 Manual Registration
 
 We are working on a manual registration process.
 
@@ -929,7 +930,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 </details>
 
-<br/>
+---
 
 ## 🌌 The Vision
 
@@ -961,9 +962,9 @@ _Each symbol is an agent — a spark of intelligence. The tiny dot is Bindu, the
 
 NightSky enables swarms of agents. Each Bindu is a dot annotating agents with the shared language of A2A, AP2, and X402. Agents can be hosted anywhere—laptops, clouds, or clusters—yet speak the same protocol, trust each other by design, and work together as a single, distributed mind.
 
-**A Goal Without a Plan Is Just a Wish.**
+> **💭 A Goal Without a Plan Is Just a Wish.**
 
-<br/>
+---
 
 
 ## 🛠️ Supported Agent Frameworks
@@ -978,10 +979,10 @@ Bindu is **framework-agnostic** and tested with:
 
 Want integration with your favorite framework? [Let us know on Discord](https://discord.gg/3w5zuYUuwt)!
 
-<br/>
+---
 
 
-## Testing
+## 🧪 Testing
 
 Bindu maintains **70%+ test coverage**:
 
@@ -989,7 +990,7 @@ Bindu maintains **70%+ test coverage**:
 pytest -n auto --cov=bindu --cov-report= && coverage report --skip-covered --fail-under=70
 ```
 
-<br/>
+---
 
 
 ## 🤝 Contributing
@@ -1005,18 +1006,16 @@ uv sync --dev
 pre-commit run --all-files
 ```
 
-<br/>
+> 📖 [Contributing Guidelines](.github/contributing.md)
 
-📖 [Contributing Guidelines](.github/contributing.md)
-
-<br/>
+---
 
 
 ## 📜 License
 
 Bindu is open-source under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/).
 
-<br/>
+---
 
 
 ## 💬 Community
@@ -1026,7 +1025,7 @@ We 💛 contributions! Whether you're fixing bugs, improving documentation, or b
 - 💬 [Join Discord](https://discord.gg/3w5zuYUuwt) for discussions and support
 - ⭐ [Star the repository](https://github.com/getbindu/Bindu) if you find it useful!
 
-<br/>
+---
 
 
 ## 🙏 Acknowledgements
@@ -1041,7 +1040,7 @@ Grateful to these projects:
 - [Bindu Logo](https://openmoji.org/library/emoji-1F33B/)
 - [ASCII Space Art](https://www.asciiart.eu/space/other)
 
-<br />
+---
 
 
 ## 🗺️ Roadmap
@@ -1059,9 +1058,9 @@ Grateful to these projects:
 - [ ] MLTS support
 - [ ] X402 support with other facilitators
 
-[Suggest features on Discord](https://discord.gg/3w5zuYUuwt)!
+> 💡 [Suggest features on Discord](https://discord.gg/3w5zuYUuwt)!
 
-<br/>
+---
 
 
 
@@ -1069,7 +1068,7 @@ Grateful to these projects:
 
 - [AI Native in Action: Agent Symphony](https://www.meetup.com/ai-native-amsterdam/events/311066899/) - [Slides](https://docs.google.com/presentation/d/1SqGXI0Gv_KCWZ1Mw2SOx_kI0u-LLxwZq7lMSONdl8oQ/edit)
 
-<br/>
+---
 
 
 
@@ -1094,7 +1093,3 @@ Grateful to these projects:
   <a href="https://discord.gg/3w5zuYUuwt">💬 Join Discord</a> •
   <a href="https://docs.getbindu.com">🌻 Read the Docs</a>
 </p>
-
-<br/>
-
----

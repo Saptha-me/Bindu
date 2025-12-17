@@ -436,11 +436,64 @@ If not configured, Bindu uses these defaults:
 
 <br/>
 
-## Sentry Integration
+## [Sentry Integration](https://docs.getbindu.com/bindu/learn/sentry/overview)
 
-Bindu supports Sentry error tracking for monitoring and debugging. Configure Sentry in your agent config to capture errors and performance metrics across your distributed task execution.
+> Real-time error tracking and performance monitoring for Bindu agents
 
-## Skills System
+Sentry is a real-time error tracking and performance monitoring platform that helps you identify, diagnose, and fix issues in production. Bindu includes built-in Sentry integration to provide comprehensive observability for your AI agents.
+
+### Configuration
+
+Configure Sentry directly in your `bindufy()` config:
+
+```python
+config = {
+    "author": "gaurikasethi88@gmail.com",
+    "name": "echo_agent",
+    "description": "A basic echo agent for quick testing.",
+    "deployment": {"url": "http://localhost:3773", "expose": True},
+    "skills": [],
+    "storage": {
+        "type": "postgres",
+        "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",  # pragma: allowlist secret
+        "run_migrations_on_startup": False,
+    },
+    # Scheduler configuration (optional)
+    # Use "memory" for single-process (default) or "redis" for distributed multi-process
+    "scheduler": {
+        "type": "redis",
+        "redis_url": "redis://localhost:6379/0",
+    },
+    # Sentry error tracking (optional)
+    # Configure Sentry directly in code instead of environment variables
+    "sentry": {
+        "enabled": True,
+        "dsn": "https://252c0197ddeafb621f91abdbb59fa819@o4510504294612992.ingest.de.sentry.io/4510504299069520",
+        "environment": "development",
+        "traces_sample_rate": 1.0,
+        "profiles_sample_rate": 0.1,
+    },
+}
+
+def handler(messages):
+    # Your agent logic
+    pass
+
+bindufy(config, handler)
+```
+
+### Getting Started
+
+1. **Create Sentry Account**: Sign up at [sentry.io](https://sentry.io)
+2. **Get Your DSN**: Copy from project settings
+3. **Configure Bindu**: Add `sentry` config (see above)
+4. **Run Your Agent**: Sentry initializes automatically
+
+See the [full Sentry documentation](https://docs.getbindu.com/bindu/learn/sentry/overview) for complete details.
+
+<br/>
+
+## [Skills System](https://docs.getbindu.com/bindu/skills/introduction/overview)
 
 > Rich capability advertisement for intelligent agent orchestration
 
@@ -458,95 +511,185 @@ Skills in Bindu serve as **rich advertisement metadata** that help orchestrators
 
 **Note**: Skills are not executable code—they're structured metadata that describe what your agent can do.
 
-### Basic Skill Example
+### Complete Skill Structure
+
+A skill.yaml file contains all metadata needed for intelligent orchestration:
 
 ```yaml
 # Basic Metadata
-id: text-analysis-v1
-name: text-analysis
+id: pdf-processing-v1
+name: pdf-processing
 version: 1.0.0
-author: your@email.com
+author: raahul@getbindu.com
 
 # Description
 description: |
-  Analyzes text for sentiment, entities, and key phrases.
-  Supports multiple languages and formats.
+  Extract text, fill forms, and extract tables from PDF documents.
+  Handles both standard text-based PDFs and scanned documents with OCR.
 
-# Tags
+# Tags and Modes
 tags:
-  - nlp
-  - text-analysis
-  - sentiment
+  - pdf
+  - documents
+  - extraction
 
-# Input/Output Modes
 input_modes:
-  - text/plain
-  - application/json
+  - application/pdf
 
 output_modes:
+  - text/plain
   - application/json
+  - application/pdf
 
 # Example Queries
 examples:
-  - "Analyze the sentiment of this review"
-  - "Extract entities from this document"
+  - "Extract text from this PDF document"
+  - "Fill out this PDF form with the provided data"
+  - "Extract tables from this invoice PDF"
 
-# Capabilities
+# Detailed Capabilities
 capabilities_detail:
-  sentiment_analysis:
+  text_extraction:
     supported: true
     types:
-      - positive
-      - negative
-      - neutral
-    limitations: "Supports English only"
+      - standard
+      - scanned_with_ocr
+    languages:
+      - eng
+      - spa
+    limitations: "OCR requires pytesseract and tesseract-ocr"
+    preserves_formatting: true
+
+  form_filling:
+    supported: true
+    field_types:
+      - text
+      - checkbox
+      - dropdown
+    validation: true
+
+  table_extraction:
+    supported: true
+    table_types:
+      - simple
+      - complex_multi_column
+    output_formats:
+      - json
+      - csv
 
 # Requirements
 requirements:
   packages:
-    - transformers>=4.0.0
+    - pypdf>=3.0.0
+    - pdfplumber>=0.9.0
+    - pytesseract>=0.3.10
+  system:
+    - tesseract-ocr
   min_memory_mb: 512
 
-# Performance
+# Performance Metrics
 performance:
   avg_processing_time_ms: 2000
-  max_file_size_mb: 10
+  avg_time_per_page_ms: 200
+  max_file_size_mb: 50
+  max_pages: 500
   concurrent_requests: 5
+  memory_per_request_mb: 500
+  timeout_per_page_seconds: 30
+
+# Rich Documentation
+documentation:
+  overview: |
+    This agent specializes in PDF document processing with support for text extraction,
+    form filling, and table extraction. Handles both standard text-based PDFs and
+    scanned documents (with OCR).
+
+  use_cases:
+    when_to_use:
+      - User uploads a PDF and asks to extract text
+      - User needs to fill out PDF forms programmatically
+      - User wants to extract tables from reports/invoices
+    when_not_to_use:
+      - PDF editing or modification
+      - PDF creation from scratch
+      - Image extraction from PDFs
+
+  input_structure: |
+    {
+      "file": "base64_encoded_pdf_or_url",
+      "operation": "extract_text|fill_form|extract_tables",
+      "options": {
+        "ocr": true,
+        "language": "eng"
+      }
+    }
+
+  output_format: |
+    {
+      "success": true,
+      "pages": [{"page_number": 1, "text": "...", "confidence": 0.98}],
+      "metadata": {"total_pages": 10, "processing_time_ms": 1500}
+    }
+
+  error_handling:
+    - "Encrypted PDFs: Returns error requesting password"
+    - "Corrupted files: Returns validation error with details"
+    - "Timeout: 30s per page, returns partial results"
+
+  examples:
+    - title: "Extract Text from PDF"
+      input:
+        file: "https://example.com/document.pdf"
+        operation: "extract_text"
+      output:
+        success: true
+        pages:
+          - page_number: 1
+            text: "Extracted text..."
+            confidence: 0.99
+
+  best_practices:
+    for_developers:
+      - "Check file size before processing (max 50MB)"
+      - "Use OCR only when necessary (3-5x slower)"
+      - "Handle errors gracefully with user-friendly messages"
+    for_orchestrators:
+      - "Route based on operation type (extract/fill/parse)"
+      - "Consider file size for performance estimation"
+      - "Chain with text-analysis for content understanding"
+
+# Assessment fields for skill negotiation
+assessment:
+  keywords:
+    - pdf
+    - extract
+    - document
+    - form
+    - table
+
+  specializations:
+    - domain: invoice_processing
+      confidence_boost: 0.3
+    - domain: form_filling
+      confidence_boost: 0.3
+
+  anti_patterns:
+    - "pdf editing"
+    - "pdf creation"
+    - "merge pdf"
+
+  complexity_indicators:
+    simple:
+      - "single page"
+      - "extract text"
+    medium:
+      - "multiple pages"
+      - "fill form"
+    complex:
+      - "scanned document"
+      - "ocr"
+      - "batch processing"
 ```
-
-### Creating a New Skill
-
-1. **Create Directory**:
-   ```bash
-   mkdir -p examples/skills/my-skill
-   ```
-
-2. **Create skill.yaml**:
-   ```bash
-   cd examples/skills/my-skill
-   touch skill.yaml
-   ```
-
-3. **Define Skill** (see example above)
-
-4. **Reference in Config**:
-   ```json
-   {
-     "skills": [
-       "examples/skills/my-skill"
-     ]
-   }
-   ```
-
-5. **Test**:
-   ```bash
-   # Start agent
-   python your_agent.py
-
-   # Test endpoints
-   curl http://localhost:3773/agent/skills
-   curl http://localhost:3773/agent/skills/my-skill-v1
-   ```
 
 ### API Endpoints
 
@@ -564,13 +707,6 @@ GET /agent/skills/{skill_id}
 ```bash
 GET /agent/skills/{skill_id}/documentation
 ```
-
-### Example Skills
-
-Bindu includes example skills in `examples/skills/`:
-
-- **pdf-processing**: Extract text, fill forms, extract tables from PDFs
-- **question-answering**: Intelligent question answering for general knowledge queries
 
 See the [Skills Documentation](https://github.com/getbindu/Bindu/tree/main/examples/skills) for complete examples.
 

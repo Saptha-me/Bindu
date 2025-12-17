@@ -66,7 +66,8 @@ uv --version
 <br/>
 
 ## � Installation
-### Windows users note (Git & GitHub Desktop)
+<details>
+<summary><b>Windows users note (Git & GitHub Desktop)</b></summary>
 
 On some Windows systems, git may not be recognized in Command Prompt even after installation due to PATH configuration issues.
 
@@ -78,6 +79,9 @@ If you face this issue, you can use *GitHub Desktop* as an alternative:
    https://github.com/getbindu/Bindu.git
 
 GitHub Desktop allows you to clone, manage branches, commit changes, and open pull requests without using the command line.
+
+</details>
+
 ```bash
 # Install Bindu
 uv add bindu

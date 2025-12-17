@@ -134,6 +134,9 @@ That's it! Your local agent becomes a live, secure, discoverable service. [Learn
 
 ### Option 2: Manual Setup
 
+<details>
+<summary><b>View code example</b> (click to expand)</summary>
+
 Create your agent script `my_agent.py`:
 
 ```python
@@ -175,11 +178,16 @@ def handler(messages: list[dict[str, str]]):
 bindufy(config, handler)
 ```
 
+</details>
+
 Your agent is now live at `http://localhost:3773` and ready to communicate with other agents.
 
 ---
 
 ### Option 3: Minimal Echo Agent (Testing)
+
+<details>
+<summary><b>View minimal example</b> (click to expand)</summary>
 
 Smallest possible working agent:
 
@@ -207,8 +215,10 @@ bindufy(config, handler)
 python examples/echo_agent.py
 ```
 
+</details>
+
 <details>
-<summary><b>Test the agent</b> (click to expand)</summary>
+<summary><b>Test the agent with curl</b> (click to expand)</summary>
 
 <br/>
 
@@ -369,6 +379,9 @@ The storage layer uses three main tables:
 
 ### ⚙️ Configuration
 
+<details>
+<summary><b>View configuration example</b> (click to expand)</summary>
+
 Configure PostgreSQL connection in your environment or settings:
 provide the connection string in the config of the agent.
 
@@ -387,6 +400,7 @@ config = {
 }
 ```
 
+</details>
 
 > **💡 Task-First Pattern**: The storage supports Bindu's task-first approach where tasks can be continued by appending messages to non-terminal tasks, enabling incremental refinements and multi-turn conversations.
 
@@ -399,6 +413,9 @@ Bindu uses Redis as its distributed task scheduler for coordinating work across 
 Its Optional - InMemoryScheduler is used by default.
 
 ### ⚙️ Configuration
+
+<details>
+<summary><b>View configuration example</b> (click to expand)</summary>
 
 Configure Redis connection in your agent config:
 
@@ -415,6 +432,8 @@ config = {
     },
 }
 ```
+
+</details>
 
 All operations are queued in Redis and processed by available workers using a blocking pop mechanism, ensuring efficient distribution without polling overhead.
 
@@ -447,6 +466,9 @@ If not configured, Bindu uses these defaults:
 Sentry is a real-time error tracking and performance monitoring platform that helps you identify, diagnose, and fix issues in production. Bindu includes built-in Sentry integration to provide comprehensive observability for your AI agents.
 
 ### ⚙️ Configuration
+
+<details>
+<summary><b>View configuration example</b> (click to expand)</summary>
 
 Configure Sentry directly in your `bindufy()` config:
 
@@ -486,6 +508,8 @@ def handler(messages):
 bindufy(config, handler)
 ```
 
+</details>
+
 ### 🚀 Getting Started
 
 1. **Create Sentry Account**: Sign up at [sentry.io](https://sentry.io)
@@ -516,6 +540,9 @@ Skills in Bindu serve as **rich advertisement metadata** that help orchestrators
 > **Note**: Skills are not executable code—they're structured metadata that describe what your agent can do.
 
 ### 📋 Complete Skill Structure
+
+<details>
+<summary><b>View complete skill.yaml structure</b> (click to expand)</summary>
 
 A skill.yaml file contains all metadata needed for intelligent orchestration:
 
@@ -695,6 +722,8 @@ assessment:
       - "batch processing"
 ```
 
+</details>
+
 ### 🔌 API Endpoints
 
 **List All Skills**:
@@ -730,6 +759,9 @@ Bindu's negotiation system enables orchestrators to query multiple agents and in
 4. **Best agent selected** and task executed
 
 ### 🔌 Assessment Endpoint
+
+<details>
+<summary><b>View API details</b> (click to expand)</summary>
 
 ```bash
 POST /agent/negotiation
@@ -787,6 +819,8 @@ POST /agent/negotiation
 }
 ```
 
+</details>
+
 ### 📊 Scoring Algorithm
 
 Agents calculate a confidence score based on multiple factors:
@@ -802,6 +836,9 @@ score = (
 ```
 
 ### 🎯 Skill Assessment
+
+<details>
+<summary><b>View assessment metadata example</b> (click to expand)</summary>
 
 Skills include assessment metadata for intelligent matching:
 
@@ -832,6 +869,8 @@ assessment:
       - "batch processing"
 ```
 
+</details>
+
 ### 💡 Example: Multi-Agent Selection
 
 ```bash
@@ -847,6 +886,9 @@ for agent in translation-agents:
 ```
 
 ### ⚙️ Configuration
+
+<details>
+<summary><b>View configuration example</b> (click to expand)</summary>
 
 Enable negotiation in your agent config:
 
@@ -867,6 +909,8 @@ config = {
     },
 }
 ```
+
+</details>
 
 > 📚 See the [Negotiation Documentation](https://docs.getbindu.com/bindu/negotiation/overview) for complete details.
 

@@ -966,36 +966,6 @@ We are working on a manual registration process.
 
 ---
 
-<details>
-<summary><h2>🔧 Troubleshooting</h2></summary>
-
-<br/>
-
-| Issue | Solution |
-|-------|----------|
-| `Python 3.12 not found` | Install Python 3.12+ and set in PATH, or use `pyenv` |
-| `bindu: command not found` | Activate virtual environment: `source .venv/bin/activate` |
-| `Port 3773 already in use` | Change port in config: `"url": "http://localhost:4000"` |
-| Pre-commit fails | Run `pre-commit run --all-files` |
-| Tests fail | Install dev dependencies: `uv sync --dev` |
-| `Permission denied` (macOS) | Run `xattr -cr .` to clear extended attributes |
-
-**Reset environment:**
-```bash
-rm -rf .venv
-uv venv --python 3.12.9
-uv sync --dev
-```
-
-**Windows PowerShell:**
-```bash
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-</details>
-
----
-
 <br/>
 
 ## 🌌 The Vision
@@ -1060,6 +1030,37 @@ pytest -n auto --cov=bindu --cov-report= && coverage report --skip-covered --fai
 ```
 
 ---
+
+<br/>
+
+## Troubleshooting
+<details>
+<summary>Common Issues</summary>
+
+<br/>
+
+| Issue | Solution |
+|-------|----------|
+| `Python 3.12 not found` | Install Python 3.12+ and set in PATH, or use `pyenv` |
+| `bindu: command not found` | Activate virtual environment: `source .venv/bin/activate` |
+| `Port 3773 already in use` | Change port in config: `"url": "http://localhost:4000"` |
+| Pre-commit fails | Run `pre-commit run --all-files` |
+| Tests fail | Install dev dependencies: `uv sync --dev` |
+| `Permission denied` (macOS) | Run `xattr -cr .` to clear extended attributes |
+
+**Reset environment:**
+```bash
+rm -rf .venv
+uv venv --python 3.12.9
+uv sync --dev
+```
+
+**Windows PowerShell:**
+```bash
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+</details>
 
 <br/>
 

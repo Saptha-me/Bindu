@@ -348,6 +348,89 @@ Output:
 
 <br/>
 
+## Postgres Storage
+
+Bindu uses PostgreSQL as its persistent storage backend for production deployments. The storage layer is built with SQLAlchemy's async engine and uses imperative mapping with protocol TypedDicts.
+
+Its Optional  - InMemoryStorage is used by default. 
+
+### Storage Structure
+
+The storage layer uses three main tables:
+
+1. **tasks_table**: Stores all tasks with JSONB history and artifacts
+2. **contexts_table**: Maintains context metadata and message history
+3. **task_feedback_table**: Optional feedback storage for tasks
+
+### Configuration
+
+Configure PostgreSQL connection in your environment or settings:
+provide the connection string in the config of the agent.
+
+```json
+config = {
+    "author": "your.email@example.com",
+    "name": "research_agent",
+    "description": "A research assistant agent",
+    "deployment": {"url": "http://localhost:3773", "expose": True},
+    "skills": ["skills/question-answering", "skills/pdf-processing"],
+    "storage": {
+        "type": "postgres",
+        "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",  # pragma: allowlist secret
+        "run_migrations_on_startup": False,
+    },
+}
+```
+
+
+**Task-First Pattern**: The storage supports Bindu's task-first approach where tasks can be continued by appending messages to non-terminal tasks, enabling incremental refinements and multi-turn conversations.
+
+
+## Redis Scheduler
+
+Bindu uses Redis as its distributed task scheduler for coordinating work across multiple workers and processes. The scheduler uses Redis lists with blocking operations for efficient task distribution.
+
+Its Optional - InMemoryScheduler is used by default.
+
+### Configuration
+
+Configure Redis connection in your agent config:
+
+```json
+config = {
+    "author": "your.email@example.com",
+    "name": "research_agent",
+    "description": "A research assistant agent",
+    "deployment": {"url": "http://localhost:3773", "expose": True},
+    "skills": ["skills/question-answering", "skills/pdf-processing"],
+     "scheduler": {
+        "type": "redis",
+        "redis_url": "redis://localhost:6379/0",
+    },
+}
+```
+
+### Task Operations
+
+The scheduler supports four core operations:
+
+- **run_task**: Schedule a new task for execution
+- **cancel_task**: Cancel a running or pending task
+- **pause_task**: Pause task execution
+- **resume_task**: Resume a paused task
+
+All operations are queued in Redis and processed by available workers using a blocking pop mechanism, ensuring efficient distribution without polling overhead.
+
+
+## Retry Mechanism
+
+Redis scheduler includes automatic retry logic for transient failures, with exponential backoff and configurable retry limits to ensure task reliability in distributed environments.
+
+## Sentry Integration
+
+Bindu supports Sentry error tracking for monitoring and debugging. Configure Sentry in your agent config to capture errors and performance metrics across your distributed task execution.
+
+## Skills
 
 
 ## 🎨 Chat UI

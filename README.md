@@ -712,6 +712,162 @@ See the [Skills Documentation](https://github.com/getbindu/Bindu/tree/main/examp
 
 <br/>
 
+## Negotiation
+
+> Capability-based agent selection for intelligent orchestration
+
+Bindu's negotiation system enables orchestrators to query multiple agents and intelligently select the best one for a task based on skills, performance, load, and cost.
+
+### How It Works
+
+1. **Orchestrator broadcasts** assessment request to multiple agents
+2. **Agents self-assess** capability using skill matching and load analysis
+3. **Orchestrator ranks** responses using multi-factor scoring
+4. **Best agent selected** and task executed
+
+### Assessment Endpoint
+
+```bash
+POST /agent/negotiation
+```
+
+**Request:**
+```json
+{
+  "task_summary": "Extract tables from PDF invoices",
+  "task_details": "Process invoice PDFs and extract structured data",
+  "input_mime_types": ["application/pdf"],
+  "output_mime_types": ["application/json"],
+  "max_latency_ms": 5000,
+  "max_cost_amount": "0.001",
+  "min_score": 0.7,
+  "weights": {
+    "skill_match": 0.6,
+    "io_compatibility": 0.2,
+    "performance": 0.1,
+    "load": 0.05,
+    "cost": 0.05
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "accepted": true,
+  "score": 0.89,
+  "confidence": 0.95,
+  "skill_matches": [
+    {
+      "skill_id": "pdf-processing-v1",
+      "skill_name": "pdf-processing",
+      "score": 0.92,
+      "reasons": [
+        "semantic similarity: 0.95",
+        "tags: pdf, tables, extraction",
+        "capabilities: text_extraction, table_extraction"
+      ]
+    }
+  ],
+  "matched_tags": ["pdf", "tables", "extraction"],
+  "matched_capabilities": ["text_extraction", "table_extraction"],
+  "latency_estimate_ms": 2000,
+  "queue_depth": 2,
+  "subscores": {
+    "skill_match": 0.92,
+    "io_compatibility": 1.0,
+    "performance": 0.85,
+    "load": 0.90,
+    "cost": 1.0
+  }
+}
+```
+
+### Scoring Algorithm
+
+Agents calculate a confidence score based on multiple factors:
+
+```python
+score = (
+    skill_match * 0.6 +        # Primary: skill matching
+    io_compatibility * 0.2 +   # Input/output format support
+    performance * 0.1 +        # Speed and reliability
+    load * 0.05 +              # Current availability
+    cost * 0.05                # Pricing
+)
+```
+
+### Skill Assessment
+
+Skills include assessment metadata for intelligent matching:
+
+```yaml
+assessment:
+  keywords:
+    - pdf
+    - extract
+    - table
+    - invoice
+  
+  specializations:
+    - domain: invoice_processing
+      confidence_boost: 0.3
+    - domain: table_extraction
+      confidence_boost: 0.2
+  
+  anti_patterns:
+    - "pdf editing"
+    - "pdf creation"
+  
+  complexity_indicators:
+    simple:
+      - "single page"
+      - "extract text"
+    complex:
+      - "scanned document"
+      - "batch processing"
+```
+
+### Example: Multi-Agent Selection
+
+```bash
+# Query 10 translation agents
+for agent in translation-agents:
+  curl http://$agent:3773/agent/negotiation \
+    -d '{"task_summary": "Translate technical manual to Spanish"}'
+
+# Responses ranked by orchestrator
+# Agent 1: score=0.98 (technical specialist, queue=2)
+# Agent 2: score=0.82 (general translator, queue=0)
+# Agent 3: score=0.65 (no technical specialization)
+```
+
+### Configuration
+
+Enable negotiation in your agent config:
+
+```json
+config = {
+    "author": "your.email@example.com",
+    "name": "research_agent",
+    "description": "A research assistant agent",
+    "deployment": {"url": "http://localhost:3773", "expose": True},
+    "skills": ["skills/question-answering", "skills/pdf-processing"],
+    "storage": {
+        "type": "postgres",
+        "database_url": "postgresql+asyncpg://bindu:bindu@localhost:5432/bindu",  # pragma: allowlist secret
+        "run_migrations_on_startup": False,
+    },
+    "negotiation": {
+        "embedding_api_key": os.getenv("OPENROUTER_API_KEY"),  # Load from environment
+    },
+}
+```
+
+
+See the [Negotiation Documentation](https://docs.getbindu.com/bindu/negotiation/overview) for complete details.
+
+<br/>
 
 ## 🎨 Chat UI
 

@@ -348,7 +348,7 @@ Output:
 
 <br/>
 
-## Postgres Storage
+## [Postgres Storage](https://docs.getbindu.com/bindu/learn/storage/overview)
 
 Bindu uses PostgreSQL as its persistent storage backend for production deployments. The storage layer is built with SQLAlchemy's async engine and uses imperative mapping with protocol TypedDicts.
 
@@ -385,8 +385,9 @@ config = {
 
 **Task-First Pattern**: The storage supports Bindu's task-first approach where tasks can be continued by appending messages to non-terminal tasks, enabling incremental refinements and multi-turn conversations.
 
+<br/>
 
-## Redis Scheduler
+## [Redis Scheduler](https://docs.getbindu.com/bindu/learn/scheduler/overview)
 
 Bindu uses Redis as its distributed task scheduler for coordinating work across multiple workers and processes. The scheduler uses Redis lists with blocking operations for efficient task distribution.
 
@@ -410,27 +411,170 @@ config = {
 }
 ```
 
-### Task Operations
-
-The scheduler supports four core operations:
-
-- **run_task**: Schedule a new task for execution
-- **cancel_task**: Cancel a running or pending task
-- **pause_task**: Pause task execution
-- **resume_task**: Resume a paused task
-
 All operations are queued in Redis and processed by available workers using a blocking pop mechanism, ensuring efficient distribution without polling overhead.
 
+<br/>
 
-## Retry Mechanism
+## [Retry Mechanism](https://docs.getbindu.com/bindu/learn/retry/overview)
 
-Redis scheduler includes automatic retry logic for transient failures, with exponential backoff and configurable retry limits to ensure task reliability in distributed environments.
+> Automatic retry logic with exponential backoff for resilient Bindu agents
+
+Bindu includes a built-in Tenacity-based retry mechanism to handle transient failures gracefully across workers, storage, schedulers, and API calls. This ensures your agents remain resilient in production environments.
+
+
+### Default Settings
+
+If not configured, Bindu uses these defaults:
+
+| Operation Type | Max Attempts | Min Wait | Max Wait |
+| -------------- | ------------ | -------- | -------- |
+| Worker         | 3            | 1.0s     | 10.0s    |
+| Storage        | 5            | 0.5s     | 5.0s     |
+| Scheduler      | 3            | 1.0s     | 8.0s     |
+| API            | 4            | 1.0s     | 15.0s    |
+
+
+<br/>
 
 ## Sentry Integration
 
 Bindu supports Sentry error tracking for monitoring and debugging. Configure Sentry in your agent config to capture errors and performance metrics across your distributed task execution.
 
-## Skills
+## Skills System
+
+> Rich capability advertisement for intelligent agent orchestration
+
+The Bindu Skills System provides rich agent capability advertisement for intelligent orchestration and agent discovery. Inspired by Claude's skills architecture, it enables agents to provide detailed documentation about their capabilities for orchestrators to make informed routing decisions.
+
+### What are Skills?
+
+Skills in Bindu serve as **rich advertisement metadata** that help orchestrators:
+
+* 🔍 **Discover** the right agent for a task
+* 📖 **Understand** detailed capabilities and limitations
+* ✅ **Validate** requirements before execution
+* 📊 **Estimate** performance and resource needs
+* 🔗 **Chain** multiple agents intelligently
+
+**Note**: Skills are not executable code—they're structured metadata that describe what your agent can do.
+
+### Basic Skill Example
+
+```yaml
+# Basic Metadata
+id: text-analysis-v1
+name: text-analysis
+version: 1.0.0
+author: your@email.com
+
+# Description
+description: |
+  Analyzes text for sentiment, entities, and key phrases.
+  Supports multiple languages and formats.
+
+# Tags
+tags:
+  - nlp
+  - text-analysis
+  - sentiment
+
+# Input/Output Modes
+input_modes:
+  - text/plain
+  - application/json
+
+output_modes:
+  - application/json
+
+# Example Queries
+examples:
+  - "Analyze the sentiment of this review"
+  - "Extract entities from this document"
+
+# Capabilities
+capabilities_detail:
+  sentiment_analysis:
+    supported: true
+    types:
+      - positive
+      - negative
+      - neutral
+    limitations: "Supports English only"
+
+# Requirements
+requirements:
+  packages:
+    - transformers>=4.0.0
+  min_memory_mb: 512
+
+# Performance
+performance:
+  avg_processing_time_ms: 2000
+  max_file_size_mb: 10
+  concurrent_requests: 5
+```
+
+### Creating a New Skill
+
+1. **Create Directory**:
+   ```bash
+   mkdir -p examples/skills/my-skill
+   ```
+
+2. **Create skill.yaml**:
+   ```bash
+   cd examples/skills/my-skill
+   touch skill.yaml
+   ```
+
+3. **Define Skill** (see example above)
+
+4. **Reference in Config**:
+   ```json
+   {
+     "skills": [
+       "examples/skills/my-skill"
+     ]
+   }
+   ```
+
+5. **Test**:
+   ```bash
+   # Start agent
+   python your_agent.py
+
+   # Test endpoints
+   curl http://localhost:3773/agent/skills
+   curl http://localhost:3773/agent/skills/my-skill-v1
+   ```
+
+### API Endpoints
+
+**List All Skills**:
+```bash
+GET /agent/skills
+```
+
+**Get Skill Details**:
+```bash
+GET /agent/skills/{skill_id}
+```
+
+**Get Skill Documentation**:
+```bash
+GET /agent/skills/{skill_id}/documentation
+```
+
+### Example Skills
+
+Bindu includes example skills in `examples/skills/`:
+
+- **pdf-processing**: Extract text, fill forms, extract tables from PDFs
+- **question-answering**: Intelligent question answering for general knowledge queries
+
+See the [Skills Documentation](https://github.com/getbindu/Bindu/tree/main/examples/skills) for complete examples.
+
+<br/>
 
 
 ## 🎨 Chat UI
@@ -644,7 +788,7 @@ Grateful to these projects:
 ---
 
 <p align="center">
-  <strong>Built with 💛 by the team from Amsterdam 🌷</strong><br/>
+  <strong>Built with 💛 by the team from Amsterdam </strong><br/>
   <em>Happy Bindu! 🌻🚀✨</em>
 </p>
 
@@ -656,7 +800,7 @@ Grateful to these projects:
 <p align="center">
   <a href="https://github.com/getbindu/Bindu">⭐ Star us on GitHub</a> •
   <a href="https://discord.gg/3w5zuYUuwt">💬 Join Discord</a> •
-  <a href="https://docs.getbindu.com">📚 Read the Docs</a>
+  <a href="https://docs.getbindu.com">🌻 Read the Docs</a>
 </p>
 
 <br/>

@@ -934,6 +934,45 @@ config = {
 
 <br/>
 
+## Task Feedback and DSPy
+
+Bindu collects user feedback on task executions to enable continuous improvement through DSPy optimization. By storing feedback with ratings and metadata, you can build golden datasets from real interactions and use DSPy to automatically optimize your agent's prompts and behavior.
+
+### Submitting Feedback
+
+Provide feedback on any task using the `tasks/feedback` method:
+
+```bash
+curl --location 'http://localhost:3773/' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <your-token>' \
+--data '{
+    "jsonrpc": "2.0",
+    "method": "tasks/feedback",
+    "params": {
+        "taskId": "550e8400-e29b-41d4-a716-446655440200",
+        "feedback": "Great job! The response was very helpful and accurate.",
+        "rating": 5,
+        "metadata": {
+            "category": "quality",
+            "source": "user",
+            "helpful": true
+        }
+    },
+    "id": "550e8400-e29b-41d4-a716-446655440024"
+}'
+```
+
+Feedback is stored in the `task_feedback` table and can be used to:
+- Filter high-quality task interactions for training data
+- Identify patterns in successful vs. unsuccessful completions
+- Optimize agent instructions and few-shot examples with DSPy
+- We are working on the DsPY - will release soon.
+
+---
+
+<br/>
+
 ## 🎨 Chat UI
 
 Bindu includes a beautiful chat interface at `http://localhost:3773/docs`

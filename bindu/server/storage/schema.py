@@ -151,6 +151,43 @@ task_feedback_table = Table(
 )
 
 # -----------------------------------------------------------------------------
+# Webhook Configs Table (for long-running task notifications)
+# -----------------------------------------------------------------------------
+
+webhook_configs_table = Table(
+    "webhook_configs",
+    metadata,
+    # Primary key is task_id (one config per task)
+    Column(
+        "task_id",
+        PG_UUID(as_uuid=True),
+        ForeignKey("tasks.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+    ),
+    # Webhook configuration stored as JSONB
+    Column("config", JSONB, nullable=False),
+    # Timestamps
+    Column(
+        "created_at",
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Column(
+        "updated_at",
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    ),
+    # Indexes
+    Index("idx_webhook_configs_created_at", "created_at"),
+    # Table comment
+    comment="Webhook configurations for long-running task notifications",
+)
+
+# -----------------------------------------------------------------------------
 # Helper Functions
 # -----------------------------------------------------------------------------
 

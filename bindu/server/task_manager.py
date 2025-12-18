@@ -96,13 +96,19 @@ class TaskManager:
 
     def __post_init__(self) -> None:
         """Initialize push notification manager after dataclass initialization."""
-        self._push_manager = PushNotificationManager(manifest=self.manifest)
+        self._push_manager = PushNotificationManager(
+            manifest=self.manifest,
+            storage=self.storage,
+        )
 
     async def __aenter__(self) -> TaskManager:
         """Initialize the task manager and start all components."""
         self._aexit_stack = AsyncExitStack()
         await self._aexit_stack.__aenter__()
         await self._aexit_stack.enter_async_context(self.scheduler)
+
+        # Initialize push notification manager (loads persisted webhook configs)
+        await self._push_manager.initialize()
 
         if self.manifest:
             worker = ManifestWorker(

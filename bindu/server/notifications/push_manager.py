@@ -11,6 +11,12 @@
 
 This module handles all push notification functionality for task lifecycle events.
 It manages notification configurations, delivery, sequencing, and error handling.
+
+Supports:
+- Task-specific webhook configurations
+- Global webhook fallback (from AgentManifest)
+- Persistent webhook storage for long-running tasks
+- Artifact update notifications
 """
 
 from __future__ import annotations
@@ -19,9 +25,10 @@ import asyncio
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from bindu.common.protocol.types import (
+    Artifact,
     DeleteTaskPushNotificationConfigRequest,
     DeleteTaskPushNotificationConfigResponse,
     GetTaskPushNotificationRequest,
@@ -38,6 +45,9 @@ from bindu.common.protocol.types import (
 from ...utils.logging import get_logger
 from ...utils.notifications import NotificationDeliveryError, NotificationService
 
+if TYPE_CHECKING:
+    from bindu.server.storage.base import Storage
+
 logger = get_logger("pebbling.server.notifications.push_manager")
 
 PUSH_NOT_SUPPORTED_MESSAGE = (
@@ -48,9 +58,17 @@ PUSH_NOT_SUPPORTED_MESSAGE = (
 
 @dataclass
 class PushNotificationManager:
-    """Manages push notifications for task lifecycle events."""
+    """Manages push notifications for task lifecycle events.
+
+    Supports:
+    - Task-specific webhook configurations (in-memory and persistent)
+    - Global webhook fallback from AgentManifest
+    - Artifact update notifications
+    - Lifecycle event notifications
+    """
 
     manifest: Any | None = None
+    storage: Storage | None = None
     notification_service: NotificationService = field(
         default_factory=NotificationService
     )
@@ -60,6 +78,29 @@ class PushNotificationManager:
     _notification_sequences: dict[uuid.UUID, int] = field(
         default_factory=dict, init=False
     )
+
+    async def initialize(self) -> None:
+        """Initialize the push notification manager.
+
+        Loads persisted webhook configurations from storage to restore
+        state after server restarts. Should be called during startup.
+        """
+        if self.storage is None:
+            logger.debug("No storage configured, skipping webhook config initialization")
+            return
+
+        try:
+            persisted_configs = await self.storage.load_all_webhook_configs()
+            for task_id, config in persisted_configs.items():
+                self._push_notification_configs[task_id] = config
+                self._notification_sequences.setdefault(task_id, 0)
+
+            if persisted_configs:
+                logger.info(
+                    f"Loaded {len(persisted_configs)} persisted webhook configurations"
+                )
+        except Exception as exc:
+            logger.error(f"Failed to load persisted webhook configs: {exc}")
 
     def is_push_supported(self) -> bool:
         """Check if push notifications are supported by the manifest."""
@@ -71,6 +112,53 @@ class PushNotificationManager:
         if isinstance(capabilities, dict):
             return bool(capabilities.get("push_notifications"))
         return bool(getattr(capabilities, "push_notifications", False))
+
+    def get_global_webhook_config(self) -> PushNotificationConfig | None:
+        """Get the global webhook configuration from the manifest.
+
+        Returns:
+            Global webhook config if configured, None otherwise
+        """
+        if not self.manifest:
+            return None
+
+        global_url = getattr(self.manifest, "global_webhook_url", None)
+        if not global_url:
+            return None
+
+        global_token = getattr(self.manifest, "global_webhook_token", None)
+
+        config: dict[str, Any] = {
+            "id": uuid.uuid4(),  # Generate ID for global config
+            "url": global_url,
+        }
+        if global_token:
+            config["token"] = global_token
+
+        return cast(PushNotificationConfig, config)
+
+    def get_effective_webhook_config(
+        self, task_id: uuid.UUID
+    ) -> PushNotificationConfig | None:
+        """Get the effective webhook config for a task.
+
+        Priority order:
+        1. Task-specific webhook configuration
+        2. Global webhook configuration from manifest
+
+        Args:
+            task_id: The task to get webhook config for
+
+        Returns:
+            The effective webhook config, or None if no config available
+        """
+        # First check task-specific config
+        task_config = self._push_notification_configs.get(task_id)
+        if task_config:
+            return task_config
+
+        # Fall back to global config
+        return self.get_global_webhook_config()
 
     def _sanitize_push_config(
         self, config: PushNotificationConfig
@@ -85,19 +173,45 @@ class PushNotificationManager:
             sanitized["authentication"] = authentication
         return cast(PushNotificationConfig, sanitized)
 
-    def register_push_config(
-        self, task_id: uuid.UUID, config: PushNotificationConfig
+    async def register_push_config(
+        self, task_id: uuid.UUID, config: PushNotificationConfig, persist: bool = False
     ) -> None:
-        """Register a push notification configuration for a task."""
+        """Register a push notification configuration for a task.
+
+        Args:
+            task_id: The task to register the config for
+            config: The push notification configuration
+            persist: If True, save to storage for long-running tasks
+        """
         config_copy = self._sanitize_push_config(config)
         self.notification_service.validate_config(config_copy)
         self._push_notification_configs[task_id] = config_copy
         self._notification_sequences.setdefault(task_id, 0)
 
-    def remove_push_config(self, task_id: uuid.UUID) -> PushNotificationConfig | None:
-        """Remove push notification configuration for a task."""
+        if persist and self.storage is not None:
+            await self.storage.save_webhook_config(task_id, config_copy)
+            logger.debug(f"Persisted webhook config for task {task_id}")
+
+    async def remove_push_config(
+        self, task_id: uuid.UUID, delete_from_storage: bool = False
+    ) -> PushNotificationConfig | None:
+        """Remove push notification configuration for a task.
+
+        Args:
+            task_id: The task to remove the config for
+            delete_from_storage: If True, also remove from persistent storage
+
+        Returns:
+            The removed config, or None if not found
+        """
         self._notification_sequences.pop(task_id, None)
-        return self._push_notification_configs.pop(task_id, None)
+        config = self._push_notification_configs.pop(task_id, None)
+
+        if delete_from_storage and self.storage is not None:
+            await self.storage.delete_webhook_config(task_id)
+            logger.debug(f"Deleted webhook config from storage for task {task_id}")
+
+        return config
 
     def get_push_config(self, task_id: uuid.UUID) -> PushNotificationConfig | None:
         """Get push notification configuration for a task."""
@@ -138,10 +252,13 @@ class PushNotificationManager:
     async def notify_lifecycle(
         self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool
     ) -> None:
-        """Send a lifecycle notification for a task."""
+        """Send a lifecycle notification for a task.
+
+        Uses get_effective_webhook_config to support global webhook fallback.
+        """
         if not self.is_push_supported():
             return
-        config = self._push_notification_configs.get(task_id)
+        config = self.get_effective_webhook_config(task_id)
         if not config:
             return
         event = self.build_lifecycle_event(task_id, context_id, state, final)
@@ -165,13 +282,66 @@ class PushNotificationManager:
                 error=str(exc),
             )
 
+    def build_artifact_event(
+        self, task_id: uuid.UUID, context_id: uuid.UUID, artifact: Artifact | dict[str, Any]
+    ) -> dict[str, Any]:
+        """Build an artifact update event payload for push notification."""
+        timestamp = datetime.now(timezone.utc).isoformat()
+        return {
+            "event_id": str(uuid.uuid4()),
+            "sequence": self._next_sequence(task_id),
+            "timestamp": timestamp,
+            "kind": "artifact-update",
+            "task_id": str(task_id),
+            "context_id": str(context_id),
+            "artifact": artifact,
+        }
+
+    async def notify_artifact(
+        self, task_id: uuid.UUID, context_id: uuid.UUID, artifact: Artifact | dict[str, Any]
+    ) -> None:
+        """Send an artifact update notification for a task.
+
+        Args:
+            task_id: The task that produced the artifact
+            context_id: The context of the task
+            artifact: The artifact data to notify about
+        """
+        if not self.is_push_supported():
+            return
+        config = self.get_effective_webhook_config(task_id)
+        if not config:
+            return
+        event = self.build_artifact_event(task_id, context_id, artifact)
+        try:
+            await self.notification_service.send_event(config, event)
+        except NotificationDeliveryError as exc:
+            logger.warning(
+                "Artifact notification delivery failed",
+                task_id=str(task_id),
+                context_id=str(context_id),
+                artifact_name=artifact.get("name") if isinstance(artifact, dict) else None,
+                status=exc.status,
+                message=str(exc),
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(
+                "Unexpected error delivering artifact notification",
+                task_id=str(task_id),
+                context_id=str(context_id),
+                error=str(exc),
+            )
+
     def schedule_notification(
         self, task_id: uuid.UUID, context_id: uuid.UUID, state: str, final: bool
     ) -> None:
-        """Schedule a notification to be sent asynchronously."""
+        """Schedule a notification to be sent asynchronously.
+
+        Uses get_effective_webhook_config to support global webhook fallback.
+        """
         if not self.is_push_supported():
             return
-        if task_id not in self._push_notification_configs:
+        if self.get_effective_webhook_config(task_id) is None:
             return
         asyncio.create_task(self.notify_lifecycle(task_id, context_id, state, final))
 
@@ -202,9 +372,15 @@ class PushNotificationManager:
         )
 
     async def set_task_push_notification(
-        self, request: SetTaskPushNotificationRequest, task_loader
+        self, request: SetTaskPushNotificationRequest, task_loader, persist: bool = False
     ) -> SetTaskPushNotificationResponse:
-        """Set push notification settings for a task."""
+        """Set push notification settings for a task.
+
+        Args:
+            request: The JSON-RPC request
+            task_loader: Async function to load a task by ID
+            persist: If True, persist the config for long-running tasks
+        """
         if not self.is_push_supported():
             return self._push_not_supported_response(
                 SetTaskPushNotificationResponse, request["id"]
@@ -226,7 +402,7 @@ class PushNotificationManager:
             )
 
         try:
-            self.register_push_config(task_id, push_config)
+            await self.register_push_config(task_id, push_config, persist=persist)
         except ValueError as exc:
             return self._jsonrpc_error(
                 SetTaskPushNotificationResponse,
@@ -292,9 +468,14 @@ class PushNotificationManager:
         )
 
     async def delete_task_push_notification(
-        self, request: DeleteTaskPushNotificationConfigRequest
+        self, request: DeleteTaskPushNotificationConfigRequest, delete_from_storage: bool = False
     ) -> DeleteTaskPushNotificationConfigResponse:
-        """Delete a push notification configuration for a task."""
+        """Delete a push notification configuration for a task.
+
+        Args:
+            request: The JSON-RPC request
+            delete_from_storage: If True, also remove from persistent storage
+        """
         if not self.is_push_supported():
             return self._push_not_supported_response(
                 DeleteTaskPushNotificationConfigResponse, request["id"]
@@ -319,7 +500,7 @@ class PushNotificationManager:
                 "Push notification configuration identifier mismatch.",
             )
 
-        removed = self.remove_push_config(task_id)
+        removed = await self.remove_push_config(task_id, delete_from_storage=delete_from_storage)
         if removed is None:
             return self._jsonrpc_error(
                 DeleteTaskPushNotificationConfigResponse,

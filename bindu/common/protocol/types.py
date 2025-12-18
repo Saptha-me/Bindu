@@ -632,6 +632,13 @@ class MessageSendConfiguration(TypedDict):
     push_notification_config: NotRequired[PushNotificationConfig]
     """The push notification configuration."""
 
+    long_running: NotRequired[bool]
+    """Flag indicating task expects to run longer than typical request timeouts.
+
+    When True, the push_notification_config should be persisted for notifications
+    across server restarts. Defaults to False if not specified.
+    """
+
 
 @pydantic.with_config(ConfigDict(alias_generator=to_camel))
 class MessageSendParams(TypedDict):

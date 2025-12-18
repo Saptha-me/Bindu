@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for Hydra and Kratos
+  postgres:
+    image: postgres:15-alpine
+    container_name: bindu-postgres
+    environment:
+      POSTGRES_USER: bindu
+      POSTGRES_PASSWORD: bindu_secret
+      POSTGRES_DB: bindu_auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bindu-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bindu"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ory Hydra - OAuth2 Authorization Server
+  hydra-migrate:
+    image: oryd/hydra:v2.2.0
+    container_name: bindu-hydra-migrate
+    environment:
+      DSN: postgres://bindu:bindu_secret@postgres:5432/bindu_auth?sslmode=disable
+    command: migrate sql -e --yes
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bindu-network
+    restart: on-failure
+
+  hydra:
+    image: oryd/hydra:v2.2.0
+    container_name: bindu-hydra
+    ports:
+      - "4444:4444" # Public API
+      - "4445:4445" # Admin API
+    environment:
+      DSN: postgres://bindu:bindu_secret@postgres:5432/bindu_auth?sslmode=disable
+      URLS_SELF_ISSUER: http://localhost:4444
+      URLS_CONSENT: http://localhost:3773/oauth/consent
+      URLS_LOGIN: http://localhost:3773/oauth/login
+      URLS_LOGOUT: http://localhost:3773/oauth/logout
+      URLS_ERROR: http://localhost:3773/oauth/error
+      SECRETS_SYSTEM: bindu_hydra_system_secret_change_in_production
+      OIDC_SUBJECT_IDENTIFIERS_SUPPORTED_TYPES: public,pairwise
+      OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT: bindu_salt_change_in_production
+      SERVE_COOKIES_SAME_SITE_MODE: Lax
+      TTL_ACCESS_TOKEN: 1h
+      TTL_REFRESH_TOKEN: 720h # 30 days
+      TTL_ID_TOKEN: 1h
+      TTL_AUTH_CODE: 10m
+      OAUTH2_EXPOSE_INTERNAL_ERRORS: "true"
+      LOG_LEVEL: debug
+      LOG_FORMAT: json
+    command: serve all --dev
+    depends_on:
+      - hydra-migrate
+    networks:
+      - bindu-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4444/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Ory Kratos - Identity Management
+  kratos-migrate:
+    image: oryd/kratos:v1.1.0
+    container_name: bindu-kratos-migrate
+    environment:
+      DSN: postgres://bindu:bindu_secret@postgres:5432/bindu_auth?sslmode=disable
+    volumes:
+      - ./config/kratos:/etc/config/kratos
+    command: migrate sql -e --yes --config /etc/config/kratos/kratos.yml
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bindu-network
+    restart: on-failure
+
+  kratos:
+    image: oryd/kratos:v1.1.0
+    container_name: bindu-kratos
+    ports:
+      - "4433:4433" # Public API
+      - "4434:4434" # Admin API
+    environment:
+      DSN: postgres://bindu:bindu_secret@postgres:5432/bindu_auth?sslmode=disable
+      LOG_LEVEL: debug
+      LOG_FORMAT: json
+      SERVE_PUBLIC_BASE_URL: http://localhost:4433
+      SERVE_ADMIN_BASE_URL: http://localhost:4434
+    volumes:
+      - ./config/kratos:/etc/config/kratos
+    command: serve --dev --config /etc/config/kratos/kratos.yml
+    depends_on:
+      - kratos-migrate
+    networks:
+      - bindu-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4433/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # MailSlurper - Email testing (for Kratos email verification)
+  mailslurper:
+    image: oryd/mailslurper:latest-smtps
+    container_name: bindu-mailslurper
+    ports:
+      - "4436:4436" # Web UI
+      - "4437:4437" # SMTP
+    networks:
+      - bindu-network
+
+networks:
+  bindu-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

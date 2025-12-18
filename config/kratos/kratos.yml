@@ -1,0 +1,127 @@
+version: v1.1.0
+
+dsn: postgres://bindu:bindu_secret@postgres:5432/bindu_auth?sslmode=disable
+
+serve:
+  public:
+    base_url: http://localhost:4433/
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3773
+        - http://localhost:3000
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Content-Type
+      exposed_headers:
+        - Content-Type
+      allow_credentials: true
+  admin:
+    base_url: http://localhost:4434/
+
+selfservice:
+  default_browser_return_url: http://localhost:3773/
+  allowed_return_urls:
+    - http://localhost:3773
+    - http://localhost:3000
+
+  methods:
+    password:
+      enabled: true
+    # OIDC temporarily disabled until real credentials are configured
+    # oidc:
+    #   enabled: true
+    #   config:
+    #     providers:
+    #       - id: google
+    #         provider: google
+    #         client_id: YOUR_GOOGLE_CLIENT_ID
+    #         client_secret: YOUR_GOOGLE_CLIENT_SECRET
+    #         mapper_url: file:///etc/config/kratos/oidc.google.jsonnet
+    #         scope:
+    #           - email
+    #           - profile
+    #       - id: notion
+    #         provider: generic
+    #         client_id: YOUR_NOTION_CLIENT_ID
+    #         client_secret: YOUR_NOTION_CLIENT_SECRET
+    #         issuer_url: https://api.notion.com/v1/oauth
+    #         mapper_url: file:///etc/config/kratos/oidc.notion.jsonnet
+    #         scope:
+    #           - read_content
+    #           - search
+
+  flows:
+    error:
+      ui_url: http://localhost:3773/oauth/error
+
+    settings:
+      ui_url: http://localhost:3773/settings
+      privileged_session_max_age: 15m
+
+    recovery:
+      enabled: true
+      ui_url: http://localhost:3773/recovery
+      use: code
+
+    verification:
+      enabled: true
+      ui_url: http://localhost:3773/verification
+      use: code
+      after:
+        default_browser_return_url: http://localhost:3773/
+
+    logout:
+      after:
+        default_browser_return_url: http://localhost:3773/
+
+    login:
+      ui_url: http://localhost:3773/login
+      lifespan: 10m
+
+    registration:
+      lifespan: 10m
+      ui_url: http://localhost:3773/registration
+      after:
+        password:
+          hooks:
+            - hook: session
+        oidc:
+          hooks:
+            - hook: session
+
+log:
+  level: debug
+  format: json
+
+secrets:
+  cookie:
+    - bindu_kratos_cookie_secret_32chr
+  cipher:
+    - bindu_kratos_cipher_secret_32chr
+
+ciphers:
+  algorithm: xchacha20-poly1305
+
+hashers:
+  algorithm: bcrypt
+  bcrypt:
+    cost: 12
+
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+courier:
+  smtp:
+    connection_uri: smtps://test:test@mailslurper:4437/?skip_ssl_verify=true
+    from_address: noreply@bindu.local
+    from_name: Bindu Authentication

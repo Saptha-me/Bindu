@@ -676,6 +676,54 @@ class SentrySettings(BaseSettings):
     debug: bool = False
 
 
+class HydraSettings(BaseSettings):
+    """Ory Hydra OAuth2 server configuration settings.
+    
+    Hydra provides OAuth2 and OpenID Connect capabilities for authentication.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="HYDRA__",
+        extra="allow",
+    )
+
+    # Hydra service URLs
+    admin_url: str = "http://localhost:4445"
+    public_url: str = "http://localhost:4444"
+    
+    # Required scopes for API access
+    required_scopes: list[str] = []
+    
+    # Token settings
+    access_token_ttl: str = "1h"
+    refresh_token_ttl: str = "720h"  # 30 days
+    
+    # OAuth2 client settings
+    default_client_id: str = "bindu-web"
+    default_client_secret: str = "bindu_web_client_secret_change_in_production"
+
+
+class KratosSettings(BaseSettings):
+    """Ory Kratos identity management configuration settings.
+    
+    Kratos provides identity management and user credential storage.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="KRATOS__",
+        extra="allow",
+    )
+
+    # Kratos service URLs
+    admin_url: str = "http://localhost:4434"
+    public_url: str = "http://localhost:4433"
+    
+    # Identity schema
+    default_schema_id: str = "default"
+
+
 class Settings(BaseSettings):
     """Main settings class that aggregates all configuration components."""
 
@@ -698,6 +746,12 @@ class Settings(BaseSettings):
     scheduler: SchedulerSettings = SchedulerSettings()
     retry: RetrySettings = RetrySettings()
     sentry: SentrySettings = SentrySettings()
+    hydra: HydraSettings = HydraSettings()
+    kratos: KratosSettings = KratosSettings()
+    
+    # Feature flag for Hydra authentication
+    use_hydra_auth: bool = False
 
 
 app_settings = Settings()
+

@@ -7,24 +7,17 @@
 #
 #  Thank you users! We ❤️ you! - 🌻
 
-"""Authentication middleware for Bindu.
+"""Authentication middleware for Bindu server.
 
-This module provides authentication middleware implementations for
-securing Bindu agents with various authentication providers.
-
-Available Providers:
-- Auth0Middleware: Auth0 JWT validation (production-ready)
-- CognitoMiddleware: AWS Cognito JWT validation (template)
+Provides authentication middleware for different providers:
+- Ory Hydra (HydraMiddleware) - OAuth2 authentication
+- Auth0 (Auth0Middleware) - DEPRECATED, use Hydra
+- AWS Cognito (CognitoMiddleware) - template only, DEPRECATED
 """
 
-from __future__ import annotations as _annotations
+from bindu.server.middleware.auth.auth0 import Auth0Middleware
+from bindu.server.middleware.auth.base import AuthMiddleware
+from bindu.server.middleware.auth.cognito import CognitoMiddleware
+from bindu.server.middleware.auth.hydra import HydraMiddleware
 
-from .auth0 import Auth0Middleware
-from .base import AuthMiddleware
-from .cognito import CognitoMiddleware
-
-__all__ = [
-    "AuthMiddleware",
-    "Auth0Middleware",
-    "CognitoMiddleware",
-]
+__all__ = ["AuthMiddleware", "HydraMiddleware", "Auth0Middleware", "CognitoMiddleware"]

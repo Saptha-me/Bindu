@@ -52,6 +52,13 @@ Write your agent in <b>any framework</b> you like, then use Bindu to <code>"Bind
 
 Bring your agent and a simple config - that's it. We take care of the rest.
 
+**Key Features:**
+- 🔐 **Authentication:** Ory Hydra + Kratos OAuth2 authentication with external service credential management
+- 💳 **Payments:** X402 protocol for agent-to-agent payments
+- 📊 **Observability:** OpenTelemetry integration for tracing and monitoring
+- 🔗 **OAuth Integration:** Seamless integration with Notion, Google, Slack, GitHub, and more
+- 🌐 **Framework Agnostic:** Works with Agno, CrewAI, LangChain, LlamaIndex, and others
+
 <p align="center">
   <img src="assets/agno-simple.png" alt="Bindu" width="640"
        style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />

@@ -36,9 +36,10 @@ from .config import (
     MIN_INPUT_LENGTH,
     MIN_OUTPUT_LENGTH,
 )
-from .extractor import ExtractionStrategy, InteractionExtractor
+from .extractor import InteractionExtractor
 from .models import Interaction
 from .postgres import RawTaskData
+from .strategies import BaseExtractionStrategy, LastTurnStrategy
 
 logger = get_logger("bindu.dspy.dataset")
 
@@ -89,43 +90,43 @@ def normalize_feedback(feedback_data: dict[str, Any] | None) -> tuple[float | No
 
 def extract_interactions(
     raw_tasks: list[RawTaskData],
-    strategy: ExtractionStrategy = ExtractionStrategy.LAST_TURN,
+    strategy: BaseExtractionStrategy | None = None,
 ) -> list[Interaction]:
     """Extract interactions from raw task data.
 
     For each task:
     1. Normalize feedback
-    2. Extract interaction using specified strategy
+    2. Extract interactions using specified strategy (may produce multiple per task)
     3. Collect all valid interactions
 
     Args:
         raw_tasks: Raw task data from database
-        strategy: Extraction strategy to use
+        strategy: Extraction strategy to use. Defaults to LastTurnStrategy.
 
     Returns:
         List of extracted interactions
     """
-    extractor = InteractionExtractor(strategy=strategy)
+    strategy = strategy or LastTurnStrategy()
+    extractor = InteractionExtractor(strategy)
     interactions: list[Interaction] = []
 
     for task in raw_tasks:
         # Normalize feedback
         feedback_score, feedback_type = normalize_feedback(task.feedback_data)
 
-        # Extract interaction
-        interaction = extractor.extract(
+        # Extract interactions (may return multiple for strategies like SlidingWindowStrategy)
+        extracted = extractor.extract_all(
             task_id=task.id,
             history=task.history,
             feedback_score=feedback_score,
             feedback_type=feedback_type,
         )
 
-        if interaction:
-            interactions.append(interaction)
+        interactions.extend(extracted)
 
     logger.info(
         f"Extracted {len(interactions)} interactions from {len(raw_tasks)} tasks "
-        f"using {strategy.value} strategy"
+        f"using {strategy.name} strategy"
     )
     return interactions
 
@@ -299,7 +300,7 @@ def validate_dataset_size(dataset: list[dict[str, Any]]) -> None:
 
 def build_golden_dataset(
     raw_tasks: list[RawTaskData],
-    strategy: ExtractionStrategy = ExtractionStrategy.LAST_TURN,
+    strategy: BaseExtractionStrategy | None = None,
     require_feedback: bool = True,
     min_feedback_threshold: float = MIN_FEEDBACK_THRESHOLD,
 ) -> list[dict[str, Any]]:
@@ -315,7 +316,7 @@ def build_golden_dataset(
 
     Args:
         raw_tasks: Raw task data from database
-        strategy: Extraction strategy to use
+        strategy: Extraction strategy to use. Defaults to LastTurnStrategy.
         require_feedback: Whether to require feedback for inclusion
         min_feedback_threshold: Minimum feedback score threshold
 
@@ -325,7 +326,8 @@ def build_golden_dataset(
     Raises:
         ValueError: If dataset is too small or pipeline fails
     """
-    logger.info("Starting golden dataset pipeline")
+    strategy = strategy or LastTurnStrategy()
+    logger.info(f"Starting golden dataset pipeline with {strategy.name} strategy")
 
     # Step 1: Extract interactions
     interactions = extract_interactions(raw_tasks, strategy=strategy)

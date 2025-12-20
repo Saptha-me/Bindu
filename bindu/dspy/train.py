@@ -32,17 +32,17 @@ from .config import (
     MIN_FEEDBACK_THRESHOLD,
 )
 from .dataset import build_golden_dataset, convert_to_dspy_examples
-from .extractor import ExtractionStrategy
 from .models import PromptCandidate
 from .optimizer import optimize
 from .postgres import fetch_raw_task_data
 from .program import AgentProgram
+from .strategies import BaseExtractionStrategy, LastTurnStrategy
 
 logger = get_logger("bindu.dspy.train")
 
 async def train_async(
     optimizer: Any = None,
-    strategy: ExtractionStrategy = ExtractionStrategy.LAST_TURN,
+    strategy: BaseExtractionStrategy | None = None,
     require_feedback: bool = True,
     current_prompt_text: str = "",
 ) -> list[PromptCandidate]:
@@ -64,11 +64,17 @@ async def train_async(
     8. Returns top prompt candidates
 
     Args:
-        agent_name: Optional agent identifier for filtering interactions (not yet implemented)
         optimizer: DSPy optimizer instance to use for training.
             If None, uses BootstrapFewShot with default settings.
-        strategy: Extraction strategy (LAST_TURN or FULL_HISTORY)
+        strategy: Extraction strategy to use. Defaults to LastTurnStrategy.
+            Use strategy classes from bindu.dspy.strategies:
+            - LastTurnStrategy()
+            - FullHistoryStrategy()
+            - LastNTurnsStrategy(n_turns=3)
+            - FirstNTurnsStrategy(n_turns=3)
+            - ContextWindowStrategy(n_turns=3, system_prompt="...")
         require_feedback: Whether to require feedback for inclusion in dataset
+        current_prompt_text: Current system prompt for the agent
 
     Returns:
         List of exactly NUM_PROMPT_CANDIDATES PromptCandidate objects,
@@ -81,21 +87,22 @@ async def train_async(
 
     Example:
         >>> from dspy.teleprompt import MIPRO
-        >>> from bindu.dspy.extractor import ExtractionStrategy
+        >>> from bindu.dspy.strategies import ContextWindowStrategy
         >>> import asyncio
+        >>> strategy = ContextWindowStrategy(n_turns=3, system_prompt="Be helpful")
         >>> optimizer = MIPRO(num_candidates=10, metric=my_metric)
         >>> candidates = asyncio.run(train_async(
-        ...     agent_name="support_agent",
         ...     optimizer=optimizer,
-        ...     strategy=ExtractionStrategy.FULL_HISTORY
+        ...     strategy=strategy
         ... ))
         >>> best_prompt = candidates[0]
-        
+
     Note:
         This is an async function. When calling from async code, use await.
         For sync contexts, use the train() wrapper function instead.
     """
-    logger.info("Starting DSPy training pipeline")
+    strategy = strategy or LastTurnStrategy()
+    logger.info(f"Starting DSPy training pipeline with {strategy.name} strategy")
 
     # Step 1: Configure DSPy with default model
     logger.info(f"Configuring DSPy with model: {DEFAULT_DSPY_MODEL}")
@@ -105,7 +112,7 @@ async def train_async(
     # api_key = os.getenv("GOOGLE_API_KEY")
     # if not api_key:
     #     raise RuntimeError("GOOGLE_API_KEY is not set")
-    
+
     # lm = dspy.LM('google/gemini-1.5-flash', api_key=api_key, litellm_provider="google")
     # dspy.configure(lm=lm)
 
@@ -120,7 +127,7 @@ async def train_async(
 
     # Step 3: Build golden dataset using complete pipeline
     logger.info(
-        f"Building golden dataset (strategy={strategy.value}, "
+        f"Building golden dataset (strategy={strategy.name}, "
         f"require_feedback={require_feedback}, "
         f"threshold={MIN_FEEDBACK_THRESHOLD})"
     )
@@ -248,23 +255,22 @@ def _extract_prompt_candidates(
 
 def train(
     optimizer: Any = None,
-    strategy: ExtractionStrategy = ExtractionStrategy.LAST_TURN,
+    strategy: BaseExtractionStrategy | None = None,
     require_feedback: bool = True,
 ) -> list[PromptCandidate]:
     """Synchronous wrapper for train_async().
-    
+
     This function provides a synchronous interface to the async training pipeline.
     For use in async contexts, call train_async() directly.
-    
+
     Args:
-        agent_name: Optional agent identifier for filtering interactions
         optimizer: DSPy optimizer instance (default: BootstrapFewShot)
-        strategy: Extraction strategy (LAST_TURN or FULL_HISTORY)
+        strategy: Extraction strategy to use. Defaults to LastTurnStrategy.
         require_feedback: Whether to require feedback for inclusion in dataset
-    
+
     Returns:
         List of prompt candidates sorted by quality score
-        
+
     Raises:
         RuntimeError: If called from within an async event loop. Use train_async() instead.
     """

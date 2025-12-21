@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bindu Agent</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="agent-title-group">
+                    <h1 id="agent-name-header">Loading...</h1>
+                    <span class="status-dot"></span>
+                    <span class="status-text">Online</span>
+                </div>
+                <p class="agent-subtitle" id="agent-subtitle">Loading...</p>
+                <div class="agent-metadata" id="agent-metadata">
+                    <span class="metadata-badge">v1.0.0</span>
+                    <span class="metadata-badge">localhost</span>
+                    <span class="metadata-badge paywall-badge" id="paywall-badge" style="display: none;">💰 Behind Paywall</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="auth-settings-btn" onclick="openAuthSettings()" title="Set JWT Token">Token</button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab" onclick="switchTab('agent-info')">Agent Info</button>
+            <button class="tab active" onclick="switchTab('chat')">Chat</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="main-content">
+            <!-- Agent Info Tab -->
+            <div id="agent-info" class="tab-content">
+                <div class="agent-info-layout">
+                    <!-- Left Column - Sidebar with collapsible sections -->
+                    <div class="agent-info-left">
+                        <!-- Agent Overview Card -->
+                        <div class="info-section">
+                            <div class="section-header" onclick="toggleSection('overview')">
+                                <h3>Agent Overview</h3>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="section-content expanded" id="overview-content">
+                                <div id="agent-card-content" class="loading">Loading agent information...</div>
+                            </div>
+                        </div>
+
+                        <!-- DID Identity Card -->
+                        <div class="info-section">
+                            <div class="section-header" onclick="toggleSection('did')">
+                                <h3>DID Identity</h3>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="section-content expanded" id="did-content">
+                                <div id="did-summary-content" class="loading">Loading DID...</div>
+                            </div>
+                        </div>
+
+                        <!-- Skills Card -->
+                        <div class="info-section">
+                            <div class="section-header" onclick="toggleSection('skills')">
+                                <h3>Skills</h3>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="section-content expanded" id="skills-content">
+                                <div id="skills-summary-content" class="loading">Loading skills...</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right Column - Agent Card JSON -->
+                    <div class="agent-info-right">
+                        <div class="json-panel">
+                            <div class="json-panel-header">
+                                <h3>Agent Card (JSON)</h3>
+                                <button class="copy-json-btn" onclick="copyAgentCardJSON()">📋 Copy JSON</button>
+                            </div>
+                            <div class="json-content">
+                                <pre id="agent-json-display" class="loading">Loading...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Tab -->
+            <div id="chat" class="tab-content active">
+                <div class="chat-layout">
+                    <!-- Context Sidebar -->
+                    <div class="context-sidebar">
+                        <div class="sidebar-header">
+                            <h3>Contexts</h3>
+                            <button class="new-chat-btn" onclick="createNewContext()">+ New</button>
+                        </div>
+                        <div class="context-list" id="context-list">
+                            <div class="loading">No contexts yet</div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Area -->
+                    <div class="chat-area">
+                        <div id="context-indicator" class="context-indicator">
+                            <span id="context-indicator-text">No active context</span>
+                        </div>
+                        <div id="chat-messages" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <div id="reply-indicator" class="reply-indicator">
+                                <span id="reply-text"></span>
+                                <span class="reply-close" onclick="clearReply()">✕</span>
+                            </div>
+                            <div class="chat-input">
+                                <input
+                                    type="text"
+                                    id="message-input"
+                                    placeholder="Type your message..."
+                                    onkeypress="handleKeyPress(event)"
+                                >
+                                <button onclick="sendMessage()" id="send-button">Send</button>
+                            </div>
+                        </div>
+                        <div id="chat-error" class="error"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+        <div class="footer-left">
+            <div class="footer-protocol">
+                <span class="dot"></span>
+                <span>Powered by Bindu 🌻</span>
+            </div>
+            <span style="color: #e0e0e0;">|</span>
+            <span style="color: #999;">We provide heart to your AI, so that it can talk, negotiate, and trade securely</span>
+        </div>
+        <div class="footer-right">
+            <a href="https://bindus.directory" target="_blank" class="footer-link">Directory</a>
+            <a href="https://docs.getbindu.com/bindu" target="_blank" class="footer-link">Docs</a>
+            <a href="https://github.com/getbindu/Bindu" target="_blank" class="footer-link">GitHub</a>
+            <a href="https://news.getbindu.com" target="_blank" class="footer-link">Newsletter</a>
+            <div class="footer-made">
+                Built by <a href="https://getbindu.com" target="_blank">Bindus</a> in Amsterdam
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Skill Detail Modal -->
+    <div id="skill-modal" class="skill-modal">
+        <div class="skill-modal-content">
+            <div class="skill-modal-header">
+                <h2 id="skill-modal-title">Skill Details</h2>
+                <span class="skill-modal-close" onclick="closeSkillModal()">&times;</span>
+            </div>
+            <div class="skill-modal-body" id="skill-modal-body">
+                <div class="loading">Loading skill details...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Submit Task Feedback</h3>
+                <span class="modal-close" onclick="closeFeedbackModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Task ID:</label>
+                    <div id="feedback-task-id" class="task-id-display"></div>
+                </div>
+                <div class="form-group">
+                    <label for="feedback-rating">Rating (1-5):</label>
+                    <select id="feedback-rating" class="form-control">
+                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                        <option value="4">⭐⭐⭐⭐ Good</option>
+                        <option value="3">⭐⭐⭐ Average</option>
+                        <option value="2">⭐⭐ Poor</option>
+                        <option value="1">⭐ Very Poor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="feedback-text">Feedback <span style="color: #999; font-weight: normal;">(optional)</span>:</label>
+                    <textarea
+                        id="feedback-text"
+                        class="form-control"
+                        rows="4"
+                        placeholder="Share your thoughts (optional)..."
+                    ></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeFeedbackModal()">Cancel</button>
+                <button class="btn-primary" onclick="submitFeedback()">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

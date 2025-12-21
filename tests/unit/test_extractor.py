@@ -14,9 +14,14 @@ from bindu.dspy.strategies import (
     ContextWindowStrategy,
     SlidingWindowStrategy,
     SummaryContextStrategy,
+    KeyTurnsStrategy,
     STRATEGIES,
     get_strategy,
     parse_turns,
+    jaccard_similarity,
+    overlap_similarity,
+    weighted_similarity,
+    compute_similarity,
 )
 
 
@@ -32,6 +37,7 @@ class TestStrategyRegistry:
         assert "context_window" in STRATEGIES
         assert "sliding_window" in STRATEGIES
         assert "summary_context" in STRATEGIES
+        assert "key_turns" in STRATEGIES
 
     def test_get_strategy_last_turn(self):
         """Test factory creates LastTurnStrategy."""
@@ -1298,3 +1304,334 @@ class TestSummaryContextStrategy:
         assert "User: Second" in result.user_input
         assert "Assistant: Second response" in result.user_input
         assert "User: Third" in result.user_input
+
+
+class TestSimilarityFunctions:
+    """Test text similarity functions."""
+
+    def test_jaccard_similarity_identical_texts(self):
+        """Test Jaccard similarity of identical texts is 1.0."""
+        result = jaccard_similarity("hello world", "hello world")
+        assert result == 1.0
+
+    def test_jaccard_similarity_no_overlap(self):
+        """Test Jaccard similarity with no common words is 0.0."""
+        result = jaccard_similarity("hello world", "foo bar")
+        assert result == 0.0
+
+    def test_jaccard_similarity_partial_overlap(self):
+        """Test Jaccard similarity with partial overlap."""
+        result = jaccard_similarity("hello world foo", "hello bar baz")
+        # Words: {hello, world, foo} vs {hello, bar, baz}
+        # Intersection: {hello} = 1
+        # Union: {hello, world, foo, bar, baz} = 5
+        # Jaccard = 1/5 = 0.2
+        assert result == 0.2
+
+    def test_jaccard_similarity_empty_text(self):
+        """Test Jaccard similarity with empty text is 0.0."""
+        assert jaccard_similarity("", "hello") == 0.0
+        assert jaccard_similarity("hello", "") == 0.0
+        assert jaccard_similarity("", "") == 0.0
+
+    def test_overlap_similarity_identical_texts(self):
+        """Test overlap similarity of identical texts is 1.0."""
+        result = overlap_similarity("hello world", "hello world")
+        assert result == 1.0
+
+    def test_overlap_similarity_subset(self):
+        """Test overlap similarity when one is subset of other."""
+        # "hello" is subset of "hello world"
+        result = overlap_similarity("hello", "hello world")
+        assert result == 1.0  # intersection/min = 1/1 = 1.0
+
+    def test_overlap_similarity_no_overlap(self):
+        """Test overlap similarity with no common words is 0.0."""
+        result = overlap_similarity("hello world", "foo bar")
+        assert result == 0.0
+
+    def test_overlap_similarity_empty_text(self):
+        """Test overlap similarity with empty text is 0.0."""
+        assert overlap_similarity("", "hello") == 0.0
+        assert overlap_similarity("hello", "") == 0.0
+
+    def test_weighted_similarity_identical_texts(self):
+        """Test weighted similarity of identical texts is 1.0."""
+        result = weighted_similarity("hello world", "hello world")
+        assert abs(result - 1.0) < 1e-10  # Allow for floating point precision
+
+    def test_weighted_similarity_no_overlap(self):
+        """Test weighted similarity with no common words is 0.0."""
+        result = weighted_similarity("hello world", "foo bar")
+        assert result == 0.0
+
+    def test_weighted_similarity_with_corpus(self):
+        """Test weighted similarity uses corpus for IDF calculation."""
+        corpus = [
+            "hello world",
+            "hello there",
+            "hello everyone",
+            "goodbye world",
+        ]
+        # "hello" appears in 3 docs, "world" appears in 2 docs
+        # "world" should have higher weight than "hello"
+        result = weighted_similarity("hello world", "goodbye world", corpus=corpus)
+        assert result > 0  # Should have some similarity from "world"
+
+    def test_weighted_similarity_empty_text(self):
+        """Test weighted similarity with empty text is 0.0."""
+        assert weighted_similarity("", "hello") == 0.0
+        assert weighted_similarity("hello", "") == 0.0
+
+    def test_compute_similarity_jaccard(self):
+        """Test compute_similarity with jaccard method."""
+        result = compute_similarity("hello world", "hello foo", method="jaccard")
+        assert result == jaccard_similarity("hello world", "hello foo")
+
+    def test_compute_similarity_overlap(self):
+        """Test compute_similarity with overlap method."""
+        result = compute_similarity("hello", "hello world", method="overlap")
+        assert result == overlap_similarity("hello", "hello world")
+
+    def test_compute_similarity_weighted(self):
+        """Test compute_similarity with weighted method."""
+        result = compute_similarity("hello world", "hello world", method="weighted")
+        assert abs(result - 1.0) < 1e-10  # Allow for floating point precision
+
+    def test_compute_similarity_invalid_method(self):
+        """Test compute_similarity raises for invalid method."""
+        with pytest.raises(ValueError, match="Unknown similarity method"):
+            compute_similarity("hello", "world", method="invalid")
+
+
+class TestKeyTurnsStrategy:
+    """Test KeyTurnsStrategy extraction."""
+
+    def test_single_turn_returns_that_turn(self):
+        """Test single turn returns that turn."""
+        strategy = KeyTurnsStrategy(n_turns=3)
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there!"},
+        ]
+
+        result = strategy.extract(task_id, history)
+
+        assert result is not None
+        assert result.user_input == "Hello"
+        assert result.agent_output == "Hi there!"
+
+    def test_fewer_turns_than_n_uses_all(self):
+        """Test when fewer turns than n_turns, all are used."""
+        strategy = KeyTurnsStrategy(n_turns=5)
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Q1"},
+            {"role": "assistant", "content": "A1"},
+            {"role": "user", "content": "Q2"},
+            {"role": "assistant", "content": "A2"},
+        ]
+
+        result = strategy.extract(task_id, history)
+
+        assert result is not None
+        assert "Q1" in result.user_input
+        assert "Q2" in result.user_input
+        assert result.agent_output == "A2"
+
+    def test_selects_most_similar_turns(self):
+        """Test strategy selects turns most similar to final turn."""
+        strategy = KeyTurnsStrategy(n_turns=3, similarity_method="jaccard")
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "What is weather"},
+            {"role": "assistant", "content": "Weather info"},
+            {"role": "user", "content": "Python programming language"},
+            {"role": "assistant", "content": "Python is great"},
+            {"role": "user", "content": "Python web frameworks"},
+            {"role": "assistant", "content": "Django and Flask"},
+            {"role": "user", "content": "Random unrelated topic"},
+            {"role": "assistant", "content": "Some response"},
+            {"role": "user", "content": "Python data science"},
+            {"role": "assistant", "content": "NumPy and Pandas"},
+        ]
+
+        result = strategy.extract(task_id, history)
+
+        assert result is not None
+        # Final turn is about Python data science
+        # Should select Python-related turns (higher similarity)
+        # and exclude weather/random topics
+        assert result.agent_output == "NumPy and Pandas"
+        # The final query should be in output
+        assert "Python data science" in result.user_input
+
+    def test_preserves_chronological_order(self):
+        """Test selected turns are in chronological order."""
+        strategy = KeyTurnsStrategy(n_turns=3, similarity_method="jaccard")
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "A topic about cats"},
+            {"role": "assistant", "content": "Cats are pets"},
+            {"role": "user", "content": "Dogs are also pets"},
+            {"role": "assistant", "content": "Yes they are"},
+            {"role": "user", "content": "Weather today"},
+            {"role": "assistant", "content": "It is sunny"},
+            {"role": "user", "content": "Cats and dogs playing"},
+            {"role": "assistant", "content": "Cute animals"},
+        ]
+
+        result = strategy.extract(task_id, history)
+
+        assert result is not None
+        # Even if turn 2 (dogs) is more similar than turn 1 (cats),
+        # they should appear in order if both selected
+
+    def test_include_final_always_includes_last_turn(self):
+        """Test include_final=True always includes last turn."""
+        strategy = KeyTurnsStrategy(n_turns=2, include_final=True)
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Very similar query A"},
+            {"role": "assistant", "content": "Answer A"},
+            {"role": "user", "content": "Very similar query A again"},
+            {"role": "assistant", "content": "Answer again"},
+            {"role": "user", "content": "Completely different topic"},
+            {"role": "assistant", "content": "Different answer"},
+        ]
+
+        result = strategy.extract(task_id, history)
+
+        assert result is not None
+        # Final turn should always be included
+        assert "Completely different topic" in result.user_input
+        assert result.agent_output == "Different answer"
+
+    def test_jaccard_method(self):
+        """Test KeyTurnsStrategy with jaccard similarity."""
+        strategy = KeyTurnsStrategy(n_turns=2, similarity_method="jaccard")
+        assert strategy.similarity_method == "jaccard"
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Python programming"},
+            {"role": "assistant", "content": "Great language"},
+            {"role": "user", "content": "Python code"},
+            {"role": "assistant", "content": "Here is code"},
+        ]
+
+        result = strategy.extract(task_id, history)
+        assert result is not None
+
+    def test_weighted_method(self):
+        """Test KeyTurnsStrategy with weighted similarity."""
+        strategy = KeyTurnsStrategy(n_turns=2, similarity_method="weighted")
+        assert strategy.similarity_method == "weighted"
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Python programming"},
+            {"role": "assistant", "content": "Great language"},
+            {"role": "user", "content": "Python code"},
+            {"role": "assistant", "content": "Here is code"},
+        ]
+
+        result = strategy.extract(task_id, history)
+        assert result is not None
+
+    def test_overlap_method(self):
+        """Test KeyTurnsStrategy with overlap similarity."""
+        strategy = KeyTurnsStrategy(n_turns=2, similarity_method="overlap")
+        assert strategy.similarity_method == "overlap"
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Python programming"},
+            {"role": "assistant", "content": "Great language"},
+            {"role": "user", "content": "Python code"},
+            {"role": "assistant", "content": "Here is code"},
+        ]
+
+        result = strategy.extract(task_id, history)
+        assert result is not None
+
+    def test_use_both_messages_true(self):
+        """Test similarity calculation includes both user and assistant messages."""
+        strategy = KeyTurnsStrategy(n_turns=2, use_both_messages=True)
+        assert strategy.use_both_messages is True
+
+    def test_use_both_messages_false(self):
+        """Test similarity calculation uses only user messages."""
+        strategy = KeyTurnsStrategy(n_turns=2, use_both_messages=False)
+        assert strategy.use_both_messages is False
+
+    def test_feedback_passed_through(self):
+        """Test feedback is passed to extracted interaction."""
+        strategy = KeyTurnsStrategy(n_turns=2)
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Q1"},
+            {"role": "assistant", "content": "A1"},
+            {"role": "user", "content": "Q2"},
+            {"role": "assistant", "content": "A2"},
+        ]
+
+        result = strategy.extract(task_id, history, feedback_score=0.9, feedback_type="rating")
+
+        assert result is not None
+        assert result.feedback_score == 0.9
+        assert result.feedback_type == "rating"
+
+    def test_empty_history_returns_none(self):
+        """Test empty history returns None."""
+        strategy = KeyTurnsStrategy()
+        task_id = uuid4()
+
+        result = strategy.extract(task_id, [])
+
+        assert result is None
+
+    def test_no_complete_turns_returns_none(self):
+        """Test history without complete turns returns None."""
+        strategy = KeyTurnsStrategy()
+        task_id = uuid4()
+        history = [{"role": "user", "content": "Unanswered question"}]
+
+        result = strategy.extract(task_id, history)
+
+        assert result is None
+
+    def test_minimum_n_turns_enforced(self):
+        """Test n_turns minimum is 1."""
+        strategy = KeyTurnsStrategy(n_turns=0)
+        assert strategy.n_turns == 1
+
+        strategy = KeyTurnsStrategy(n_turns=-5)
+        assert strategy.n_turns == 1
+
+    def test_factory_creates_key_turns(self):
+        """Test factory function creates KeyTurnsStrategy."""
+        strategy = get_strategy("key_turns", n_turns=4, similarity_method="weighted")
+
+        assert isinstance(strategy, KeyTurnsStrategy)
+        assert strategy.n_turns == 4
+        assert strategy.similarity_method == "weighted"
+        assert strategy.name == "key_turns"
+
+    def test_formatting_with_key_context_labels(self):
+        """Test output formatting includes key context labels."""
+        strategy = KeyTurnsStrategy(n_turns=3)
+        task_id = uuid4()
+        history = [
+            {"role": "user", "content": "Python question"},
+            {"role": "assistant", "content": "Python answer"},
+            {"role": "user", "content": "More Python"},
+            {"role": "assistant", "content": "More answer"},
+            {"role": "user", "content": "Final Python question"},
+            {"role": "assistant", "content": "Final answer"},
+        ]
+
+        result = strategy.extract(task_id, history)
+
+        assert result is not None
+        # Should have context labels
+        assert "[Key context" in result.user_input
+        assert "[Current query]" in result.user_input

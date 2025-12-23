@@ -16,6 +16,9 @@ let taskHistory = [];
 let contexts = [];
 const BASE_URL = window.location.origin;
 
+// Starred Messages Management
+let starredMessages = JSON.parse(sessionStorage.getItem('starred_messages_v2') || '[]');
+
 // Authentication State
 let authToken = localStorage.getItem('bindu_auth_token') || null;
 
@@ -164,6 +167,133 @@ function switchTab(tabName) {
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(tabName).classList.add('active');
+}
+
+// ========= Starred Messages Management ===========
+let pendingStarData = null;
+
+function toggleStar(messageId, buttonEl, messageDiv) {
+    const index = starredMessages.findIndex(m => m.id === messageId);
+    
+    if (index === -1) {
+        // Open the custom naming modal
+        const modal = document.getElementById('star-naming-modal');
+        const input = document.getElementById('star-name-input');
+        
+        // Default snippet from the message content
+        const msgEl = document.getElementById(`msg-agent-${messageId}`);
+        const defaultSnippet = msgEl ? msgEl.querySelector('.message-content').innerText.trim().substring(0, 25) : "Starred Response";
+        
+        // Prepare data for the save function
+        pendingStarData = { messageId, buttonEl, messageDiv, defaultSnippet, contextId };
+        
+        input.value = defaultSnippet;
+        modal.style.display = 'flex';
+        input.focus();
+        input.select();
+    } else {
+        // Simple removal (no modal needed)
+        starredMessages.splice(index, 1);
+        if (buttonEl) buttonEl.innerHTML = '☆';
+        if (messageDiv) messageDiv.classList.remove('is-starred');
+        syncAndSaveStars();
+    }
+}
+
+function saveStarName() {
+    if (!pendingStarData) return;
+    
+    const input = document.getElementById('star-name-input');
+    const customName = input.value.trim() || pendingStarData.defaultSnippet;
+    
+    starredMessages.push({
+        id: pendingStarData.messageId,
+        name: customName,
+        contextId: pendingStarData.contextId
+    });
+    
+    if (pendingStarData.buttonEl) pendingStarData.buttonEl.innerHTML = '★';
+    if (pendingStarData.messageDiv) pendingStarData.messageDiv.classList.add('is-starred');
+    
+    syncAndSaveStars();
+    closeStarModal();
+}
+
+function syncAndSaveStars() {
+    starredMessageIds = starredMessages.map(m => m.id);
+    sessionStorage.setItem('starred_messages_v2', JSON.stringify(starredMessages));
+    renderStarredList();
+}
+
+function closeStarModal() {
+    document.getElementById('star-naming-modal').style.display = 'none';
+    pendingStarData = null;
+}
+
+function updateStarredIds() {
+    const currentId = contextId || null;
+    starredMessageIds = starredMessages
+        .filter(m => m.contextId === currentId)
+        .map(m => m.id);
+}
+
+function renderStarredList() {
+    // 1. Find or create the container
+    let container = document.getElementById('starred-nav-list');
+    
+    if (!container) {
+        const inputContainer = document.querySelector('.chat-input-container');
+        if (!inputContainer) return;
+        
+        container = document.createElement('div');
+        container.id = 'starred-nav-list';
+        // Add styling so it sits above the chat input
+        container.style.cssText = "display:flex; gap:8px; overflow-x:auto; padding: 8px 0; border-bottom: 1px solid #eee; margin-bottom: 8px; scrollbar-width: thin;";
+        inputContainer.prepend(container);
+    }
+
+    // 2. CRITICAL: Filter stars to only show those belonging to the active context
+    const visibleStars = starredMessages.filter(s => s.contextId === contextId);
+
+    // 3. Hide container if no stars for this context
+    if (visibleStars.length === 0) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    // 4. Render the pills with standardized target IDs
+    container.style.display = 'flex';
+    container.innerHTML = visibleStars.map(item => {
+        // We pass 'agent-UUID' so scrollToMessage can find 'msg-agent-UUID'
+        const targetId = `agent-${item.id}`;
+        return `
+            <div class="starred-nav-item" 
+                 onclick="scrollToMessage('${targetId}')" 
+                 style="background:#fef3c7; border:1px solid #fbbf24; padding:4px 10px; border-radius:12px; font-size:11px; cursor:pointer; white-space:nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; font-weight: 500; color: #92400e; transition: all 0.2s;">
+                ⭐ ${item.name}
+            </div>
+        `;
+    }).join('');
+}
+
+function scrollToMessage(domId) {
+    // Standardize the ID: ensure it looks for 'msg-agent-UUID'
+    const fullId = domId.startsWith('msg-') ? domId : `msg-${domId}`;
+    const element = document.getElementById(fullId);
+    
+    if (element) {
+        // Smoothly bring the message to the center of the viewport
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Visual feedback using the animation defined in your CSS
+        element.classList.add('is-navigating');
+        setTimeout(() => {
+            element.classList.remove('is-navigating');
+        }, 2000);
+    } else {
+        console.warn(`Scroll target not found: ${fullId}`);
+    }
 }
 
 // ============================================================================
@@ -694,6 +824,8 @@ function createNewContext() {
     replyToTaskId = null;
     document.getElementById('chat-messages').innerHTML = '';
     clearReply();
+    updateStarredIds();   // Clears the internal ID tracker for a null context
+    renderStarredList();
     updateContextIndicator();
     updateContextList();
 }
@@ -830,6 +962,7 @@ async function switchContext(ctxId) {
 
         updateContextIndicator();
         updateContextList();
+        renderStarredList();
     } catch (error) {
         console.error('Error switching context:', error);
         showError('Failed to load context: ' + error.message);
@@ -1352,23 +1485,43 @@ function removeThinkingIndicator(id) {
 function addMessage(content, sender, taskId = null, state = null) {
     const messagesDiv = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}`;
+    
+    const msgId = taskId || generateId();
+    const domId = sender === 'agent' ? `agent-${msgId}` : msgId;
+    
+    // This MUST produce 'msg-agent-UUID' for the scroll function to work
+    messageDiv.id = `msg-${domId}`;
+    const isStarred = starredMessages.some(
+        m => m.id === msgId && m.contextId === contextId
+    );
+ 
+    messageDiv.className = `message ${sender} ${isStarred ? 'is-starred' : ''}`;
+    messageDiv.id = `msg-${domId}`;
 
+    // Create a container for the horizontal row (Bubble + Star)
+    const contentRow = document.createElement('div');
+    contentRow.style.display = 'flex';
+    contentRow.style.alignItems = 'flex-start';
+    contentRow.style.gap = '8px';
+    // If user message, we want the row to flex-end; if agent, flex-start
+    contentRow.style.justifyContent = sender === 'user' ? 'flex-end' : 'flex-start';
+    contentRow.style.width = '100%';
+
+    // 1. The Message Bubble
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
 
-    if (sender === 'agent' && taskId) {
-        messageDiv.style.cursor = 'pointer';
-        messageDiv.onclick = () => setReplyTo(taskId);
-    }
-
     if (sender === 'agent') {
+        if (taskId) {
+            contentDiv.style.cursor = 'pointer';
+            contentDiv.onclick = () => setReplyTo(taskId);
+        }
         contentDiv.innerHTML = marked.parse(content);
     } else {
         contentDiv.textContent = content;
     }
 
-    // Add feedback button inside content for completed agent tasks
+    // Agent Feedback button inside the bubble
     if (state && state.toLowerCase() === 'completed' && sender === 'agent' && taskId) {
         const feedbackBtn = document.createElement('button');
         feedbackBtn.className = 'feedback-btn-corner';
@@ -1380,8 +1533,27 @@ function addMessage(content, sender, taskId = null, state = null) {
         contentDiv.appendChild(feedbackBtn);
     }
 
-    messageDiv.appendChild(contentDiv);
+    // Add bubble to row
+    contentRow.appendChild(contentDiv);
 
+    // 2. The Star Button (Only for Agent, placed to the right of the bubble)
+    if (sender === 'agent') {
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'message-actions';
+        const starBtn = document.createElement('button');
+        starBtn.className = 'star-toggle-btn';
+        starBtn.innerHTML = isStarred ? '★' : '☆';
+        starBtn.onclick = (e) => {
+            e.stopPropagation();
+            toggleStar(msgId, starBtn, messageDiv);
+        };
+        actionsDiv.appendChild(starBtn);
+        contentRow.appendChild(actionsDiv);
+    }
+
+    messageDiv.appendChild(contentRow);
+
+    // 3. Metadata (Appended below the row)
     if (taskId && state) {
         const metaDiv = document.createElement('div');
         metaDiv.className = 'message-meta';
@@ -1505,6 +1677,9 @@ function generateId() {
 document.addEventListener('DOMContentLoaded', () => {
     loadAgentInfo();
     loadContexts();
+    starredMessages = JSON.parse(sessionStorage.getItem('starred_messages_v2') || '[]')
+    updateStarredIds();
+    renderStarredList();
 
     // Modal event listeners
     const feedbackModal = document.getElementById('feedback-modal');
@@ -1524,5 +1699,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (skillModal && skillModal.style.display === 'flex') {
             closeSkillModal();
         }
+    });
+    
+    const starModal = document.getElementById('star-naming-modal');
+    starModal.addEventListener('click', (e) => {
+        if (e.target === starModal) closeStarModal();
+    });
+
+    // Allow 'Enter' key to save the name
+    document.getElementById('star-name-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveStarName();
+        if (e.key === 'Escape') closeStarModal();
     });
 });

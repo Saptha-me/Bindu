@@ -973,6 +973,118 @@ Feedback is stored in the `task_feedback` table and can be used to:
 
 <br/>
 
+## Push Notification
+
+Bindu supports **real-time webhook notifications** for long-running tasks, following the [A2A Protocol specification](https://a2a-protocol.org/latest/specification/). This enables clients to receive push notifications about task state changes and artifact generation without polling.
+ 
+
+### Quick Example
+
+```python
+# 1. Enable push notifications in agent manifest
+manifest = AgentManifest(
+    name="Data Processor",
+    capabilities={"push_notifications": True},
+    global_webhook_url="https://myapp.com/webhooks/global",  # Optional
+    global_webhook_token="global_secret"
+)
+
+# 2. Send task with webhook configuration
+response = requests.post("http://localhost:3773/messages/send", json={
+    "jsonrpc": "2.0",
+    "method": "messages/send",
+    "params": {
+        "message": {
+            "message_id": str(uuid4()),
+            "task_id": str(uuid4()),
+            "context_id": str(uuid4()),
+            "kind": "message",
+            "role": "user",
+            "parts": [{"kind": "text", "text": "Process large dataset"}]
+        },
+        "configuration": {
+            "accepted_output_modes": ["application/json"],
+            "long_running": True,  # Persist webhook across restarts
+            "push_notification_config": {
+                "id": str(uuid4()),
+                "url": "https://myapp.com/webhooks/task-updates",
+                "token": "secret_abc123"
+            }
+        }
+    }
+})
+
+# 3. Implement webhook receiver
+@app.post("/webhooks/task-updates")
+async def handle_task_update(request: Request, authorization: str = Header(None)):
+    if authorization != "Bearer secret_abc123":
+        raise HTTPException(status_code=401)
+    
+    event = await request.json()
+    
+    if event["kind"] == "status-update":
+        print(f"Task {event['task_id']} state: {event['status']['state']}")
+    elif event["kind"] == "artifact-update":
+        print(f"Artifact generated: {event['artifact']['name']}")
+    
+    return {"status": "received"}
+```
+
+### Notification Events
+
+**Status Update Event** - Sent when task state changes:
+```json
+{
+  "kind": "status-update",
+  "task_id": "123e4567-...",
+  "status": {"state": "working"},
+  "final": false
+}
+```
+
+**Artifact Update Event** - Sent when artifacts are generated:
+```json
+{
+  "kind": "artifact-update",
+  "task_id": "123e4567-...",
+  "artifact": {
+    "artifact_id": "456e7890-...",
+    "name": "results.json",
+    "parts": [{"kind": "data", "data": {...}}]
+  }
+}
+```
+
+### Long-Running Tasks
+
+For tasks that run longer than typical request timeouts (minutes, hours, or days), set `long_running=true` to persist webhook configurations across server restarts:
+
+```python
+"configuration": {
+    "long_running": True,  # Webhook survives server restarts
+    "push_notification_config": {...}
+}
+```
+
+### Global Webhook Fallback
+
+Configure a default webhook for all tasks without explicit configuration:
+
+```python
+manifest = AgentManifest(
+    global_webhook_url="https://myapp.com/webhooks/global",
+    global_webhook_token="global_secret"
+)
+
+# Tasks without explicit webhook automatically use global webhook
+```
+
+📖 **[Complete Documentation](docs/long-running-task-notifications.md)** - Detailed guide with architecture, security, examples, and troubleshooting.
+
+---
+
+<br/>
+
 ## 🎨 Chat UI
 
 Bindu includes a beautiful chat interface at `http://localhost:3773/docs`

@@ -442,6 +442,11 @@ class ManifestWorker(Worker):
             )
             artifacts = self.build_artifacts(results)
 
+            # A2A Protocol: Send artifact notifications before updating storage
+            # This allows clients to receive artifact updates via webhook
+            for artifact in artifacts:
+                await self._notify_artifact(task["id"], task["context_id"], artifact)
+
             # Handle payment settlement if payment context is available
             if payment_context:
                 settlement_metadata = await self._settle_payment(payment_context)
@@ -550,6 +555,33 @@ class ManifestWorker(Worker):
                 app_settings.x402.meta_status_key: app_settings.x402.status_failed,
                 app_settings.x402.meta_error_key: str(e),
             }
+
+    async def _notify_artifact(
+        self, task_id: UUID, context_id: UUID, artifact: Artifact
+    ) -> None:
+        """Notify about artifact generation if push manager is available.
+
+        Args:
+            task_id: Task identifier
+            context_id: Context identifier
+            artifact: The artifact that was generated
+        """
+        if self.lifecycle_notifier:
+            try:
+                # Get push manager from lifecycle_notifier's bound instance
+                push_manager = getattr(self.lifecycle_notifier, "__self__", None)
+                if push_manager and hasattr(push_manager, "notify_artifact"):
+                    result = push_manager.notify_artifact(task_id, context_id, artifact)
+                    if hasattr(result, "__await__"):
+                        await result
+            except Exception as e:
+                # Log but don't disrupt task execution on notification errors
+                logger.warning(
+                    "Artifact notification failed",
+                    task_id=str(task_id),
+                    context_id=str(context_id),
+                    error=str(e),
+                )
 
     async def _notify_lifecycle(
         self, task_id: UUID, context_id: UUID, state: str, final: bool

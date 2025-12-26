@@ -127,6 +127,7 @@ class TaskManager:
             manifest=self.manifest,
             workers=self._workers,
             context_id_parser=self._parse_context_id,
+            push_manager=self._push_manager,
         )
         self._task_handlers = TaskHandlers(
             scheduler=self.scheduler,

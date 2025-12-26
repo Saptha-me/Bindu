@@ -420,6 +420,13 @@ class TaskPushNotificationConfig(TypedDict):
     push_notification_config: Required[PushNotificationConfig]
     """The push notification configuration of the task push notification configuration."""
 
+    long_running: NotRequired[bool]
+    """Flag indicating task expects to run longer than typical request timeouts.
+
+    When True, the push_notification_config should be persisted for notifications
+    across server restarts. Defaults to False if not specified.
+    """
+
 
 # -----------------------------------------------------------------------------
 # Task

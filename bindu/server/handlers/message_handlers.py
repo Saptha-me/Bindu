@@ -45,6 +45,7 @@ class MessageHandlers:
     manifest: Any | None = None
     workers: list[Any] | None = None
     context_id_parser: Any = None
+    push_manager: Any | None = None
 
     @trace_task_operation("send_message")
     @track_active_task
@@ -72,6 +73,18 @@ class MessageHandlers:
         config = request["params"].get("configuration", {})
         if history_length := config.get("history_length"):
             scheduler_params["history_length"] = history_length
+
+        # A2A Protocol: Register push notification config if provided inline
+        # Supports both inline (in message/send) and separate RPC registration
+        push_config = config.get("push_notification_config")
+        if push_config and self.push_manager:
+            # Use long_running flag to determine if config should be persisted
+            is_long_running = config.get("long_running", False)
+            await self.push_manager.register_push_config(
+                task["id"],
+                push_config,
+                persist=is_long_running
+            )
 
         # Pass payment context from message metadata to worker if available
         # This is injected by the endpoint when x402 middleware verifies payment

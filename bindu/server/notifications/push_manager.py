@@ -379,7 +379,7 @@ class PushNotificationManager:
         Args:
             request: The JSON-RPC request
             task_loader: Async function to load a task by ID
-            persist: If True, persist the config for long-running tasks
+            persist: Deprecated parameter, now reads from request params
         """
         if not self.is_push_supported():
             return self._push_not_supported_response(
@@ -401,8 +401,12 @@ class PushNotificationManager:
                 "Task not found",
             )
 
+        # A2A Protocol: Read long_running flag from request params
+        # If True, persist webhook config to survive server restarts
+        is_long_running = params.get("long_running", False)
+
         try:
-            await self.register_push_config(task_id, push_config, persist=persist)
+            await self.register_push_config(task_id, push_config, persist=is_long_running)
         except ValueError as exc:
             return self._jsonrpc_error(
                 SetTaskPushNotificationResponse,

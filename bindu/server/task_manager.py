@@ -116,6 +116,7 @@ class TaskManager:
                 storage=self.storage,
                 manifest=self.manifest,
                 lifecycle_notifier=self._push_manager.notify_lifecycle,
+                artifact_notifier=self._push_manager.notify_artifact,
             )
             self._workers.append(worker)
             await self._aexit_stack.enter_async_context(worker.run())
@@ -127,6 +128,7 @@ class TaskManager:
             manifest=self.manifest,
             workers=self._workers,
             context_id_parser=self._parse_context_id,
+            push_manager=self._push_manager,
         )
         self._task_handlers = TaskHandlers(
             scheduler=self.scheduler,

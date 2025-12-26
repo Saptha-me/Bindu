@@ -422,3 +422,338 @@ class TestAgentManifestGlobalWebhook:
         
         assert manifest.global_webhook_url == "https://global.example.com/webhook"
         assert manifest.global_webhook_token == "global_secret"
+
+
+# =============================================================================
+# ManifestWorker Artifact Notification Tests
+# =============================================================================
+
+class TestManifestWorkerArtifactNotification:
+    """Test artifact notification in ManifestWorker."""
+
+    @pytest.mark.asyncio
+    async def test_artifact_notifier_called_on_task_completion(self):
+        """Test that artifact_notifier is called when task completes with artifacts."""
+        from bindu.server.workers.manifest_worker import ManifestWorker
+        from bindu.server.storage.memory_storage import InMemoryStorage
+        from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
+        
+        # Setup storage with a task
+        storage = InMemoryStorage()
+        task_id = uuid4()
+        context_id = uuid4()
+        
+        # Create a task in 'submitted' state
+        message = {
+            "task_id": task_id,
+            "context_id": context_id,
+            "message_id": uuid4(),
+            "kind": "message",
+            "role": "user",
+            "parts": [{"kind": "text", "text": "Test message"}],
+        }
+        await storage.submit_task(context_id, message)
+        
+        # Create mock manifest
+        mock_manifest = MagicMock()
+        mock_manifest.name = "test_agent"
+        mock_manifest.did_extension = MagicMock()
+        mock_manifest.did_extension.did = "did:test:123"
+        mock_manifest.did_extension.sign_text.return_value = "mock_signature"
+        mock_manifest.enable_system_message = False
+        mock_manifest.enable_context_based_history = False
+        mock_manifest.run.return_value = "Task completed successfully"
+        
+        # Create artifact notifier mock
+        artifact_notifier = AsyncMock()
+        lifecycle_notifier = AsyncMock()
+        
+        # Create scheduler
+        scheduler = InMemoryScheduler()
+        
+        # Create worker with artifact notifier
+        worker = ManifestWorker(
+            scheduler=scheduler,
+            storage=storage,
+            manifest=mock_manifest,
+            lifecycle_notifier=lifecycle_notifier,
+            artifact_notifier=artifact_notifier,
+        )
+        
+        # Run task
+        await worker.run_task({
+            "task_id": task_id,
+            "context_id": context_id,
+            "message": message,
+        })
+        
+        # Verify artifact notifier was called
+        artifact_notifier.assert_called_once()
+        call_args = artifact_notifier.call_args
+        assert call_args[0][0] == task_id  # task_id
+        assert call_args[0][1] == context_id  # context_id
+        # Third argument should be an artifact dict
+        artifact = call_args[0][2]
+        assert "name" in artifact or "artifact_id" in artifact
+
+    @pytest.mark.asyncio
+    async def test_artifact_notifier_not_called_when_not_configured(self):
+        """Test that artifact notification is skipped when notifier not configured."""
+        from bindu.server.workers.manifest_worker import ManifestWorker
+        from bindu.server.storage.memory_storage import InMemoryStorage
+        from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
+        
+        # Setup storage with a task
+        storage = InMemoryStorage()
+        task_id = uuid4()
+        context_id = uuid4()
+        
+        # Create a task in 'submitted' state
+        message = {
+            "task_id": task_id,
+            "context_id": context_id,
+            "message_id": uuid4(),
+            "kind": "message",
+            "role": "user",
+            "parts": [{"kind": "text", "text": "Test message"}],
+        }
+        await storage.submit_task(context_id, message)
+        
+        # Create mock manifest
+        mock_manifest = MagicMock()
+        mock_manifest.name = "test_agent"
+        mock_manifest.did_extension = MagicMock()
+        mock_manifest.did_extension.did = "did:test:123"
+        mock_manifest.did_extension.sign_text.return_value = "mock_signature"
+        mock_manifest.enable_system_message = False
+        mock_manifest.enable_context_based_history = False
+        mock_manifest.run.return_value = "Task completed successfully"
+        
+        # Create scheduler
+        scheduler = InMemoryScheduler()
+        
+        # Create worker WITHOUT artifact notifier (default)
+        worker = ManifestWorker(
+            scheduler=scheduler,
+            storage=storage,
+            manifest=mock_manifest,
+            # artifact_notifier is None by default
+        )
+        
+        # Run task - should complete without errors even without notifier
+        await worker.run_task({
+            "task_id": task_id,
+            "context_id": context_id,
+            "message": message,
+        })
+        
+        # Task should complete successfully
+        task = await storage.load_task(task_id)
+        assert task["status"]["state"] == "completed"
+
+
+# =============================================================================
+# TaskManager Notification Wiring Tests
+# =============================================================================
+
+class TestTaskManagerNotificationWiring:
+    """Test that TaskManager properly wires up notification callbacks."""
+
+    @pytest.mark.asyncio
+    async def test_task_manager_wires_artifact_notifier(self):
+        """Test that TaskManager wires artifact_notifier to push_manager.notify_artifact."""
+        from bindu.server.task_manager import TaskManager
+        from bindu.server.storage.memory_storage import InMemoryStorage
+        from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
+        
+        storage = InMemoryStorage()
+        scheduler = InMemoryScheduler()
+        
+        # Create mock manifest with push notifications enabled
+        mock_manifest = MagicMock()
+        mock_manifest.capabilities = {"push_notifications": True}
+        mock_manifest.name = "test_agent"
+        mock_manifest.did_extension = MagicMock()
+        mock_manifest.did_extension.did = "did:test:123"
+        mock_manifest.enable_system_message = False
+        mock_manifest.enable_context_based_history = False
+        mock_manifest.run.return_value = "Test response"
+        mock_manifest.global_webhook_url = None
+        
+        # Create TaskManager
+        task_manager = TaskManager(
+            scheduler=scheduler,
+            storage=storage,
+            manifest=mock_manifest,
+        )
+        
+        async with scheduler:
+            await task_manager.__aenter__()
+            
+            # Verify that workers have artifact_notifier wired up
+            assert len(task_manager._workers) > 0
+            worker = task_manager._workers[0]
+            assert worker.artifact_notifier is not None
+            # The artifact_notifier should be push_manager.notify_artifact
+            assert worker.artifact_notifier == task_manager._push_manager.notify_artifact
+            
+            await task_manager.__aexit__(None, None, None)
+
+
+# =============================================================================
+# Message Handler Long-Running Integration Tests
+# =============================================================================
+
+class TestMessageHandlerLongRunningIntegration:
+    """Test message handler integration with long_running flag."""
+
+    @pytest.mark.asyncio
+    async def test_send_message_with_long_running_persists_webhook(self):
+        """Test that send_message with long_running=True persists webhook config."""
+        from bindu.server.handlers.message_handlers import MessageHandlers
+        from bindu.server.storage.memory_storage import InMemoryStorage
+        from bindu.server.notifications.push_manager import PushNotificationManager
+        
+        storage = InMemoryStorage()
+        
+        # Create mock scheduler that doesn't block
+        mock_scheduler = AsyncMock()
+        mock_scheduler.run_task = AsyncMock()
+        
+        # Create mock manifest with push notifications enabled
+        mock_manifest = MagicMock()
+        mock_manifest.capabilities = {"push_notifications": True}
+        mock_manifest.global_webhook_url = None
+        
+        # Create push manager with storage
+        push_manager = PushNotificationManager(
+            manifest=mock_manifest,
+            storage=storage,
+        )
+        
+        # Create message handler with push manager
+        message_handler = MessageHandlers(
+            scheduler=mock_scheduler,
+            storage=storage,
+            manifest=mock_manifest,
+            push_manager=push_manager,
+            context_id_parser=lambda x: uuid4() if x is None else (UUID(x) if isinstance(x, str) else x),
+        )
+        
+        task_id = uuid4()
+        context_id = uuid4()
+        webhook_config_id = uuid4()
+        
+        # Create request with long_running=True and push_notification_config
+        request = {
+            "jsonrpc": "2.0",
+            "id": "test-request-1",
+            "method": "message/send",
+            "params": {
+                "message": {
+                    "task_id": str(task_id),
+                    "context_id": str(context_id),
+                    "message_id": str(uuid4()),
+                    "kind": "message",
+                    "role": "user",
+                    "parts": [{"kind": "text", "text": "Long running task"}],
+                },
+                "configuration": {
+                    "accepted_output_modes": ["application/json"],
+                    "long_running": True,
+                    "push_notification_config": {
+                        "id": str(webhook_config_id),
+                        "url": "https://example.com/webhook",
+                        "token": "secret_token",
+                    },
+                },
+            },
+        }
+        
+        # Send the message
+        response = await message_handler.send_message(request)
+        
+        # Verify webhook config was persisted to storage
+        persisted_config = await storage.load_webhook_config(task_id)
+        assert persisted_config is not None
+        assert persisted_config["url"] == "https://example.com/webhook"
+        assert persisted_config["token"] == "secret_token"
+        
+        # Verify scheduler was called
+        mock_scheduler.run_task.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_send_message_without_long_running_does_not_persist(self):
+        """Test that send_message without long_running=True doesn't persist webhook."""
+        from bindu.server.handlers.message_handlers import MessageHandlers
+        from bindu.server.storage.memory_storage import InMemoryStorage
+        from bindu.server.notifications.push_manager import PushNotificationManager
+        
+        storage = InMemoryStorage()
+        
+        # Create mock scheduler that doesn't block
+        mock_scheduler = AsyncMock()
+        mock_scheduler.run_task = AsyncMock()
+        
+        # Create mock manifest with push notifications enabled
+        mock_manifest = MagicMock()
+        mock_manifest.capabilities = {"push_notifications": True}
+        mock_manifest.global_webhook_url = None
+        
+        # Create push manager with storage
+        push_manager = PushNotificationManager(
+            manifest=mock_manifest,
+            storage=storage,
+        )
+        
+        # Create message handler with push manager
+        message_handler = MessageHandlers(
+            scheduler=mock_scheduler,
+            storage=storage,
+            manifest=mock_manifest,
+            push_manager=push_manager,
+            context_id_parser=lambda x: uuid4() if x is None else (UUID(x) if isinstance(x, str) else x),
+        )
+        
+        task_id = uuid4()
+        context_id = uuid4()
+        webhook_config_id = uuid4()
+        
+        # Create request with long_running=False (or not set) but with push_notification_config
+        request = {
+            "jsonrpc": "2.0",
+            "id": "test-request-2",
+            "method": "message/send",
+            "params": {
+                "message": {
+                    "task_id": str(task_id),
+                    "context_id": str(context_id),
+                    "message_id": str(uuid4()),
+                    "kind": "message",
+                    "role": "user",
+                    "parts": [{"kind": "text", "text": "Regular task"}],
+                },
+                "configuration": {
+                    "accepted_output_modes": ["application/json"],
+                    "long_running": False,
+                    "push_notification_config": {
+                        "id": str(webhook_config_id),
+                        "url": "https://example.com/webhook",
+                        "token": "secret_token",
+                    },
+                },
+            },
+        }
+        
+        # Send the message
+        response = await message_handler.send_message(request)
+        
+        # Verify webhook config was NOT persisted to storage
+        persisted_config = await storage.load_webhook_config(task_id)
+        assert persisted_config is None
+        
+        # But in-memory registration should still happen (if push_manager.register is called separately)
+        # The point is that long_running=False should NOT persist to storage
+        
+        # Verify scheduler was still called
+        mock_scheduler.run_task.assert_called_once()

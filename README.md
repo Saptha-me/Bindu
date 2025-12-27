@@ -1044,6 +1044,16 @@ NightSky enables swarms of agents. Each Bindu is a dot annotating agents with th
 
 <br/>
 
+##  Ecosystem
+
+The Bindu project includes several key components that work together to create a robust environment for agent-to-agent communication.
+
+### Orchestrator Agent
+
+The [Orchestrator Agent](./Orchestrator_Agent/README.MD) is a production-ready multi-agent task orchestration system. It is designed to decompose tasks, discover agents with the right capabilities, negotiate prices, and manage the execution of tasks across a swarm of agents.
+
+<br/>
+
 ## 🛠️ Supported Agent Frameworks
 
 Bindu is **framework-agnostic** and tested with:

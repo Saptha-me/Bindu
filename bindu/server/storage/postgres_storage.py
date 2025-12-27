@@ -34,12 +34,24 @@ from sqlalchemy.dialects.postgresql import insert, JSONB, JSON
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from typing_extensions import TypeVar
 
-from bindu.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from bindu.common.protocol.types import (
+    Artifact,
+    Message,
+    PushNotificationConfig,
+    Task,
+    TaskState,
+    TaskStatus,
+)
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 
 from .base import Storage
-from .schema import tasks_table, contexts_table, task_feedback_table
+from .schema import (
+    contexts_table,
+    task_feedback_table,
+    tasks_table,
+    webhook_configs_table,
+)
 
 logger = get_logger("bindu.server.storage.postgres_storage")
 
@@ -824,10 +836,11 @@ class PostgresStorage(Storage[ContextT]):
         async def _clear():
             async with self._session_factory() as session:
                 async with session.begin():
+                    await session.execute(delete(webhook_configs_table))
                     await session.execute(delete(task_feedback_table))
                     await session.execute(delete(tasks_table))
                     await session.execute(delete(contexts_table))
-                    logger.info("Cleared all tasks, contexts, and feedback")
+                    logger.info("Cleared all tasks, contexts, feedback, and webhook configs")
 
         await self._retry_on_connection_error(_clear)
 
@@ -902,3 +915,130 @@ class PostgresStorage(Storage[ContextT]):
                 return [row.feedback_data for row in rows]
 
         return await self._retry_on_connection_error(_get)
+
+    # -------------------------------------------------------------------------
+    # Webhook Persistence Operations (for long-running tasks)
+    # -------------------------------------------------------------------------
+
+    async def save_webhook_config(
+        self, task_id: UUID, config: PushNotificationConfig
+    ) -> None:
+        """Save a webhook configuration for a task using SQLAlchemy.
+
+        Uses upsert to handle both insert and update scenarios.
+
+        Args:
+            task_id: Task to associate the webhook config with
+            config: Push notification configuration to persist
+
+        Raises:
+            TypeError: If task_id is not UUID
+        """
+        if not isinstance(task_id, UUID):
+            raise TypeError(f"task_id must be UUID, got {type(task_id).__name__}")
+
+        self._ensure_connected()
+
+        async def _save():
+            async with self._session_factory() as session:
+                async with session.begin():
+                    # Serialize config to convert UUIDs to strings
+                    serialized_config = _serialize_for_jsonb(config)
+                    stmt = insert(webhook_configs_table).values(
+                        task_id=task_id,
+                        config=serialized_config,
+                    )
+                    # On conflict (task already has config), update it
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=["task_id"],
+                        set_={
+                            "config": serialized_config,
+                            "updated_at": datetime.now(timezone.utc),
+                        },
+                    )
+                    await session.execute(stmt)
+                    logger.debug(f"Saved webhook config for task {task_id}")
+
+        await self._retry_on_connection_error(_save)
+
+    async def load_webhook_config(
+        self, task_id: UUID
+    ) -> PushNotificationConfig | None:
+        """Load a webhook configuration for a task using SQLAlchemy.
+
+        Args:
+            task_id: Task to load the webhook config for
+
+        Returns:
+            The webhook configuration if found, None otherwise
+
+        Raises:
+            TypeError: If task_id is not UUID
+        """
+        if not isinstance(task_id, UUID):
+            raise TypeError(f"task_id must be UUID, got {type(task_id).__name__}")
+
+        self._ensure_connected()
+
+        async def _load():
+            async with self._session_factory() as session:
+                stmt = select(webhook_configs_table).where(
+                    webhook_configs_table.c.task_id == task_id
+                )
+                result = await session.execute(stmt)
+                row = result.first()
+
+                if row is None:
+                    return None
+
+                return row.config
+
+        return await self._retry_on_connection_error(_load)
+
+    async def delete_webhook_config(self, task_id: UUID) -> None:
+        """Delete a webhook configuration for a task using SQLAlchemy.
+
+        Args:
+            task_id: Task to delete the webhook config for
+
+        Raises:
+            TypeError: If task_id is not UUID
+
+        Note: Does not raise if the config doesn't exist.
+        """
+        if not isinstance(task_id, UUID):
+            raise TypeError(f"task_id must be UUID, got {type(task_id).__name__}")
+
+        self._ensure_connected()
+
+        async def _delete():
+            async with self._session_factory() as session:
+                async with session.begin():
+                    stmt = delete(webhook_configs_table).where(
+                        webhook_configs_table.c.task_id == task_id
+                    )
+                    result = await session.execute(stmt)
+                    if result.rowcount > 0:
+                        logger.debug(f"Deleted webhook config for task {task_id}")
+
+        await self._retry_on_connection_error(_delete)
+
+    async def load_all_webhook_configs(self) -> dict[UUID, PushNotificationConfig]:
+        """Load all stored webhook configurations using SQLAlchemy.
+
+        Used during initialization to restore webhook state after restart.
+
+        Returns:
+            Dictionary mapping task IDs to their webhook configurations
+        """
+        self._ensure_connected()
+
+        async def _load_all():
+            async with self._session_factory() as session:
+                stmt = select(webhook_configs_table)
+                result = await session.execute(stmt)
+                rows = result.fetchall()
+
+                return {row.task_id: row.config for row in rows}
+
+        return await self._retry_on_connection_error(_load_all)

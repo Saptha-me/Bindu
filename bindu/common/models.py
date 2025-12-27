@@ -183,6 +183,19 @@ class AgentManifest:
     enable_context_based_history: bool = False
     extra_data: dict[str, Any] = field(default_factory=dict)
 
+    # Global Webhook Configuration (for long-running tasks)
+    global_webhook_url: str | None = None
+    """Default webhook URL for all tasks when no task-specific webhook is registered.
+
+    Used as a fallback for long-running tasks that need notifications across
+    server restarts or when a task doesn't provide its own webhook configuration.
+    """
+    global_webhook_token: str | None = None
+    """Authentication token for the global webhook URL.
+
+    Sent as Bearer token in Authorization header when calling the global webhook.
+    """
+
     # Observability
     debug_mode: bool = False
     debug_level: Literal[1, 2] = 1

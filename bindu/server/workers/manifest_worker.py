@@ -86,6 +86,11 @@ class ManifestWorker(Worker):
     )
     """Optional callback for task lifecycle notifications (task_id, context_id, state, final)."""
 
+    artifact_notifier: Optional[Callable[[UUID, UUID, Any], Any]] = field(
+        default=None
+    )
+    """Optional callback for artifact notifications (task_id, context_id, artifact)."""
+
     @retry_worker_operation()
     async def run_task(self, params: TaskSendParams) -> None:
         """Execute a task using the AgentManifest.
@@ -457,6 +462,11 @@ class ManifestWorker(Worker):
                 new_messages=agent_messages,
                 metadata=additional_metadata,
             )
+            
+            # Notify about artifacts (for long-running task notifications)
+            for artifact in artifacts:
+                await self._notify_artifact(task["id"], task["context_id"], artifact)
+            
             await self._notify_lifecycle(task["id"], task["context_id"], state, True)
 
         elif state in ("failed", "rejected"):
@@ -575,5 +585,32 @@ class ManifestWorker(Worker):
                     task_id=str(task_id),
                     context_id=str(context_id),
                     state=state,
+                    error=str(e),
+                )
+
+    async def _notify_artifact(
+        self, task_id: UUID, context_id: UUID, artifact: Any
+    ) -> None:
+        """Notify artifact generation if notifier is configured.
+
+        Used for long-running task notifications (Issue #69).
+
+        Args:
+            task_id: Task identifier
+            context_id: Context identifier
+            artifact: The artifact that was generated
+        """
+        if self.artifact_notifier:
+            try:
+                result = self.artifact_notifier(task_id, context_id, artifact)
+                # Handle both sync and async notifiers
+                if hasattr(result, "__await__"):
+                    await result
+            except Exception as e:
+                # Log but don't disrupt task execution on notification errors
+                logger.warning(
+                    "Artifact notification failed",
+                    task_id=str(task_id),
+                    context_id=str(context_id),
                     error=str(e),
                 )

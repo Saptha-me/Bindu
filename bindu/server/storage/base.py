@@ -8,7 +8,13 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from bindu.common.protocol.types import Artifact, Message, Task, TaskState
+from bindu.common.protocol.types import (
+    Artifact,
+    Message,
+    PushNotificationConfig,
+    Task,
+    TaskState,
+)
 
 ContextT = TypeVar("ContextT", default=Any)
 
@@ -207,3 +213,54 @@ class Storage(ABC, Generic[ContextT]):
         """
         # Optional - override in subclass if feedback retrieval is needed
         return None
+
+    # -------------------------------------------------------------------------
+    # Webhook Persistence Operations (for long-running tasks)
+    # -------------------------------------------------------------------------
+
+    @abstractmethod
+    async def save_webhook_config(
+        self, task_id: UUID, config: PushNotificationConfig
+    ) -> None:
+        """Save a webhook configuration for a task.
+
+        Used to persist webhook configurations for long-running tasks
+        that may outlive server restarts.
+
+        Args:
+            task_id: Task to associate the webhook config with
+            config: Push notification configuration to persist
+        """
+
+    @abstractmethod
+    async def load_webhook_config(
+        self, task_id: UUID
+    ) -> PushNotificationConfig | None:
+        """Load a webhook configuration for a task.
+
+        Args:
+            task_id: Task to load the webhook config for
+
+        Returns:
+            The webhook configuration if found, None otherwise
+        """
+
+    @abstractmethod
+    async def delete_webhook_config(self, task_id: UUID) -> None:
+        """Delete a webhook configuration for a task.
+
+        Args:
+            task_id: Task to delete the webhook config for
+
+        Note: Should not raise if the config doesn't exist.
+        """
+
+    @abstractmethod
+    async def load_all_webhook_configs(self) -> dict[UUID, PushNotificationConfig]:
+        """Load all stored webhook configurations.
+
+        Used during initialization to restore webhook state after restart.
+
+        Returns:
+            Dictionary mapping task IDs to their webhook configurations
+        """

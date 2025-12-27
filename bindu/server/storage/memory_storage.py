@@ -23,7 +23,14 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from bindu.common.protocol.types import Artifact, Message, Task, TaskState, TaskStatus
+from bindu.common.protocol.types import (
+    Artifact,
+    Message,
+    PushNotificationConfig,
+    Task,
+    TaskState,
+    TaskStatus,
+)
 from bindu.settings import app_settings
 from bindu.utils.logging import get_logger
 from bindu.utils.retry import retry_storage_operation
@@ -52,6 +59,7 @@ class InMemoryStorage(Storage[ContextT]):
         self.tasks: dict[UUID, Task] = {}
         self.contexts: dict[UUID, list[UUID]] = {}
         self.task_feedback: dict[UUID, list[dict[str, Any]]] = {}
+        self._webhook_configs: dict[UUID, PushNotificationConfig] = {}
 
     @retry_storage_operation(max_attempts=3, min_wait=0.1, max_wait=1)
     async def load_task(
@@ -430,6 +438,7 @@ class InMemoryStorage(Storage[ContextT]):
         self.tasks.clear()
         self.contexts.clear()
         self.task_feedback.clear()
+        self._webhook_configs.clear()
 
     async def store_task_feedback(
         self, task_id: UUID, feedback_data: dict[str, Any]
@@ -471,3 +480,70 @@ class InMemoryStorage(Storage[ContextT]):
             raise TypeError(f"task_id must be UUID, got {type(task_id).__name__}")
 
         return self.task_feedback.get(task_id)
+
+    # -------------------------------------------------------------------------
+    # Webhook Persistence Operations (for long-running tasks)
+    # -------------------------------------------------------------------------
+
+    async def save_webhook_config(
+        self, task_id: UUID, config: PushNotificationConfig
+    ) -> None:
+        """Save a webhook configuration for a task.
+
+        Args:
+            task_id: Task to associate the webhook config with
+            config: Push notification configuration to persist
+
+        Raises:
+            TypeError: If task_id is not UUID
+        """
+        if not isinstance(task_id, UUID):
+            raise TypeError(f"task_id must be UUID, got {type(task_id).__name__}")
+
+        self._webhook_configs[task_id] = config
+        logger.debug(f"Saved webhook config for task {task_id}")
+
+    async def load_webhook_config(
+        self, task_id: UUID
+    ) -> PushNotificationConfig | None:
+        """Load a webhook configuration for a task.
+
+        Args:
+            task_id: Task to load the webhook config for
+
+        Returns:
+            The webhook configuration if found, None otherwise
+
+        Raises:
+            TypeError: If task_id is not UUID
+        """
+        if not isinstance(task_id, UUID):
+            raise TypeError(f"task_id must be UUID, got {type(task_id).__name__}")
+
+        return self._webhook_configs.get(task_id)
+
+    async def delete_webhook_config(self, task_id: UUID) -> None:
+        """Delete a webhook configuration for a task.
+
+        Args:
+            task_id: Task to delete the webhook config for
+
+        Raises:
+            TypeError: If task_id is not UUID
+
+        Note: Does not raise if the config doesn't exist.
+        """
+        if not isinstance(task_id, UUID):
+            raise TypeError(f"task_id must be UUID, got {type(task_id).__name__}")
+
+        if task_id in self._webhook_configs:
+            del self._webhook_configs[task_id]
+            logger.debug(f"Deleted webhook config for task {task_id}")
+
+    async def load_all_webhook_configs(self) -> dict[UUID, PushNotificationConfig]:
+        """Load all stored webhook configurations.
+
+        Returns:
+            Dictionary mapping task IDs to their webhook configurations
+        """
+        return dict(self._webhook_configs)

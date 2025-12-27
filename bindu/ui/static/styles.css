@@ -1668,3 +1668,103 @@ textarea.form-control {
         right: 8px;
     }
 }
+
+/* Update these sections in styles.css */
+
+.message.agent {
+    display: flex;
+    flex-direction: column; /* Stack the Row and the Meta vertically */
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.message.user {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Keep 'hhh' on the right */
+    margin-bottom: 16px;
+}
+
+.message-meta {
+    font-size: 10px;
+    color: #999;
+    margin-top: 8px; /* Gap between bubble and metadata */
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%; /* Ensure it stays below the bubble */
+}
+
+.message-actions {
+    display: flex;
+    padding-top: 10px; /* Align star with text */
+}
+
+.star-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #cbd5e1;
+    transition: color 0.2s;
+}
+
+.is-starred .star-toggle-btn {
+    color: #fbbf24;
+}
+
+@keyframes highlight-flash {
+    0% { background-color: #fff9c4; transform: scale(1.02); }
+    100% { background-color: transparent; transform: scale(1); }
+}
+
+.is-navigating {
+    animation: highlight-flash 2s ease-out;
+    border-color: #fbbf24 !important;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+/* Custom sizing for the naming modal */
+.star-modal-width {
+    max-width: 420px;
+    border: 1px solid #e0e0e0;
+}
+
+/* Ensure the input matches the theme's focus state */
+#star-name-input.form-control {
+    border: 1px solid #d1d5db;
+    background: #fafafa;
+    font-size: 13px;
+    padding: 12px;
+}
+
+#star-name-input.form-control:focus {
+    background: #ffffff;
+    border-color: #1a1a1a;
+    box-shadow: 0 0 0 2px rgba(26, 26, 26, 0.05);
+}
+
+/* Quick Access Panel Hover Effect */
+.starred-nav-item:hover {
+    background: #fde68a !important; /* Brighter gold on hover */
+    border-color: #d97706 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Update this block in styles.css to force the yellow color */
+#star-naming-modal .modal-footer .btn-primary {
+    background-color: #fbbf24 !important; /* Force Golden Yellow */
+    color: #92400e !important;           /* Dark Brown text */
+    border: 1px solid #d97706 !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#star-naming-modal .modal-footer .btn-primary:hover {
+    background-color: #f59e0b !important; /* Slightly darker on hover */
+    color: #78350f !important;
+    transform: translateY(-1px);
+}

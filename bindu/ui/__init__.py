@@ -14,6 +14,6 @@ Modules:
 - html_ui: Minimal HTML/JS launcher function (recommended)
 """
 
-from bindu.ui.html_ui import launch_html_ui
+from bindu.ui.launcher import launch_html_ui
 
 __all__ = ["launch_html_ui"]

@@ -190,6 +190,8 @@ def bindufy(
             - deployment: Deployment configuration dict
             - storage: Storage backend configuration dict
             - scheduler: Task scheduler configuration dict
+            - global_webhook_url: Default webhook URL for all tasks (optional)
+            - global_webhook_token: Authentication token for global webhook (optional)
         handler: The handler function that processes messages and returns responses.
                 Must have signature: (messages: str) -> str
 
@@ -364,6 +366,8 @@ def bindufy(
         negotiation=validated_config.get("negotiation"),
         documentation_url=validated_config["documentation_url"],
         extra_metadata=validated_config["extra_metadata"],
+        global_webhook_url=validated_config.get("global_webhook_url"),
+        global_webhook_token=validated_config.get("global_webhook_token"),
     )
 
     # Log manifest creation

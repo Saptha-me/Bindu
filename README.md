@@ -980,12 +980,37 @@ Bindu supports **real-time webhook notifications** for long-running tasks, follo
 
 ### Quick Example
 
+**Using `bindufy` (Recommended):**
+
 ```python
-# 1. Enable push notifications in agent manifest
+from bindu.penguin.bindufy import bindufy
+
+def handler(messages):
+    return [{"role": "assistant", "content": messages[-1]["content"]}]
+
+config = {
+    "author": "you@example.com",
+    "name": "my_agent",
+    "description": "Agent with push notifications",
+    "deployment": {"url": "http://localhost:3773"},
+    "capabilities": {
+        "push_notifications": True  # Enable push notifications
+    },
+    # Optional: Global webhook for all tasks
+    "global_webhook_url": "https://myapp.com/webhooks/global",
+    "global_webhook_token": "global_secret"
+}
+
+bindufy(config, handler)
+```
+
+**Using `AgentManifest` directly:**
+
+```python
 manifest = AgentManifest(
     name="Data Processor",
     capabilities={"push_notifications": True},
-    global_webhook_url="https://myapp.com/webhooks/global",  # Optional
+    global_webhook_url="https://myapp.com/webhooks/global",
     global_webhook_token="global_secret"
 )
 

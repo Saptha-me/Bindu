@@ -320,6 +320,18 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "notifucation",
+			"id": "50606358-54c54f14-c353-4569-b1a6-fc50eb5308e2",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
 		}
 	]
 }

@@ -41,7 +41,7 @@
 			"response": []
 		},
 		{
-			"name": "first send message Copy",
+			"name": "notification",
 			"id": "50606358-3b2f985c-5568-4065-866f-2354e0997811",
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true

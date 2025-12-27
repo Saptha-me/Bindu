@@ -41,6 +41,41 @@
 			"response": []
 		},
 		{
+			"name": "first send message Copy",
+			"id": "50606358-3b2f985c-5568-4065-866f-2354e0997811",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Quote\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440301\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{bindu_local}}",
+					"host": [
+						"{{bindu_local}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "task status",
 			"id": "50606358-1596e426-9ac0-4361-924e-3f531a330522",
 			"protocolProfileBehavior": {
@@ -311,18 +346,6 @@
 						"health"
 					]
 				}
-			},
-			"response": []
-		},
-		{
-			"name": "notification",
-			"id": "50606358-54c54f14-c353-4569-b1a6-fc50eb5308e2",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
-			"request": {
-				"method": "GET",
-				"header": []
 			},
 			"response": []
 		}

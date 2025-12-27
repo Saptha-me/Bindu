@@ -13,14 +13,7 @@
 			},
 			"request": {
 				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "<>",
-							"type": "string"
-						}
-					]
+					"type": "noauth"
 				},
 				"method": "POST",
 				"header": [
@@ -31,7 +24,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Inspirational\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440200\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
+					"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"message/send\",\n    \"params\": {\n        \"message\": {\n            \"role\": \"user\",\n            \"parts\": [\n                {\n                    \"kind\": \"text\",\n                    \"text\": \"Quote\"\n                }\n            ],\n            \"kind\": \"message\",\n            \"messageId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"contextId\": \"550e8400-e29b-41d4-a716-446655440038\",\n            \"taskId\": \"550e8400-e29b-41d4-a716-446655440301\"\n        },\n        \"configuration\": {\n            \"acceptedOutputModes\": [\n                \"application/json\"\n            ]\n        }\n    },\n    \"id\": \"550e8400-e29b-41d4-a716-446655440024\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -322,7 +315,7 @@
 			"response": []
 		},
 		{
-			"name": "notifucation",
+			"name": "notification",
 			"id": "50606358-54c54f14-c353-4569-b1a6-fc50eb5308e2",
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true

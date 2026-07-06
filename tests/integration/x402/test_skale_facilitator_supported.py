@@ -41,13 +41,17 @@ SKALE_EUROPA_CAIP2 = "eip155:1187947933"
 SKALE_EUROPA_USDC = "0x85889c8c714505E0c94b30fcfcF64fE3Ac8FCb20"
 
 
-pytestmark = pytest.mark.skipif(
-    os.environ.get("X402_NETWORK_TESTS") != "1",
-    reason="live-network test; set X402_NETWORK_TESTS=1 to enable",
-)
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.x402,
+    pytest.mark.network,
+    pytest.mark.skipif(
+        os.environ.get("X402_NETWORK_TESTS") != "1",
+        reason="live-network test; set X402_NETWORK_TESTS=1 to enable",
+    ),
+]
 
 
-@pytest.mark.network
 def test_facilitator_advertises_skale_europa():
     """The facilitator's /supported response must include SKALE Europa
     Hub at the CAIP-2 we ship in `ExtraNetwork`."""
@@ -76,7 +80,6 @@ def test_facilitator_advertises_skale_europa():
     )
 
 
-@pytest.mark.network
 def test_shipped_skale_default_matches_facilitator_metadata():
     """The asset address / name / decimals we ship in app_settings must
     match what the facilitator advertises. If they drift, EIP-3009

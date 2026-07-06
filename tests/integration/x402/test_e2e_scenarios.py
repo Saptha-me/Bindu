@@ -38,6 +38,14 @@ from bindu.server.storage.memory_storage import InMemoryStorage
 from bindu.server.workers.manifest_worker import ManifestWorker
 
 
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.e2e,
+    pytest.mark.slow,
+    pytest.mark.x402,
+]
+
+
 # ---------------------------------------------------------------------------
 # Shared test fixtures: a single canonical payment requirement and a helper
 # to build EIP-3009-shaped payloads with parameterised nonces / payers.

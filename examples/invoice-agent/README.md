@@ -39,46 +39,85 @@ Run the agent:
 ```bash
   python invoice_agent.py  
   ```
+## Example: Generate Invoice
 
-## Example Input
+### Request
+
 ```json
-   {
+{
   "type": "generate_invoice",
   "payload": {
     "recipient": "akash@example.com",
     "items": [
-      { "description": "API access", "quantity": 1, "unit_price": 50 },
-      { "description": "Compute", "quantity": 2, "unit_price": 20 }
+      {
+        "description": "API access",
+        "quantity": 1,
+        "unit_price": 50
+      },
+      {
+        "description": "Compute",
+        "quantity": 2,
+        "unit_price": 20
+      }
     ],
     "currency": "USDC"
   }
-}  
-   ```
-   
-## Example Output:
+}
+```
+
+### Response
 
 ```json
 {
-  "invoice_id": "inv_66ac3b32-6cb4-4588-bd06-f71160ba206c",
+  "invoice_id": "inv_0ca3bdb6-69b1-4843-bd29-01b6c9a0672b",
   "total": 90,
-  "payment_header": "X402 0xE5bC3b8796432A70aC8450E2aaD54055d9e2DBb8:90"
-}
-{
-  "invoice": {
-    "id": "inv_66ac3b32-6cb4-4588-bd06-f71160ba206c",
-    "recipient": "acme@example.com",
-    "recipient_wallet": "0xE5bC3b8796432A70aC8450E2aaD54055d9e2DBb8",
-    "items": [
-      { "description": "API", "quantity": 1, "unit_price": 50 },
-      { "description": "Compute", "quantity": 2, "unit_price": 20 }
-    ],
-    "currency": "USDC",
-    "total": 90,
-    "status": "paid",
-    "tx_hash": "0xabc123"
+  "payment_header": {
+    "amount": "90",
+    "token": "USDC",
+    "network": "base-sepolia",
+    "pay_to_address": "0x123456789abcdef"
   }
 }
 ```
+
+## Example: Get Invoice
+
+### Request
+
+```json
+{
+  "type": "get_invoice",
+  "invoice_id": "inv_0ca3bdb6-69b1-4843-bd29-01b6c9a0672b"
+}
+```
+
+### Response
+
+```json
+{
+  "invoice": {
+    "id": "inv_0ca3bdb6-69b1-4843-bd29-01b6c9a0672b",
+    "recipient": "akash@example.com",
+    "recipient_wallet": "0x123456789abcdef",
+    "items": [
+      {
+        "description": "API access",
+        "quantity": 1,
+        "unit_price": 50
+      },
+      {
+        "description": "Compute",
+        "quantity": 2,
+        "unit_price": 20
+      }
+    ],
+    "currency": "USDC",
+    "total": 90,
+    "status": "pending"
+  }
+}
+```
+
 
 
 ## Skills

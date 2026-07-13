@@ -18,7 +18,7 @@ classifiers = [
 dependencies = [
     # Core runtime
     "uvicorn>=0.35",
-    "starlette==1.0.0",
+    "starlette==1.3.1",
     "pydantic>=2.11.7",
     "pydantic-settings>=2.14.1,<3",
     "loguru>=0.7.3,<1",
@@ -38,12 +38,12 @@ dependencies = [
     "pypdf>=6.10.2,<7",
     "python-docx>=1.1.2,<2",
     # Telemetry
-    "opentelemetry-api==1.42.1",
-    "opentelemetry-sdk==1.42.1",
-    "opentelemetry-exporter-otlp==1.42.1",
-    "opentelemetry-exporter-otlp-proto-http==1.42.1",
-    "opentelemetry-instrumentation-fastapi==0.63b1",
-    "opentelemetry-instrumentation-httpx==0.63b1",
+    "opentelemetry-api==1.43.0",
+    "opentelemetry-sdk==1.43.0",
+    "opentelemetry-exporter-otlp==1.43.0",
+    "opentelemetry-exporter-otlp-proto-http==1.43.0",
+    "opentelemetry-instrumentation-fastapi==0.64b0",
+    "opentelemetry-instrumentation-httpx==0.64b0",
     "sentry-sdk>=2.41.0,<3",
     # x402 payments
     "x402>=2.3.0,<3",
@@ -104,7 +104,7 @@ runtime-boxd = [
 # Minimal core only (use: pip install bindu[core] --only-deps)
 core = [
     "uvicorn>=0.35",
-    "starlette==1.0.0",
+    "starlette==1.3.1",
     "pydantic>=2.11.7",
     "pydantic-settings>=2.14.1,<3",
     "loguru>=0.7.3,<1",

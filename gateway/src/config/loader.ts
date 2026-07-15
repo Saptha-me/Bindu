@@ -124,6 +124,28 @@ function envOverrides(base: Record<string, any>): Record<string, any> {
     }
   }
 
+  if (
+    process.env.MINIMAX_API_KEY ||
+    process.env.MINIMAX_REGION ||
+    process.env.MINIMAX_PROTOCOL ||
+    process.env.MINIMAX_OPENAI_BASE_URL ||
+    process.env.MINIMAX_ANTHROPIC_BASE_URL
+  ) {
+    out.provider = out.provider ?? {}
+    out.provider.minimax = {
+      ...out.provider.minimax,
+      ...(process.env.MINIMAX_API_KEY ? { apiKey: process.env.MINIMAX_API_KEY } : {}),
+      ...(process.env.MINIMAX_REGION ? { region: process.env.MINIMAX_REGION } : {}),
+      ...(process.env.MINIMAX_PROTOCOL ? { protocol: process.env.MINIMAX_PROTOCOL } : {}),
+      ...(process.env.MINIMAX_OPENAI_BASE_URL
+        ? { openaiBaseURL: process.env.MINIMAX_OPENAI_BASE_URL }
+        : {}),
+      ...(process.env.MINIMAX_ANTHROPIC_BASE_URL
+        ? { anthropicBaseURL: process.env.MINIMAX_ANTHROPIC_BASE_URL }
+        : {}),
+    }
+  }
+
   // Optional: comma-separated fallback model IDs. When primary fails
   // (rate limit, upstream error), OpenRouter tries each in order.
   // Example: OPENROUTER_FALLBACK_MODELS="minimax/minimax-m3,openai/gpt-4o-mini"

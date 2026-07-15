@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",
+    "@ai-sdk/anthropic": "^3.0.53",
     "@effect/platform-node": "4.0.0-beta.48",
     "@hono/node-server": "^1.19.11",
     "@noble/ed25519": "^2.1.0",

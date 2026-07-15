@@ -21,7 +21,7 @@ This README is the **operator's reference** — configuration, troubleshooting, 
 ```bash
 cd gateway
 npm install
-cp .env.example .env.local    # fill in GATEWAY_API_KEY, OPENROUTER_API_KEY
+cp .env.example .env.local    # fill in GATEWAY_API_KEY and one planner provider key
 npm run dev
 ```
 
@@ -84,7 +84,8 @@ For a runnable multi-agent walkthrough, see [`docs/GATEWAY.md`](../docs/GATEWAY.
 | Variable | Purpose |
 |---|---|
 | `GATEWAY_API_KEY` | Bearer token that callers must send |
-| `OPENROUTER_API_KEY` | Planner LLM provider |
+| `OPENROUTER_API_KEY` | Planner LLM provider when using an OpenRouter model |
+| `MINIMAX_API_KEY` | Planner LLM provider when using a direct MiniMax model |
 
 The gateway used to require `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` for session storage. Those are no longer used — sessions live in-memory, the calling client owns durable history.
 
@@ -106,6 +107,59 @@ See `.env.example` for the full template.
 ### Config file
 
 Some settings live in a TOML/JSON config file (path resolved hierarchically like OpenCode). Source of truth: [`src/config/schema.ts`](./src/config/schema.ts) — defaults are inline.
+
+### Direct MiniMax provider
+
+The provider registry supports these model IDs:
+
+| Model | Context window | Input modalities | Thinking |
+|---|---:|---|---|
+| `MiniMax-M3` | 1,000,000 | text, image, video | adaptive, disabled |
+| `MiniMax-M2.7` | 204,800 | text | always_on |
+
+The registry also carries the published token pricing and cache fields:
+
+| Model/tier | Input | Output | Cache read | Cache write |
+|---|---:|---:|---:|---:|
+| `MiniMax-M3` standard, up to 512k input | 0.30 | 1.20 | 0.06 | N/A |
+| `MiniMax-M3` standard, above 512k input | 0.60 | 2.40 | 0.12 | N/A |
+| `MiniMax-M3` priority, up to 512k input | 0.45 | 1.80 | 0.09 | N/A |
+| `MiniMax-M3` priority, above 512k input | 0.90 | 3.60 | 0.18 | N/A |
+| `MiniMax-M2.7` standard | 0.30 | 1.20 | 0.06 | 0.375 |
+
+Prices are USD per million tokens.
+
+Use the provider prefix in the planner configuration:
+
+```json
+{
+  "provider": {
+    "minimax": {
+      "apiKey": "$MINIMAX_API_KEY",
+      "region": "global_en",
+      "protocol": "openai"
+    }
+  },
+  "agent": {
+    "planner": { "model": "minimax/MiniMax-M3" }
+  }
+}
+```
+
+The regional endpoint map is available through the `region` setting:
+
+| Region | OpenAI-compatible base | Anthropic-compatible base |
+|---|---|---|
+| `global_en` | `https://api.minimax.io/v1` | `https://api.minimax.io/anthropic` |
+| `cn_zh` | `https://api.minimaxi.com/v1` | `https://api.minimaxi.com/anthropic` |
+
+Set `protocol` to `anthropic` for the Anthropic-compatible adapter. The public
+base is passed directly to the client and must end in `/anthropic`.
+
+Model details and endpoint documentation:
+
+- [MiniMax global API overview](https://platform.minimax.io/docs/api-reference/api-overview)
+- [MiniMax China API overview](https://platform.minimaxi.com/docs/api-reference/api-overview)
 
 ---
 

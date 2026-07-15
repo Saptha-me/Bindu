@@ -40,6 +40,11 @@ describe("thresholdForModel — model-aware context window resolution", () => {
     expect(thresholdForModel("openai/o3-mini").contextWindow).toBe(200_000)
   })
 
+  it("uses the registered MiniMax context windows", () => {
+    expect(thresholdForModel("minimax/MiniMax-M3").contextWindow).toBe(1_000_000)
+    expect(thresholdForModel("minimax/MiniMax-M2.7").contextWindow).toBe(204_800)
+  })
+
   it("falls back to the conservative default for unknown models", () => {
     // A fresh-off-the-press model we haven't added to the table yet.
     // The default is deliberately SMALLER than every common window so

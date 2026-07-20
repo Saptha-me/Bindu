@@ -22,12 +22,15 @@ def mock_app():
     """Create a mock BinduApplication."""
     app = MagicMock(spec=BinduApplication)
     app.task_manager = MagicMock()
-    # Mock the handler method on task_manager with a complete JSON-RPC 2.0 response
-    app.task_manager.mock_handler = AsyncMock(return_value={
-        "jsonrpc": "2.0",
-        "result": "success",
-        "id": "123"
-    })
+    # Mock the handler to echo the request's JSON-RPC id back, so success-path
+    # tests can assert correlation-id round-tripping instead of a hardcoded value.
+    app.task_manager.mock_handler = AsyncMock(
+        side_effect=lambda request, **_: {
+            "jsonrpc": "2.0",
+            "result": "success",
+            "id": request["id"],
+        }
+    )
     return app
 
 
@@ -75,7 +78,7 @@ async def test_valid_request(mock_app, mock_settings):
     content = json.loads(response.body)
     assert content["jsonrpc"] == "2.0"
     assert content["result"] == "success"
-    assert "id" in content
+    assert content["id"] == body["id"]
 
 
 @pytest.mark.asyncio

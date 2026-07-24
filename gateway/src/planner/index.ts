@@ -206,10 +206,6 @@ export interface SessionContext {
 
 export interface RunPlanOutcome {
   message: MessageWithParts
-  /** Empty in stateless mode (Path A) — the per-task audit lives on
-   * the client now, written from the SSE `task.*` frames. Kept on the
-   * outcome shape so callers that destructured it don't break. */
-  tasksRecorded: string[]
 }
 
 export interface StartPlanOutcome extends RunPlanOutcome {
@@ -485,7 +481,7 @@ export const layer = Layer.effect(
             }),
           )
 
-          return { message, tasksRecorded: [] }
+          return { message }
         } finally {
           deadline.cleanup()
         }
@@ -499,7 +495,6 @@ export const layer = Layer.effect(
           sessionID: ctx.sessionID,
           externalSessionID: ctx.externalSessionID,
           message: result.message,
-          tasksRecorded: result.tasksRecorded,
         }
       })
 

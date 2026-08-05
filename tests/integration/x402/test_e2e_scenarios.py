@@ -537,8 +537,10 @@ async def test_full_http_paid_message_send_settles_and_completes():
     assert len(manifest.calls) == 1
     assert task.get("artifacts")
 
-    history_metadata = task["history"][0].get("metadata") or {}
-    assert "_payment_context" not in history_metadata
+    history = task.get("history") or []
+    assert history
+    for history_entry in history:
+        assert "_payment_context" not in (history_entry.get("metadata") or {})
 
     meta = task.get("metadata") or {}
     assert (

@@ -418,6 +418,7 @@ async def test_scenario_3_parallel_nonce_double_spend():
 
 @pytest.mark.asyncio
 async def test_full_http_paid_message_send_settles_and_completes():
+    """Exercise the paid HTTP path from x402 verification through task completion."""
     describe("Full HTTP paid message/send lifecycle")
     logger.info("Real ASGI request enters X402Middleware and agent_run_endpoint.")
     logger.info(
@@ -456,6 +457,7 @@ async def test_full_http_paid_message_send_settles_and_completes():
             endpoint_app = SimpleNamespace(task_manager=manager)
 
             async def endpoint(request: Request):
+                """Route the in-process ASGI request into Bindu's A2A endpoint."""
                 return await agent_run_endpoint(cast(Any, endpoint_app), request)
 
             asgi_app = Starlette(

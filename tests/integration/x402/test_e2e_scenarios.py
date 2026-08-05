@@ -43,6 +43,7 @@ from bindu.server.storage.memory_storage import InMemoryStorage
 from bindu.server.task_manager import TaskManager
 from bindu.server.workers.manifest_worker import ManifestWorker
 from bindu.settings import app_settings
+from bindu.utils.logging import get_logger
 
 
 pytestmark = [
@@ -51,6 +52,8 @@ pytestmark = [
     pytest.mark.slow,
     pytest.mark.x402,
 ]
+
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -416,8 +419,10 @@ async def test_scenario_3_parallel_nonce_double_spend():
 @pytest.mark.asyncio
 async def test_full_http_paid_message_send_settles_and_completes():
     describe("Full HTTP paid message/send lifecycle")
-    print("  Real ASGI request enters X402Middleware and agent_run_endpoint.")
-    print("  Payment context must reach ManifestWorker, settle, and complete the task.")
+    logger.info("Real ASGI request enters X402Middleware and agent_run_endpoint.")
+    logger.info(
+        "Payment context must reach ManifestWorker, settle, and complete the task."
+    )
 
     storage = InMemoryStorage()
     scheduler = InMemoryScheduler()

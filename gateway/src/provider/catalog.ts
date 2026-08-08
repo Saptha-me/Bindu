@@ -5,12 +5,17 @@ export const MINIMAX_ENDPOINTS = {
   global_en: {
     openaiBaseURL: "https://api.minimax.io/v1",
     anthropicBaseURL: "https://api.minimax.io/anthropic",
+    docsRoot: "https://platform.minimax.io/docs",
   },
   cn_zh: {
     openaiBaseURL: "https://api.minimaxi.com/v1",
     anthropicBaseURL: "https://api.minimaxi.com/anthropic",
+    docsRoot: "https://platform.minimaxi.com/docs",
   },
-} as const satisfies Record<MiniMaxRegion, Record<`${MiniMaxProtocol}BaseURL`, string>>
+} as const satisfies Record<
+  MiniMaxRegion,
+  Record<`${MiniMaxProtocol}BaseURL`, string> & { docsRoot: string }
+>
 
 export const MINIMAX_MODELS = [
   {
@@ -18,14 +23,10 @@ export const MINIMAX_MODELS = [
     aliases: ["minimax-m3"],
     contextWindow: 1_000_000,
     pricingUsdPerMillionTokens: {
-      standard: [
-        { inputTokensLte: 512_000, input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: null },
-        { inputTokensGt: 512_000, input: 0.6, output: 2.4, cacheRead: 0.12, cacheWrite: null },
-      ],
-      priority: [
-        { inputTokensLte: 512_000, input: 0.45, output: 1.8, cacheRead: 0.09, cacheWrite: null },
-        { inputTokensGt: 512_000, input: 0.9, output: 3.6, cacheRead: 0.18, cacheWrite: null },
-      ],
+      input: 0.6,
+      output: 2.4,
+      cacheRead: 0.12,
+      cacheWrite: null,
     },
     inputModalities: ["text", "image", "video"],
     thinking: ["adaptive", "disabled"],
@@ -35,7 +36,10 @@ export const MINIMAX_MODELS = [
     aliases: ["minimax-m2.7"],
     contextWindow: 204_800,
     pricingUsdPerMillionTokens: {
-      standard: [{ input: 0.3, output: 1.2, cacheRead: 0.06, cacheWrite: 0.375 }],
+      input: 0.3,
+      output: 1.2,
+      cacheRead: 0.06,
+      cacheWrite: 0.375,
     },
     inputModalities: ["text"],
     thinking: ["always_on"],

@@ -175,7 +175,7 @@ export const layer = Layer.effect(
         const resolvedModelId = normalizeMiniMaxModelId(modelId)
 
         if (protocol === "anthropic") {
-          const baseURL = providerCfg?.anthropicBaseURL ?? endpoints.anthropicBaseURL
+          const baseURL = providerCfg?.anthropicBaseURL ?? providerCfg?.baseURL ?? endpoints.anthropicBaseURL
           if (!baseURL.endsWith("/anthropic")) {
             throw new Error('provider: MiniMax Anthropic baseURL must end with "/anthropic"')
           }

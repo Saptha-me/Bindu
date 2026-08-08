@@ -119,13 +119,10 @@ The provider registry supports these model IDs:
 
 The registry also carries the published token pricing and cache fields:
 
-| Model/tier | Input | Output | Cache read | Cache write |
+| Model | Input | Output | Cache read | Cache write |
 |---|---:|---:|---:|---:|
-| `MiniMax-M3` standard, up to 512k input | 0.30 | 1.20 | 0.06 | N/A |
-| `MiniMax-M3` standard, above 512k input | 0.60 | 2.40 | 0.12 | N/A |
-| `MiniMax-M3` priority, up to 512k input | 0.45 | 1.80 | 0.09 | N/A |
-| `MiniMax-M3` priority, above 512k input | 0.90 | 3.60 | 0.18 | N/A |
-| `MiniMax-M2.7` standard | 0.30 | 1.20 | 0.06 | 0.375 |
+| `MiniMax-M3` | 0.60 | 2.40 | 0.12 | N/A |
+| `MiniMax-M2.7` | 0.30 | 1.20 | 0.06 | 0.375 |
 
 Prices are USD per million tokens.
 

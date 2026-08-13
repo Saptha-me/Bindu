@@ -1,0 +1,197 @@
+// Bindu gRPC Protocol Definition
+//
+// This proto defines the contract between the Bindu core (Python) and
+// language-agnostic agent SDKs (TypeScript, Kotlin, Rust, etc.).
+//
+// Two services exist:
+//
+//   BinduService (runs on core, port 3774)
+//     - SDKs call RegisterAgent to register themselves with the core
+//     - Core then handles DID, auth, x402, A2A, scheduler, storage
+//
+//   AgentHandler (runs on SDK side, dynamic port)
+//     - Core calls HandleMessages when a task arrives
+//     - SDK executes the developer's handler function and returns the result
+//
+// The config is sent as a JSON string to keep this proto decoupled from
+// the Python config schema. This means adding new config fields to bindufy()
+// does NOT require proto changes (DRY principle).
+
+syntax = "proto3";
+
+package bindu.grpc;
+
+option java_package = "com.getbindu.grpc";
+option java_multiple_files = true;
+option go_package = "github.com/getbindu/bindu/proto";
+
+// =============================================================================
+// BinduService — SDK calls this on the Core to register and manage agents
+// =============================================================================
+
+service BinduService {
+  // Register an agent with the Bindu core.
+  // Core runs the full bindufy logic: DID, auth, x402, manifest, HTTP server.
+  // Returns agent identity and the A2A endpoint URL.
+  rpc RegisterAgent(RegisterAgentRequest) returns (RegisterAgentResponse);
+
+  // Periodic heartbeat to signal the SDK is still alive.
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+
+  // Unregister an agent and shut down its A2A server.
+  rpc UnregisterAgent(UnregisterAgentRequest) returns (UnregisterAgentResponse);
+}
+
+// =============================================================================
+// AgentHandler — Core calls this on the SDK to execute tasks
+// =============================================================================
+
+service AgentHandler {
+  // Execute a handler with conversation history (unary).
+  // Core sends messages, SDK runs the developer's handler, returns response.
+  rpc HandleMessages(HandleRequest) returns (HandleResponse);
+
+  // Execute a handler with streaming response (server-side streaming).
+  // SDK yields chunks; core collects them via ResultProcessor.
+  rpc HandleMessagesStream(HandleRequest) returns (stream HandleResponse);
+
+  // Query agent capabilities (skills, supported modes).
+  rpc GetCapabilities(GetCapabilitiesRequest) returns (GetCapabilitiesResponse);
+
+  // Health check to verify the SDK process is responsive.
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// =============================================================================
+// Registration Messages
+// =============================================================================
+
+message RegisterAgentRequest {
+  // Full agent config as JSON string. Parsed and validated by the core using
+  // the same ConfigValidator as Python bindufy(). This keeps the proto
+  // decoupled from config schema evolution.
+  string config_json = 1;
+
+  // Skills with their content pre-loaded from the SDK filesystem.
+  // The SDK reads skill.yaml/SKILL.md files and sends the content here
+  // so the core doesn't need filesystem access to the SDK's project.
+  repeated SkillDefinition skills = 2;
+
+  // The SDK's AgentHandler gRPC server address (e.g., "localhost:50052").
+  // Core will connect to this address to call HandleMessages.
+  string grpc_callback_address = 3;
+}
+
+message RegisterAgentResponse {
+  bool success = 1;
+  string agent_id = 2;       // UUID of the registered agent
+  string did = 3;            // W3C Decentralized Identifier assigned to the agent
+  string agent_url = 4;      // A2A HTTP endpoint URL (e.g., "http://localhost:3773")
+  string error = 5;          // Error message if success=false
+}
+
+message HeartbeatRequest {
+  string agent_id = 1;
+  int64 timestamp = 2;       // Unix timestamp in milliseconds
+}
+
+message HeartbeatResponse {
+  bool acknowledged = 1;
+  int64 server_timestamp = 2;
+}
+
+message UnregisterAgentRequest {
+  string agent_id = 1;
+}
+
+message UnregisterAgentResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+// =============================================================================
+// Handler Messages — Used for task execution between Core and SDK
+// =============================================================================
+
+message ChatMessage {
+  // Conversation message in chat format.
+  // Maps directly to {"role": "user", "content": "..."} dicts in Python.
+  string role = 1;            // "user", "assistant", or "system"
+  string content = 2;
+}
+
+message HandleRequest {
+  // Conversation history sent by the core worker.
+  // This is the same list[dict[str, str]] that Python handlers receive.
+  repeated ChatMessage messages = 1;
+
+  // Task metadata for context (optional, informational).
+  string task_id = 2;
+  string context_id = 3;
+}
+
+message HandleResponse {
+  // Agent's response content.
+  string content = 1;
+
+  // Task state transition (empty string = completed normally).
+  // Supported values: "", "input-required", "auth-required"
+  // Maps to ResponseDetector.determine_task_state() in the core.
+  string state = 2;
+
+  // Prompt text when state is "input-required" or "auth-required".
+  string prompt = 3;
+
+  // Whether this is the final chunk in a streaming response.
+  bool is_final = 4;
+
+  // Additional key-value metadata to include in the response.
+  map<string, string> metadata = 5;
+}
+
+// =============================================================================
+// Skill Definition — Sent during registration with pre-loaded content
+// =============================================================================
+
+message SkillDefinition {
+  string name = 1;
+  string description = 2;
+  repeated string tags = 3;
+  repeated string input_modes = 4;
+  repeated string output_modes = 5;
+  string version = 6;
+  string author = 7;
+
+  // Raw content of the skill file (skill.yaml or SKILL.md).
+  // The SDK reads this from disk and sends it so the core
+  // can process skills without filesystem access to the SDK project.
+  string raw_content = 8;
+
+  // File format hint: "yaml" or "markdown"
+  string format = 9;
+}
+
+// =============================================================================
+// Capabilities Messages
+// =============================================================================
+
+message GetCapabilitiesRequest {}
+
+message GetCapabilitiesResponse {
+  string name = 1;
+  string description = 2;
+  string version = 3;
+  bool supports_streaming = 4;
+  repeated SkillDefinition skills = 5;
+}
+
+// =============================================================================
+// Health Check Messages
+// =============================================================================
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool healthy = 1;
+  string message = 2;
+}

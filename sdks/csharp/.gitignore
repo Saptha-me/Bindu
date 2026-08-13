@@ -1,0 +1,33 @@
+# Build results
+bin/
+obj/
+[Bb]uild/
+
+# Test results / coverage
+TestResults/
+coverage*.xml
+*.coverage
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE
+.vscode/
+.idea/
+
+# Local planning docs (not part of the SDK PR)
+bindu-csharp-sdk-stages.md
+bindu-csharp-sdk-stages (1).md
+CSharp-Sdk-Plan.md
+CODE-REVIEW-REPORT.md
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Logs
+*.log

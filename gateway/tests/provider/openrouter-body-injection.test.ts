@@ -15,7 +15,12 @@
  */
 
 import { describe, it, expect } from "vitest"
-import { injectCacheControl, injectFallbackModels } from "../../src/provider"
+import {
+  ORCAROUTER_DEFAULT_BASE_URL,
+  injectCacheControl,
+  injectFallbackModels,
+  parseModelId,
+} from "../../src/provider"
 
 describe("injectCacheControl — OpenRouter prompt-caching marker", () => {
   it("adds cache_control at the top level of a chat-completions body", () => {
@@ -123,5 +128,36 @@ describe("injectFallbackModels — OpenRouter fail-over routing", () => {
     const body = JSON.stringify({ model: "primary/x", messages: [] })
     const out = JSON.parse(injectFallbackModels(body, ["fallback/y"]))
     expect(out.model).toBe("primary/x")
+  })
+})
+
+describe("parseModelId — supported providers", () => {
+  it("accepts openrouter model ids", () => {
+    expect(parseModelId("openrouter/anthropic/claude-sonnet-4.6")).toEqual({
+      providerId: "openrouter",
+      modelId: "anthropic/claude-sonnet-4.6",
+    })
+  })
+
+  it("accepts orcarouter model ids (multi-segment model id preserved)", () => {
+    expect(parseModelId("orcarouter/anthropic/claude-opus-4.7")).toEqual({
+      providerId: "orcarouter",
+      modelId: "anthropic/claude-opus-4.7",
+    })
+  })
+
+  it("accepts orcarouter's own model family", () => {
+    expect(parseModelId("orcarouter/orcarouter/fusion-flash")).toEqual({
+      providerId: "orcarouter",
+      modelId: "orcarouter/fusion-flash",
+    })
+  })
+
+  it("rejects an unsupported provider", () => {
+    expect(() => parseModelId("unknown/model")).toThrow(/unsupported provider "unknown"/)
+  })
+
+  it("defaults orcarouter to the OrcaRouter API base URL", () => {
+    expect(ORCAROUTER_DEFAULT_BASE_URL).toBe("https://api.orcarouter.ai/v1")
   })
 })

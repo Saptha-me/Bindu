@@ -21,7 +21,7 @@ This README is the **operator's reference** — configuration, troubleshooting, 
 ```bash
 cd gateway
 npm install
-cp .env.example .env.local    # fill in GATEWAY_API_KEY, OPENROUTER_API_KEY
+cp .env.example .env.local    # fill in GATEWAY_API_KEY and OPENROUTER_API_KEY (or ORCAROUTER_API_KEY)
 npm run dev
 ```
 
@@ -84,7 +84,10 @@ For a runnable multi-agent walkthrough, see [`docs/GATEWAY.md`](../docs/GATEWAY.
 | Variable | Purpose |
 |---|---|
 | `GATEWAY_API_KEY` | Bearer token that callers must send |
-| `OPENROUTER_API_KEY` | Planner LLM provider |
+| `OPENROUTER_API_KEY` | Planner LLM provider (default) |
+| `ORCAROUTER_API_KEY` | Planner LLM provider (alternative — use either, see below) |
+
+The gateway's planner LLM runs on an OpenAI-compatible gateway. By default that's OpenRouter — reference models as `openrouter/<model-id>` (e.g. `openrouter/anthropic/claude-sonnet-4.6`). Set `ORCAROUTER_API_KEY` instead to route the planner through OrcaRouter — reference models as `orcarouter/<model-id>` (e.g. `orcarouter/anthropic/claude-opus-4.7`). Both are OpenAI-compatible, so the same `@ai-sdk/openai` client with a baseURL override covers either; OpenRouter additionally gets the gateway's `cache_control` + fallback-model injection, OrcaRouter gets a plain chat-completions body.
 
 The gateway used to require `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` for session storage. Those are no longer used — sessions live in-memory, the calling client owns durable history.
 
@@ -255,7 +258,7 @@ gateway/
 │   ├── config/               # hierarchical config loader
 │   ├── auth/                 # credential keystore
 │   ├── permission/           # wildcard ruleset evaluator
-│   ├── provider/             # AI SDK handle lookup (OpenRouter)
+│   ├── provider/             # AI SDK handle lookup (OpenRouter, OrcaRouter)
 │   ├── recipe/               # markdown recipe loader
 │   ├── agent/                # agent.md loader
 │   ├── tool/                 # Tool.define + registry + load_recipe

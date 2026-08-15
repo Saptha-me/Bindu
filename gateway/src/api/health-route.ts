@@ -45,8 +45,8 @@ export interface PlannerInfo {
    *  agent is configured or the agent has no model set. */
   readonly model: string | null
   /** Provider segment (the bit before the first ``/``). Today that's
-   *  always ``openrouter`` — the gateway uses OpenRouter exclusively
-   *  for LLM access. */
+   *  ``openrouter`` or ``orcarouter`` — the gateway uses OpenAI-
+   *  compatible gateways exclusively for LLM access. */
   readonly provider: string | null
   /** Upstream model id the provider understands (everything after the
    *  provider segment). For OpenRouter-proxied Anthropic models this

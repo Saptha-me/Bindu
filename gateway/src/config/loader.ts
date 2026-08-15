@@ -112,7 +112,7 @@ function envOverrides(base: Record<string, any>): Record<string, any> {
   // .env.local is harmless (they're ignored), but they no longer wire
   // anything. Stateless gateway, see config/schema.ts §SessionConfig.
 
-  // OpenRouter is the single supported LLM provider — see
+  // OpenRouter is the default LLM provider — see
   // src/provider/index.ts for the rationale. The env hook wires
   // OpenRouter's OpenAI-compatible API (baseURL filled in by the
   // provider layer if not explicitly set in a config file).
@@ -121,6 +121,17 @@ function envOverrides(base: Record<string, any>): Record<string, any> {
     out.provider.openrouter = {
       ...out.provider.openrouter,
       apiKey: process.env.OPENROUTER_API_KEY,
+    }
+  }
+
+  // OrcaRouter is a second OpenAI-compatible gateway — see
+  // src/provider/index.ts. Same shape: apiKey goes into
+  // provider.orcarouter, baseURL defaults to OrcaRouter's API.
+  if (process.env.ORCAROUTER_API_KEY) {
+    out.provider = out.provider ?? {}
+    out.provider.orcarouter = {
+      ...out.provider.orcarouter,
+      apiKey: process.env.ORCAROUTER_API_KEY,
     }
   }
 

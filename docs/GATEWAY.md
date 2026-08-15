@@ -119,6 +119,13 @@ decide.
   planner LLM. Sign up at [openrouter.ai](https://openrouter.ai), add a
   few dollars of credit, and copy the key from the *API* section. It
   looks like `sk-or-v1-<long random string>`.
+- **…or an OrcaRouter API key.** [OrcaRouter](https://www.orcarouter.ai)
+  is an alternative OpenAI-compatible gateway the gateway can use for
+  the planner instead of OpenRouter. Sign up and grab a key from the
+  console; it looks like `sk-orca-<long random string>`. Throughout
+  this guide, set either `OPENROUTER_API_KEY` or `ORCAROUTER_API_KEY` —
+  whichever gateway you configure — and reference models as
+  `openrouter/<model-id>` or `orcarouter/<model-id>`.
 - **A Supabase project**. Supabase is a hosted Postgres service with a
   free tier. The gateway uses it to store conversation history between
   turns. Create a project at [supabase.com](https://supabase.com), then
@@ -184,6 +191,8 @@ GATEWAY_API_KEY=<paste generated token>
 
 # The planner AI
 OPENROUTER_API_KEY=sk-or-v1-<your key>
+# …or use OrcaRouter instead (whichever gateway you pick):
+# ORCAROUTER_API_KEY=sk-orca-<your key>
 
 # Gateway listens here
 GATEWAY_PORT=3774
@@ -343,7 +352,7 @@ You now have three things talking to each other:
 ┌─────────────┐   bearer-auth POST /plan   ┌────────────────────┐
 │   curl      │ ─────────────────────────▶ │  Bindu Gateway     │
 │             │ ◀───  SSE event stream ─── │  port 3774         │
-└─────────────┘                             │  (planner LLM ───▶ OpenRouter)
+└─────────────┘                             │  (planner LLM ───▶ OpenRouter / OrcaRouter)
                                             │  (sessions ─────▶ Supabase)
                                             └──┬─────────────────┘
                                                │ A2A (JSON-RPC)
@@ -516,18 +525,23 @@ permission:
 # System prompt body — the planner's own instructions.
 ```
 
+(The `model` value can be any supported provider/model pair — e.g.
+`openrouter/anthropic/claude-sonnet-4.6` or
+`orcarouter/anthropic/claude-opus-4.7`.)
+
 The body is the system prompt. On each `/plan` request, the gateway:
 
 1. Reads the planner's system prompt.
 2. Adds the user's question as a new "user" message.
 3. Builds the tool list from your `agents[]` catalog.
-4. Hands all of that to the OpenRouter API with `streamText()`.
+4. Hands all of that to the configured gateway (OpenRouter or OrcaRouter)
+   with `streamText()`.
 5. Streams the output back to you as SSE.
 
-Inside OpenRouter, Claude (or whichever model you configured) runs its
-agentic loop — text → tool call → tool result → more text → another tool
-call → final text. The gateway's job is just to execute the tool calls
-against your real agents and plumb the results back.
+Inside OpenRouter or OrcaRouter, Claude (or whichever model you configured)
+runs its agentic loop — text → tool call → tool result → more text →
+another tool call → final text. The gateway's job is just to execute the
+tool calls against your real agents and plumb the results back.
 
 Open `gateway/agents/planner.md` and read the body. That's the instructions
 the coordinator AI follows. You can edit it and the next plan will see the
@@ -978,7 +992,8 @@ If you're moving this past localhost:
    secret. Distribute via your usual secret-management tool, not
    `.env.local`.
 3. **Pin the planner model.** Add `model:
-   openrouter/anthropic/claude-sonnet-4.6` (or whichever you want) to
+   openrouter/anthropic/claude-sonnet-4.6` (or whichever you want,
+   e.g. `orcarouter/anthropic/claude-opus-4.7`) to
    `gateway/agents/planner.md` frontmatter so upgrades are explicit.
 4. **Set `max_steps`** on your `/plan` requests so a runaway planner
    can't loop 100 times at your expense.
@@ -995,7 +1010,8 @@ If you're moving this past localhost:
   Anthropic's docs say tool descriptions are "by far the most important
   factor in tool performance" — 3-4 sentences on intent, inputs,
   outputs, and when to use it.
-- Agent returns "User not found": your `OPENROUTER_API_KEY` is invalid
+- Agent returns "User not found": your `OPENROUTER_API_KEY` (or
+  `ORCAROUTER_API_KEY`, whichever gateway you configured) is invalid
   or out of credit.
 - `event: error` with "Invalid Responses API request": you're on an
   older gateway commit. `git pull`.

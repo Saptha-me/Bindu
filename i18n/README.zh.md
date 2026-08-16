@@ -295,8 +295,8 @@ Bindu 站在很多优秀开源项目的肩膀上：
 
 ## Star 历史
 
-<a href="https://star-history.com/#getbindu/Bindu&Date">
-  <img src="https://api.star-history.com/svg?repos=getbindu/Bindu&type=Date" alt="Star 历史">
+<a href="https://star-history.dera.page/#getbindu/Bindu&Date">
+  <img src="https://star-history.dera.page/svg?repos=getbindu/Bindu&type=Date" alt="Star 历史">
 </a>
 
 <br/>

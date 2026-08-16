@@ -295,8 +295,8 @@ Bindu অনেক ভালো open source-এর কাঁধে দাঁড�
 
 ## Star ইতিহাস
 
-<a href="https://star-history.com/#getbindu/Bindu&Date">
-  <img src="https://api.star-history.com/svg?repos=getbindu/Bindu&type=Date" alt="Star ইতিহাস">
+<a href="https://star-history.dera.page/#getbindu/Bindu&Date">
+  <img src="https://star-history.dera.page/svg?repos=getbindu/Bindu&type=Date" alt="Star ইতিহাস">
 </a>
 
 <br/>

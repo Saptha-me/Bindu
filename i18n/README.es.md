@@ -295,8 +295,8 @@ Bindu se apoya en los hombros de mucho buen open source:
 
 ## Historial de estrellas
 
-<a href="https://star-history.com/#getbindu/Bindu&Date">
-  <img src="https://api.star-history.com/svg?repos=getbindu/Bindu&type=Date" alt="Historial de estrellas">
+<a href="https://star-history.dera.page/#getbindu/Bindu&Date">
+  <img src="https://star-history.dera.page/svg?repos=getbindu/Bindu&type=Date" alt="Historial de estrellas">
 </a>
 
 <br/>

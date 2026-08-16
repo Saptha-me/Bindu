@@ -295,8 +295,8 @@ Bindu steht auf den Schultern von viel guter Open-Source-Software:
 
 ## Star-Verlauf
 
-<a href="https://star-history.com/#getbindu/Bindu&Date">
-  <img src="https://api.star-history.com/svg?repos=getbindu/Bindu&type=Date" alt="Star-Verlauf">
+<a href="https://star-history.dera.page/#getbindu/Bindu&Date">
+  <img src="https://star-history.dera.page/svg?repos=getbindu/Bindu&type=Date" alt="Star-Verlauf">
 </a>
 
 <br/>

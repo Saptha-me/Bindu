@@ -25,7 +25,9 @@ logger = get_logger("bindu.utils.notifications")
 _AWS_IPV6_IMDS = ipaddress.ip_address("fd00:ec2::254")
 
 
-def _is_cloud_metadata_address(ip: ipaddress._BaseAddress) -> bool:
+def _is_cloud_metadata_address(
+    ip: ipaddress.IPv4Address | ipaddress.IPv6Address,
+) -> bool:
     """Return True if *ip* is a cloud-provider metadata (IMDS) endpoint.
 
     Covers the link-local range 169.254.0.0/16 (fe80::/10 for IPv6) used by the

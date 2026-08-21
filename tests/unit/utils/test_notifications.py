@@ -65,10 +65,57 @@ class TestNotificationService:
         with pytest.raises(ValueError, match="must include a network location"):
             service.validate_config(config)
 
-    # SSRF allowlist was intentionally dropped in 270f4b94 ("drop SSRF
-    # allowlist"); the previous test_validate_config_blocks_{loopback,
-    # private_network,link_local} cases asserted the old blocking
-    # behavior and were removed alongside it.
+    # The broad SSRF allowlist was intentionally dropped in 270f4b94 so that
+    # loopback/private webhook targets (e.g. the operator inbox at
+    # http://127.0.0.1:3787) keep working. Cloud-metadata (IMDS) addresses are
+    # still rejected because they are never a legitimate webhook destination.
+
+    @pytest.mark.parametrize(
+        "metadata_ip",
+        [
+            "169.254.169.254",  # AWS/GCP/Azure IMDS (link-local IPv4)
+            "169.254.170.2",  # ECS task metadata endpoint
+            "fe80::1",  # IPv6 link-local
+            "fd00:ec2::254",  # AWS IPv6 IMDS
+        ],
+    )
+    def test_validate_config_blocks_cloud_metadata(self, metadata_ip):
+        """Validation rejects URLs resolving to cloud-metadata addresses."""
+        service = NotificationService()
+        config = cast(
+            PushNotificationConfig,
+            {"id": uuid4(), "url": "http://metadata.example/webhook"},
+        )
+
+        with patch(
+            "socket.getaddrinfo",
+            return_value=[("", "", "", "", (metadata_ip, 0))],
+        ):
+            with pytest.raises(ValueError, match="cloud-metadata address"):
+                service.validate_config(config)
+
+    @pytest.mark.parametrize(
+        "allowed_ip",
+        [
+            "127.0.0.1",  # loopback — operator inbox lives here
+            "10.0.0.5",  # private LAN
+            "192.168.1.20",  # private LAN
+            "93.184.216.34",  # public
+        ],
+    )
+    def test_validate_config_allows_loopback_and_private(self, allowed_ip):
+        """Validation allows loopback/private/public (non-metadata) targets."""
+        service = NotificationService()
+        config = cast(
+            PushNotificationConfig,
+            {"id": uuid4(), "url": "http://webhook.example/hook"},
+        )
+
+        with patch(
+            "socket.getaddrinfo",
+            return_value=[("", "", "", "", (allowed_ip, 0))],
+        ):
+            assert service.validate_config(config) == allowed_ip
 
     def test_validate_config_hostname_resolution_fails(self):
         """Test validation handles hostname resolution failure."""

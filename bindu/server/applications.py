@@ -775,7 +775,7 @@ class BinduApplication(Starlette):
 
         if provider == "hydra":
             logger.info("Hydra OAuth2 authentication enabled")
-            return Middleware(HydraMiddleware, auth_config=app_settings.hydra)  # type: ignore[arg-type] # ty: ignore[invalid-argument-type]
+            return Middleware(HydraMiddleware, auth_config=app_settings.hydra)  # type: ignore[arg-type]
         else:
             logger.error(f"Unknown authentication provider: {provider}")
             raise ValueError(

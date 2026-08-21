@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import http.client
+import ipaddress
 import json
 import socket
 import ssl
@@ -18,12 +19,35 @@ from bindu.utils.retry import create_retry_decorator
 logger = get_logger("bindu.utils.notifications")
 
 
-def _resolve_and_check_ip(hostname: str) -> str:
-    """Resolve hostname to an IP address.
+# AWS exposes its IPv6 Instance Metadata Service at this address. It sits in
+# unique-local (fd00::/8) space rather than link-local, so ``is_link_local``
+# alone would not catch it — list it explicitly.
+_AWS_IPV6_IMDS = ipaddress.ip_address("fd00:ec2::254")
 
-    Returns the resolved IP address string so callers can connect directly to it,
-    preventing a DNS-rebinding attack where a second resolution (inside urlopen) could
-    return a different address.
+
+def _is_cloud_metadata_address(
+    ip: ipaddress.IPv4Address | ipaddress.IPv6Address,
+) -> bool:
+    """Return True if *ip* is a cloud-provider metadata (IMDS) endpoint.
+
+    Covers the link-local range 169.254.0.0/16 (fe80::/10 for IPv6) used by the
+    AWS/GCP/Azure metadata service at 169.254.169.254, plus AWS's IPv6 IMDS
+    address. Loopback and ordinary private LAN ranges are intentionally *not*
+    blocked — the operator inbox delivers webhooks to http://127.0.0.1 and
+    private networks are a legitimate single-tenant deployment target.
+    """
+    return ip.is_link_local or ip == _AWS_IPV6_IMDS
+
+
+def _resolve_and_check_ip(hostname: str) -> str:
+    """Resolve *hostname* and reject cloud-metadata (IMDS) addresses.
+
+    The hostname is resolved exactly once and the resulting IP is returned so the
+    caller can connect directly to it, closing the DNS-rebinding window where a
+    second resolution could return a different address (TOCTOU SSRF).
+
+    Only cloud-metadata endpoints are rejected. Loopback and private ranges are
+    allowed on purpose (see ``_is_cloud_metadata_address``).
 
     Args:
         hostname: The hostname to resolve.
@@ -32,14 +56,22 @@ def _resolve_and_check_ip(hostname: str) -> str:
         The resolved IP address as a string.
 
     Raises:
-        ValueError: If the hostname cannot be resolved.
+        ValueError: If the hostname cannot be resolved or resolves to a
+            cloud-metadata address.
     """
     try:
-        return str(socket.getaddrinfo(hostname, None)[0][4][0])
+        resolved = str(socket.getaddrinfo(hostname, None)[0][4][0])
     except socket.gaierror as exc:
         raise ValueError(
             f"Push notification URL hostname could not be resolved: {exc}"
         ) from exc
+
+    if _is_cloud_metadata_address(ipaddress.ip_address(resolved)):
+        raise ValueError(
+            "Push notification URL resolves to a cloud-metadata address "
+            f"({resolved}), which is not an allowed webhook destination."
+        )
+    return resolved
 
 
 class NotificationDeliveryError(Exception):
@@ -101,8 +133,11 @@ class NotificationService:
         """Validate push notification configuration before use.
 
         In addition to URL structure checks this method resolves the hostname
-        and rejects any address that falls within a private, loopback, link-local
-        or cloud-metadata range to prevent Server-Side Request Forgery (SSRF).
+        and rejects cloud-metadata (IMDS) addresses to prevent the most damaging
+        class of Server-Side Request Forgery (SSRF). Loopback and private LAN
+        ranges are intentionally allowed so that the local operator inbox and
+        single-tenant deployments keep working; broader host validation belongs
+        at the auth-gated webhook-registration layer.
 
         Returns the resolved IP address so the caller can connect directly to it,
         eliminating the DNS-rebinding race between validation and connection.
@@ -113,9 +148,9 @@ class NotificationService:
         if not parsed.netloc:
             raise ValueError("Push notification URL must include a network location.")
 
-        # SSRF defence: resolve the hostname and reject internal/private addresses.
+        # SSRF defence: resolve the hostname and reject cloud-metadata addresses.
         # The returned IP is used directly for the connection so that no second
-        # DNS lookup can return a different (internal) address.
+        # DNS lookup can return a different (metadata) address.
         hostname = parsed.hostname
         if not hostname:
             raise ValueError("Push notification URL must include a valid hostname.")

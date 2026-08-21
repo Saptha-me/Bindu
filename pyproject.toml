@@ -54,7 +54,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.44,<3",
     "asyncpg>=0.31.0,<1",
     "alembic>=1.17.2,<2",
-    "redis>=7.1.0,<8",
+    "redis>=7.1.0,<9",
     # CLI tools
     "cookiecutter>=2.6.0,<3",
     "pyperclip>=1.11.0,<2",

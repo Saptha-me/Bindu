@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
 
       - name: Secret Scanning
-        uses: trufflesecurity/trufflehog@37b77001d0174ebec2fcca2bd83ff83a6d45a3ab  # v3.95.3
+        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318  # v3.97.0
         with:
           # Build-fail only on VERIFIED secrets — ones TruffleHog could
           # authenticate against the real service. Previously we also

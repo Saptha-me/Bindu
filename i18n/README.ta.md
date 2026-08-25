@@ -24,6 +24,7 @@
         <a href="README.bn.md">বাংলা</a> |
         <a href="README.zh.md">中文</a> |
         <a href="README.nl.md">Nederlands</a> |
+        <a href="README.id.md">Bahasa Indonesia</a> |
         <b>தமிழ்</b>
     </p>
 </h4>

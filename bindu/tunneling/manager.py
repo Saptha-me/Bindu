@@ -12,10 +12,10 @@ logger = get_logger("bindu.tunneling.manager")
 
 
 class TunnelManager:
-    """Manages tunnel creation and lifecycle."""
+    """Manages tunnel creation, lifecycle, and public URL access."""
 
     def __init__(self):
-        """Initialize tunnel manager."""
+        """Initialize the tunnel manager."""
         self.active_tunnel: Optional[Tunnel] = None
 
     def create_tunnel(
@@ -24,33 +24,39 @@ class TunnelManager:
         config: Optional[TunnelConfig] = None,
         subdomain: Optional[str] = None,
     ) -> str:
-        """Create a tunnel to expose a local port.
+        """
+        Create and start a tunnel exposing a local port.
 
         Args:
-            local_port: Local port to tunnel
-            config: Tunnel configuration (uses defaults if None)
-            subdomain: Custom subdomain (auto-generated if None)
+            local_port: Local port to expose.
+            config: Optional tunnel configuration.
+            subdomain: Optional custom subdomain.
 
         Returns:
-            Public URL for the tunnel
+            The public URL of the created tunnel.
 
         Raises:
-            RuntimeError: If tunnel is already active
-            ValueError: If tunnel creation fails
+            ValueError: If the port number is invalid.
+            RuntimeError: If a tunnel is already active.
         """
+
+        # Validate port range
+        if type(local_port) is not int or not (1 <= local_port <= 65535):
+            raise ValueError("local_port must be an integer between 1 and 65535")
+
+        # Prevent multiple active tunnels
         if self.active_tunnel is not None:
             raise RuntimeError(
                 "A tunnel is already active. Stop it before creating a new one."
             )
 
-        # Create config if not provided
+        # Use default config if none provided
         if config is None:
             config = TunnelConfig(enabled=True)
 
-        # Set local port
         config.local_port = local_port
 
-        # Generate subdomain if not provided
+        # Determine subdomain
         if subdomain:
             config.subdomain = subdomain
         elif not config.subdomain:
@@ -60,30 +66,46 @@ class TunnelManager:
             f"Creating tunnel for localhost:{local_port} with subdomain '{config.subdomain}'"
         )
 
-        # Create and start tunnel
         tunnel = Tunnel(config)
+
         try:
             public_url = tunnel.start()
             self.active_tunnel = tunnel
+            logger.info(f"Tunnel started successfully at {public_url}")
             return public_url
-        except Exception as e:
-            logger.error(f"Failed to create tunnel: {e}")
+
+        except Exception:
+            logger.exception("Failed to create tunnel during startup")
             raise
 
     def stop_tunnel(self) -> None:
-        """Stop the active tunnel if any."""
+        """
+        Stop the currently active tunnel if one exists.
+
+        Ensures cleanup even if stopping the tunnel raises an exception.
+        """
+
         if self.active_tunnel:
-            self.active_tunnel.stop()
-            self.active_tunnel = None
-            logger.info("Tunnel stopped")
+            try:
+                self.active_tunnel.stop()
+                logger.info("Tunnel stopped")
+
+            except Exception:
+                logger.exception("Error while stopping tunnel")
+
+            finally:
+                # Always clear active tunnel reference
+                self.active_tunnel = None
+
         else:
             logger.debug("No active tunnel to stop")
 
     def get_public_url(self) -> Optional[str]:
-        """Get the public URL of the active tunnel.
+        """
+        Return the public URL of the active tunnel.
 
         Returns:
-            Public URL or None if no tunnel is active
+            The tunnel's public URL if active, otherwise None.
         """
         if self.active_tunnel:
             return self.active_tunnel.public_url
@@ -91,64 +113,67 @@ class TunnelManager:
 
     @staticmethod
     def _generate_subdomain_from_did(agent_did: str) -> str:
-        """Generate a subdomain from agent DID.
-
-        Converts DID to a DNS-safe subdomain by:
-        - Removing 'did:' prefix
-        - Replacing colons with hyphens
-        - Converting to lowercase
-        - Truncating if too long (max 63 chars for DNS)
-
-        Args:
-            agent_did: Agent DID (e.g., did:bindu:user:agent:id)
-
-        Returns:
-            DNS-safe subdomain string
         """
-        # Remove 'did:' prefix and replace colons with hyphens
+        Generate a DNS-safe subdomain from an agent DID.
+
+        Converts the DID into a lowercase string and removes or replaces
+        characters that are not valid in DNS labels.
+
+        Ensures:
+        - Only alphanumeric characters and hyphens remain
+        - The label starts with a letter
+        - Maximum length is 63 characters
+        """
+
+        # Remove DID prefix and normalize separators
         subdomain = agent_did.replace("did:", "").replace(":", "-").lower()
 
-        # Replace underscores and other special chars with hyphens
+        # Replace unsupported characters
         subdomain = subdomain.replace("_", "-").replace("@", "-at-").replace(".", "-")
 
-        # Remove any characters that aren't alphanumeric or hyphens
+        # Remove invalid DNS characters
         subdomain = "".join(c if c.isalnum() or c == "-" else "" for c in subdomain)
 
         # Ensure it starts with a letter (DNS requirement)
         if subdomain and not subdomain[0].isalpha():
             subdomain = "a" + subdomain
 
-        # Truncate to 63 characters (DNS label limit)
+        # DNS labels must be <= 63 characters
         if len(subdomain) > 63:
             subdomain = subdomain[:63]
 
-        # Remove trailing hyphens
+        # Remove trailing hyphen
         subdomain = subdomain.rstrip("-")
 
-        return subdomain or "agent"  # Fallback if empty
+        return subdomain or "agent"
 
     @staticmethod
     def _generate_subdomain(length: int = 12) -> str:
-        """Generate a random subdomain.
+        """
+        Generate a random DNS-safe subdomain.
 
         Args:
-            length: Length of the subdomain
+            length: Length of the generated subdomain.
 
         Returns:
-            Random subdomain string
+            Random lowercase alphanumeric subdomain.
         """
-        # Use lowercase letters and numbers
+
         alphabet = string.ascii_lowercase + string.digits
-        # Start with a letter (some DNS systems require this)
+
+        # Ensure the first character is a letter
         subdomain = secrets.choice(string.ascii_lowercase)
+
+        # Remaining characters can include digits
         subdomain += "".join(secrets.choice(alphabet) for _ in range(length - 1))
+
         return subdomain
 
     def __enter__(self):
-        """Context manager entry."""
+        """Support usage as a context manager."""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit - cleanup tunnel."""
+        """Ensure tunnel cleanup when exiting context."""
         self.stop_tunnel()
         return False

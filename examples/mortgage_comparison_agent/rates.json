@@ -1,0 +1,44 @@
+[
+  {
+    "lender": "Bank A",
+    "apr": 6.2,
+    "term": 30,
+    "min_credit_score": 680,
+    "min_income": 50000
+  },
+  {
+    "lender": "Bank A",
+    "apr": 5.8,
+    "term": 15,
+    "min_credit_score": 700,
+    "min_income": 60000
+  },
+  {
+    "lender": "Bank B",
+    "apr": 6.5,
+    "term": 30,
+    "min_credit_score": 620,
+    "min_income": 40000
+  },
+  {
+    "lender": "Bank B",
+    "apr": 6.0,
+    "term": 15,
+    "min_credit_score": 650,
+    "min_income": 50000
+  },
+  {
+    "lender": "Credit Union C",
+    "apr": 5.9,
+    "term": 30,
+    "min_credit_score": 720,
+    "min_income": 70000
+  },
+  {
+    "lender": "Credit Union C",
+    "apr": 5.5,
+    "term": 15,
+    "min_credit_score": 740,
+    "min_income": 80000
+  }
+]

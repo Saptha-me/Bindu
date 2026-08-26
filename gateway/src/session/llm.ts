@@ -170,7 +170,7 @@ function mapEvent(evt: any): StreamEvent | null {
     case "finish":
       return {
         type: "finish",
-        finishReason: (evt.finishReason ?? "unknown") as StreamEvent["type"] extends "finish" ? any : any,
+        finishReason: evt.finishReason ?? "unknown",
         usage: {
           inputTokens: evt.totalUsage?.inputTokens,
           outputTokens: evt.totalUsage?.outputTokens,

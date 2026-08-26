@@ -1316,6 +1316,23 @@ class AgentTrust(TypedDict):
     allowed_operations: Dict[str, TrustLevel]
 
 
+@pydantic.with_config(A2A_MODEL_CONFIG)
+class AgentTrustConfig(TypedDict):
+        """A simplified, operator-friendly agent trust configuration used by
+        deployment configuration files and validated by the ConfigValidator.
+
+        Fields:
+        - required_verification_level: minimum trust level required for agents
+            interacting with this agent (integer, 0 = none, higher = stricter)
+        - allowed_origins: list of allowed origin URLs (strings)
+        - max_agent_hierarchy_depth: maximum delegation depth as integer
+        """
+
+        required_verification_level: int
+        allowed_origins: NotRequired[list[str]]
+        max_agent_hierarchy_depth: NotRequired[int]
+
+
 # -----------------------------------------------------------------------------
 # Agent
 # -----------------------------------------------------------------------------

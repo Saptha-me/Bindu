@@ -10,7 +10,7 @@ from typing import Any, Dict
 from urllib.parse import urlparse
 
 from bindu import __version__
-from bindu.common.protocol.types import AgentCapabilities, Skill
+from bindu.common.protocol.types import AgentCapabilities, Skill, AgentTrustConfig
 
 
 class ConfigError(ValueError):
@@ -181,6 +181,16 @@ class ConfigValidator:
         if config.get("telemetry"):
             cls._process_oltp_config(config)
 
+        # Validate agent trust configuration if provided
+        if config.get("agent_trust") is not None:
+            if not isinstance(config["agent_trust"], dict):
+                raise ValueError("Field 'agent_trust' must be a dictionary")
+            # Will raise on invalid shape/types
+            try:
+                config["agent_trust"] = AgentTrustConfig(**config["agent_trust"])
+            except Exception as e:
+                raise ValueError(f"Invalid agent_trust configuration: {e}")
+
         return config
 
     # ------------------------------------------------------------------
@@ -276,6 +286,26 @@ class ConfigValidator:
                 raise ValueError(
                     "Field 'execution_cost' must be a dict or a list of dicts"
                 )
+        # Validate agent_trust nested fields
+        if "agent_trust" in config and config["agent_trust"] is not None:
+            at = config["agent_trust"]
+            # Expect a mapping-like object with required_verification_level
+            if not isinstance(at, dict):
+                raise ValueError("Field 'agent_trust' must be a mapping/dict")
+
+            if "required_verification_level" not in at:
+                raise ValueError("Field 'agent_trust.required_verification_level' is required")
+
+            if not isinstance(at["required_verification_level"], int) or at["required_verification_level"] < 0:
+                raise ValueError("Field 'agent_trust.required_verification_level' must be a non-negative integer")
+
+            if "allowed_origins" in at and at["allowed_origins"] is not None:
+                if not isinstance(at["allowed_origins"], list) or not all(isinstance(x, str) for x in at["allowed_origins"]):
+                    raise ValueError("Field 'agent_trust.allowed_origins' must be a list of strings")
+
+            if "max_agent_hierarchy_depth" in at and at["max_agent_hierarchy_depth"] is not None:
+                if not isinstance(at["max_agent_hierarchy_depth"], int) or at["max_agent_hierarchy_depth"] < 0:
+                    raise ValueError("Field 'agent_trust.max_agent_hierarchy_depth' must be a non-negative integer")
 
     # ------------------------------------------------------------------
     # Auth validation

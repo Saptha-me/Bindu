@@ -187,3 +187,18 @@ export REDIS_URL="redis://localhost:6379"
 2. Restart agent
 
 3. Tasks in Redis queue remain but won't be processed
+
+## Pause / Resume Support
+
+Bindu workers now support pausing and resuming long-running tasks. When a pause
+is requested the worker will persist a lightweight checkpoint into the task
+metadata and transition the task to the `suspended` state. This allows the
+runtime to release resources while preserving progress. A subsequent resume
+operation restores the checkpoint (via a worker-provided hook when available)
+and transitions the task to the `resumed` state to continue execution.
+
+Notes:
+- Storage implementations persist the checkpoint in task `metadata.suspended_checkpoint`.
+- Worker implementations may provide `capture_execution_state`, `restore_execution_state`,
+  `on_pause` and `on_resume` hooks for richer behavior.
+- The scheduler exposes `pause_task` and `resume_task` operations to drive these transitions.

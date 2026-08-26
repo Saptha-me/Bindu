@@ -1,0 +1,8 @@
+name: agent-marketplace-routing
+description: Skill-based routing between research, summarization and translation agents
+version: 0.1.0
+
+capabilities:
+  - summarize text
+  - translate text
+  - research questions

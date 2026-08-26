@@ -1,0 +1,36 @@
+skill_id: "research-capability-v1"
+name: "Research and Information Gathering"
+version: "1.0.0"
+description: "Searches and retrieves information from various sources"
+
+capabilities:
+  - research
+  - web_search
+  - information_retrieval
+  - general
+
+tags:
+  - research
+  - search
+  - information
+  - data-gathering
+
+input_structure: |
+  {
+    "query": "string - research topic or question"
+  }
+
+output_format: |
+  {
+    "results": "string - research findings",
+    "sources": ["list of sources"]
+  }
+
+assessment:
+  keywords:
+    - research
+    - search
+    - find
+    - gather
+    - information
+    - data

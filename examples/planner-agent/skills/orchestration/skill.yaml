@@ -1,0 +1,80 @@
+skill_id: "task-orchestration-v1"
+name: "Task Orchestration"
+version: "1.0.0"
+description: "Coordinates multiple agents to complete complex multi-step tasks by decomposing goals, discovering capable agents, routing tasks, and aggregating results"
+
+capabilities:
+  - task_decomposition
+  - agent_discovery
+  - task_routing
+  - result_aggregation
+  - multi_agent_coordination
+
+tags:
+  - orchestration
+  - planning
+  - coordination
+  - multi-agent
+  - workflow
+
+input_structure: |
+  {
+    "goal": "string - high-level objective to accomplish",
+    "constraints": {
+      "max_agents": 5,
+      "timeout_seconds": 300
+    }
+  }
+
+output_format: |
+  {
+    "success": true,
+    "plan": [
+      {
+        "step": 1,
+        "description": "task description",
+        "required_capabilities": ["capability1", "capability2"]
+      }
+    ],
+    "results": [
+      {
+        "step": 1,
+        "description": "task description",
+        "result": {
+          "success": true,
+          "content": "agent response"
+        }
+      }
+    ],
+    "final_output": "aggregated coherent response"
+  }
+
+examples:
+  - title: "Research and Summarize"
+    input:
+      goal: "Create a summary of recent AI developments"
+    output:
+      success: true
+      final_output: "Summary of AI trends based on research and analysis"
+
+assessment:
+  keywords:
+    - orchestrate
+    - coordinate
+    - multi-step
+    - complex task
+    - plan
+    - breakdown
+    - decompose
+    - multiple agents
+  
+  specializations:
+    - domain: workflow_automation
+      confidence_boost: 0.4
+    - domain: research_pipeline
+      confidence_boost: 0.3
+  
+  anti_patterns:
+    - "simple question"
+    - "single-step task"
+    - "direct answer"

@@ -1,0 +1,35 @@
+skill_id: "text-summarization-v1"
+name: "Text Summarization"
+version: "1.0.0"
+description: "Summarizes and condenses text content into key points"
+
+capabilities:
+  - text_summarization
+  - content_structuring
+  - general
+
+tags:
+  - summarization
+  - condensing
+  - key-points
+  - text-processing
+
+input_structure: |
+  {
+    "text": "string - content to summarize"
+  }
+
+output_format: |
+  {
+    "summary": "string - condensed version",
+    "key_points": ["list of main points"]
+  }
+
+assessment:
+  keywords:
+    - summarize
+    - summary
+    - condense
+    - key points
+    - brief
+    - tldr

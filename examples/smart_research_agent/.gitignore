@@ -1,0 +1,98 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+.env.local
+.env.*.local
+
+# Environment & Secrets
+.env
+.env.backup
+*.pem
+*.key
+*.p8
+.aws/credentials
+.aws/config
+
+# API Keys & Credentials (CRITICAL - Never commit!)
+OPENAI_API_KEY
+OPENROUTER_API_KEY
+LLM_API_KEY
+SK_*
+sk-*
+.api_keys
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+.emacs.desktop
+.emacs.desktop.lock
+*.jedi
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+*.cover
+
+# Distribution / Deployment
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# Project Specific
+*.log
+logs/
+temp/
+tmp/
+.cache/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+desktop.ini
+
+# Bindu/Agent Specific
+*.state
+*.cache
+agent_logs/
+execution_logs/

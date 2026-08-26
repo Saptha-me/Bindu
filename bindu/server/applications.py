@@ -185,6 +185,7 @@ class BinduApplication(Starlette):
 
         # Add health endpoint import
         from .endpoints.health import health_endpoint
+        from .endpoints.agent_health import agent_health_endpoint
 
         # Protocol endpoints
         self._add_route(
@@ -192,6 +193,12 @@ class BinduApplication(Starlette):
             agent_card_endpoint,
             ["HEAD", "GET", "OPTIONS"],
             with_app=True,
+        )
+        self._add_route(
+           "/agent/health",
+    	   agent_health_endpoint,
+           ["GET"],
+           with_app=True,
         )
 
         # Private agent card — same shape, includes `private_skills`, gated
@@ -753,6 +760,11 @@ class BinduApplication(Starlette):
 
         # Add metrics middleware (should be last to capture all requests)
         from .middleware import MetricsMiddleware
+        from .middleware.agent_observability import AgentExecutionObservabilityMiddleware
+
+        middleware_list.append(
+        Middleware(AgentExecutionObservabilityMiddleware)
+        )
 
         metrics_middleware = Middleware(MetricsMiddleware)  # type: ignore[arg-type]
         middleware_list.append(metrics_middleware)

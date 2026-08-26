@@ -38,6 +38,7 @@ SDK's verify path.
 from __future__ import annotations
 
 import json
+import httpx
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -207,6 +208,50 @@ class X402Middleware(BaseHTTPMiddleware):
             payload.get_network(),
             requirement.asset,
         )
+
+        # 7. TRACE Trust API Integration
+        if app_settings.x402.trace_api_key and result.payer:
+            try:
+                async with httpx.AsyncClient() as client:
+                    trace_resp = await client.post(
+                        f"{app_settings.x402.trace_api_url}/v1/score",
+                        json={
+                            "provider_id": result.payer,
+                            "job": {
+                                "capability": method,
+                            },
+                        },
+                        headers={"X-API-Key": app_settings.x402.trace_api_key},
+                        timeout=5.0,
+                    )
+                if trace_resp.status_code == 200:
+                    trace_result = trace_resp.json()
+                    
+                    try:
+                        score = float(trace_result.get("score", 1.0))
+                    except (TypeError, ValueError):
+                        score = 1.0
+                        
+                    decision = trace_result.get("routing_decision")
+                    if (
+                        decision in ("HOLD", "INVESTIGATE")
+                        or score < app_settings.x402.trace_min_score
+                    ):
+                        logger.warning(
+                            "x402: payment rejected by TRACE trust API (payer=%s, score=%s, decision=%s)",
+                            result.payer,
+                            score,
+                            decision,
+                        )
+                        return self._create_402_response(
+                            f"Agent trust score too low: {score}"
+                        )
+                else:
+                    logger.warning(
+                        "x402: TRACE API error (status=%s)", trace_resp.status_code
+                    )
+            except Exception as e:
+                logger.warning("x402: TRACE API call failed: %s", e)
 
         # Attach for the worker — settlement happens at task completion.
         request.state.payment_payload = payload

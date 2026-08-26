@@ -27,6 +27,7 @@ from typing import Any, AsyncIterator
 
 import anyio
 from opentelemetry.trace import get_tracer, use_span
+from datetime import datetime
 
 from bindu.server.scheduler import TaskOperation
 
@@ -247,7 +248,47 @@ class Worker(ABC):
         - Update task to 'suspended' state
         - Release resources while preserving context
         """
-        raise NotImplementedError("Pause operation not yet implemented")
+        task_id = self._normalize_uuid(params["task_id"])
+
+        # Load task and prepare metadata
+        task = await self.storage.load_task(task_id)
+        if not task:
+            logger.warning(f"Pause requested for unknown task {task_id}")
+            return
+
+        metadata = dict(task.get("metadata") or {})
+
+        # Allow subclasses to capture rich execution state
+        checkpoint = None
+        capture = getattr(self, "capture_execution_state", None)
+        if callable(capture):
+            try:
+                maybe = capture(task_id)
+                if hasattr(maybe, "__await__"):
+                    checkpoint = await maybe
+                else:
+                    checkpoint = maybe
+            except Exception:
+                logger.exception("capture_execution_state hook failed")
+
+        metadata["suspended"] = True
+        metadata["suspended_at"] = datetime.utcnow().isoformat() + "Z"
+        if checkpoint is not None:
+            # Checkpoint must be JSON-serializable; storage implementations
+            # may enforce further constraints.
+            metadata["suspended_checkpoint"] = checkpoint
+
+        # Allow subclass hook to release resources (best-effort)
+        on_pause = getattr(self, "on_pause", None)
+        if callable(on_pause):
+            try:
+                maybe = on_pause(task_id)
+                if hasattr(maybe, "__await__"):
+                    await maybe
+            except Exception:
+                logger.exception("on_pause hook failed")
+
+        await self.storage.update_task(task_id, state="suspended", metadata=metadata)
 
     async def _handle_resume(self, params: TaskIdParams) -> None:
         """Handle resume operation.
@@ -257,4 +298,40 @@ class Worker(ABC):
         - Update task to 'resumed' state
         - Continue from last checkpoint
         """
-        raise NotImplementedError("Resume operation not yet implemented")
+        task_id = self._normalize_uuid(params["task_id"])
+
+        task = await self.storage.load_task(task_id)
+        if not task:
+            logger.warning(f"Resume requested for unknown task {task_id}")
+            return
+
+        metadata = dict(task.get("metadata") or {})
+
+        checkpoint = metadata.get("suspended_checkpoint")
+
+        # Allow subclass to restore execution state
+        restore = getattr(self, "restore_execution_state", None)
+        if callable(restore):
+            try:
+                maybe = restore(task_id, checkpoint)
+                if hasattr(maybe, "__await__"):
+                    await maybe
+            except Exception:
+                logger.exception("restore_execution_state hook failed")
+
+        # Allow subclass hook to re-acquire resources
+        on_resume = getattr(self, "on_resume", None)
+        if callable(on_resume):
+            try:
+                maybe = on_resume(task_id)
+                if hasattr(maybe, "__await__"):
+                    await maybe
+            except Exception:
+                logger.exception("on_resume hook failed")
+
+        # Clean up suspended metadata and mark resumed
+        metadata.pop("suspended", None)
+        metadata.pop("suspended_checkpoint", None)
+        metadata["resumed_at"] = datetime.utcnow().isoformat() + "Z"
+
+        await self.storage.update_task(task_id, state="resumed", metadata=metadata)

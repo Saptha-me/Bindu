@@ -47,7 +47,7 @@ async def test_logs_streams_to_stdout(capsys):
     assert "hello" in out
     assert "world" in out
     call = fake_box.exec.await_args
-    assert call is not None
+    assert call is not None, "await_args should not be None"
     assert call.kwargs.get("stream") is True
     assert "-F" in call.args  # follow=True → tail -F
 
@@ -70,6 +70,6 @@ async def test_shell_calls_exec_bash():
 
     fake_box.exec.assert_awaited_once()
     args = fake_box.exec.await_args
-    assert args is not None
+    assert args is not None, "await_args should not be None"
     assert "bash" in args.args
     assert args.kwargs.get("interactive") is True

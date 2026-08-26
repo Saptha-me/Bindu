@@ -758,7 +758,7 @@ async def test_stream_logs_tails_agent_log(mock_boxd, fake_box, boxd_api_key):
 
     assert out == chunks
     call = fake_box.exec.await_args
-    assert call is not None
+    assert call is not None, "await_args should not be None"
     assert call.args[0] == "tail"
     assert "-F" in call.args
     assert AGENT_LOG_PATH in call.args
@@ -780,7 +780,7 @@ async def test_stream_logs_no_follow_uses_cat(mock_boxd, fake_box, boxd_api_key)
     out = [chunk async for chunk in p.stream_logs(h, follow=False)]
     assert out == [b"static\n"]
     call = fake_box.exec.await_args
-    assert call is not None
+    assert call is not None, "await_args should not be None"
     # Either tail-without-F or cat with a no-error wrapper is fine; check that
     # the streamed command does NOT contain ``-F`` (which would tail forever).
     assert "-F" not in call.args

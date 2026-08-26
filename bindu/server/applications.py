@@ -666,6 +666,23 @@ class BinduApplication(Starlette):
         middleware_list = list(middleware) if middleware else []
 
         # Add CORS middleware if origins are specified
+        # Add Rate Limiting middleware if enabled
+        if getattr(app_settings, "rate_limit_enabled", False):
+            from .middleware.rate_limit import RateLimitMiddleware
+
+            logger.info(
+                f"Rate limiting enabled: {app_settings.rate_limit_requests_per_minute} req/min"
+            )
+
+            rate_limit_middleware = Middleware(
+                RateLimitMiddleware,
+                requests_per_minute=app_settings.rate_limit_requests_per_minute,
+            )
+
+            # Insert after CORS (if exists), otherwise at start
+            insert_position = 1 if cors_origins else 0
+            middleware_list.insert(insert_position, rate_limit_middleware)
+    
         if cors_origins:
             from starlette.middleware.cors import CORSMiddleware
 

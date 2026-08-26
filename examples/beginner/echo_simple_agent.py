@@ -44,7 +44,8 @@ config = {
     "skills": ["skills/question-answering", "skills/pdf-processing"],
 }
 
-bindufy(config, handler)
+if __name__ == "__main__":
+    bindufy(config, handler)
 
 # if you want to use tunnel to expose your agent to the internet, use the following command
 #bindufy(config, handler, launch=True)

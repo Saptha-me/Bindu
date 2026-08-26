@@ -63,6 +63,7 @@ Restaurant Architecture
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
@@ -119,6 +120,7 @@ class TaskManager:
 
     _aexit_stack: AsyncExitStack | None = field(default=None, init=False)
     _workers: list[ManifestWorker] = field(default_factory=list, init=False)
+    _reconciliation_task: asyncio.Task | None = field(default=None, init=False)
     _push_manager: PushNotificationManager = field(init=False)
     _message_handlers: MessageHandlers = field(init=False)
     _task_handlers: TaskHandlers = field(init=False)
@@ -150,6 +152,14 @@ class TaskManager:
             self._workers.append(worker)
             await self._aexit_stack.enter_async_context(worker.run())
 
+            # Start background x402 payment reconciliation loop
+            from .workers.x402_reconciliation import run_x402_reconciliation_loop
+
+            self._reconciliation_task = asyncio.create_task(
+                run_x402_reconciliation_loop(self.storage),
+                name="x402-reconciliation-loop",
+            )
+
         # Initialize handlers after workers are created
         self._message_handlers = MessageHandlers(
             scheduler=self.scheduler,
@@ -179,6 +189,16 @@ class TaskManager:
 
     async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
         """Clean up resources and stop all components."""
+        if self._reconciliation_task:
+            self._reconciliation_task.cancel()
+            try:
+                await self._reconciliation_task
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.warning("x402 reconciliation task exited with error: %s", e)
+            self._reconciliation_task = None
+
         if self._aexit_stack is None:
             raise RuntimeError("TaskManager was not properly initialized.")
         await self._aexit_stack.__aexit__(exc_type, exc_value, traceback)

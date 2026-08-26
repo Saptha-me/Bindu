@@ -1,0 +1,87 @@
+skill_id: "research-papers-v1"
+name: "Research Paper Discovery & Discussion"
+version: "1.0.0"
+description: "Search for and discuss research papers from arXiv and other academic sources"
+
+capabilities:
+  - research_paper_search
+  - paper_summarization
+  - literature_review
+  - methodology_discussion
+  - findings_analysis
+
+tags:
+  - research
+  - paper
+  - arxiv
+  - pubmed
+  - academic
+  - study
+  - journal
+  - literature
+  - findings
+  - methodology
+  - discussion
+  - science
+  - survey
+
+documentation: |
+  # Research Paper Skill
+
+  This skill searches for and discusses academic research papers, including:
+  - Querying arXiv for recent and relevant papers
+  - Summarizing abstracts and key contributions
+  - Identifying common themes and research directions
+  - Suggesting follow-up reading
+
+input_structure: |
+  {
+    "query": "string - topic or keywords to search for",
+    "max_results": "integer - maximum number of papers to retrieve (default 5)"
+  }
+
+output_format: |
+  {
+    "papers": [{"title": "...", "authors": [...], "year": "...", "abstract": "...", "url": "..."}],
+    "discussion": "string - synthesized analysis of the papers",
+    "themes": ["..."]
+  }
+
+examples:
+  - title: "Transformer papers search"
+    input:
+      query: "transformer neural networks attention mechanism"
+    output:
+      discussion: "Found 5 papers exploring attention-based architectures..."
+
+assessment:
+  keywords:
+    - research
+    - paper
+    - papers
+    - arxiv
+    - study
+    - journal
+    - literature
+    - findings
+    - methodology
+    - academic
+    - publication
+    - author
+    - abstract
+    - cite
+    - survey
+    - discuss
+    - science
+
+  specializations:
+    - domain: academic_research
+      confidence_boost: 0.35
+    - domain: literature_review
+      confidence_boost: 0.3
+
+  anti_patterns:
+    - "code review"
+    - "fix my code"
+    - "grammar check"
+    - "calculate average"

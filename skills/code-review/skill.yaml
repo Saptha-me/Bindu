@@ -1,0 +1,78 @@
+skill_id: "code-review-v1"
+name: "Code Review"
+version: "1.0.0"
+description: "Analyze code for bugs, style issues, performance problems, and suggest improvements"
+
+capabilities:
+  - code_analysis
+  - bug_detection
+  - style_checking
+  - refactoring_suggestions
+  - performance_review
+
+tags:
+  - code
+  - review
+  - python
+  - javascript
+  - debugging
+  - refactor
+
+documentation: |
+  # Code Review Skill
+
+  This skill analyzes source code and provides structured feedback including:
+  - Bug detection and potential runtime errors
+  - Code style and best practice violations
+  - Performance optimization suggestions
+  - Refactoring recommendations
+
+input_structure: |
+  {
+    "code": "string - source code to review",
+    "language": "string - programming language (optional)",
+    "focus": "string - specific area to focus on (optional)"
+  }
+
+output_format: |
+  {
+    "issues": [{"severity": "high|medium|low", "line": 1, "message": "..."}],
+    "suggestions": ["..."],
+    "score": 85,
+    "summary": "Overall review summary"
+  }
+
+examples:
+  - title: "Python function review"
+    input:
+      code: "def add(a, b): return a + b"
+      language: "python"
+    output:
+      score: 90
+      summary: "Clean function, consider adding type hints"
+
+assessment:
+  keywords:
+    - code
+    - review
+    - bug
+    - debug
+    - refactor
+    - lint
+    - style
+    - python
+    - javascript
+    - function
+    - class
+    - error
+
+  specializations:
+    - domain: python_review
+      confidence_boost: 0.3
+    - domain: javascript_review
+      confidence_boost: 0.2
+
+  anti_patterns:
+    - "data analysis"
+    - "write essay"
+    - "summarize document"

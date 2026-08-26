@@ -1,0 +1,88 @@
+skill_id: "writing-assistant-v1"
+name: "Writing Assistant"
+version: "1.0.0"
+description: "Help with writing, editing, grammar checking, summarization, and content generation"
+
+capabilities:
+  - grammar_check
+  - content_generation
+  - summarization
+  - tone_adjustment
+  - proofreading
+
+tags:
+  - writing
+  - grammar
+  - editing
+  - summarize
+  - content
+  - essay
+  - email
+  - blog
+
+documentation: |
+  # Writing Assistant Skill
+
+  This skill helps with all forms of written communication:
+  - Grammar and spelling correction
+  - Content generation (essays, emails, blogs)
+  - Text summarization
+  - Tone adjustment (formal, casual, professional)
+  - Proofreading and clarity improvements
+
+input_structure: |
+  {
+    "text": "string - text to process or topic to write about",
+    "action": "string - check|generate|summarize|rewrite",
+    "tone": "string - formal|casual|professional (optional)"
+  }
+
+output_format: |
+  {
+    "result": "string - processed text or generated content",
+    "corrections": [{"original": "...", "suggested": "...", "reason": "..."}],
+    "readability_score": 85,
+    "word_count": 250
+  }
+
+examples:
+  - title: "Grammar check"
+    input:
+      text: "Their going to the store tommorow"
+      action: "check"
+    output:
+      result: "They're going to the store tomorrow"
+      corrections:
+        - original: "Their"
+          suggested: "They're"
+          reason: "Contraction of 'they are'"
+
+assessment:
+  keywords:
+    - write
+    - writing
+    - grammar
+    - essay
+    - email
+    - summarize
+    - summary
+    - blog
+    - article
+    - edit
+    - proofread
+    - content
+    - letter
+    - document
+    - text
+
+  specializations:
+    - domain: business_writing
+      confidence_boost: 0.25
+    - domain: academic_writing
+      confidence_boost: 0.2
+
+  anti_patterns:
+    - "code review"
+    - "data analysis"
+    - "statistical"
+    - "debug"

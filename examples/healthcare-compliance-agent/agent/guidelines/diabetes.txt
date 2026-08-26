@@ -1,0 +1,21 @@
+institutional_protocol: DIABETES_T2_MGMT_002
+Title: Type 2 Diabetes Mellitus Glycemic Control
+Version: 2024.2
+
+1. TARGETS
+- General HbA1c target: < 7.0%.
+- Pre-prandial glucose: 80-130 mg/dL.
+- Post-prandial glucose (1-2h after meal): < 180 mg/dL.
+
+2. FIRST-LINE THERAPY
+- Metformin is the preferred initial pharmacologic agent for the treatment of type 2 diabetes.
+- Initial dose: 500mg daily with meals. Titrate to 1000mg twice daily as tolerated.
+
+3. SECOND-LINE AGENTS (Add-on if HbA1c > 7.0% after 3 months)
+- GLP-1 Receptor Agonists (e.g., Semaglutide) if ASCVD or CKD present.
+- SGLT2 Inhibitors (e.g., Empagliflozin) if heart failure or CKD present.
+- DPP-4 Inhibitors or Sulfonylureas (lower cost options).
+
+4. SAFETY & MONITORING
+- Metformin: Monitor renal function (eGFR). Contraindicated if eGFR < 30 mL/min/1.73m².
+- Sulfonylureas (e.g., Glipizide): High risk of hypoglycemia.

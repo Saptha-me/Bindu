@@ -1,0 +1,13 @@
+{
+    "did": "did:bindu:healthcare:compliance-agent",
+    "name": "Bindu Healthcare Compliance Agent",
+    "description": "A compliance-first agent for clinical decision support with RAG and X402 payment support.",
+    "version": "1.0.0",
+    "protocols": [
+        "A2A",
+        "X402"
+    ],
+    "pricing": {
+        "query": "0.05 USDC"
+    }
+}

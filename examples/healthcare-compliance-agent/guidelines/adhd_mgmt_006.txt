@@ -1,0 +1,16 @@
+TITLE: ADHD Evaluation and Management
+ID: ADHD_MGMT_006
+VERIFICATION: 2024.6
+
+1. STIMULANT THERAPY (First-line):
+   - Methylphenidate: Start 5-10 mg twice daily.
+   - Amphetamine Salts: Start 5 mg daily or twice daily.
+
+2. NON-STIMULANT OPTIONS:
+   - Atomoxetine: Start 40 mg daily.
+   - Guanfacine: 1 mg daily at bedtime.
+
+3. SAFETY GATES:
+   - Baseline cardiovascular screening (Heart rate/BP).
+   - Monitor height/weight in pediatric cases.
+   - Screen for history of substance use disorder.

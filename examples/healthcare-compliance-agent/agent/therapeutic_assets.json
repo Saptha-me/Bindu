@@ -1,0 +1,61 @@
+{
+    "calming_sounds": [
+        {
+            "id": "white_noise_01",
+            "name": "Arctic White Noise",
+            "category": "Focus & Sensory",
+            "recommended_for": [
+                "ADHD",
+                "SPD",
+                "Autism",
+                "Misophonia"
+            ],
+            "url": "https://example.com/sounds/white-noise.mp3"
+        },
+        {
+            "id": "brown_noise_01",
+            "name": "Deep Brown Noise",
+            "category": "Sleep & Anxiety",
+            "recommended_for": [
+                "ADHD",
+                "PTSD",
+                "CPTSD",
+                "Insomnia"
+            ],
+            "url": "https://example.com/sounds/brown-noise.mp3"
+        },
+        {
+            "id": "binaural_beats_01",
+            "name": "Alpha Waves (10Hz)",
+            "category": "Cognitive Support",
+            "recommended_for": [
+                "Dyslexia",
+                "Dyscalculia",
+                "Focus"
+            ],
+            "url": "https://example.com/sounds/alpha-waves.mp3"
+        },
+        {
+            "id": "ambient_nature_01",
+            "name": "Rainforest Rain",
+            "category": "Calming",
+            "recommended_for": [
+                "Autism",
+                "Tourette syndrome",
+                "Anxiety"
+            ],
+            "url": "https://example.com/sounds/nature-rain.mp3"
+        },
+        {
+            "id": "lofi_beats_01",
+            "name": "Study Lo-fi",
+            "category": "Neurodiverse Study",
+            "recommended_for": [
+                "ADHD",
+                "Dysgraphia",
+                "Down syndrome"
+            ],
+            "url": "https://example.com/sounds/lofi-study.mp3"
+        }
+    ]
+}

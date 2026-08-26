@@ -1,0 +1,22 @@
+PROTOCOL_TYPE: Neurodevelopmental & Learning
+ID: ND_VAR_010
+TITLE: Neurodiversity Support (Dyslexia, Dyscalculia, Dyspraxia, Dysgraphia, ADD/ADHD, SPD)
+
+1. SCREENING & DIAGNOSIS
+   - Multisensory assessment for Dyslexia/Dysgraphia.
+   - Occupational therapy evaluation for Dyspraxia (coordination).
+   - Sensory Profile 2 for SPD (Sensory Processing Disorder).
+
+2. THERAPEUTIC INTERVENTIONS
+   - Dyslexia: Orton-Gillingham approach (multisensory).
+   - ADHD/ADD: Executive function coaching, environmental modification.
+   - Dyscalculia: Visual math aids, manipulatives.
+   - SPD: Sensory integration therapy, calming soundscapes (Brown/White noise).
+
+3. SAFETY GATES
+   - Verify school/work accommodations (IEP/504).
+   - Monitor for secondary anxiety/depression.
+   - Rule out hearing/vision impairments as primary causes.
+
+EVIDENCE_LINK: International Dyslexia Association / DSM-5-TR
+AUDIT_MODE: STRICT

@@ -1,0 +1,21 @@
+PROTOCOL_TYPE: Neurological & Psychological Disorders
+ID: NEURO_PSYCH_012
+TITLE: Advanced Behavioral Health (Bipolar, Schizophrenia, Epilepsy, Tic Disorders, Tourette's, OCD)
+
+1. PHARMACOTHERAPY & MONITORING
+   - Schizophrenia: Antipsychotic compliance and Metabolic monitoring.
+   - Bipolar: Mood stabilizer (Lithium/Valproate) serum levels.
+   - Epilepsy: Anti-epileptic drug (AED) adherence; Seizure tracking.
+   - OCD: ERP (Exposure and Response Prevention).
+
+2. BEHAVIORAL & SENSORY SESSIONS
+   - Tic Disorders/Tourette: CBIT (Comprehensive Behavioral Intervention for Tics).
+   - Misophonia: Sound masking (White noise/Pink noise) to reduce trigger impact.
+
+3. SAFETY GATES
+   - Seizure safety protocols (First aid training for family).
+   - Monitor for "red flag" side effects (Dystonia, Agranulocytosis).
+   - OCD: Prevent repetitive ritualization within the agent interface.
+
+EVIDENCE_LINK: APA Guidelines / Epilepsy Foundation / Tourette Association
+AUDIT_MODE: STRICT

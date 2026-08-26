@@ -1,0 +1,16 @@
+TITLE: Multiple Sclerosis Maintenance and DMT
+ID: MS_MGMT_009
+VERIFICATION: 2024.9
+
+1. DISEASE-MODIFYING THERAPIES (DMT):
+   - Injectables: Interferon beta-1a, Glatiramer acetate.
+   - Oral options: Fingolimod, Teriflunomide.
+   - Infusions: Natalizumab, Ocrelizumab.
+
+2. RELAPSE MANAGEMENT:
+   - High-dose corticosteroids (Methylprednisolone 1g daily for 3-5 days).
+
+3. SAFETY GATES:
+   - MRI monitoring for new lesions.
+   - JCV antibody testing for PML risk (with Natalizumab).
+   - Regular CBC and LFT monitoring for oral DMTs.

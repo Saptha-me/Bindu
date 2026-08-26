@@ -1,0 +1,15 @@
+TITLE: Major Depressive Disorder First-line Therapy
+ID: DEPRESSION_005
+VERIFICATION: 2024.5
+
+1. FIRST-LINE SSRI:
+   - Sertraline: Start 25-50 mg once daily.
+   - Escitalopram: Start 10 mg once daily.
+
+2. MONITORING:
+   - Full effect may take 4-8 weeks.
+   - Monitor suicidal ideation, especially in early treatment.
+
+3. SAFETY GATES:
+   - Avoid dual SSRI/SNRI therapy.
+   - Screen for Bipolar Disorder to avoid mania induction.

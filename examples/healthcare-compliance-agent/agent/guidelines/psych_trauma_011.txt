@@ -1,0 +1,22 @@
+PROTOCOL_TYPE: Psychiatric & Trauma Support
+ID: PSYCH_TRAUMA_011
+TITLE: Complex Trauma & Dissociative Disorders (PTSD, CPTSD, DID, OSDD, Personality Disorders)
+
+1. CORE MANAGEMENT
+   - Trauma-Informed Care (TIC) across all interactions.
+   - DID/OSDD: Stabilization and safety planning (Phase 1).
+   - CPTSD/PTSD: Grounding techniques, EMDR, or somatic experiencing.
+   - Personality Disorders (BPD/ASPD): Dialectical Behavior Therapy (DBT).
+
+2. GROUNDING & SENSORY SOOTHING
+   - Use of Binaural Alpha Waves for emotional regulation.
+   - 5-4-3-2-1 sensory grounding exercise.
+   - Safe space visualization.
+
+3. SAFETY GATES
+   - CRITICAL: Immediate suicide risk assessment (SI/HI).
+   - Monitor for "switching" or high dissociative states.
+   - Ensure clinician has specialized training in DID/OSDD.
+
+EVIDENCE_LINK: ISSTD Guidelines / SAMHSA Trauma-Informed Care
+AUDIT_MODE: ULTRA_STRICT

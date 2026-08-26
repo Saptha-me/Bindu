@@ -1,0 +1,15 @@
+TITLE: Autism Spectrum Disorder (ASD) Support Protocols
+ID: ASD_SUPPORT_007
+VERIFICATION: 2024.7
+
+1. EARLY INTERVENTION:
+   - Applied Behavior Analysis (ABA) or similar structured behavioral therapies.
+   - Speech and Occupational Therapy referrals.
+
+2. PHARMACOLOGICAL SUPPORT (for associated symptoms):
+   - Irritability/Agitation: Risperidone or Aripiprazole (FDA approved for ASD-related irritability).
+   - Hyperactivity: See ADHD_MGMT_006.
+
+3. SAFETY GATES:
+   - Comprehensive metabolic monitoring if using antipsychotics.
+   - Family-centered support and caregiver burnout screening.

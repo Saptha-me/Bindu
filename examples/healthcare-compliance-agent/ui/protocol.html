@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Protocols | Bindu Healthcare</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <header class="container">
+        <nav style="display: flex; justify-content: space-between; padding: 2rem 0; align-items: center;">
+            <div class="mono" style="font-weight: 700; font-size: 1.25rem;"><a href="index.html"
+                    style="color: inherit; text-decoration: none;">BINDU_HEALTHCARE</a></div>
+            <div style="display: flex; gap: 2rem;">
+                <a href="index.html" class="mono"
+                    style="text-decoration: none; color: var(--text-dim); font-size: 0.875rem;">HOME</a>
+                <a href="protocol.html" class="mono"
+                    style="text-decoration: none; color: var(--primary); font-size: 0.875rem;">PROTOCOL</a>
+                <a href="audit.html" class="mono"
+                    style="text-decoration: none; color: var(--text-dim); font-size: 0.875rem;">AUDIT</a>
+            </div>
+            <a href="demo.html" class="btn mono" style="padding: 0.5rem 1.5rem; font-size: 0.75rem;">INITIALIZE
+                SYSTEM</a>
+        </nav>
+    </header>
+
+    <section class="section container">
+        <div class="mono" style="color: var(--primary); margin-bottom: 1rem;">DATABASE_ACCESS // CLINICAL_PROTOCOLS
+        </div>
+        <h1 style="font-size: 4rem; margin-bottom: 1.5rem;">INSTITUTIONAL<br>GUIDELINES</h1>
+        <p style="color: var(--text-dim); max-width: 600px; margin-bottom: 4rem;">Access internal clinical guidelines
+            currently integrated into the RAG engine for real-time decision support.</p>
+
+        <div class="grid">
+            <div class="card">
+                <span class="label">HYPERTENSION_MGMT_001</span>
+                <h3>Management of Essential Hypertension</h3>
+                <p>Comprehensive diagnostic and treatment guidelines for hypertensive adults. Includes dosing for
+                    Lisinopril and Amlodipine.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.1]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">DIABETES_T2_MGMT_002</span>
+                <h3>Type 2 Diabetes Glycemic Control</h3>
+                <p>Targets and first-line therapy protocols using Metformin. Includes safety monitoring and escalation
+                    paths.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.2]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">ASTHMA_MGMT_003</span>
+                <h3>Asthma Management (Adults)</h3>
+                <p>Maintenance therapy with Inhaled Corticosteroids (ICS) and MART therapy protocols.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.3]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">LIPID_MGMT_004</span>
+                <h3>Hyperlipidemia Management</h3>
+                <p>Statin intensity guidelines and LDL targets based on risk profiles.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.4]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">DEPRESSION_005</span>
+                <h3>MDD First-line Therapy</h3>
+                <p>SSRI initiation protocols (Sertraline/Escitalopram) and clinical monitoring windows.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.5]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">ADHD_MGMT_006</span>
+                <h3>ADHD Management</h3>
+                <p>Stimulant and non-stimulant titration strategies and cardiovascular screening protocols.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.6]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">ASD_SUPPORT_007</span>
+                <h3>Autism Support (ASD)</h3>
+                <p>Early intervention behavioral therapies and pharmacological support for associated symptoms.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.7]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">ALZHEIMERS_008</span>
+                <h3>Alzheimer's Management</h3>
+                <p>Cholinesterase inhibitor protocols and NMDA receptor antagonist titration for dementia.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.8]
+                </div>
+            </div>
+            <div class="card">
+                <span class="label">MS_MGMT_009</span>
+                <h3>Multiple Sclerosis DMT</h3>
+                <p>Disease-modifying therapy (DMT) protocols and relapse management strategies.</p>
+                <div class="mono" style="margin-top: 2rem; color: var(--primary); font-size: 0.75rem;">[VERIFIED_2024.9]
+                </div>
+            </div>
+        </div>
+
+        <div class="architecture-box" style="margin-top: 4rem;">
+            <span class="arc-label">PROTOCOL_SOURCE_VERIFICATION</span>
+            <div class="mono" style="font-size: 0.875rem; color: var(--text-dim);">
+                <p>>> FETCHING SOURCE DATA...</p>
+                <p style="margin-top: 0.5rem; color: var(--text-main);">institutional_protocol: HYPERTENSION_MGMT_001
+                </p>
+                <p>Title: Management of Essential Hypertension in Adults</p>
+                <p>1. DIAGNOSIS: SBP >= 140 mmHg or DBP >= 90 mmHg.</p>
+                <p>...</p>
+                <p style="margin-top: 1rem; color: var(--primary);">[DATA_STREAM_STABLE]</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="container">
+        <div class="trace-line">
+            • SECURE AI TRACEABILITY • IMMUTABLE AUDIT LOGS • EVIDENCE-LINKED RECOMMENDATIONS • BINDU COMPLIANCE AGENT •
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4rem 0; color: var(--text-dim); font-size: 0.75rem;"
+            class="mono">
+            <div>© 2026 BINDU HEALTHCARE AGENT. ALL RIGHTS RESERVED.</div>
+            <div>[TRACEABILITY_ACTIVE] [VER_8.4.1_STABLE]</div>
+        </div>
+    </footer>
+</body>
+
+</html>

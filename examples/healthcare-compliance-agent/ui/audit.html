@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs | Bindu Healthcare</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <header class="container">
+        <nav style="display: flex; justify-content: space-between; padding: 2rem 0; align-items: center;">
+            <div class="mono" style="font-weight: 700; font-size: 1.25rem;"><a href="index.html"
+                    style="color: inherit; text-decoration: none;">BINDU_HEALTHCARE</a></div>
+            <div style="display: flex; gap: 2rem;">
+                <a href="index.html" class="mono"
+                    style="text-decoration: none; color: var(--text-dim); font-size: 0.875rem;">HOME</a>
+                <a href="protocol.html" class="mono"
+                    style="text-decoration: none; color: var(--text-dim); font-size: 0.875rem;">PROTOCOL</a>
+                <a href="audit.html" class="mono"
+                    style="text-decoration: none; color: var(--primary); font-size: 0.875rem;">AUDIT</a>
+            </div>
+            <a href="demo.html" class="btn mono" style="padding: 0.5rem 1.5rem; font-size: 0.75rem;">INITIALIZE
+                SYSTEM</a>
+        </nav>
+    </header>
+
+    <section class="section container">
+        <div class="mono" style="color: var(--primary); margin-bottom: 1rem;">SECURE_LEDGER_ACCESS // SYSTEM_AUDIT</div>
+        <h1 style="font-size: 4rem; margin-bottom: 1.5rem;">IMMUTABLE<br>AUDIT TRAIL</h1>
+        <p style="color: var(--text-dim); max-width: 600px; margin-bottom: 4rem;">A defensible record of every clinical
+            interaction. Total traceability from request to evidence-linked decision.</p>
+
+        <div class="architecture-box">
+            <span class="arc-label">AUDIT_LOG_SNAPSHOT // SESSION: BINDU_66X_SECURE</span>
+            <div class="mono" style="font-size: 0.875rem;">
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
+                    <div style="color: var(--primary);">[2026-02-22T00:15:23Z] AUDIT_9921_X0</div>
+                    <div style="color: var(--text-dim); margin: 0.5rem 0;">ROLE: CLINICIAN // QUERY: "Starting dose for
+                        Lisinopril"</div>
+                    <div style="color: var(--text-main);">RECOMMENDATION: Based on HYPERTENSION_MGMT_001, start at 10mg
+                        daily.</div>
+                    <div style="color: var(--text-dim); font-size: 0.75rem; margin-top: 0.5rem;">SOURCE_LINK:
+                        file://protocols/hypertension.txt#L23</div>
+                </div>
+                <div style="padding: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem;">
+                    <div style="color: var(--primary);">[2026-02-22T00:16:45Z] AUDIT_9922_X0</div>
+                    <div style="color: var(--text-dim); margin: 0.5rem 0;">ROLE: PATIENT // QUERY: "Side effects of
+                        Metformin"</div>
+                    <div style="color: var(--text-main);">RECOMMENDATION: [DISCLAIMER_ACTIVE] Consult your primary care
+                        physician...</div>
+                    <div style="color: var(--text-dim); font-size: 0.75rem; margin-top: 0.5rem;">SOURCE_LINK:
+                        file://protocols/diabetes.txt#L45</div>
+                </div>
+                <div style="color: var(--primary); text-align: center; margin-top: 2rem;">[CONTINUOUS_SYNC_ACTIVE]</div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="container">
+        <div class="trace-line">
+            • SECURE AI TRACEABILITY • IMMUTABLE AUDIT LOGS • EVIDENCE-LINKED RECOMMENDATIONS • BINDU COMPLIANCE AGENT •
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4rem 0; color: var(--text-dim); font-size: 0.75rem;"
+            class="mono">
+            <div>© 2026 BINDU HEALTHCARE AGENT. ALL RIGHTS RESERVED.</div>
+            <div>[TRACEABILITY_ACTIVE] [VER_8.4.1_STABLE]</div>
+        </div>
+    </footer>
+</body>
+
+</html>

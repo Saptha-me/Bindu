@@ -1,0 +1,22 @@
+ institutional_protocol: HYPERTENSION_MGMT_001
+Title: Management of Essential Hypertension in Adults
+Version: 2024.1
+
+1. DIAGNOSIS
+- Hypertension is defined as a persistent systolic blood pressure (SBP) ≥ 140 mmHg or diastolic blood pressure (DBP) ≥ 90 mmHg.
+- Diagnosis should be confirmed by at least two readings on two separate occasions.
+
+2. FIRST-LINE TREATMENT
+- Lifestyle modifications: weight loss, DASH diet, sodium restriction (<2300mg/day), and regular aerobic exercise.
+- Pharmacotherapy: ACE inhibitors (e.g., Lisinopril), ARBs (e.g., Losartan), Thiazide diuretics (e.g., Chlorthalidone), or Calcium Channel Blockers (e.g., Amlodipine).
+
+3. DOSING GUIDELINES
+- Lisinopril: Start 10mg daily. Max 40mg daily.
+- Amlodipine: Start 5mg daily. Max 10mg daily.
+
+4. CONTRAINDICATIONS
+- ACE inhibitors and ARBs are strictly contraindicated in pregnancy.
+- Avoid non-selective beta-blockers in patients with reactive airway disease (asthma).
+
+5. ESCALATION
+- If goal BP (<130/80 mmHg) is not reached within 1 month, increase dose or add a second agent from a different class.

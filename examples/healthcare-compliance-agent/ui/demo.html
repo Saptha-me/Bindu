@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Demo | Bindu Healthcare</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        .terminal {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2rem;
+            height: 500px;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        .term-line {
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        .term-input {
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            width: 100%;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .log-entry {
+            padding-left: 1rem;
+            border-left: 1px solid var(--border);
+            margin: 1rem 0;
+        }
+
+        .role-badge {
+            padding: 0.2rem 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="container">
+        <nav style="display: flex; justify-content: space-between; padding: 2rem 0; align-items: center;">
+            <div class="mono" style="font-weight: 700; font-size: 1.25rem;"><a href="index.html"
+                    style="color: inherit; text-decoration: none;">BINDU_HEALTHCARE</a></div>
+            <div style="display: flex; gap: 2rem;">
+                <a href="index.html" class="mono"
+                    style="text-decoration: none; color: var(--text-dim); font-size: 0.875rem;">HOME</a>
+                <a href="protocol.html" class="mono"
+                    style="text-decoration: none; color: var(--text-dim); font-size: 0.875rem;">PROTOCOL</a>
+                <a href="audit.html" class="mono"
+                    style="text-decoration: none; color: var(--text-dim); font-size: 0.875rem;">AUDIT</a>
+            </div>
+            <div class="mono" style="color: var(--primary); font-size: 0.875rem;">[DEMO_ACTIVE]</div>
+        </nav>
+    </header>
+
+    <section class="section container">
+        <div class="mono" style="color: var(--primary); margin-bottom: 1rem;">BINDU_OS // DECISION_ENGINE_SIMULATOR
+        </div>
+        <h1 style="font-size: 4rem; margin-bottom: 1.5rem;">INTERACTIVE<br>PROTOCOL DEMO</h1>
+        <p style="color: var(--text-dim); max-width: 600px; margin-bottom: 4rem;">Simulate a real-time clinical decision
+            flow. Test the RAG engine, confidence scoring, and immutable audit logging in this interactive sandbox.</p>
+
+        <div style="display: grid; grid-template-columns: 1fr 350px; gap: 2rem;">
+            <div>
+                <div class="terminal mono" id="terminal">
+                    <div class="term-line">>> BINDU COMPLIANCE AGENT v8.4.1_STABLE</div>
+                    <div class="term-line">>> INITIALIZING RAG CORE... [OK]</div>
+                    <div class="term-line">>> CONNECTING TO SECURE LEDGER... [OK]</div>
+                    <div class="term-line">>> SYSTEM READY.</div>
+                    <div class="term-line" style="margin-top: 1rem; color: var(--primary);">SELECT ROLE: (1) CLINICIAN
+                        (2) PATIENT</div>
+                    <div class="term-line" id="role-select" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button onclick="setRole('clinician')" class="btn"
+                            style="padding: 0.5rem 1rem; font-size: 0.75rem;">1. CLINICIAN</button>
+                        <button onclick="setRole('patient')" class="btn"
+                            style="padding: 0.5rem 1rem; font-size: 0.75rem;">2. PATIENT</button>
+                    </div>
+                </div>
+                <div id="input-area" style="margin-top: 1rem; display: none;">
+                    <div class="mono" style="margin-bottom: 0.5rem; color: var(--text-dim);">SYSTEM_INPUT // ROLE: <span
+                            id="current-role-display" style="color: var(--primary);"></span></div>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" id="user-input" class="term-input"
+                            style="background: var(--bg-card); padding: 1rem; border: 1px solid var(--border);"
+                            placeholder="Type a query (e.g. 'Hypertension protocol')">
+                        <button onclick="processInput()" class="btn btn-primary"
+                            style="padding: 1rem 2rem;">EXECUTE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-box">
+                <span class="arc-label">AUDIT_LOG_STREAM</span>
+                <div id="audit-feed" class="mono" style="font-size: 0.75rem; color: var(--text-dim);">
+                    <!-- Live logs appear here -->
+                    <p style="margin-bottom: 0.5rem;">[00:00:00] WAITING_FOR_INPUT...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        let currentRole = 'clinician';
+        const terminal = document.getElementById('terminal');
+        const auditFeed = document.getElementById('audit-feed');
+
+        const protocols = [
+            { keywords: ['hypertension', 'blood pressure', 'lisinopril'], title: 'HYPERTENSION_MGMT_001', content: 'START 10MG DAILY. MAX 40MG DAILY.' },
+            { keywords: ['diabetes', 'metformin', 'sugar'], title: 'DIABETES_T2_MGMT_002', content: 'Metformin 500mg BID. Titrate weekly.' },
+            { keywords: ['asthma', 'budesonide', 'albuterol'], title: 'ASTHMA_MGMT_003', content: 'Low-dose ICS (Budesonide) 160mcg as needed.' },
+            { keywords: ['lipid', 'cholesterol', 'statin', 'atorvastatin'], title: 'LIPID_MGMT_004', content: 'Atorvastatin 20mg daily (Moderate intensity).' },
+            { keywords: ['depression', 'sertraline', 'ssri'], title: 'DEPRESSION_005', content: 'Sertraline 50mg daily. Monitor 4-8 weeks.' },
+            { keywords: ['adhd', 'methylphenidate', 'adderall', 'ritalin'], title: 'ADHD_MGMT_006', content: 'Methylphenidate 5-10mg BID. Monitor cardiovascular markers.' },
+            { keywords: ['autism', 'asd', 'aba'], title: 'ASD_SUPPORT_007', content: 'ABA therapy and family-centered support. Monitor associated symptoms.' },
+            { keywords: ['alzheimer', 'dementia', 'donepezil'], title: 'ALZHEIMERS_008', content: 'Donepezil 5mg once daily. Monitor cognitive status.' },
+            { keywords: ['multiple sclerosis', 'ms', 'ocrelizumab'], title: 'MS_MGMT_009', content: 'DMT therapy (e.g. Ocrelizumab). MRI monitoring every 6-12 months.' }
+        ];
+
+        function log(msg, color = 'var(--text-dim)') {
+            const div = document.createElement('div');
+            div.className = 'term-line';
+            div.style.color = color;
+            div.innerText = '>> ' + msg;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function setRole(role) {
+            currentRole = role;
+            document.getElementById('role-select').style.display = 'none';
+            document.getElementById('input-area').style.display = 'block';
+            document.getElementById('current-role-display').innerText = role.toUpperCase();
+            log(`ROLE_SET: ${role.toUpperCase()}`, 'var(--primary)');
+            log('Awaiting system input...');
+        }
+
+        async function processInput() {
+            const inputField = document.getElementById('user-input');
+            const query = inputField.value;
+            if (!query) return;
+
+            log(`INPUT_RECEIVED: "${query}"`, 'var(--text-main)');
+            inputField.value = '';
+
+            // Step 1: Simulated RAG Retrieval
+            log('INITIALIZING_RAG_SEARCH...');
+            await wait(800);
+
+            const match = protocols.find(p => p.keywords.some(k => query.toLowerCase().includes(k)));
+
+            if (match) {
+                log(`SOURCE_FOUND: ${match.title}`, 'var(--primary)');
+                await wait(500);
+
+                // Step 2: Confidence Calibration
+                const confidence = 0.95;
+                log(`CALCULATING_CONFIDENCE: [${confidence}]`, 'white');
+                await wait(500);
+
+                // Step 3: Safety Gating
+                let recommendation = match.content;
+                if (currentRole === 'patient') {
+                    log('SAFETY_GATER_ACTIVE: Applying patient disclaimers...', 'orange');
+                    recommendation = `General Information: ${recommendation}\n[CRITICAL: Consult your doctor for specific advice.]`;
+                    await wait(500);
+                }
+
+                log('RESPONSE_GENERATED:', 'var(--primary)');
+                log(recommendation, 'white');
+
+                // Step 4: Audit Logging
+                commitAudit(query, recommendation, confidence, [match.title]);
+
+            } else {
+                log('EVIDENCE_NOT_FOUND: Reasoning gated for safety.', 'red');
+            }
+        }
+
+        function commitAudit(query, rec, conf, sources) {
+            const id = 'AUDIT_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            log(`COMMITTING_AUDIT: [${id}]`, 'var(--primary)');
+
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `
+                <p style="color: var(--primary); margin-bottom: 0.2rem;">[${new Date().toLocaleTimeString()}] ${id}</p>
+                <p>MATCH: ${sources[0]}</p>
+                <p>CONF: ${conf}</p>
+            `;
+            auditFeed.prepend(div);
+        }
+
+        function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+    </script>
+
+    <footer class="container">
+        <div class="trace-line">
+            • SECURE AI TRACEABILITY • IMMUTABLE AUDIT LOGS • EVIDENCE-LINKED RECOMMENDATIONS • BINDU COMPLIANCE AGENT •
+        </div>
+    </footer>
+</body>
+
+</html>

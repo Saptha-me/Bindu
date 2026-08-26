@@ -1,0 +1,15 @@
+TITLE: Alzheimer's Disease Symptom Management
+ID: ALZHEIMERS_008
+VERIFICATION: 2024.8
+
+1. CHOLINESTERASE INHIBITORS (Mild to Moderate):
+   - Donepezil: Start 5 mg once daily.
+   - Rivastigmine: 1.5 mg twice daily with food.
+
+2. NMDA RECEPTOR ANTAGONISTS (Moderate to Severe):
+   - Memantine: Start 5 mg once daily; titrate to 10 mg twice daily.
+
+3. SAFETY GATES:
+   - Monitor for bradycardia and syncope.
+   - Cognitive assessment (MMSE/MoCA) every 6-12 months.
+   - Caregiver education on safety and wandering.

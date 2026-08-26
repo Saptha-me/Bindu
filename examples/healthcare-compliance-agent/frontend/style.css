@@ -1,0 +1,209 @@
+:root {
+    /* Color Palette - Industrial & Clinical */
+    --primary: #00f2ff;
+    /* Cyan glow */
+    --secondary: #0072ff;
+    /* Deep blue */
+    --bg-dark: #05070a;
+    --bg-card: #0d1117;
+    --text-main: #e6edf3;
+    --text-dim: #8b949e;
+    --accent-red: #ff3333;
+    /* For alerts/security symbols */
+    --border: #30363d;
+    --glass: rgba(13, 17, 23, 0.8);
+
+    /* Typography */
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Typography Enhancements */
+h1,
+h2,
+h3 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+}
+
+.mono {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+}
+
+/* Layout Utilities */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.section {
+    padding: 8rem 0;
+}
+
+/* Hero Section */
+.hero {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    background: radial-gradient(circle at 60% 40%, rgba(0, 242, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 20% 70%, rgba(0, 114, 255, 0.08) 0%, transparent 60%),
+        var(--bg-dark);
+    border-bottom: 1px solid var(--border);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    width: 100%;
+}
+
+.hero h1 {
+    font-size: 5rem;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(180deg, #fff 0%, #8b949e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: var(--text-dim);
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 1rem 2rem;
+    border: 1px solid var(--primary);
+    background: transparent;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:hover {
+    background: var(--primary);
+    color: var(--bg-dark);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--bg-dark);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.6);
+}
+
+/* Grid & Cards */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    border-color: var(--primary);
+}
+
+.card .label {
+    color: var(--primary);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.card h3 {
+    margin-bottom: 1rem;
+}
+
+.card p {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+}
+
+/* Architecture Section */
+.architecture-box {
+    border: 1px solid var(--border);
+    padding: 4rem;
+    background: rgba(13, 17, 23, 0.5);
+    backdrop-filter: blur(10px);
+    margin-top: 4rem;
+}
+
+.arc-label {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 2rem;
+    display: block;
+    font-size: 0.75rem;
+}
+
+/* Decorative elements */
+.trace-line {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border);
+    margin-top: 4rem;
+}
+
+/* Animations */
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.blink {
+    animation: blink 1.5s infinite;
+}

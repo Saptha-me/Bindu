@@ -1,0 +1,15 @@
+TITLE: Asthma Management Protocol (Adults)
+ID: ASTHMA_MGMT_003
+VERIFICATION: 2024.3
+
+1. MAINTENANCE THERAPY:
+   - First line: Low-dose Inhaled Corticosteroid (ICS) - Formoterol as needed (MART therapy).
+   - Alternative: Daily low-dose ICS plus SABA (Albuterol) as needed.
+
+2. DOSING:
+   - Budesonide/Formoterol: 160/4.5 mcg, 1-2 inhalations as needed for symptoms.
+   - Fluticasone: 110 mcg, 2 inhalations twice daily.
+
+3. SAFETY GATES:
+   - Monitor Peak Flow.
+   - If SABA used >2 days/week, escalate therapy.

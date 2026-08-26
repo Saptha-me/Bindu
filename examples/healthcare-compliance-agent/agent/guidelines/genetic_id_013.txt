@@ -1,0 +1,21 @@
+PROTOCOL_TYPE: Rare Genetic & Intellectual Disabilities
+ID: GENETIC_ID_013
+TITLE: Intellectual Disabilities & Genetic Syndromes (Down Syndrome, Williams, DiGeorge, Prader-Willi, FASD)
+
+1. DEVELOPMENTAL SUPPORT
+   - Early Intervention (EI): Speech, Physical, and Occupational therapy.
+   - Prader-Willi: Weight management and rigorous food access control.
+   - Williams Syndrome: Cardiac monitoring (SVAS) and musical/auditory therapy.
+   - DiGeorge (22q11.2): Immunological and endocrinology screening (Calcium levels).
+
+2. COGNITIVE ACCESSIBILITY
+   - Low-arousal communication styles.
+   - Visual scheduling and pictograms for task management.
+
+3. SAFETY GATES
+   - Pediatric-specific safety gates for diagnostic thresholds.
+   - Caregiver-role verification for data privacy.
+   - Multi-system monitoring (Genetic syndromes often involve heart/kidney/brain).
+
+EVIDENCE_LINK: Global Down Syndrome Foundation / PWSA / Williams Syndrome Association
+AUDIT_MODE: STRICT

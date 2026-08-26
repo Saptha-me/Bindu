@@ -1,0 +1,15 @@
+TITLE: Hyperlipidemia and Lipid Management
+ID: LIPID_MGMT_004
+VERIFICATION: 2024.4
+
+1. STATIN THERAPY:
+   - High-intensity: Atorvastatin 40-80 mg daily.
+   - Moderate-intensity: Atorvastatin 10-20 mg daily or Simvastatin 20-40 mg daily.
+
+2. TARGETS:
+   - Primary target: LDL cholesterol reduction.
+   - High risk: LDL goal < 70 mg/dL.
+
+3. SAFETY GATES:
+   - Baseline Liver Function Tests (LFTs).
+   - Monitor for myopathy/muscle pain.

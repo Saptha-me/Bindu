@@ -1,7 +1,11 @@
 """Minimal focused tests for ConfigValidator."""
 
+import copy
+from typing import ClassVar
+
 import pytest
 
+from bindu.common.protocol.types import AgentTrustConfig
 from bindu.penguin.config_validator import ConfigError, ConfigValidator
 
 
@@ -71,3 +75,89 @@ class TestConfigValidator:
         assert result["kind"] == "agent"
         assert result["num_history_sessions"] == 10
         assert result["debug_mode"] is False
+
+
+class TestAgentTrustValidation:
+    """Tests for agent_trust configuration validation."""
+
+    BASE_CONFIG: ClassVar[dict] = {
+        "author": "test@example.com",
+        "name": "TestAgent",
+        "deployment": {"url": "http://localhost:3773"},
+    }
+
+    def _config_with_trust(self, trust):
+        config = copy.deepcopy(self.BASE_CONFIG)
+        config["agent_trust"] = trust
+        return config
+
+    def test_valid_agent_trust_hydra(self):
+        """Valid agent_trust with hydra provider passes validation."""
+        config = self._config_with_trust({"identity_provider": "hydra"})
+        result = ConfigValidator.validate_and_process(config)
+        assert result["agent_trust"]["identity_provider"] == "hydra"
+
+    def test_valid_agent_trust_custom_provider(self):
+        """Valid agent_trust with custom provider passes validation."""
+        config = self._config_with_trust({"identity_provider": "custom"})
+        result = ConfigValidator.validate_and_process(config)
+        assert result["agent_trust"]["identity_provider"] == "custom"
+
+    def test_valid_agent_trust_with_all_fields(self):
+        """Valid agent_trust with all optional fields passes validation and round-trips."""
+        trust = {
+            "identity_provider": "hydra",
+            "inherited_roles": [],
+            "certificate": "-----BEGIN CERTIFICATE-----",
+            "certificate_fingerprint": "sha256:abc123",
+            "creator_id": "user-42",
+            "creation_timestamp": 1700000000,
+            "trust_verification_required": True,
+            "allowed_operations": {"read": "viewer", "write": "editor"},
+        }
+        result = ConfigValidator.validate_and_process(self._config_with_trust(trust))
+        # Verify all fields survive validation by round-tripping through AgentTrustConfig
+        AgentTrustConfig(**result["agent_trust"])
+
+    def test_agent_trust_none_is_allowed(self):
+        """agent_trust defaults to None and is accepted."""
+        result = ConfigValidator.validate_and_process(self.BASE_CONFIG)
+        assert result["agent_trust"] is None
+
+    def test_agent_trust_not_dict_raises(self):
+        """Non-dict agent_trust raises ValueError."""
+        with pytest.raises(ValueError, match="agent_trust"):
+            ConfigValidator.validate_and_process(self._config_with_trust("hydra"))
+
+    def test_agent_trust_missing_identity_provider_raises(self):
+        """Missing identity_provider raises ValueError."""
+        with pytest.raises(ValueError, match="agent_trust"):
+            ConfigValidator.validate_and_process(self._config_with_trust({}))
+
+    def test_agent_trust_invalid_identity_provider_raises(self):
+        """Unknown identity_provider raises ValueError."""
+        with pytest.raises(ValueError, match="agent_trust"):
+            ConfigValidator.validate_and_process(
+                self._config_with_trust({"identity_provider": "keycloak"})
+            )
+
+    def test_agent_trust_invalid_certificate_type_raises(self):
+        """Non-string certificate raises ValueError."""
+        with pytest.raises(ValueError, match="agent_trust"):
+            ConfigValidator.validate_and_process(
+                self._config_with_trust(
+                    {"identity_provider": "hydra", "certificate": 12345}
+                )
+            )
+
+    def test_agent_trust_invalid_allowed_operations_trust_level_raises(self):
+        """Invalid TrustLevel in allowed_operations raises ValueError."""
+        with pytest.raises(ValueError, match="agent_trust"):
+            ConfigValidator.validate_and_process(
+                self._config_with_trust(
+                    {
+                        "identity_provider": "hydra",
+                        "allowed_operations": {"read": "superuser"},
+                    }
+                )
+            )

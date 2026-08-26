@@ -236,25 +236,64 @@ class Worker(ABC):
         ...
 
     # -------------------------------------------------------------------------
-    # Future Operations (Not Yet Implemented)
+    # Pause / Resume Operations
     # -------------------------------------------------------------------------
 
-    async def _handle_pause(self, params: TaskIdParams) -> None:
-        """Handle pause operation.
+    _PAUSEABLE_STATES = frozenset({"submitted", "working", "input-required", "auth-required"})
 
-        TODO: Implement task pause functionality
-        - Save current execution state
-        - Update task to 'suspended' state
-        - Release resources while preserving context
+    async def _handle_pause(self, params: TaskIdParams) -> None:
+        """Pause a task by transitioning it to the 'suspended' state.
+
+        No-ops silently if the task is not found or already in a non-pauseable
+        state (terminal or already suspended), so callers do not need to guard.
         """
-        raise NotImplementedError("Pause operation not yet implemented")
+        task_id = self._normalize_uuid(params["task_id"])
+        task = await self.storage.load_task(task_id)
+        if task is None:
+            logger.warning(f"Pause requested for unknown task {task_id}")
+            return
+
+        current_state = task["status"]["state"]
+        if current_state not in self._PAUSEABLE_STATES:
+            logger.warning(
+                f"Cannot pause task {task_id}: state '{current_state}' is not pauseable"
+            )
+            return
+
+        await self.storage.update_task(task_id, state="suspended")
+        logger.info(f"Task {task_id} suspended (was '{current_state}')")
 
     async def _handle_resume(self, params: TaskIdParams) -> None:
-        """Handle resume operation.
+        """Resume a suspended task by re-submitting it for execution.
 
-        TODO: Implement task resume functionality
-        - Restore execution state
-        - Update task to 'resumed' state
-        - Continue from last checkpoint
+        Transitions the task back to 'submitted' and re-queues a run operation
+        so the worker picks it up with its full stored message history intact.
+
+        No-ops silently if the task is not found or is not in 'suspended' state.
         """
-        raise NotImplementedError("Resume operation not yet implemented")
+        task_id = self._normalize_uuid(params["task_id"])
+        task = await self.storage.load_task(task_id)
+        if task is None:
+            logger.warning(f"Resume requested for unknown task {task_id}")
+            return
+
+        current_state = task["status"]["state"]
+        if current_state != "suspended":
+            logger.warning(
+                f"Cannot resume task {task_id}: expected 'suspended', got '{current_state}'"
+            )
+            return
+
+        await self.storage.update_task(task_id, state="submitted")
+        resume_params: TaskSendParams = {
+            "task_id": task_id,
+            "context_id": task["context_id"],
+        }
+        try:
+            await self.scheduler.run_task(resume_params)
+        except Exception:
+            # Enqueue failed — roll back to suspended so the task is not stranded
+            # in submitted state with no worker picking it up.
+            await self.storage.update_task(task_id, state="suspended")
+            raise
+        logger.info(f"Task {task_id} resumed and re-queued for execution")

@@ -1068,3 +1068,105 @@ class TestManifestWorker:
         assert isinstance(history, list)
         # Should not call list_tasks_by_context when disabled
         mock_storage.list_tasks_by_context.assert_not_called()
+
+
+class TestWorkerPauseResume:
+    """Tests for _handle_pause and _handle_resume on the base Worker (via ManifestWorker)."""
+
+    def _make_worker(self):
+        mock_manifest = Mock()
+        mock_scheduler = AsyncMock()
+        mock_storage = AsyncMock()
+        worker = ManifestWorker(
+            manifest=mock_manifest, scheduler=mock_scheduler, storage=mock_storage
+        )
+        return worker, mock_storage, mock_scheduler
+
+    def _make_task(self, task_id, context_id, state):
+        return {
+            "id": task_id,
+            "context_id": context_id,
+            "status": {"state": state, "timestamp": "2024-01-01T00:00:00Z"},
+        }
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("state", ["working", "submitted", "input-required", "auth-required"])
+    async def test_pause_active_task_transitions_to_suspended(self, state):
+        worker, mock_storage, _ = self._make_worker()
+        task_id = uuid4()
+        mock_storage.load_task.return_value = self._make_task(task_id, uuid4(), state)
+
+        await worker._handle_pause({"task_id": task_id})
+
+        mock_storage.update_task.assert_called_once_with(task_id, state="suspended")
+
+    @pytest.mark.asyncio
+    async def test_pause_terminal_task_is_noop(self):
+        worker, mock_storage, _ = self._make_worker()
+        task_id = uuid4()
+        mock_storage.load_task.return_value = self._make_task(task_id, uuid4(), "completed")
+
+        await worker._handle_pause({"task_id": task_id})
+
+        mock_storage.update_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_pause_unknown_task_is_noop(self):
+        worker, mock_storage, _ = self._make_worker()
+        mock_storage.load_task.return_value = None
+
+        await worker._handle_pause({"task_id": uuid4()})
+
+        mock_storage.update_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_resume_suspended_task_resubmits(self):
+        worker, mock_storage, mock_scheduler = self._make_worker()
+        task_id = uuid4()
+        context_id = uuid4()
+        mock_storage.load_task.return_value = self._make_task(task_id, context_id, "suspended")
+
+        await worker._handle_resume({"task_id": task_id})
+
+        mock_storage.update_task.assert_called_once_with(task_id, state="submitted")
+        mock_scheduler.run_task.assert_called_once()
+        run_params = mock_scheduler.run_task.call_args[0][0]
+        assert run_params["task_id"] == task_id
+        assert run_params["context_id"] == context_id
+
+    @pytest.mark.asyncio
+    async def test_resume_non_suspended_task_is_noop(self):
+        worker, mock_storage, mock_scheduler = self._make_worker()
+        task_id = uuid4()
+        mock_storage.load_task.return_value = self._make_task(task_id, uuid4(), "working")
+
+        await worker._handle_resume({"task_id": task_id})
+
+        mock_storage.update_task.assert_not_called()
+        mock_scheduler.run_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_resume_unknown_task_is_noop(self):
+        worker, mock_storage, mock_scheduler = self._make_worker()
+        mock_storage.load_task.return_value = None
+
+        await worker._handle_resume({"task_id": uuid4()})
+
+        mock_storage.update_task.assert_not_called()
+        mock_scheduler.run_task.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_resume_rolls_back_to_suspended_on_enqueue_failure(self):
+        worker, mock_storage, mock_scheduler = self._make_worker()
+        task_id = uuid4()
+        context_id = uuid4()
+        mock_storage.load_task.return_value = self._make_task(task_id, context_id, "suspended")
+        mock_scheduler.run_task.side_effect = RuntimeError("queue full")
+
+        with pytest.raises(RuntimeError, match="queue full"):
+            await worker._handle_resume({"task_id": task_id})
+
+        # First call sets submitted, second call rolls back to suspended
+        calls = mock_storage.update_task.call_args_list
+        assert calls[0] == ((task_id,), {"state": "submitted"})
+        assert calls[1] == ((task_id,), {"state": "suspended"})

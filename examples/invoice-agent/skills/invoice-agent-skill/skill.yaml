@@ -1,0 +1,15 @@
+id: invoice-agent-skill
+name: invoice-agent-skill
+description: Invoice agent for X402 payment flow
+version: 1.0.0
+
+tags:
+  - billing
+  - payments
+  - x402
+
+input_modes:
+  - application/json
+
+output_modes:
+  - application/json

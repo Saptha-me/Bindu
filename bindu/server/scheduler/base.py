@@ -22,22 +22,18 @@ class Scheduler(ABC):
     @abstractmethod
     async def run_task(self, params: TaskSendParams) -> None:
         """Send a task to be executed by the worker."""
-        raise NotImplementedError("send_run_task is not implemented yet.")
 
     @abstractmethod
     async def cancel_task(self, params: TaskIdParams) -> None:
         """Cancel a task."""
-        raise NotImplementedError("send_cancel_task is not implemented yet.")
 
     @abstractmethod
     async def pause_task(self, params: TaskIdParams) -> None:
         """Pause a task."""
-        raise NotImplementedError("send_pause_task is not implemented yet.")
 
     @abstractmethod
     async def resume_task(self, params: TaskIdParams) -> None:
         """Resume a task."""
-        raise NotImplementedError("send_resume_task is not implemented yet.")
 
     @abstractmethod
     async def __aenter__(self) -> Self:

@@ -1,0 +1,7 @@
+﻿{
+  "name": "greeter-agent",
+  "version": "0.1.0",
+  "description": "A minimal example agent.",
+  "entrypoint": "main.py",
+  "author": "Krishnasuhas Charugundla"
+}

@@ -32,9 +32,13 @@ class RuntimeConfig:
 
     provider: Literal["in-process", "boxd"] = "in-process"
     image: str | None = None
-    vcpu: int = 2
-    memory: str = "4G"
-    disk: str = "20G"
+    # Sizing is optional: boxd 0.2.x machines come in fixed vCPU/memory
+    # pairs with an org-level default, and per-machine disk sizing is not
+    # supported server-side. ``None`` means "don't ask, take the default";
+    # only explicitly-set values are passed to the create call.
+    vcpu: int | None = None
+    memory: str | None = None
+    disk: str | None = None
     # ``0`` is boxd's "disabled" sentinel for auto-suspend. Default to off
     # because bindu agents commonly run background tasks (scheduler ticks,
     # streaming LLM calls, websocket sessions) that would be frozen mid-flight
@@ -76,16 +80,18 @@ class RuntimeConfig:
                 f"on_exit must be one of {KNOWN_ON_EXIT}, got {on_exit!r}"
             )
 
-        vcpu = int(raw.get("vcpu", 2))
-        if vcpu <= 0:
-            raise RuntimeConfigError(f"vcpu must be positive, got {vcpu}")
+        vcpu = raw.get("vcpu")
+        if vcpu is not None:
+            vcpu = int(vcpu)
+            if vcpu <= 0:
+                raise RuntimeConfigError(f"vcpu must be positive, got {vcpu}")
 
         return cls(
             provider="boxd",
             image=raw.get("image"),
             vcpu=vcpu,
-            memory=raw.get("memory", "4G"),
-            disk=raw.get("disk", "20G"),
+            memory=raw.get("memory"),
+            disk=raw.get("disk"),
             auto_suspend=int(raw.get("auto_suspend", 0)),
             on_exit=on_exit,
             bindu_version=raw.get("bindu_version"),

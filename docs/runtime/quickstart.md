@@ -388,13 +388,13 @@ agents that don't get traffic 24/7.
 > dashboard. To force-suspend from Python:
 >
 > ```python
-> from boxd.aio import Compute
-> import asyncio, os
+> from boxd import AsyncBoxd
+> import asyncio
 >
 > async def main():
->     async with Compute(api_key=os.environ["BOXD_API_KEY"]) as c:
->         box = await c.box.get("runtime-boxd-example")
->         await box.stop()  # or .destroy() to delete it entirely
+>     async with AsyncBoxd() as boxd:  # reads BOXD_API_KEY from the env
+>         machine = await boxd.machines.get("runtime-boxd-example")
+>         await boxd.machines.pause(machine.id)  # or .delete(machine.id)
 >
 > asyncio.run(main())
 > ```

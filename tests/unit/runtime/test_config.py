@@ -19,9 +19,11 @@ def test_boxd_minimal():
     cfg = RuntimeConfig.from_dict({"provider": "boxd"})
     assert cfg.provider == "boxd"
     assert cfg.image is None
-    assert cfg.vcpu == 2
-    assert cfg.memory == "4G"
-    assert cfg.disk == "20G"
+    # Sizing defaults to None: boxd 0.2.x sizes machines from the org
+    # default unless explicitly asked, and refuses per-machine disk sizing.
+    assert cfg.vcpu is None
+    assert cfg.memory is None
+    assert cfg.disk is None
     # auto_suspend defaults OFF (0 is boxd's "disabled" sentinel) so the VM
     # never freezes mid-task. on_exit=suspend still saves cost between sessions.
     assert cfg.auto_suspend == 0

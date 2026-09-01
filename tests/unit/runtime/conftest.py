@@ -2,54 +2,72 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 
-class _FakeBox:
-    """Stand-in for boxd.aio.Box used by tests."""
+def _ok_exec_result():
+    """Stub ExecResult with exit_code=0."""
+    r = MagicMock()
+    r.exit_code = 0
+    r.success = True
+    r.stdout = ""
+    r.stderr = ""
+    return r
+
+
+class _FakeMachine:
+    """Stand-in for the boxd 0.2.x ``Machine`` record (plain data)."""
 
     def __init__(self, name: str = "agent", vm_id: str = "vm-1"):
         self.id = vm_id
         self.name = name
-        self.image = "ubuntu:latest"
-        self.public_ip = "1.2.3.4"
         self.status = "running"
-        self.url = f"https://{name}.boxd.sh"
+        self.image_ref = "ubuntu:latest"
         self.boot_time_ms = 2000
-        # All async methods that the provider may call:
-        self.exec = AsyncMock()
-        self.write_file = AsyncMock()
-        self.read_file = AsyncMock(return_value=b"")
-        self.destroy = AsyncMock()
-        self.suspend = AsyncMock()
-        self.resume = AsyncMock()
-        # `stream_logs` is set by tests that exercise log streaming.
-        self.stream_logs = MagicMock()
+        self.access = SimpleNamespace(
+            url=f"https://{name}.boxd.sh",
+            domain=f"{name}.boxd.sh",
+            ssh_port=None,
+        )
 
 
-class _FakeBoxService:
+class _FakeMachines:
+    """Stand-in for ``AsyncBoxd().machines`` (verbs + sub-namespaces)."""
+
     def __init__(self):
         self.create = AsyncMock()
         self.get = AsyncMock()
         self.list = AsyncMock(return_value=[])
-        self.fork = AsyncMock()
+        self.delete = AsyncMock()
+        self.pause = AsyncMock()
+        self.resume = AsyncMock()
+        self.wake = AsyncMock()
+        self.start = AsyncMock()
+        self.wait_until_ready = AsyncMock()
+        self.exec = AsyncMock(return_value=_ok_exec_result())
+        # ``stream_exec`` is sync — it returns the stream session directly.
+        self.stream_exec = MagicMock()
+        self.logs = MagicMock()
+        self.files = SimpleNamespace(upload=AsyncMock(), download=AsyncMock())
+        self.proxies = SimpleNamespace(
+            create=AsyncMock(),
+            list=AsyncMock(return_value=[]),
+            set_port=AsyncMock(),
+            delete=AsyncMock(),
+        )
 
 
-class _FakeCompute:
-    """Stand-in for boxd.aio.Compute used as an async context manager."""
+class _FakeBoxdClient:
+    """Stand-in for ``boxd.AsyncBoxd`` used as an async context manager."""
 
     def __init__(self):
-        self.box = _FakeBoxService()
-        self.template = MagicMock()
-        self.disk = MagicMock()
-        self.domain = MagicMock()
-        self.network = MagicMock()
-        self.token = MagicMock()
+        self.machines = _FakeMachines()
+        self.snapshots = MagicMock()
+        self.disks = MagicMock()
         self.close = AsyncMock()
-        self.whoami = AsyncMock()
-        self.config = AsyncMock()
 
     async def __aenter__(self):
         return self
@@ -59,24 +77,34 @@ class _FakeCompute:
 
 
 @pytest.fixture
-def fake_box():
-    """Return a fresh _FakeBox per test."""
-    return _FakeBox()
+def fake_machine():
+    """Return a fresh _FakeMachine per test."""
+    return _FakeMachine()
 
 
 @pytest.fixture
-def fake_compute(fake_box):
-    """Return a fresh _FakeCompute per test, wired so .box.create returns fake_box."""
-    c = _FakeCompute()
-    c.box.create.return_value = fake_box
-    c.box.get.return_value = fake_box
+def fake_client(fake_machine):
+    """Return a fresh _FakeBoxdClient wired so machine lookups resolve.
+
+    ``files.upload`` confirms the full byte count by default, matching a
+    clean upload.
+    """
+    c = _FakeBoxdClient()
+    c.machines.create.return_value = fake_machine
+    c.machines.get.return_value = fake_machine
+    c.machines.wait_until_ready.return_value = fake_machine
+
+    async def _upload_ok(machine_id, path, data):
+        return len(data)
+
+    c.machines.files.upload.side_effect = _upload_ok
     return c
 
 
 @pytest.fixture
-def mock_boxd(monkeypatch, fake_compute):
-    """Patch boxd_provider._make_compute to return `fake_compute`."""
+def mock_boxd(monkeypatch, fake_client):
+    """Patch boxd_provider._make_client to return `fake_client`."""
     import bindu.runtime.boxd_provider as bp
 
-    monkeypatch.setattr(bp, "_make_compute", lambda **kw: fake_compute)
-    return fake_compute
+    monkeypatch.setattr(bp, "_make_client", lambda **kw: fake_client)
+    return fake_client

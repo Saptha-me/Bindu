@@ -501,7 +501,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.31.0,<1" },
     { name = "base58", specifier = ">=2.1.1,<3" },
     { name = "base58", marker = "extra == 'core'", specifier = ">=2.1.1,<3" },
-    { name = "boxd", marker = "extra == 'runtime-boxd'", specifier = ">=0.1.1" },
+    { name = "boxd", marker = "extra == 'runtime-boxd'", specifier = ">=0.2.7,<0.3" },
     { name = "cdp-sdk", specifier = ">=1.45.0,<2" },
     { name = "cookiecutter", specifier = ">=2.6.0,<3" },
     { name = "cryptography", specifier = ">=50.0.0,<51" },
@@ -668,16 +668,17 @@ css = [
 
 [[package]]
 name = "boxd"
-version = "0.1.2"
+version = "0.2.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "grpcio" },
     { name = "httpx" },
     { name = "protobuf" },
+    { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/19/d6/6b1130b42a97724583b239df3943aa306874d52666c1266809c6861f9c97/boxd-0.1.2.tar.gz", hash = "sha256:6d257ec5a494d0ea7fa9b30d3e40976db36fe7a1b0b2853be1ff8b9c9c967de1", size = 45729, upload-time = "2026-05-04T21:50:03.334Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/88/d8/f983e42ca822072d1a389c2a78a055e2e623c92b2288e577e49abef6b64e/boxd-0.2.7.tar.gz", hash = "sha256:769090da8e74f9bd90098c9a21c40a99742fe3938daaeb342325667e56a0a68d", size = 101593, upload-time = "2026-08-31T16:46:59.058Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/f7/3edb799184b2fbd0b80f95b7e29867000bd09a4b4bf83bdfed129807f356/boxd-0.1.2-py3-none-any.whl", hash = "sha256:343f62f4afa8e5085895a16d24781ec17ba76b45f26fc0a88d332a5f90cd4f1b", size = 40962, upload-time = "2026-05-04T21:50:02.194Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/ee/3bd911f577fc461f5cfe32c361e9aa63dbf74d82a3ac5b2dd6671215dba9/boxd-0.2.7-py3-none-any.whl", hash = "sha256:6095ab60bf626ec2bab379f77d5518a63a373038dc75e45028256e2c9cfdf029", size = 77302, upload-time = "2026-08-31T16:46:57.917Z" },
 ]
 
 [[package]]

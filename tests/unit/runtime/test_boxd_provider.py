@@ -22,76 +22,105 @@ def _ok_exec_result():
     return r
 
 
-def _wire_safe_write_file(fake_box):
-    """Make fake_box echo back the correct sha256 from sha256sum invocations.
+def _bad_exec_result(stderr: str = "boom"):
+    r = MagicMock()
+    r.exit_code = 1
+    r.success = False
+    r.stdout = ""
+    r.stderr = stderr
+    return r
 
-    The real ``_safe_write_file`` writes a blob, then runs ``sha256sum`` on
-    the destination and compares to the host's hash. To test the *callers*
-    (ship_source, _ship_bindu_source, deploy()) we need the box to look like
-    the bytes landed intact — so wire write_file to remember what was sent
-    and exec to return the matching hash for sha256sum.
+
+def _sh_calls(fake_client):
+    """Extract the shell script strings from ``sh -c`` exec invocations.
+
+    The provider calls ``machines.exec(machine_id, ["sh", "-c", script])``.
     """
-    import hashlib
-
-    last_blob: dict[str, bytes] = {}
-
-    async def fake_write_file(blob, dest):
-        last_blob[dest] = blob
-
-    fake_box.write_file.side_effect = fake_write_file
-
-    async def fake_exec(*args, **kwargs):
-        if args and args[0] == "sha256sum" and len(args) >= 2:
-            dest = args[1]
-            blob = last_blob.get(dest, b"")
-            r = MagicMock()
-            r.exit_code = 0
-            r.success = True
-            r.stdout = f"{hashlib.sha256(blob).hexdigest()}  {dest}\n"
-            r.stderr = ""
-            return r
-        return _ok_exec_result()
-
-    fake_box.exec.side_effect = fake_exec
+    out = []
+    for c in fake_client.machines.exec.await_args_list:
+        cmd = c.args[1]
+        if isinstance(cmd, list) and cmd[:2] == ["sh", "-c"]:
+            out.append(cmd[2])
+    return out
 
 
 # ── _resolve_vm ────────────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_resolve_vm_creates_when_not_found(mock_boxd, fake_box):
-    """If no VM with this name exists, create one."""
-    from boxd.errors import NotFoundError
+async def test_resolve_vm_creates_when_not_found(mock_boxd, fake_machine):
+    """If no machine with this name exists, create one."""
+    from boxd import NotFoundError
 
-    mock_boxd.box.get.side_effect = NotFoundError("not found")
+    mock_boxd.machines.get.side_effect = NotFoundError("not found")
     p = BoxdRuntimeProvider()
 
     cfg = RuntimeConfig.from_dict({"provider": "boxd"})
-    box = await p._resolve_vm(mock_boxd, "my-agent", cfg)
+    machine = await p._resolve_vm(mock_boxd, "my-agent", cfg)
 
-    mock_boxd.box.get.assert_awaited_once_with("my-agent")
-    mock_boxd.box.create.assert_awaited_once()
-    assert box is fake_box
+    mock_boxd.machines.get.assert_awaited_once_with("my-agent")
+    mock_boxd.machines.create.assert_awaited_once()
+    assert machine is fake_machine
 
 
 @pytest.mark.asyncio
-async def test_resolve_vm_reuses_when_found(mock_boxd, fake_box):
-    """If a VM already exists, reuse it without creating."""
+async def test_resolve_vm_reuses_when_found(mock_boxd, fake_machine):
+    """If a machine already exists and is running, reuse it as-is."""
     p = BoxdRuntimeProvider()
     cfg = RuntimeConfig.from_dict({"provider": "boxd"})
-    box = await p._resolve_vm(mock_boxd, "my-agent", cfg)
+    machine = await p._resolve_vm(mock_boxd, "my-agent", cfg)
 
-    mock_boxd.box.get.assert_awaited_once_with("my-agent")
-    mock_boxd.box.create.assert_not_awaited()
-    assert box is fake_box
+    mock_boxd.machines.get.assert_awaited_once_with("my-agent")
+    mock_boxd.machines.create.assert_not_awaited()
+    mock_boxd.machines.resume.assert_not_awaited()
+    assert machine is fake_machine
 
 
 @pytest.mark.asyncio
-async def test_resolve_vm_passes_config(mock_boxd, fake_box):
+@pytest.mark.parametrize(
+    ("status", "verb"),
+    [("suspended", "resume"), ("hibernated", "wake"), ("stopped", "start")],
+)
+async def test_resolve_vm_revives_saved_machine(mock_boxd, fake_machine, status, verb):
+    """A reused machine left paused/hibernated/stopped by a previous
+    ``on_exit`` must be brought back explicitly — boxd 0.2.x never resumes
+    implicitly, and ``wait_until_ready`` raises on 'stopped'."""
+    fake_machine.status = status
+    p = BoxdRuntimeProvider()
+    cfg = RuntimeConfig.from_dict({"provider": "boxd"})
+
+    await p._resolve_vm(mock_boxd, "my-agent", cfg)
+
+    getattr(mock_boxd.machines, verb).assert_awaited_once_with(fake_machine.id)
+    mock_boxd.machines.create.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resolve_vm_falls_back_to_list_on_name_miss(mock_boxd, fake_machine):
+    """``machines.get(name)`` resolves names only in the default org
+    context; a machine living in another org raises NotFound while
+    ``list()`` still shows it. The provider must find it via the list scan
+    and reuse it — creating over the name fails with ConflictError."""
+    from boxd import NotFoundError
+
+    mock_boxd.machines.get.side_effect = NotFoundError("not found")
+    fake_machine.name = "my-agent"
+    mock_boxd.machines.list.return_value = [fake_machine]
+    p = BoxdRuntimeProvider()
+    cfg = RuntimeConfig.from_dict({"provider": "boxd"})
+
+    machine = await p._resolve_vm(mock_boxd, "my-agent", cfg)
+
+    assert machine is fake_machine
+    mock_boxd.machines.create.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resolve_vm_passes_config(mock_boxd, fake_machine):
     """vcpu / memory / disk / image / auto_suspend land in the create call."""
-    from boxd.errors import NotFoundError
+    from boxd import NotFoundError
 
-    mock_boxd.box.get.side_effect = NotFoundError("nope")
+    mock_boxd.machines.get.side_effect = NotFoundError("nope")
     p = BoxdRuntimeProvider()
 
     cfg = RuntimeConfig.from_dict(
@@ -106,233 +135,148 @@ async def test_resolve_vm_passes_config(mock_boxd, fake_box):
     )
     await p._resolve_vm(mock_boxd, "my-agent", cfg)
 
-    call = mock_boxd.box.create.await_args
-    assert call.kwargs.get("name") == "my-agent"
+    call = mock_boxd.machines.create.await_args
+    assert call.args[0] == "my-agent"
     assert call.kwargs.get("image") == "ghcr.io/me/agent:v1"
-    box_config = call.kwargs.get("config")
-    assert box_config is not None
-    assert box_config.vcpu == 4
-    assert box_config.memory == "8G"
-    assert box_config.disk == "40G"
-    # auto_suspend goes through LifecycleConfig
-    assert box_config.lifecycle is not None
-    assert box_config.lifecycle.auto_suspend_timeout == 30
-    # default proxy must forward to bindu's default port (3773), not boxd's
-    # default (8000), or the public URL is unreachable.
-    assert box_config.network is not None
-    assert box_config.network.proxies is not None
-    assert any(p.port == 3773 for p in box_config.network.proxies)
+    assert call.kwargs.get("vcpu") == 4
+    assert call.kwargs.get("memory") == "8G"
+    assert call.kwargs.get("disk") == "40G"
+    assert call.kwargs.get("auto_suspend_timeout") == 30
 
 
 # ── _ship_source ───────────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_ship_source_writes_and_extracts(mock_boxd, fake_box, tmp_path):
+async def test_ship_source_uploads_and_extracts(mock_boxd, fake_machine, tmp_path):
     (tmp_path / "agent.py").write_text("# hi\n")
-    _wire_safe_write_file(fake_box)
     p = BoxdRuntimeProvider()
 
-    await p._ship_source(fake_box, tmp_path)
+    await p._ship_source(mock_boxd, fake_machine.id, tmp_path)
 
-    fake_box.write_file.assert_awaited_once()
-    args = fake_box.write_file.await_args
-    payload, dest = args.args[0], args.args[1]
-    assert isinstance(payload, bytes)
+    mock_boxd.machines.files.upload.assert_awaited_once()
+    args = mock_boxd.machines.files.upload.await_args
+    machine_id, dest, payload = args.args[0], args.args[1], args.args[2]
+    assert machine_id == fake_machine.id
     assert dest == "/tmp/source.tar.gz"
+    assert isinstance(payload, bytes)
 
     # mkdir + tar extract are issued as a single shell exec to save a round-trip
-    exec_calls = fake_box.exec.await_args_list
     assert any(
-        c.args[0] == "sh"
-        and c.args[1] == "-c"
-        and "mkdir -p /home/boxd/app" in c.args[2]
-        and "tar xzf /tmp/source.tar.gz -C /home/boxd/app" in c.args[2]
-        for c in exec_calls
+        "mkdir -p /home/boxd/app" in s
+        and "tar xzf /tmp/source.tar.gz -C /home/boxd/app" in s
+        for s in _sh_calls(mock_boxd)
     )
 
 
-# ── _safe_write_file (verify-and-retry workaround for boxd issue #45) ─
+# ── _upload_file (verify the confirmed byte count) ─────────────────
 
 
 @pytest.mark.asyncio
-async def test_safe_write_file_succeeds_on_clean_upload(fake_box):
-    """When the sha256 on the VM matches the host, no retry."""
-    from bindu.runtime.boxd_provider import _safe_write_file
+async def test_upload_file_accepts_confirmed_full_write(mock_boxd, fake_machine):
+    """When the machine confirms all bytes, no error."""
+    from bindu.runtime.boxd_provider import _upload_file
 
-    _wire_safe_write_file(fake_box)
-    await _safe_write_file(fake_box, b"hello world", "/tmp/x.bin")
+    await _upload_file(mock_boxd, fake_machine.id, b"hello world", "/tmp/x.bin")
 
-    assert fake_box.write_file.await_count == 1
-
-
-@pytest.mark.asyncio
-async def test_safe_write_file_retries_on_corrupted_upload(monkeypatch, fake_box):
-    """If the first upload's hash mismatches, retry until it succeeds."""
-    import hashlib
-
-    from bindu.runtime.boxd_provider import _safe_write_file
-
-    monkeypatch.setattr(
-        "bindu.runtime.boxd_provider.asyncio.sleep", AsyncMock(return_value=None)
+    mock_boxd.machines.files.upload.assert_awaited_once_with(
+        fake_machine.id, "/tmp/x.bin", b"hello world"
     )
 
-    blob = b"some data"
-    expected = hashlib.sha256(blob).hexdigest()
-    state = {"call": 0}
-
-    async def fake_write(b, d):
-        pass
-
-    async def fake_exec(*args, **kwargs):
-        if args and args[0] == "sha256sum":
-            state["call"] += 1
-            r = MagicMock()
-            r.exit_code = 0
-            # First call returns a wrong hash (truncation simulated); second matches.
-            hash_str = "0" * 64 if state["call"] == 1 else expected
-            r.stdout = f"{hash_str}  {args[1]}\n"
-            r.stderr = ""
-            return r
-        return _ok_exec_result()
-
-    fake_box.write_file.side_effect = fake_write
-    fake_box.exec.side_effect = fake_exec
-
-    await _safe_write_file(fake_box, blob, "/tmp/x.bin")
-    # Wrote twice (once corrupted, once clean)
-    assert fake_box.write_file.await_count == 2
-
 
 @pytest.mark.asyncio
-async def test_safe_write_file_raises_after_max_retries(monkeypatch, fake_box):
-    """If every attempt produces a corrupt upload, raise with a useful message."""
-    from bindu.runtime.boxd_provider import _safe_write_file
+async def test_upload_file_raises_on_short_write(mock_boxd, fake_machine):
+    """If the machine confirms fewer bytes than sent, fail the deploy."""
+    from bindu.runtime.boxd_provider import _upload_file
 
-    monkeypatch.setattr(
-        "bindu.runtime.boxd_provider.asyncio.sleep", AsyncMock(return_value=None)
-    )
+    mock_boxd.machines.files.upload.side_effect = None
+    mock_boxd.machines.files.upload.return_value = 3
 
-    async def fake_write(b, d):
-        pass
-
-    async def fake_exec_always_wrong(*args, **kwargs):
-        if args and args[0] == "sha256sum":
-            r = MagicMock()
-            r.exit_code = 0
-            r.stdout = f"{'f' * 64}  {args[1]}\n"
-            r.stderr = ""
-            return r
-        return _ok_exec_result()
-
-    fake_box.write_file.side_effect = fake_write
-    fake_box.exec.side_effect = fake_exec_always_wrong
-
-    with pytest.raises(RuntimeError) as ei:
-        await _safe_write_file(fake_box, b"data", "/tmp/x.bin")
-    msg = str(ei.value)
-    assert "corrupted" in msg
-    assert "issues/45" in msg  # points at the upstream bug
+    with pytest.raises(RuntimeError, match="incomplete"):
+        await _upload_file(mock_boxd, fake_machine.id, b"some data", "/tmp/x.bin")
 
 
 # ── _install_deps ──────────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_install_deps_with_pyproject(mock_boxd, fake_box):
-    fake_box.exec.return_value = _ok_exec_result()
+async def test_install_deps_with_pyproject(mock_boxd, fake_machine):
     p = BoxdRuntimeProvider()
 
-    await p._install_deps(fake_box, has_pyproject=True, has_requirements=False)
+    await p._install_deps(
+        mock_boxd, fake_machine.id, has_pyproject=True, has_requirements=False
+    )
 
     # All pip steps are chained into a single sh -c invocation to save round-trips.
-    install_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "pip install" in c.args[2]
-    ]
+    install_calls = [s for s in _sh_calls(mock_boxd) if "pip install" in s]
     assert len(install_calls) == 1
-    cmd = install_calls[0].args[2]
+    cmd = install_calls[0]
     assert "pip install --break-system-packages bindu" in cmd
     assert "pip install --break-system-packages -e ." in cmd
 
 
 @pytest.mark.asyncio
-async def test_install_deps_with_requirements(mock_boxd, fake_box):
-    fake_box.exec.return_value = _ok_exec_result()
+async def test_install_deps_with_requirements(mock_boxd, fake_machine):
     p = BoxdRuntimeProvider()
 
-    await p._install_deps(fake_box, has_pyproject=False, has_requirements=True)
+    await p._install_deps(
+        mock_boxd, fake_machine.id, has_pyproject=False, has_requirements=True
+    )
 
-    install_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "pip install" in c.args[2]
-    ]
+    install_calls = [s for s in _sh_calls(mock_boxd) if "pip install" in s]
     assert len(install_calls) == 1
-    cmd = install_calls[0].args[2]
     assert (
-        "pip install --break-system-packages -r /home/boxd/app/requirements.txt" in cmd
+        "pip install --break-system-packages -r /home/boxd/app/requirements.txt"
+        in install_calls[0]
     )
 
 
 @pytest.mark.asyncio
-async def test_install_deps_pinned_bindu_version(mock_boxd, fake_box):
-    fake_box.exec.return_value = _ok_exec_result()
+async def test_install_deps_pinned_bindu_version(mock_boxd, fake_machine):
     p = BoxdRuntimeProvider()
 
     await p._install_deps(
-        fake_box,
+        mock_boxd,
+        fake_machine.id,
         has_pyproject=False,
         has_requirements=False,
         bindu_version="0.2.5",
     )
 
-    install_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "pip install" in c.args[2]
-    ]
+    install_calls = [s for s in _sh_calls(mock_boxd) if "pip install" in s]
     assert len(install_calls) == 1
-    assert (
-        "pip install --break-system-packages bindu==0.2.5" in install_calls[0].args[2]
-    )
+    assert "pip install --break-system-packages bindu==0.2.5" in install_calls[0]
 
 
 @pytest.mark.asyncio
-async def test_install_deps_raises_on_failure(mock_boxd, fake_box):
+async def test_install_deps_raises_on_failure(mock_boxd, fake_machine):
     """Non-zero exit code from pip install should raise."""
-    bad = MagicMock()
-    bad.exit_code = 1
-    bad.stderr = "boom"
-    fake_box.exec.return_value = bad
+    mock_boxd.machines.exec.return_value = _bad_exec_result()
     p = BoxdRuntimeProvider()
 
     with pytest.raises(RuntimeError, match="failed"):
-        await p._install_deps(fake_box, has_pyproject=False, has_requirements=False)
+        await p._install_deps(
+            mock_boxd, fake_machine.id, has_pyproject=False, has_requirements=False
+        )
 
 
 @pytest.mark.asyncio
-async def test_install_deps_bindu_version_local(mock_boxd, fake_box):
+async def test_install_deps_bindu_version_local(mock_boxd, fake_machine):
     """bindu_version='local' installs bindu editable from BINDU_SRC_DIR."""
     from bindu.runtime.boxd_provider import BINDU_SRC_DIR
 
-    fake_box.exec.return_value = _ok_exec_result()
     p = BoxdRuntimeProvider()
 
     await p._install_deps(
-        fake_box,
+        mock_boxd,
+        fake_machine.id,
         has_pyproject=False,
         has_requirements=False,
         bindu_version="local",
     )
-    install_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "pip install" in c.args[2]
-    ]
+    install_calls = [s for s in _sh_calls(mock_boxd) if "pip install" in s]
     assert len(install_calls) == 1
-    cmd = install_calls[0].args[2]
+    cmd = install_calls[0]
     assert f"pip install --break-system-packages -e {BINDU_SRC_DIR}" in cmd
     # Must NOT pull from PyPI when local mode is requested.
     assert "bindu==" not in cmd
@@ -343,24 +287,22 @@ async def test_install_deps_bindu_version_local(mock_boxd, fake_box):
 
 
 @pytest.mark.asyncio
-async def test_start_agent_execs_bindu_serve(mock_boxd, fake_box):
+async def test_start_agent_execs_bindu_serve(mock_boxd, fake_machine):
     p = BoxdRuntimeProvider()
-    fake_box.exec.return_value = _ok_exec_result()
 
     await p._start_agent(
-        fake_box,
+        mock_boxd,
+        fake_machine.id,
         script="my_agent.py",
         env={"FOO": "bar"},
         public_url="https://my-agent.boxd.sh",
     )
 
-    fake_box.exec.assert_awaited()
-    cmd_call = fake_box.exec.await_args
-    assert cmd_call.args[0] == "sh"
-    assert cmd_call.args[1] == "-c"
-    cmd_str = cmd_call.args[2]
-    assert "python3" in cmd_str
-    assert "/home/boxd/app/my_agent.py" in cmd_str
+    cmd_call = mock_boxd.machines.exec.await_args
+    cmd = cmd_call.args[1]
+    assert cmd[:2] == ["sh", "-c"]
+    assert "python3" in cmd[2]
+    assert "/home/boxd/app/my_agent.py" in cmd[2]
     # env from caller plus the auto-injected BINDU_PUBLIC_URL
     env = cmd_call.kwargs.get("env")
     assert env is not None
@@ -369,7 +311,7 @@ async def test_start_agent_execs_bindu_serve(mock_boxd, fake_box):
 
 
 @pytest.mark.asyncio
-async def test_start_agent_kills_old_pid_and_writes_new(mock_boxd, fake_box):
+async def test_start_agent_kills_old_pid_and_writes_new(mock_boxd, fake_machine):
     """Redeploy must SIGTERM the previous python3 (tracked via pidfile),
     wait for it to die, then start the new one and record its PID.
 
@@ -378,10 +320,9 @@ async def test_start_agent_kills_old_pid_and_writes_new(mock_boxd, fake_box):
     backgrounds the wrong subshell — easy to miss without splitting.
     """
     p = BoxdRuntimeProvider()
-    fake_box.exec.return_value = _ok_exec_result()
 
-    await p._start_agent(fake_box, script="agent.py")
-    sh_calls = [c.args[2] for c in fake_box.exec.await_args_list if c.args[0] == "sh"]
+    await p._start_agent(mock_boxd, fake_machine.id, script="agent.py")
+    sh_calls = _sh_calls(mock_boxd)
     assert len(sh_calls) == 2, "expected two execs: kill-old then start"
     kill_cmd, start_cmd = sh_calls
     # First exec: pidfile check + TERM + poll + SIGKILL fallback.
@@ -395,17 +336,14 @@ async def test_start_agent_kills_old_pid_and_writes_new(mock_boxd, fake_box):
 
 
 @pytest.mark.asyncio
-async def test_start_agent_raises_on_nonzero_exit(mock_boxd, fake_box):
-    bad = MagicMock()
-    bad.exit_code = 1
-    bad.stderr = "boom"
-    fake_box.exec.return_value = bad
+async def test_start_agent_raises_on_nonzero_exit(mock_boxd, fake_machine):
+    mock_boxd.machines.exec.return_value = _bad_exec_result()
 
     p = BoxdRuntimeProvider()
     # First exec (kill-old) raises with this message; we accept either
     # since both phases are "starting" from the user's POV.
     with pytest.raises(RuntimeError, match="(failed to start|failed to stop)"):
-        await p._start_agent(fake_box, script="agent.py")
+        await p._start_agent(mock_boxd, fake_machine.id, script="agent.py")
 
 
 # ── _wait_healthy ──────────────────────────────────────────────────
@@ -499,16 +437,15 @@ def boxd_api_key(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_deploy_a2_full_flow(
-    mock_boxd, fake_box, tmp_path, fake_health, boxd_api_key
+    mock_boxd, fake_machine, tmp_path, fake_health, boxd_api_key
 ):
     """A2 deploy: source ship + install + start + healthy."""
     (tmp_path / "agent.py").write_text(
         "from bindu.penguin.bindufy import bindufy\nbindufy({}, lambda m: 'hi')\n"
     )
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\nversion='0.1.0'\n")
-    _wire_safe_write_file(fake_box)
-    fake_box.name = "my-agent"
-    fake_box.url = "https://my-agent.boxd.sh"
+    fake_machine.name = "my-agent"
+    fake_machine.access.url = "https://my-agent.boxd.sh"
 
     p = BoxdRuntimeProvider()
     cfg = RuntimeConfig.from_dict({"provider": "boxd"})
@@ -525,30 +462,26 @@ async def test_deploy_a2_full_flow(
     assert handle.provider == "boxd"
     assert handle.metadata.get("vm_id") == "vm-1"
 
-    fake_box.write_file.assert_awaited_once()
-    pip_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "pip install" in c.args[2]
-    ]
-    assert pip_calls, "pip install should have been called"
-    serve_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "python3" in c.args[2]
-    ]
-    assert serve_calls, "agent script should have been started"
+    mock_boxd.machines.wait_until_ready.assert_awaited_once()
+    mock_boxd.machines.files.upload.assert_awaited_once()
+    # The default proxy route must forward to bindu's port (3773), not
+    # boxd's default, or the public URL is unreachable.
+    mock_boxd.machines.proxies.set_port.assert_awaited_once_with(fake_machine.id, 3773)
+    sh_calls = _sh_calls(mock_boxd)
+    assert any("pip install" in s for s in sh_calls), "pip install expected"
+    assert any("python3" in s for s in sh_calls), "agent start expected"
 
 
 @pytest.mark.asyncio
-async def test_deploy_a1_skips_source(mock_boxd, fake_box, fake_health, boxd_api_key):
+async def test_deploy_a1_skips_source(
+    mock_boxd, fake_machine, fake_health, boxd_api_key
+):
     """A1 deploy: image-based; no source ship, no pip install."""
-    from boxd.errors import NotFoundError
+    from boxd import NotFoundError
 
-    mock_boxd.box.get.side_effect = NotFoundError("nope")
-    fake_box.exec.return_value = _ok_exec_result()
-    fake_box.name = "my-agent"
-    fake_box.url = "https://my-agent.boxd.sh"
+    mock_boxd.machines.get.side_effect = NotFoundError("nope")
+    fake_machine.name = "my-agent"
+    fake_machine.access.url = "https://my-agent.boxd.sh"
 
     p = BoxdRuntimeProvider()
     cfg = RuntimeConfig.from_dict({"provider": "boxd", "image": "ghcr.io/me/agent:v1"})
@@ -561,13 +494,8 @@ async def test_deploy_a1_skips_source(mock_boxd, fake_box, fake_health, boxd_api
     )
 
     assert handle.url == "https://my-agent.boxd.sh"
-    fake_box.write_file.assert_not_awaited()
-    pip_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "pip install" in c.args[2]
-    ]
-    assert not pip_calls
+    mock_boxd.machines.files.upload.assert_not_awaited()
+    assert not [s for s in _sh_calls(mock_boxd) if "pip install" in s]
 
 
 @pytest.mark.asyncio
@@ -584,7 +512,7 @@ async def test_deploy_requires_credentials(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_deploy_uses_explicit_script_over_detection(
-    mock_boxd, fake_box, tmp_path, fake_health, boxd_api_key
+    mock_boxd, fake_machine, tmp_path, fake_health, boxd_api_key
 ):
     """When ``script=`` is passed, the VM runs that exact path — even if
     multiple .py files at the source root call bindufy()."""
@@ -597,9 +525,6 @@ async def test_deploy_uses_explicit_script_over_detection(
         "from bindu.penguin.bindufy import bindufy\nbindufy({}, lambda m: 'old')\n"
     )
     (tmp_path / "pyproject.toml").write_text("[project]\nname='x'\nversion='0.1.0'\n")
-    _wire_safe_write_file(fake_box)
-    fake_box.name = "agent"
-    fake_box.url = "https://agent.boxd.sh"
 
     p = BoxdRuntimeProvider()
     cfg = RuntimeConfig.from_dict({"provider": "boxd"})
@@ -612,16 +537,11 @@ async def test_deploy_uses_explicit_script_over_detection(
         script="real_agent.py",
     )
 
-    serve_calls = [
-        c
-        for c in fake_box.exec.await_args_list
-        if c.args and c.args[0] == "sh" and "python3" in c.args[2]
-    ]
+    serve_calls = [s for s in _sh_calls(mock_boxd) if "python3" in s]
     assert serve_calls, "agent script should have been started"
-    cmd_str = serve_calls[0].args[2]
-    assert "real_agent.py" in cmd_str
+    assert "real_agent.py" in serve_calls[0]
     # Detection fallback would have picked stale_agent.py (sorts first).
-    assert "stale_agent.py" not in cmd_str
+    assert "stale_agent.py" not in serve_calls[0]
 
 
 # ── health / stream_logs / on_exit ────────────────────────────────
@@ -675,16 +595,16 @@ async def test_health_returns_false_when_unreachable(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_on_exit_destroy(mock_boxd, fake_box, boxd_api_key):
+async def test_on_exit_destroy(mock_boxd, fake_machine, boxd_api_key):
     p = BoxdRuntimeProvider()
     h = RuntimeHandle("my-agent", "https://my-agent.boxd.sh", "boxd", {"vm_id": "vm-1"})
     await p.on_exit(h, "destroy")
-    fake_box.destroy.assert_awaited_once()
+    mock_boxd.machines.delete.assert_awaited_once_with(fake_machine.id)
 
 
 @pytest.mark.asyncio
-async def test_on_exit_suspend_actively_suspends(mock_boxd, fake_box, boxd_api_key):
-    """suspend mode calls box.suspend() — not a no-op.
+async def test_on_exit_suspend_actively_pauses(mock_boxd, fake_machine, boxd_api_key):
+    """suspend mode calls machines.pause() — not a no-op.
 
     The auto-suspend timer is disabled by default (so background tasks
     aren't frozen mid-flight while the agent is running), so relying on the
@@ -693,62 +613,64 @@ async def test_on_exit_suspend_actively_suspends(mock_boxd, fake_box, boxd_api_k
     p = BoxdRuntimeProvider()
     h = RuntimeHandle("my-agent", "https://my-agent.boxd.sh", "boxd", {})
     await p.on_exit(h, "suspend")
-    fake_box.suspend.assert_awaited_once()
-    fake_box.destroy.assert_not_awaited()
+    mock_boxd.machines.pause.assert_awaited_once_with(fake_machine.id)
+    mock_boxd.machines.delete.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_on_exit_suspend_swallows_errors(mock_boxd, fake_box, boxd_api_key):
-    """If box.suspend() raises, on_exit returns cleanly — host shutdown
+async def test_on_exit_suspend_swallows_errors(mock_boxd, fake_machine, boxd_api_key):
+    """If machines.pause() raises, on_exit returns cleanly — host shutdown
     shouldn't bubble VM-side errors to the user's terminal."""
-    fake_box.suspend.side_effect = RuntimeError("boxd had a moment")
+    mock_boxd.machines.pause.side_effect = RuntimeError("boxd had a moment")
     p = BoxdRuntimeProvider()
     h = RuntimeHandle("my-agent", "https://my-agent.boxd.sh", "boxd", {})
     # Must not raise.
     await p.on_exit(h, "suspend")
-    fake_box.suspend.assert_awaited_once()
+    mock_boxd.machines.pause.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_on_exit_detach_is_pure_noop(mock_boxd, fake_box, boxd_api_key):
+async def test_on_exit_detach_is_pure_noop(mock_boxd, fake_machine, boxd_api_key):
     """detach mode does not even open a connection."""
     p = BoxdRuntimeProvider()
     h = RuntimeHandle("my-agent", "https://my-agent.boxd.sh", "boxd", {})
     await p.on_exit(h, "detach")
-    fake_box.destroy.assert_not_awaited()
-    fake_box.suspend.assert_not_awaited()
-    mock_boxd.box.get.assert_not_awaited()
+    mock_boxd.machines.delete.assert_not_awaited()
+    mock_boxd.machines.pause.assert_not_awaited()
+    mock_boxd.machines.get.assert_not_awaited()
 
 
-def _exec_proc_with_chunks(chunks):
-    """Build a fake ``ExecProcess`` whose .stdout yields the given chunks."""
+class _FakeStream:
+    """Stand-in for boxd's AsyncExecStream (async CM + async iterator)."""
 
-    class _Stdout:
-        def __init__(self, cs):
-            self._cs = list(cs)
+    def __init__(self, chunks):
+        self._cs = list(chunks)
+        self.closed = False
 
-        def __aiter__(self):
-            return self
+    async def __aenter__(self):
+        return self
 
-        async def __anext__(self):
-            if not self._cs:
-                raise StopAsyncIteration
-            return self._cs.pop(0)
+    async def __aexit__(self, *a):
+        self.closed = True
 
-    proc = MagicMock()
-    proc.stdout = _Stdout(chunks)
-    return proc
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if not self._cs:
+            raise StopAsyncIteration
+        return self._cs.pop(0)
 
 
 @pytest.mark.asyncio
-async def test_stream_logs_tails_agent_log(mock_boxd, fake_box, boxd_api_key):
+async def test_stream_logs_tails_agent_log(mock_boxd, fake_machine, boxd_api_key):
     """stream_logs(follow=True) issues ``tail -F AGENT_LOG_PATH`` over a
     streaming exec, and passes the chunks through unchanged."""
     from bindu.runtime.boxd_provider import AGENT_LOG_PATH
 
     chunks = [b"agent up\n", b"served /\n"]
-    fake_box.exec = AsyncMock(return_value=_exec_proc_with_chunks(chunks))
-    mock_boxd.box.get.return_value = fake_box
+    fake_stream = _FakeStream(chunks)
+    mock_boxd.machines.stream_exec.return_value = fake_stream
 
     p = BoxdRuntimeProvider()
     h = RuntimeHandle("my-agent", "https://my-agent.boxd.sh", "boxd", {})
@@ -757,31 +679,28 @@ async def test_stream_logs_tails_agent_log(mock_boxd, fake_box, boxd_api_key):
         out.append(chunk)
 
     assert out == chunks
-    call = fake_box.exec.await_args
-    assert call is not None
-    assert call.args[0] == "tail"
-    assert "-F" in call.args
-    assert AGENT_LOG_PATH in call.args
-    assert call.kwargs.get("stream") is True
+    assert fake_stream.closed
+    call = mock_boxd.machines.stream_exec.call_args
+    assert call.args[0] == fake_machine.id
+    command = call.kwargs.get("command")
+    assert command[0] == "tail"
+    assert "-F" in command
+    assert AGENT_LOG_PATH in command
 
 
 @pytest.mark.asyncio
-async def test_stream_logs_no_follow_uses_cat(mock_boxd, fake_box, boxd_api_key):
+async def test_stream_logs_no_follow_uses_cat(mock_boxd, fake_machine, boxd_api_key):
     """stream_logs(follow=False) prints current contents and ends.
 
     Implementation uses ``sh -c "cat ... 2>/dev/null || true"`` so a missing
     log file doesn't surface a confusing exec error.
     """
-    fake_box.exec = AsyncMock(return_value=_exec_proc_with_chunks([b"static\n"]))
-    mock_boxd.box.get.return_value = fake_box
+    mock_boxd.machines.stream_exec.return_value = _FakeStream([b"static\n"])
 
     p = BoxdRuntimeProvider()
     h = RuntimeHandle("my-agent", "https://my-agent.boxd.sh", "boxd", {})
     out = [chunk async for chunk in p.stream_logs(h, follow=False)]
     assert out == [b"static\n"]
-    call = fake_box.exec.await_args
-    assert call is not None
-    # Either tail-without-F or cat with a no-error wrapper is fine; check that
-    # the streamed command does NOT contain ``-F`` (which would tail forever).
-    assert "-F" not in call.args
-    assert call.kwargs.get("stream") is True
+    command = mock_boxd.machines.stream_exec.call_args.kwargs.get("command")
+    # Must NOT contain ``-F`` (which would tail forever).
+    assert "-F" not in command

@@ -94,12 +94,62 @@ async def _handle_logs(agent_name: str, follow: bool = True) -> None:
 
 
 async def _handle_shell(agent_name: str) -> None:
-    """Open an interactive bash on the agent's VM."""
-    from bindu.runtime.boxd_provider import _make_compute
+    """Open an interactive bash on the agent's VM.
 
-    async with _make_compute() as compute:
-        box = await compute.box.get(agent_name)
-        await box.exec("bash", interactive=True)
+    boxd 0.2.x has no interactive-exec convenience, so bridge the local
+    terminal to a tty ``stream_exec`` session by hand: raw mode locally,
+    stdin pumped into the stream, merged output pumped to stdout.
+    """
+    import shutil
+
+    from bindu.runtime.boxd_provider import _get_machine, _make_client
+
+    loop = asyncio.get_event_loop()
+    cols, rows = shutil.get_terminal_size()
+
+    async with _make_client() as client:
+        machine = await _get_machine(client, agent_name)
+        if machine is None:
+            sys.exit(f"Error: no boxd machine named {agent_name}")
+        stream = client.machines.stream_exec(
+            machine.id, command="bash", tty=True, cols=cols, rows=rows
+        )
+        async with stream:
+            if not sys.stdin.isatty():
+                # No local tty (piped input, tests): just drain output.
+                async for chunk in stream:
+                    sys.stdout.buffer.write(chunk)
+                    sys.stdout.buffer.flush()
+                return
+
+            import termios
+            import tty as _tty
+
+            fd = sys.stdin.fileno()
+            old_attrs = termios.tcgetattr(fd)
+
+            def _pump_stdin() -> None:
+                data = os.read(fd, 4096)
+                if data:
+                    asyncio.ensure_future(stream.write(data))
+                else:
+                    asyncio.ensure_future(stream.write_eof())
+
+            def _on_winch() -> None:
+                size = shutil.get_terminal_size()
+                asyncio.ensure_future(stream.resize(size.columns, size.lines))
+
+            _tty.setraw(fd)
+            loop.add_reader(fd, _pump_stdin)
+            loop.add_signal_handler(signal.SIGWINCH, _on_winch)
+            try:
+                async for chunk in stream:
+                    sys.stdout.buffer.write(chunk)
+                    sys.stdout.buffer.flush()
+            finally:
+                loop.remove_signal_handler(signal.SIGWINCH)
+                loop.remove_reader(fd)
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_attrs)
 
 
 def _capture_agent_metadata(script_path: str) -> dict[str, Any]:
@@ -228,8 +278,11 @@ def _print_dry_run(
     if runtime_config.image:
         print(f"  image (A1):    {runtime_config.image}")
     else:
-        print(f"  vcpu / memory: {runtime_config.vcpu} / {runtime_config.memory}")
-        print(f"  disk:          {runtime_config.disk}")
+        vcpu = runtime_config.vcpu if runtime_config.vcpu is not None else "org default"
+        memory = runtime_config.memory or "org default"
+        print(f"  vcpu / memory: {vcpu} / {memory}")
+        if runtime_config.disk:
+            print(f"  disk:          {runtime_config.disk}")
         print(f"  auto_suspend:  {runtime_config.auto_suspend}s")
         print(f"  on_exit:       {runtime_config.on_exit}")
         if runtime_config.bindu_version:

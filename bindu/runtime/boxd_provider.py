@@ -9,6 +9,9 @@ Two modes:
 
 The host's role ends after the agent is healthy. A2A clients then talk
 directly to the VM's public URL.
+
+Targets the boxd 0.2.x SDK: a flat ``AsyncBoxd`` client with
+``machines.<verb>(id, ...)`` namespaces; ``Machine`` records are plain data.
 """
 
 from __future__ import annotations
@@ -27,8 +30,8 @@ from bindu.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Bindu's default HTTP port. The boxd proxy is configured to forward to
-# this port at VM creation time, so the agent's public URL routes correctly.
+# Bindu's default HTTP port. The machine's default proxy route is pointed at
+# this port after create/reuse, so the agent's public URL routes correctly.
 BINDU_DEFAULT_PORT = 3773
 
 # Where we stage the user's source inside the VM. Must be writable by the
@@ -39,8 +42,9 @@ APP_DIR = "/home/boxd/app"
 BINDU_SRC_DIR = "/home/boxd/bindu_source"
 
 # Where the in-VM agent's stdout/stderr go. Streamed back to the host on
-# demand via ``stream_logs`` (using ``tail -F`` over ``box.exec(stream=True)``
-# until boxd ships server-side ``StreamLogs``).
+# demand via ``stream_logs`` (using ``tail -F`` over ``machines.stream_exec``;
+# ``machines.logs`` is the VM console, which a detached nohup'd agent
+# never writes to).
 AGENT_LOG_PATH = "/tmp/bindu-agent.log"  # nosec B108 — single-tenant VM
 AGENT_PID_PATH = "/tmp/bindu-agent.pid"  # nosec B108 — single-tenant VM
 
@@ -70,11 +74,11 @@ _HEALTH_TIMEOUT = 60.0
 _POLL_INTERVAL = 1.0
 
 
-def _make_compute(**kwargs: Any):
-    """Construct a boxd Compute client. Indirection so tests can patch."""
-    from boxd.aio import Compute
+def _make_client(**kwargs: Any):
+    """Construct an AsyncBoxd client. Indirection so tests can patch."""
+    from boxd import AsyncBoxd
 
-    return Compute(**kwargs)
+    return AsyncBoxd(**kwargs)
 
 
 async def _poll_until(
@@ -98,111 +102,111 @@ async def _poll_until(
 
 
 async def _exec_or_raise(
-    box: Any, *cmd: str, env: dict[str, str] | None = None, error: str
+    client: Any,
+    machine_id: str,
+    *cmd: str,
+    env: dict[str, str] | None = None,
+    error: str,
 ) -> Any:
     """Run a command in the VM and raise if it exits non-zero."""
-    result = await box.exec(*cmd, env=env) if env is not None else await box.exec(*cmd)
+    result = await client.machines.exec(machine_id, list(cmd), env=env)
     if getattr(result, "exit_code", 0) != 0:
         stderr = getattr(result, "stderr", "")
         raise RuntimeError(f"{error}: {stderr}")
     return result
 
 
-_WRITE_FILE_RETRIES = 3
+async def _get_machine(client: Any, name: str) -> Any | None:
+    """Look up a machine by name; ``None`` when it doesn't exist.
 
-
-async def _safe_write_file(box: Any, blob: bytes, dest: str) -> None:
-    """``box.write_file`` + sha256 verification, with retry on mismatch.
-
-    boxd 0.1.1's ``Box.write_file`` intermittently silently truncates
-    uploads (https://github.com/azin-tech/boxd/issues/45). The corruption
-    is rare and has 4 KB-aligned deltas — almost certainly a streaming-
-    writer race. We hash on both ends and retry on mismatch so the deploy
-    never proceeds with a corrupt artifact in the VM.
+    ``machines.get`` resolves a name in the account's default org context
+    only, which misses machines living in another organization (observed
+    with org-fenced API keys: ``get(name)`` raises NotFound while ``list``
+    shows the machine). Fall back to an exact-name scan of ``list()``
+    before concluding the machine is gone — creating over a name that
+    actually exists fails with ConflictError, and a skipped teardown
+    leaves the VM running (and billing) forever.
     """
-    import hashlib
+    from boxd import NotFoundError
 
-    expected = hashlib.sha256(blob).hexdigest()
-    last_seen = "unknown"
-    for attempt in range(_WRITE_FILE_RETRIES):
-        await box.write_file(blob, dest)
-        result = await box.exec("sha256sum", dest)
-        stdout = getattr(result, "stdout", "") or ""
-        last_seen = stdout.split()[0] if stdout else "<no output>"
-        if last_seen == expected:
-            return
-        if attempt < _WRITE_FILE_RETRIES - 1:
-            await asyncio.sleep(1.0)
-    raise RuntimeError(
-        f"upload to {dest} corrupted after {_WRITE_FILE_RETRIES} attempts "
-        f"(expected sha256 {expected[:12]}..., got {last_seen[:12]}...). "
-        "Likely boxd write_file truncation; see "
-        "https://github.com/azin-tech/boxd/issues/45"
-    )
+    try:
+        return await client.machines.get(name)
+    except NotFoundError:
+        for machine in await client.machines.list():
+            if machine.name == name:
+                return machine
+        return None
+
+
+async def _upload_file(client: Any, machine_id: str, blob: bytes, dest: str) -> None:
+    """Upload ``blob`` to ``dest`` and verify the confirmed byte count.
+
+    boxd 0.2.x's ``files.upload`` streams in chunks and returns the number
+    of bytes the machine confirmed it wrote — a mismatch means the artifact
+    in the VM is corrupt, so fail the deploy rather than proceed.
+    """
+    written = await client.machines.files.upload(machine_id, dest, blob)
+    if written != len(blob):
+        raise RuntimeError(
+            f"upload to {dest} incomplete: machine confirmed {written} of "
+            f"{len(blob)} bytes"
+        )
 
 
 class BoxdRuntimeProvider(RuntimeProvider):
     """RuntimeProvider that runs the agent inside a boxd microVM."""
 
-    async def _resolve_vm(self, compute: Any, name: str, config: RuntimeConfig) -> Any:
-        """Get or create the VM for this agent (idempotent by name)."""
-        from boxd import BoxConfig, LifecycleConfig, NetworkConfig, ProxyEntry
-        from boxd.errors import NotFoundError
+    async def _resolve_vm(self, client: Any, name: str, config: RuntimeConfig) -> Any:
+        """Get or create the machine for this agent (idempotent by name).
 
-        try:
-            return await compute.box.get(name)
-        except NotFoundError:
-            pass
-
-        box_config = BoxConfig(
-            vcpu=config.vcpu,
-            memory=config.memory,
-            disk=config.disk,
-            lifecycle=LifecycleConfig(auto_suspend_timeout=config.auto_suspend),
-            network=NetworkConfig(
-                proxies=[ProxyEntry(name="", port=BINDU_DEFAULT_PORT)],
-            ),
-        )
-        create_kwargs: dict[str, Any] = {"name": name, "config": box_config}
-        if config.image:
-            create_kwargs["image"] = config.image
-        return await compute.box.create(**create_kwargs)
-
-    async def _wait_vm_ready(
-        self, box: Any, timeout: float = _VM_READY_TIMEOUT
-    ) -> None:
-        """Wait until the VM's in-VM exec server is responsive.
-
-        ``box.create()`` returns at "running", but the takeoff agent serving
-        exec/write_file takes a few more seconds to come up.
+        A reused machine may have been paused/hibernated/stopped since the
+        last deploy (``on_exit='suspend'`` is the default); the 0.2.x SDK
+        never resumes implicitly, so bring it back explicitly here.
         """
+        machine = await _get_machine(client, name)
+        if machine is None:
+            # Sizing keys are passed only when explicitly configured: boxd
+            # 0.2.x machines come in fixed vCPU/memory pairs with an org
+            # default, and the server refuses per-machine disk sizing.
+            create_kwargs: dict[str, Any] = {
+                "auto_suspend_timeout": config.auto_suspend,
+            }
+            if config.vcpu is not None:
+                create_kwargs["vcpu"] = config.vcpu
+            if config.memory is not None:
+                create_kwargs["memory"] = config.memory
+            if config.disk is not None:
+                create_kwargs["disk"] = config.disk
+            if config.image:
+                create_kwargs["image"] = config.image
+            return await client.machines.create(name, **create_kwargs)
 
-        async def probe() -> bool:
-            result = await box.exec("true")
-            return getattr(result, "exit_code", 0) == 0
+        if machine.status == "suspended":
+            await client.machines.resume(machine.id)
+        elif machine.status == "hibernated":
+            await client.machines.wake(machine.id)
+        elif machine.status == "stopped":
+            await client.machines.start(machine.id)
+        return machine
 
-        await _poll_until(
-            probe,
-            timeout=timeout,
-            interval=2.0,
-            error_msg=f"VM {box.name} did not become exec-ready within {timeout}s",
-        )
-
-    async def _ship_source(self, box: Any, source_dir: Path) -> None:
+    async def _ship_source(
+        self, client: Any, machine_id: str, source_dir: Path
+    ) -> None:
         """Tar+gzip ``source_dir``, upload, extract to ``APP_DIR``."""
         blob = build_tarball(source_dir)
         # /tmp inside the VM is fine: the VM is single-tenant, the host is the
         # only writer, and the file is consumed immediately by the next exec.
-        await _safe_write_file(box, blob, "/tmp/source.tar.gz")  # nosec B108
+        await _upload_file(client, machine_id, blob, "/tmp/source.tar.gz")  # nosec B108
         await _exec_or_raise(
-            box,
+            client,
+            machine_id,
             "sh",
             "-c",
             f"mkdir -p {APP_DIR} && tar xzf /tmp/source.tar.gz -C {APP_DIR}",
             error=f"failed to extract source to {APP_DIR}",
         )
 
-    async def _ship_bindu_source(self, box: Any) -> None:
+    async def _ship_bindu_source(self, client: Any, machine_id: str) -> None:
         """Tar the host's bindu source tree, ship to ``BINDU_SRC_DIR``.
 
         Used by ``bindu_version == "local"``: lets the VM run the same bindu
@@ -222,9 +226,15 @@ class BoxdRuntimeProvider(RuntimeProvider):
                 f"checkout; no pyproject.toml found at or above {host_root}"
             )
         blob = build_tarball(host_root, extra_ignores=_BINDU_SHIP_EXCLUDES)
-        await _safe_write_file(box, blob, "/tmp/bindu-source.tar.gz")  # nosec B108
+        await _upload_file(
+            client,
+            machine_id,
+            blob,
+            "/tmp/bindu-source.tar.gz",  # nosec B108
+        )
         await _exec_or_raise(
-            box,
+            client,
+            machine_id,
             "sh",
             "-c",
             f"mkdir -p {BINDU_SRC_DIR} && "
@@ -234,7 +244,8 @@ class BoxdRuntimeProvider(RuntimeProvider):
 
     async def _install_deps(
         self,
-        box: Any,
+        client: Any,
+        machine_id: str,
         has_pyproject: bool,
         has_requirements: bool,
         bindu_version: str | None = None,
@@ -268,7 +279,8 @@ class BoxdRuntimeProvider(RuntimeProvider):
             steps.append(f"cd {APP_DIR} && pip install --break-system-packages -e .")
         # One round-trip with `&&` chaining so the first failure short-circuits.
         await _exec_or_raise(
-            box,
+            client,
+            machine_id,
             "sh",
             "-c",
             " && ".join(steps),
@@ -277,7 +289,8 @@ class BoxdRuntimeProvider(RuntimeProvider):
 
     async def _start_agent(
         self,
-        box: Any,
+        client: Any,
+        machine_id: str,
         script: str,
         env: dict[str, str] | None = None,
         public_url: str | None = None,
@@ -314,7 +327,12 @@ class BoxdRuntimeProvider(RuntimeProvider):
             f"fi"
         )
         await _exec_or_raise(
-            box, "sh", "-c", kill_old, error="failed to stop previous agent"
+            client,
+            machine_id,
+            "sh",
+            "-c",
+            kill_old,
+            error="failed to stop previous agent",
         )
 
         # Step 2: start the new agent detached. ``setsid`` puts it in its own
@@ -328,7 +346,8 @@ class BoxdRuntimeProvider(RuntimeProvider):
             f"echo $! > {AGENT_PID_PATH}"
         )
         await _exec_or_raise(
-            box,
+            client,
+            machine_id,
             "sh",
             "-c",
             start,
@@ -383,37 +402,34 @@ class BoxdRuntimeProvider(RuntimeProvider):
                 "BOXD_API_KEY or BOXD_TOKEN must be set in the host environment"
             )
 
-        async with _make_compute() as compute:
-            box = await self._resolve_vm(compute, agent_name, config)
-            # box.url is returned with scheme on CreateVm but bare on GetVm.
-            raw_url = box.url or f"{agent_name}.boxd.sh"
-            if not raw_url.startswith(("http://", "https://")):
-                raw_url = f"https://{raw_url}"
-            public_url = raw_url
+        async with _make_client() as client:
+            machine = await self._resolve_vm(client, agent_name, config)
+            # Blocks until the machine is "running" AND exec round-trips —
+            # covers fresh creates and the resume/wake path alike.
+            machine = await client.machines.wait_until_ready(
+                machine.id, timeout=_VM_READY_TIMEOUT
+            )
+            public_url = machine.access.url or f"https://{agent_name}.boxd.sh"
 
-            await self._wait_vm_ready(box, timeout=_VM_READY_TIMEOUT)
-
-            # Reapply on every deploy: boxd 0.1.1 doesn't always honor
-            # NetworkConfig.proxies on create, and warm reuse keeps the
-            # original config. Idempotent.
-            try:
-                await box.set_proxy_port(port=BINDU_DEFAULT_PORT)
-            except AttributeError:
-                pass
+            # Point the machine's default proxy route at bindu's port on
+            # every deploy (boxd's own default is a different port).
+            # Idempotent.
+            await client.machines.proxies.set_port(machine.id, BINDU_DEFAULT_PORT)
 
             if config.image is None:
                 if source_dir is None:
                     raise RuntimeError(
                         "source_dir is required when config.image is not set"
                     )
-                ship_tasks = [self._ship_source(box, source_dir)]
+                ship_tasks = [self._ship_source(client, machine.id, source_dir)]
                 if config.bindu_version == "local":
-                    ship_tasks.append(self._ship_bindu_source(box))
+                    ship_tasks.append(self._ship_bindu_source(client, machine.id))
                 await asyncio.gather(*ship_tasks)
                 has_pyproject = (source_dir / "pyproject.toml").exists()
                 has_requirements = (source_dir / "requirements.txt").exists()
                 await self._install_deps(
-                    box,
+                    client,
+                    machine.id,
                     has_pyproject=has_pyproject,
                     has_requirements=has_requirements,
                     bindu_version=config.bindu_version,
@@ -421,7 +437,8 @@ class BoxdRuntimeProvider(RuntimeProvider):
                 script_to_run = script or self._detect_script_name(source_dir)
                 merged_env = {**config.env, **(env or {})}
                 await self._start_agent(
-                    box,
+                    client,
+                    machine.id,
                     script=script_to_run,
                     env=merged_env,
                     public_url=public_url,
@@ -433,7 +450,7 @@ class BoxdRuntimeProvider(RuntimeProvider):
                 name=agent_name,
                 url=public_url,
                 provider="boxd",
-                metadata={"vm_id": box.id, "public_ip": box.public_ip},
+                metadata={"vm_id": machine.id},
             )
 
     async def health(self, handle: RuntimeHandle) -> bool:
@@ -450,28 +467,27 @@ class BoxdRuntimeProvider(RuntimeProvider):
     ) -> AsyncIterator[bytes]:
         """Yield chunks of the in-VM agent's stdout/stderr.
 
-        boxd 0.1.x's server-side ``StreamLogs`` is unimplemented, so we tail
-        ``AGENT_LOG_PATH`` over a streaming exec instead. ``tail -F`` is
-        deliberate: it keeps polling when the file is missing or rotates,
-        which matches the agent's startup window (the file appears as soon
-        as the python3 process opens it for redirect).
+        ``machines.logs`` is the VM console — a detached nohup'd agent never
+        writes there — so we tail ``AGENT_LOG_PATH`` over a streaming exec
+        instead. ``tail -F`` is deliberate: it keeps polling when the file
+        is missing or rotates, which matches the agent's startup window (the
+        file appears as soon as the python3 process opens it for redirect).
         """
-        async with _make_compute() as compute:
-            box = await compute.box.get(handle.name)
-            args = (
-                ("tail", "-n", "+1", "-F", AGENT_LOG_PATH)
+        async with _make_client() as client:
+            machine = await _get_machine(client, handle.name)
+            if machine is None:
+                raise RuntimeError(f"no boxd machine named {handle.name}")
+            command = (
+                ["tail", "-n", "+1", "-F", AGENT_LOG_PATH]
                 if follow
-                else ("sh", "-c", f"cat {AGENT_LOG_PATH} 2>/dev/null || true")
+                else ["sh", "-c", f"cat {AGENT_LOG_PATH} 2>/dev/null || true"]
             )
-            proc = await box.exec(*args, stream=True)
-            try:
-                async for chunk in proc.stdout:
+            stream = client.machines.stream_exec(
+                machine.id, command=command, close_stdin=True
+            )
+            async with stream:
+                async for chunk in stream:
                     yield chunk
-            finally:
-                # Async-iterator GC + exec-stream close should kill the
-                # remote ``tail`` when the consumer stops iterating; nothing
-                # else to do on the host.
-                pass
 
     async def on_exit(
         self,
@@ -480,24 +496,28 @@ class BoxdRuntimeProvider(RuntimeProvider):
     ) -> None:
         """Apply the on-exit policy (``suspend`` / ``destroy`` / ``detach``).
 
-        ``suspend`` actively calls ``box.suspend()`` rather than waiting for
-        the auto-suspend timer. The timer is disabled by default (so background
-        tasks aren't frozen mid-flight while the agent is running), so relying
-        on it would silently turn ``--on-exit=suspend`` into a no-op.
+        ``suspend`` actively calls ``machines.pause()`` (suspend to RAM)
+        rather than waiting for the auto-suspend timer. The timer is disabled
+        by default (so background tasks aren't frozen mid-flight while the
+        agent is running), so relying on it would silently turn
+        ``--on-exit=suspend`` into a no-op.
         """
         if mode == "detach":
             return
-        async with _make_compute() as compute:
+        async with _make_client() as client:
             try:
-                box = await compute.box.get(handle.name)
+                machine = await _get_machine(client, handle.name)
             except Exception as e:
                 logger.warning("on_exit could not look up VM %s: %s", handle.name, e)
                 return
+            if machine is None:
+                logger.warning("on_exit: no boxd machine named %s", handle.name)
+                return
             if mode == "destroy":
-                await box.destroy()
+                await client.machines.delete(machine.id)
             elif mode == "suspend":
                 try:
-                    await box.suspend()
+                    await client.machines.pause(machine.id)
                 except Exception as e:
                     # The agent's still up; user can retry or destroy manually.
                     logger.warning("on_exit suspend failed for %s: %s", handle.name, e)

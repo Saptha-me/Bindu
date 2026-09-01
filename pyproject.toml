@@ -95,7 +95,9 @@ grpc = [
 
 # Boxd runtime provider — agents-in-microVM (use: pip install bindu[runtime-boxd])
 runtime-boxd = [
-    "boxd>=0.1.1",
+    # 0.2 reshaped the client (Boxd/AsyncBoxd + machines.* namespaces);
+    # bindu/runtime/boxd_provider.py targets that surface.
+    "boxd>=0.2.7,<0.3",
     # boxd's generated gRPC stubs require grpcio>=1.80.0; bindu's main pin is
     # lower, so uv would otherwise pick a too-old grpcio for the boxd wheel.
     "grpcio>=1.80.0",

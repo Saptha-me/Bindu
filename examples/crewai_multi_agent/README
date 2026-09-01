@@ -1,0 +1,104 @@
+# 🚀 Multi-Agent Example (Bindu)
+
+## 📌 Overview
+This example demonstrates a simple multi-agent system using Bindu, where multiple agents collaborate to process a user query.
+
+It showcases how to orchestrate sequential agent workflows using Bindu’s async architecture.
+
+---
+
+## 🧠 Agents
+
+### 🔹 Research Agent
+- Takes user input
+- Generates relevant information
+
+### 🔹 Summary Agent
+- Takes research output
+- Produces a concise summary
+
+---
+
+## 🔄 Workflow
+
+User → Research Agent → Summary Agent → Final Output
+
+---
+
+## ▶️ Run the Agent
+
+```bash
+cd examples/crewai_multi_agent
+python main.py
+🧪 Testing (Postman)
+
+1️⃣ Send Request
+
+POST → http://localhost:3773/
+
+{
+  "jsonrpc": "2.0",
+  "method": "message/send",
+  "params": {
+    "message": {
+      "role": "user",
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Explain AI agents"
+        }
+      ],
+      "kind": "message",
+      "messageId": "550e8400-e29b-41d4-a716-446655440100",
+      "contextId": "550e8400-e29b-41d4-a716-446655440101",
+      "taskId": "550e8400-e29b-41d4-a716-446655440102"
+    },
+    "configuration": {
+      "acceptedOutputModes": ["application/json"]
+    }
+  },
+  "id": "550e8400-e29b-41d4-a716-446655440199"
+}
+
+
+2️⃣ Get Result
+{
+  "jsonrpc": "2.0",
+  "method": "tasks/get",
+  "params": {
+    "taskId": "550e8400-e29b-41d4-a716-446655440102"
+  },
+  "id": "550e8400-e29b-41d4-a716-446655441299"
+}
+
+
+📌 Example Output
+📊 Research Data on 'Explain AI agents':
+AI agents are systems that can perform tasks autonomously using LLMs.
+
+📝 Summary:
+AI agents are autonomous systems that use models to complete tasks efficiently.
+
+
+💡 Key Concepts Demonstrated
+Multi-agent collaboration
+Sequential task execution
+Bindu async workflow:
+message/send → task creation
+tasks/get → result retrieval
+Agent orchestration using bindufy()
+
+
+🎯 Purpose
+
+This example helps developers:
+
+Understand how to build multi-agent systems
+Learn Bindu’s request-response lifecycle
+Experiment without external API dependencies
+
+
+📦 Scope
+No external APIs required
+Beginner to intermediate friendly
+Focused on core agent orchestration

@@ -5,22 +5,28 @@ import { Service as ConfigService, type Config } from "../config"
 import type { z } from "zod"
 
 /**
- * Provider service — OpenRouter-only.
+ * Provider service — OpenAI-compatible gateways (OpenRouter, OrcaRouter).
  *
- * Looks up an AI-SDK LanguageModel handle by ``"openrouter/<modelId>"``
- * where ``modelId`` is whatever OpenRouter publishes for that model
- * (for example ``openai/gpt-4o-mini`` or
- * ``anthropic/claude-sonnet-4.6``).
+ * Looks up an AI-SDK LanguageModel handle by ``"<provider>/<modelId>"``:
  *
- * Why a single provider: we ship every agent (gateway planner + the
- * fleet) on OpenRouter. Supporting the Anthropic or OpenAI SDKs
+ *   - ``openrouter/<modelId>`` — ``modelId`` is whatever OpenRouter
+ *     publishes for that model (for example ``openai/gpt-4o-mini`` or
+ *     ``anthropic/claude-sonnet-4.6``).
+ *   - ``orcarouter/<modelId>`` — ``modelId`` is whatever OrcaRouter
+ *     publishes for that model (for example ``anthropic/claude-opus-4.7``
+ *     or ``orcarouter/fusion-flash``).
+ *
+ * Why two OpenAI-compatible gateways instead of the full SDK matrix:
+ * we ship every agent (gateway planner + the fleet) on an
+ * OpenAI-compatible gateway. Supporting the Anthropic or OpenAI SDKs
  * directly was optionality nobody used and added two env vars and a
- * dependency we could drop. OpenRouter exposes an OpenAI-compatible
- * API, so a single ``@ai-sdk/openai`` client with a baseURL override
- * covers every model on the platform.
+ * dependency we could drop. Both OpenRouter and OrcaRouter expose an
+ * OpenAI-compatible API, so a single ``@ai-sdk/openai`` client with a
+ * baseURL override covers every model on either platform.
  *
- * On every outbound request the gateway's fetch wrapper injects two
- * OpenRouter-specific request-body fields:
+ * On every outbound request to OpenRouter the gateway's fetch wrapper
+ * injects two OpenRouter-specific request-body fields (OrcaRouter gets
+ * a clean chat-completions body — those fields are OpenRouter-only):
  *
  *   - ``cache_control: { type: "ephemeral" }`` — enables OpenRouter's
  *     automatic-breakpoint prompt caching. Ignored by providers that
@@ -36,10 +42,11 @@ import type { z } from "zod"
  * a model string, give me a model handle the AI SDK can stream.
  */
 
-const SUPPORTED_PROVIDERS = ["openrouter"] as const
+const SUPPORTED_PROVIDERS = ["openrouter", "orcarouter"] as const
 export type ProviderId = (typeof SUPPORTED_PROVIDERS)[number]
 
 const OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
+export const ORCAROUTER_DEFAULT_BASE_URL = "https://api.orcarouter.ai/v1"
 
 export function parseModelId(s: string): { providerId: ProviderId; modelId: string } {
   const slash = s.indexOf("/")
@@ -159,8 +166,8 @@ export const layer = Layer.effect(
       const providerCfg = providers[providerId] as
         | { apiKey?: string; baseURL?: string; fallbackModels?: readonly string[] }
         | undefined
-      // OpenRouter's API is OpenAI-compatible — one @ai-sdk/openai
-      // client pointed at OpenRouter's baseURL handles every model.
+      // Both providers are OpenAI-compatible — one @ai-sdk/openai
+      // client pointed at the provider's baseURL handles every model.
       //
       // IMPORTANT: use ``.chat()`` explicitly, not the default callable.
       // ``@ai-sdk/openai`` v3 defaults to OpenAI's newer Responses API
@@ -169,12 +176,18 @@ export const layer = Layer.effect(
       // callable produces "Invalid Responses API request" from
       // OpenRouter at the first LLM call.
       //
-      // The ``fetch`` wrapper injects cache_control + fallback models.
-      // See ``injectCacheControl`` + ``injectFallbackModels`` above.
+      // The OpenRouter fetch wrapper injects cache_control + fallback
+      // models — both OpenRouter-specific fields. OrcaRouter gets a
+      // plain client so we don't send OpenRouter-only body fields to a
+      // different gateway.
+      const defaultBaseURL =
+        providerId === "orcarouter" ? ORCAROUTER_DEFAULT_BASE_URL : OPENROUTER_DEFAULT_BASE_URL
       const p = createOpenAI({
         apiKey: providerCfg?.apiKey,
-        baseURL: providerCfg?.baseURL ?? OPENROUTER_DEFAULT_BASE_URL,
-        fetch: openrouterFetch({ fallbackModels: providerCfg?.fallbackModels }),
+        baseURL: providerCfg?.baseURL ?? defaultBaseURL,
+        ...(providerId === "openrouter"
+          ? { fetch: openrouterFetch({ fallbackModels: providerCfg?.fallbackModels }) }
+          : {}),
       })
       return p.chat(modelId)
     }

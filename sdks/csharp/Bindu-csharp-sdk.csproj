@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Bindu.Sdk</RootNamespace>
+	<AssemblyName>Bindu.Sdk</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Bindu.Sdk.Tests" />
+  </ItemGroup>
+
+  <!-- Keep the test project (colocated in tests/) out of the SDK's default globbing -->
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+    <Content Remove="tests/**" />
+    <EmbeddedResource Remove="tests/**" />
+    <None Remove="tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.35.1" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.81.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="proto/agent_handler.proto" GrpcServices="Both" />
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<Target Name="CopyXmlDocToRefOutput" AfterTargets="Compile" Condition="'$(GenerateDocumentationFile)' == 'true'">
+		<Copy SourceFiles="$(IntermediateOutputPath)$(AssemblyName).xml"
+				DestinationFolder="$(IntermediateOutputPath)ref"
+				SkipUnchangedFiles="true"
+				Condition="Exists('$(IntermediateOutputPath)$(AssemblyName).xml')" />
+	</Target>
+
+</Project>

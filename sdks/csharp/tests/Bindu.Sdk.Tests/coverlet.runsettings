@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <!-- Measure only the SDK; exclude the generated proto/gRPC code in Bindu.Grpc -->
+          <Include>[Bindu.Sdk]*</Include>
+          <Exclude>[Bindu.Sdk]Bindu.Grpc.*</Exclude>
+          <ExcludeByAttribute>System.CodeDom.Compiler.GeneratedCodeAttribute</ExcludeByAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

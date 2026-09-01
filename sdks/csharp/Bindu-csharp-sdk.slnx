@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Bindu-csharp-sdk.csproj" />
+  <Project Path="tests/Bindu.Sdk.Tests/Bindu.Sdk.Tests.csproj" />
+</Solution>

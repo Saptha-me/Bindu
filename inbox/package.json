@@ -11,7 +11,8 @@
 		"dev:api": "tsx watch server/index.ts",
 		"build": "tsc -b && vite build",
 		"preview": "vite preview",
-		"typecheck": "tsc -b --noEmit"
+		"typecheck": "tsc -b --noEmit",
+		"test": "node --import tsx --test server/*.test.ts"
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.13.0",

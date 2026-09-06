@@ -5,6 +5,8 @@ import { useAllEvents } from "~/lib/hooks";
 import { stateMeta, trustMeta } from "~/lib/format";
 import { postJson } from "~/lib/fetch";
 import type { EcosystemAgent } from "~/lib/api-types";
+import type { PeerTrust, VerificationEvent } from "~/lib/api-types";
+import { TrustBadge } from "./TrustBadge";
 import type { DetailTab } from "~/types";
 
 function useResolvedAgent(agentId: string | undefined): EcosystemAgent | null {
@@ -142,6 +144,13 @@ function VerifyBody() {
 	const selectedEventId = useUI((s) => s.selectedEventId);
 	const event = useAllEvents().find((e) => e.id === selectedEventId);
 	const resolved = useResolvedAgent(event?.agentId);
+	const [trust, setTrust] = useState<PeerTrust | null>(null);
+	const [history, setHistory] = useState<VerificationEvent[]>([]);
+	useEffect(() => {
+		if (!event?.agentId) return;
+		fetch(`/api/peers/${encodeURIComponent(event.agentId)}/trust`).then((r) => r.ok ? r.json() : null).then(setTrust).catch(() => setTrust(null));
+		fetch(`/api/peers/${encodeURIComponent(event.agentId)}/verification-history`).then((r) => r.ok ? r.json() : []).then(setHistory).catch(() => setHistory([]));
+	}, [event?.agentId]);
 	if (!event) return null;
 
 	const resolvedDidId = resolved?.did?.id;
@@ -151,6 +160,9 @@ function VerifyBody() {
 
 	return (
 		<div className="space-y-1 text-[12px]">
+			<Section label="Agent trust">
+				<div className="flex items-center gap-2"><TrustBadge status={trust?.status ?? "unavailable"} /><span className="text-fg-muted">{trust?.lastVerifiedAt ? `last verified ${trust.lastVerifiedAt}` : "No verified signed interaction yet."}</span></div>
+			</Section>
 			<VerifyRow
 				label="Signature"
 				value={
@@ -183,6 +195,9 @@ function VerifyBody() {
 					</div>
 				)}
 			</div>
+			<Section label="Verification history">
+				{history.length === 0 ? <div className="text-fg-dim">No verification events recorded.</div> : <ol className="space-y-2">{history.map((item) => <li key={item.id}><span className="font-medium">{item.result === "accepted" ? "✓" : "✕"} {item.eventType.replaceAll("_", " ")}</span><div className="text-fg-dim">{item.occurredAt}{item.reason ? ` — ${item.reason}` : ""}</div></li>)}</ol>}
+			</Section>
 		</div>
 	);
 }

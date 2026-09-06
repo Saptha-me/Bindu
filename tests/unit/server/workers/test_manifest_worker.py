@@ -12,8 +12,13 @@ from bindu.server.workers.manifest_worker import ManifestWorker
 class TestManifestWorker:
     """Test ManifestWorker functionality."""
 
-    def test_build_message_history_delegates_to_converter(self):
-        """Test building message history delegates to MessageConverter."""
+    def test_build_message_history_preserves_parts(self):
+        """A2A messages pass through verbatim — ``parts`` must survive.
+
+        Handlers read ``messages[-1]["parts"]`` directly (the A2A contract).
+        Flattening to {role, content} here dropped file bytes and broke every
+        file/vision handler ("No file part found in the message").
+        """
         mock_manifest = Mock()
         mock_scheduler = Mock()
         mock_storage = AsyncMock()
@@ -23,15 +28,32 @@ class TestManifestWorker:
         )
 
         messages = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there"},
+            {
+                "role": "user",
+                "kind": "message",
+                "parts": [{"kind": "text", "text": "Extract this invoice"}],
+            },
+            {
+                "role": "user",
+                "kind": "message",
+                "parts": [
+                    {
+                        "kind": "file",
+                        "file": {
+                            "bytes": "JVBERi0xLjQ=",
+                            "mimeType": "application/pdf",
+                            "name": "invoice.pdf",
+                        },
+                    }
+                ],
+            },
         ]
 
-        # The method delegates to MessageConverter.to_chat_format
         result = worker.build_message_history(messages)  # type: ignore[arg-type] # ty: ignore[invalid-argument-type]
 
-        # Result type depends on MessageConverter implementation
-        assert isinstance(result, list)
+        assert result == messages
+        # File bytes reach the handler untouched.
+        assert result[-1]["parts"][0]["file"]["bytes"] == "JVBERi0xLjQ="
 
     def test_build_artifacts(self):
         """Test building artifacts from result."""

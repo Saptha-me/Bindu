@@ -62,8 +62,10 @@ class FileInterceptor:
                 processed_parts.append(part)
                 continue
 
-            mime_type = part.get("mimeType", "")
-            base64_data = str(part.get("data", ""))
+            # A2A FilePart shape: {"kind": "file", "file": {"bytes", "mimeType", "name"}}
+            file_obj = part.get("file") or {}
+            mime_type = file_obj.get("mimeType", "")
+            base64_data = str(file_obj.get("bytes", ""))
 
             if mime_type not in cls.SUPPORTED_MIME_TYPES:
                 logger.warning(f"Unsupported MIME type rejected: {mime_type}")

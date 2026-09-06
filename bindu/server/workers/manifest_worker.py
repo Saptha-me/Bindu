@@ -278,16 +278,24 @@ class ManifestWorker(Worker):
                 params["task_id"], task["context_id"], "canceled", True
             )
 
-    def build_message_history(self, history: list[Message]) -> list[dict[str, str]]:
-        """Convert A2A protocol messages to chat format for manifest execution.
+    def build_message_history(self, history: list[Message]) -> list[dict[str, Any]]:
+        """Pass A2A protocol messages through verbatim — each keeps its ``parts``.
+
+        Handlers read ``messages[-1]["parts"]`` (text / file / data parts)
+        directly; that is the A2A contract agents are written against. Do NOT
+        flatten to ``{role, content}`` here: it discards ``parts``, and the
+        file interceptor cannot represent binary (PDF/image) bytes as text,
+        so every file/vision handler receives an empty message. Chat-format
+        flattening happens only at the gRPC boundary
+        (``GrpcAgentClient._build_request``), whose proto requires it.
 
         Args:
             history: List of A2A protocol Message objects
 
         Returns:
-            List of dicts with 'role' and 'content' keys for LLM consumption
+            The same messages as plain dicts, ``parts`` intact.
         """
-        return MessageConverter.to_chat_format(history)
+        return [{**m} for m in history]
 
     def build_artifacts(self, result: Any) -> list[Artifact]:
         """Convert manifest execution result to A2A protocol artifacts.
@@ -304,7 +312,7 @@ class ManifestWorker(Worker):
         did_extension = self.manifest.did_extension
         return ArtifactBuilder.from_result(result, did_extension=did_extension)
 
-    async def _build_complete_message_history(self, task: Task) -> list[dict[str, str]]:
+    async def _build_complete_message_history(self, task: Task) -> list[dict[str, Any]]:
         """Build complete conversation history following A2A Protocol.
 
         A2A Protocol Strategy:
@@ -320,7 +328,7 @@ class ManifestWorker(Worker):
             task: Current task being executed
 
         Returns:
-            List of chat-formatted messages for agent execution
+            List of A2A protocol messages (``parts`` intact) for agent execution
         """
         # Extract referenceTaskIds from current task message
         current_message = task.get("history", [])[0] if task.get("history") else None

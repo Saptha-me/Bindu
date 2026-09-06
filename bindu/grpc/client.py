@@ -12,7 +12,11 @@ Supports both unary and streaming responses:
       chunks. ResultProcessor.collect_results() drains it automatically.
 
 Key contract:
-    - Input:  list[dict[str, str]] — chat messages [{"role": "user", "content": "..."}]
+    - Input:  list[dict] — A2A protocol messages with "parts" (as passed
+      through by ManifestWorker.build_message_history), plus optionally a
+      chat-format {"role": "system", "content": ...} system prompt. The
+      proto ChatMessage only carries {role, content}, so this client
+      flattens parts to text at the wire boundary (_build_request).
     - Output: str (normal completion), dict with "state" key (state transition),
       or generator of str/dict (streaming — collected by ResultProcessor).
 
@@ -23,12 +27,14 @@ and a remote gRPC handler.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import grpc
 
+from bindu.common.protocol.types import Message
 from bindu.grpc.generated import agent_handler_pb2, agent_handler_pb2_grpc
 from bindu.utils.logging import get_logger
+from bindu.utils.worker import MessageConverter
 
 logger = get_logger("bindu.grpc.client")
 
@@ -104,27 +110,45 @@ class GrpcAgentClient:
             logger.debug(f"Connected to agent handler at {scheme}://{self._address}")
 
     def _build_request(
-        self, messages: list[dict[str, str]]
+        self, messages: list[dict[str, Any]]
     ) -> agent_handler_pb2.HandleRequest:
-        """Convert chat-format messages to a proto HandleRequest.
+        """Convert message history to a proto HandleRequest.
+
+        ManifestWorker passes A2A protocol messages through with ``parts``
+        intact (plus an optional chat-format system message). The proto
+        ChatMessage only carries {role, content}, so flattening happens here
+        at the wire boundary: parts collapse to text (file parts extracted
+        by FileInterceptor) and A2A roles map to chat roles.
 
         Args:
-            messages: Conversation history as list of dicts.
-                Each dict has "role" (str) and "content" (str) keys.
+            messages: Conversation history — A2A messages with "parts",
+                and/or chat-format dicts with "role"/"content" keys.
 
         Returns:
             HandleRequest proto message ready for gRPC call.
         """
+        chat_messages: list[dict[str, str]] = []
+        for m in messages:
+            if m.get("parts"):
+                # A2A message → flatten to {role, content} for the proto.
+                chat_messages.extend(
+                    MessageConverter.to_chat_format(cast("list[Message]", [m]))
+                )
+            elif "content" in m:
+                # Already chat-shaped (e.g. the injected system prompt).
+                chat_messages.append(
+                    {"role": m.get("role", "user"), "content": m.get("content", "")}
+                )
         proto_messages = [
             agent_handler_pb2.ChatMessage(
-                role=m.get("role", "user"),
-                content=m.get("content", ""),
+                role=m["role"],
+                content=m["content"],
             )
-            for m in messages
+            for m in chat_messages
         ]
         return agent_handler_pb2.HandleRequest(messages=proto_messages)
 
-    def __call__(self, messages: list[dict[str, str]], **kwargs: Any) -> Any:
+    def __call__(self, messages: list[dict[str, Any]], **kwargs: Any) -> Any:
         """Execute the remote handler with conversation history.
 
         Called by ManifestWorker at line 171:
@@ -136,8 +160,8 @@ class GrpcAgentClient:
               ResultProcessor.collect_results() drains generators via __next__.
 
         Args:
-            messages: Conversation history as list of dicts.
-                Each dict has "role" (str) and "content" (str) keys.
+            messages: Conversation history — A2A protocol messages with
+                "parts" and/or chat-format dicts (see _build_request).
             **kwargs: Additional keyword arguments (ignored, for compatibility).
 
         Returns:

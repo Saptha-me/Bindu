@@ -18,6 +18,7 @@ Environment:
 import os
 from dotenv import load_dotenv
 from bindu.penguin.bindufy import bindufy
+from bindu.utils.worker import MessageConverter
 from agno.agent import Agent
 from agno.models.openrouter import OpenRouter
 from notion_client import Client
@@ -105,7 +106,7 @@ config = {
 # -----------------------------
 def handler(messages: list[dict[str, str]]):
     """Process messages and return agent response"""
-    return agent.run(input=messages)
+    return agent.run(input=MessageConverter.to_chat_format(messages))
 
 
 # -----------------------------

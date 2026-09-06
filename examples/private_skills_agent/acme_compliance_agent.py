@@ -37,7 +37,14 @@ from bindu.penguin.bindufy import bindufy
 def handler(messages):
     """Echo the last message back. The point of the example is the
     PAYWALL shape on /agent/private.json, not what the handler does."""
-    last = messages[-1].get("content", "") if messages else ""
+    last_msg = messages[-1] if messages else {}
+    # A2A contract: the message text lives in parts. Fall back to "content"
+    # so the example also works against older bindu releases that flattened
+    # history to chat format.
+    text = " ".join(
+        p.get("text", "") for p in last_msg.get("parts", []) if p.get("kind") == "text"
+    )
+    last = text or last_msg.get("content", "")
     return f"acme_compliance_agent: received '{last}'"
 
 

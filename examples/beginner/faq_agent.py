@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from bindu.penguin.bindufy import bindufy
+from bindu.utils.worker import MessageConverter
 from agno.agent import Agent
 from agno.models.openrouter import OpenRouter
 from agno.tools.duckduckgo import DuckDuckGoTools
@@ -52,7 +53,7 @@ def handler(messages: list[dict[str, str]]):
     Returns:
         Agent response result
     """
-    result = agent.run(input=messages)
+    result = agent.run(input=MessageConverter.to_chat_format(messages))
     return result
 # ---------------------------------------------------------------------------
 # Bindu config

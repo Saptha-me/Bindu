@@ -37,10 +37,17 @@ def handler(messages: list[dict[str, str]]):
     """Echo the latest user message back."""
     if not messages:
         return "send a message"
+    last = messages[-1]
+    # A2A contract: the message text lives in parts. Fall back to "content"
+    # so the example also works against older bindu releases that flattened
+    # history to chat format.
+    text = " ".join(
+        p.get("text", "") for p in last.get("parts", []) if p.get("kind") == "text"
+    )
     return [
         {
             "role": "assistant",
-            "content": messages[-1].get("content", ""),
+            "content": text or last.get("content", ""),
         }
     ]
 

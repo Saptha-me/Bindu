@@ -26,7 +26,12 @@ agent = Agent(
 
 def handler(messages):
     """Return a summary of the user's latest input message."""
-    user_input = messages[-1]["content"]
+    latest = messages[-1]
+    user_input = " ".join(
+        part.get("text", "")
+        for part in latest.get("parts", [])
+        if part.get("kind") == "text"
+    ).strip()
     result = agent.run(input=user_input)
     return result
 

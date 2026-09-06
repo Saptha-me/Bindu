@@ -29,9 +29,13 @@ def handler(messages: list[dict[str, str]]) -> str:
     if not isinstance(last_msg, dict):
         return "Invalid message structure."
 
-    user_input = last_msg.get("content")
+    user_input = " ".join(
+        part.get("text", "")
+        for part in last_msg.get("parts") or []
+        if isinstance(part, dict) and part.get("kind") == "text"
+    ).strip()
 
-    if not user_input or not isinstance(user_input, str):
+    if not user_input:
         return "Empty or invalid message content."
 
     # -------- Swarm Execution --------

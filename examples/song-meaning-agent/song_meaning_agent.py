@@ -107,6 +107,19 @@ config = {
 # 3. Handler
 # ---------------------------------------------------------------------------
 
+def _message_text(message: dict) -> str:
+    """Extract text from an A2A message.
+
+    The text lives in message parts. Falls back to "content" so the example
+    also works against older bindu releases that flattened history to chat
+    format.
+    """
+    text = " ".join(
+        p.get("text", "") for p in message.get("parts", []) if p.get("kind") == "text"
+    )
+    return text or message.get("content", "")
+
+
 def handler(messages: list[dict[str, str]]):
     """Analyze the meaning of a song based on the user's query.
 
@@ -122,11 +135,20 @@ def handler(messages: list[dict[str, str]]):
         if not user_messages:
             return "No query received. Please ask about a song, e.g. 'What does Bohemian Rhapsody mean?'"
 
-        query = user_messages[-1].get("content", "").strip()
+        query = _message_text(user_messages[-1]).strip()
         if not query:
             return "Empty query. Please name a song or paste lyrics you'd like analyzed."
 
-        result = agent.run(input=messages)
+        # Flatten the history to chat format for the agno agent.
+        chat_messages = []
+        for m in messages:
+            text = _message_text(m)
+            if not text:
+                continue
+            role = "user" if m.get("role") == "user" else "assistant"
+            chat_messages.append({"role": role, "content": text})
+
+        result = agent.run(input=chat_messages)
         return result
 
     except Exception as e:

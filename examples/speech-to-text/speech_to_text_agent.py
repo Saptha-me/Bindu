@@ -1,5 +1,6 @@
 import base64
 import os
+import tempfile
 from typing import Any
 
 from agno.agent import Agent
@@ -102,10 +103,36 @@ agent = Agent(
 def handler(messages: list[dict[str, str]]) -> Any:
     """Protocol-compliant handler for processing agent messages.
 
-    Signature required by Bindu: (messages: list[dict[str, str]]) -> Any
+    Reads the A2A ``parts`` contract: text parts become the query, and an
+    attached audio file part is written to a temp file so the agent's
+    path-based ``transcribe_audio`` tool can process it.
     """
-    # Extract the user's message text
-    user_query = messages[-1].get("content", "")
+    parts = messages[-1].get("parts", [])
+    user_query = " ".join(
+        p.get("text", "") for p in parts if p.get("kind") == "text"
+    ).strip()
+
+    audio_extensions = {
+        "audio/mpeg": ".mp3",
+        "audio/wav": ".wav",
+        "audio/x-wav": ".wav",
+        "audio/ogg": ".ogg",
+        "audio/mp4": ".m4a",
+    }
+    for part in parts:
+        file_obj = (part.get("file") or {}) if part.get("kind") == "file" else {}
+        audio_b64 = file_obj.get("bytes")
+        mime_type = file_obj.get("mimeType", "")
+        if not audio_b64 or not mime_type.startswith("audio/"):
+            continue
+        suffix = audio_extensions.get(mime_type, ".wav")
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(base64.b64decode(audio_b64))
+        user_query = (
+            f"{user_query or 'Transcribe this audio file.'}\n"
+            f"Audio file path: {tmp.name}"
+        )
+        break
 
     # Run the Agno agent
     result = agent.run(user_query)

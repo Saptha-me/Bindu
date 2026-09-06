@@ -84,7 +84,15 @@ def handler(messages: list[dict[str, str]]) -> str:
     latest_message = messages[-1]
 
     if isinstance(latest_message, dict):
-        user_message = latest_message.get("content", "")
+        # A2A contract: the message text lives in parts. Fall back to "content"
+        # so the example also works against older bindu releases that flattened
+        # history to chat format.
+        text = " ".join(
+            p.get("text", "")
+            for p in latest_message.get("parts", [])
+            if p.get("kind") == "text"
+        )
+        user_message = text or latest_message.get("content", "")
     else:
         user_message = latest_message
 

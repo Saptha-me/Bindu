@@ -1,0 +1,154 @@
+Release: the A2A parts contract, restored
+====================================================
+
+Version: 2026.36.7
+Date: September 6, 2026
+Author: Raahul Dutta
+
+OVERVIEW
+--------
+This release closes the parts-flattening regression (#611). Since
+2026.20.2, ManifestWorker flattened every A2A message to chat
+`{role, content}` before handing history to your handler — so the
+`parts` array your agent was written against simply vanished. Every
+file and vision handler failed with "No file part found in the
+message."; text handlers silently lost the protocol shape.
+
+Handlers now receive raw A2A messages with `parts` intact. Chat-format
+flattening still happens in exactly one place — the gRPC wire boundary
+(`GrpcAgentClient._build_request`), because the proto ChatMessage only
+carries `{role, content}` — so TypeScript/SDK agents see an unchanged
+contract. The injected system prompt is A2A-shaped too, envelope UUIDs
+arrive as strings (`json.dumps(messages)` just works), and handler
+input is structurally copied so mutating it can no longer corrupt
+stored history.
+
+The fix was verified the hard way: a 10-example parallel E2E fan-out
+against real agents. A 719-byte PDF and an 83 KB WAV arrived at
+handlers byte-exact, survived stored history via referenceTaskIds
+(a follow-up turn answered questions about the file from history
+alone), and a real TypeScript SDK agent recovered a marker through
+the flattened gRPC path. All 25 in-repo example handlers that still
+read the retired flattened shape were migrated in the same PR and
+smoke-tested live.
+
+Also in this release: a webhook SSRF patch plus a 190-alert Dependabot
+sweep (#606), the boxd runtime provider on SDK 0.2.x (#610), x402
+integration tests wired into CI (#583), a faster in-memory load_task,
+two new example agents, MiniMax M3 model references, and Indonesian
+translations.
+
+BREAKING CHANGES
+----------------
+If you wrote a Python handler against 2026.20.x–2026.22.x behavior —
+reading `messages[-1]["content"]` or passing the message list straight
+into a chat-format framework — it will break or silently degrade on
+this release. Migrate one of two ways:
+
+  1. Read the protocol (recommended):
+       text = " ".join(
+           p.get("text", "")
+           for p in messages[-1].get("parts", [])
+           if p.get("kind") == "text"
+       )
+     File parts arrive as {"kind": "file", "file": {"bytes", "mimeType",
+     "name"}} — decode `bytes` yourself, no interception in the way.
+
+  2. Keep chat format (framework passthrough, e.g. agno):
+       from bindu.utils.worker import MessageConverter
+       agent.run(input=MessageConverter.to_chat_format(messages))
+
+Handlers written before 2026.20.2 against the original parts contract
+need no changes — this release restores their behavior. gRPC/SDK
+agents (TypeScript) are unaffected: the wire still delivers
+{role, content}, with system roles now mapped through correctly
+instead of demoted to user.
+
+IMPROVEMENTS
+------------
+🎯 Features
+  - feat(runtime): migrate boxd provider to SDK 0.2.x (#610)
+  - feat: add medical research agent example (#581)
+  - feat(examples): add Song Meaning Analyzer agent (#568)
+  - feat: upgrade MiniMax model references to M3 (#571)
+
+🐛 Bug Fixes
+  - fix(worker): preserve A2A parts in handler message history (#611)
+    — includes the gRPC-boundary flattening, FileInterceptor reading
+    the real A2A FilePart shape, A2A-shaped system prompt, JSON-safe
+    isolated handler input, FileWithUri placeholders, lru_cache'd file
+    extraction, and the 25-file examples migration
+  - fix(security): patch webhook SSRF + resolve 190 Dependabot alerts
+    (#606) — starlette now >=1.3.1 (clears CVE-2026-48710 "BadHost")
+
+⚡ Performance
+  - perf(storage): speed up in-memory load_task with type-specialized
+    deep copy
+
+🧪 Testing / CI
+  - Add x402 integration tests to CI (#583)
+  - boxd e2e now sends a real message/send and asserts the echoed text
+    (env-gated), so a history-contract regression can't pass silently
+
+📚 Docs
+  - docs(i18n): add Indonesian translations (#579)
+  - Six docs rewritten off the retired flattened contract:
+    FILE_HANDLING_&_UPLOADS, GRPC_LANGUAGE_AGNOSTIC, grpc/client,
+    grpc/limitations, runtime/quickstart, runtime/README
+
+KNOWN ISSUES
+------------
+- FilePart inherits TextPart, so submit validation still requires a
+  `text` key on file parts — spec-shaped bare file parts are rejected
+  at the door. A spec-compliance fix is in progress on a separate
+  branch and will land in a follow-up release.
+- Proto-level `parts` support (binary to gRPC/SDK agents) remains a
+  documented ceiling in docs/grpc/limitations.md — file parts flatten
+  to extracted text on the wire.
+- Two examples reference model ids retired from OpenRouter
+  (document-analyzer: arcee trinity; speech-to-text: gemini-2.0-flash).
+
+TECHNICAL DETAILS
+-----------------
+Files Modified: 74
+Lines Added: +2798
+Lines Removed: -1638
+
+TESTING
+-------
+✅ 1124 unit + integration tests passing, 6 skipped (release-cut run)
+✅ Pre-commit hooks passing (ruff, ruff-format, ty, bandit,
+   detect-secrets, pydocstyle)
+✅ 10-example parallel E2E fan-out against this code: core parts
+   contract held in 10/10 (byte-exact file delivery, history
+   round-trips, gRPC boundary, system-prompt delivery)
+✅ Post-migration live smoke tests: echo, summarizer, agno passthrough,
+   PDF file part, 5-agent swarm — all completed with real model output
+
+COMMIT DETAILS
+--------------
+Commits since 2026.22.4:
+
+  - d6fb731e: fix(worker): preserve A2A parts in handler message history (#611)
+  - ad42cc8d: feat(runtime): migrate boxd provider to SDK 0.2.x (#610)
+  - 7d5b6d25: fix(security): patch webhook SSRF + resolve 190 Dependabot alerts (#606)
+  - 7b1ff75a: Add x402 integration tests to CI (#583)
+  - e9e82b93: feat: add medical research agent example (#581)
+  - eee69849: docs(i18n): add Indonesian translations (#579)
+  - 6ef5699a: feat: upgrade MiniMax model references to M3 (#571)
+  - 682a19c4: feat(examples): add Song Meaning Analyzer agent (#568)
+  - f09d037c: perf(storage): speed up in-memory load_task with type-specialized deep copy
+
+USAGE WITH GIT
+--------------
+# View this release
+git show 2026.36.7
+
+# Compare to previous release
+git diff 2026.22.4..2026.36.7 --stat
+
+LINKS
+-----
+- Parts-contract PR: https://github.com/GetBindu/Bindu/pull/611
+- Security sweep PR: https://github.com/GetBindu/Bindu/pull/606
+- Compare: https://github.com/GetBindu/Bindu/compare/2026.22.4...2026.36.7

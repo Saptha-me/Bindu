@@ -654,9 +654,12 @@ Kotlin stubs are generated automatically by the Gradle protobuf plugin during `.
 from bindu.grpc.generated.agent_handler_pb2 import ChatMessage, HandleRequest
 from bindu.grpc.generated.agent_handler_pb2_grpc import AgentHandlerStub
 
-# Convert Python dicts → proto messages
-proto_msgs = [ChatMessage(role=m["role"], content=m["content"]) for m in messages]
-request = HandleRequest(messages=proto_msgs)
+# Flatten A2A messages → proto messages. The core hands manifest.run raw
+# A2A messages (with `parts`); the proto ChatMessage only carries
+# {role, content}, so text is extracted from parts and A2A roles are
+# mapped ("agent" → "assistant") here at the wire boundary — see
+# GrpcAgentClient._build_request in bindu/grpc/client.py.
+request = self._build_request(messages)
 
 # Make gRPC call using generated stub
 response = self._stub.HandleMessages(request, timeout=30.0)

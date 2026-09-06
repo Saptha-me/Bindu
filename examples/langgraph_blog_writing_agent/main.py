@@ -15,11 +15,17 @@ def handler(messages):
 
         last_message = messages[-1]
 
-        # Support both formats:
-        # 1) [{"role": "user", "content": "..."}]
-        # 2) ["plain string"]
+        # Support all formats:
+        # 1) A2A messages: [{"role": "user", "parts": [{"kind": "text", ...}]}]
+        # 2) chat format (older bindu releases): [{"role": "user", "content": "..."}]
+        # 3) ["plain string"]
         if isinstance(last_message, dict):
-            query = last_message.get("content", "")
+            text = " ".join(
+                p.get("text", "")
+                for p in last_message.get("parts", [])
+                if p.get("kind") == "text"
+            )
+            query = text or last_message.get("content", "")
         else:
             query = str(last_message)
 

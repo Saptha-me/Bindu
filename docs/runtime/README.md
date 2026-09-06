@@ -25,7 +25,13 @@ from bindu.penguin.bindufy import bindufy
 
 
 def handler(messages):
-    return [{"role": "assistant", "content": messages[-1]["content"]}]
+    # A2A contract: the message text lives in parts.
+    text = " ".join(
+        p.get("text", "")
+        for p in messages[-1].get("parts", [])
+        if p.get("kind") == "text"
+    )
+    return [{"role": "assistant", "content": text}]
 
 
 config = {

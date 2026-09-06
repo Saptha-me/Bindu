@@ -95,3 +95,112 @@ class TestMessageConverter:
         result = MessageConverter.to_chat_format(messages)
 
         assert result == []
+
+    def test_to_chat_format_extracts_text_from_a2a_file_part(self):
+        """File bytes live at part["file"]["bytes"] (A2A FilePart shape).
+
+        Regression: the interceptor used to read part["mimeType"] /
+        part["data"], which don't exist on A2A file parts, so every upload
+        became "[Unsupported file type: ]".
+        """
+        import base64
+
+        payload = base64.b64encode(b"hello from a text file").decode()
+        messages = [
+            cast(
+                Message,
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "kind": "file",
+                            "file": {
+                                "bytes": payload,
+                                "mimeType": "text/plain",
+                                "name": "notes.txt",
+                            },
+                        }
+                    ],
+                },
+            )
+        ]
+
+        result = MessageConverter.to_chat_format(messages)
+
+        assert len(result) == 1
+        assert "hello from a text file" in result[0]["content"]
+        assert "Unsupported file type" not in result[0]["content"]
+
+    def test_to_chat_format_maps_system_role_through(self):
+        """A2A system messages keep role 'system' (not demoted to 'user')."""
+        messages = [
+            cast(
+                Message,
+                {
+                    "role": "system",
+                    "parts": [{"kind": "text", "text": "Respond in JSON."}],
+                },
+            )
+        ]
+
+        result = MessageConverter.to_chat_format(messages)
+
+        assert result == [{"role": "system", "content": "Respond in JSON."}]
+
+    def test_to_chat_format_flags_uri_file_without_bytes(self):
+        """FileWithUri parts aren't fetched — say so instead of emitting an
+        empty 'Document Uploaded' block from decoding zero bytes."""
+        messages = [
+            cast(
+                Message,
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "kind": "file",
+                            "file": {
+                                "uri": "https://example.com/doc.pdf",
+                                "bytes": "",
+                                "mimeType": "application/pdf",
+                                "name": "doc.pdf",
+                            },
+                        }
+                    ],
+                },
+            )
+        ]
+
+        result = MessageConverter.to_chat_format(messages)
+
+        assert len(result) == 1
+        assert (
+            "[File reference not fetched: https://example.com/doc.pdf]"
+            in result[0]["content"]
+        )
+        assert "Document Uploaded" not in result[0]["content"]
+
+    def test_to_chat_format_marks_unsupported_file_types(self):
+        """Unsupported MIME types report the actual type, not an empty string."""
+        messages = [
+            cast(
+                Message,
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "kind": "file",
+                            "file": {
+                                "bytes": "aWdub3JlZA==",
+                                "mimeType": "image/png",
+                                "name": "photo.png",
+                            },
+                        }
+                    ],
+                },
+            )
+        ]
+
+        result = MessageConverter.to_chat_format(messages)
+
+        assert len(result) == 1
+        assert "[Unsupported file type: image/png]" in result[0]["content"]

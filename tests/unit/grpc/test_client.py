@@ -130,6 +130,99 @@ class TestGrpcAgentClient:
 
     @patch("bindu.grpc.client.grpc.insecure_channel")
     @patch("bindu.grpc.client.agent_handler_pb2_grpc.AgentHandlerStub")
+    def test_a2a_messages_flattened_at_wire_boundary(
+        self, mock_stub_class, mock_channel
+    ):
+        """Raw A2A messages (with parts) flatten to {role, content} proto.
+
+        ManifestWorker now passes A2A messages through verbatim; this client
+        is the one place that still needs chat format (the proto ChatMessage
+        has no parts field). Text parts collapse to content, file parts get
+        text-extracted, and the A2A "agent" role maps to "assistant".
+        """
+        import base64
+
+        mock_stub = MagicMock()
+        mock_stub_class.return_value = mock_stub
+        mock_stub.HandleMessages.return_value = agent_handler_pb2.HandleResponse(
+            content="ok", state=""
+        )
+
+        client = GrpcAgentClient("localhost:50052")
+        messages = [
+            {"role": "system", "content": "You are helpful"},
+            {
+                "role": "user",
+                "kind": "message",
+                "parts": [{"kind": "text", "text": "Read this file"}],
+            },
+            {
+                "role": "agent",
+                "kind": "message",
+                "parts": [{"kind": "text", "text": "Sure, send it over"}],
+            },
+            {
+                "role": "user",
+                "kind": "message",
+                "parts": [
+                    {
+                        "kind": "file",
+                        "file": {
+                            "bytes": base64.b64encode(b"file body").decode(),
+                            "mimeType": "text/plain",
+                            "name": "notes.txt",
+                        },
+                    }
+                ],
+            },
+        ]
+        client(messages)
+
+        request = mock_stub.HandleMessages.call_args[0][0]
+        assert len(request.messages) == 4
+        assert request.messages[0].role == "system"
+        assert request.messages[0].content == "You are helpful"
+        assert request.messages[1].role == "user"
+        assert request.messages[1].content == "Read this file"
+        assert request.messages[2].role == "assistant"
+        assert request.messages[2].content == "Sure, send it over"
+        assert request.messages[3].role == "user"
+        assert "file body" in request.messages[3].content
+
+    @patch("bindu.grpc.client.grpc.insecure_channel")
+    @patch("bindu.grpc.client.agent_handler_pb2_grpc.AgentHandlerStub")
+    def test_a2a_system_message_keeps_system_role(self, mock_stub_class, mock_channel):
+        """The A2A-shaped injected system prompt reaches the wire as 'system'."""
+        mock_stub = MagicMock()
+        mock_stub_class.return_value = mock_stub
+        mock_stub.HandleMessages.return_value = agent_handler_pb2.HandleResponse(
+            content="ok", state=""
+        )
+
+        client = GrpcAgentClient("localhost:50052")
+        client(
+            [
+                {
+                    "role": "system",
+                    "kind": "message",
+                    "parts": [{"kind": "text", "text": "Respond in JSON."}],
+                },
+                {
+                    "role": "user",
+                    "kind": "message",
+                    "parts": [{"kind": "text", "text": "hi"}],
+                },
+            ]
+        )
+
+        request = mock_stub.HandleMessages.call_args[0][0]
+        assert len(request.messages) == 2
+        assert request.messages[0].role == "system"
+        assert request.messages[0].content == "Respond in JSON."
+        assert request.messages[1].role == "user"
+
+    @patch("bindu.grpc.client.grpc.insecure_channel")
+    @patch("bindu.grpc.client.agent_handler_pb2_grpc.AgentHandlerStub")
     def test_lazy_connection(self, mock_stub_class, mock_channel):
         """Test that gRPC channel is not created until first call."""
         client = GrpcAgentClient("localhost:50052")

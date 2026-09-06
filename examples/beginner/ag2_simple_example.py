@@ -42,7 +42,11 @@ def handler(messages: list[dict[str, str]]):
     if not messages:
         return [{"role": "assistant", "content": "No input provided."}]
 
-    user_input = messages[-1].get("content", "")
+    user_input = " ".join(
+        part.get("text", "")
+        for part in messages[-1].get("parts", [])
+        if part.get("kind") == "text"
+    ).strip()
     if not user_input:
         return [{"role": "assistant", "content": "Empty message."}]
 

@@ -204,17 +204,20 @@ class Worker(ABC):
 
     @abstractmethod
     def build_message_history(self, history: list[Message]) -> list[Any]:
-        """Convert A2A protocol messages to agent-specific format.
+        """Prepare A2A protocol messages for agent execution.
 
         Args:
             history: List of protocol Message objects
 
         Returns:
-            List in format suitable for agent execution (e.g., chat format for LLMs)
+            List in the format handlers consume. ManifestWorker passes A2A
+            messages through with ``parts`` intact (the handler contract);
+            chat-format flattening happens only at wire boundaries that
+            require it (e.g. the gRPC proto).
 
         Example:
-            Protocol: [{"role": "user", "parts": [{"text": "Hello"}]}]
-            Agent: [{"role": "user", "content": "Hello"}]
+            Protocol: [{"role": "user", "parts": [{"kind": "text", "text": "Hello"}]}]
+            Agent:    [{"role": "user", "parts": [{"kind": "text", "text": "Hello"}]}]
         """
         ...
 

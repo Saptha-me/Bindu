@@ -72,11 +72,17 @@ def handler(messages: list[dict[str, str]]):
         Extracted and structured data from the requested web page
     """
     if messages:
-        latest = (
-            messages[-1].get("content", "")
-            if isinstance(messages[-1], dict)
-            else str(messages[-1])
-        )
+        last = messages[-1]
+        if isinstance(last, dict):
+            # A2A contract: the message text lives in parts. Fall back to
+            # "content" for older bindu releases that flattened history to
+            # chat format.
+            text = " ".join(
+                p.get("text", "") for p in last.get("parts", []) if p.get("kind") == "text"
+            )
+            latest = text or last.get("content", "")
+        else:
+            latest = str(last)
         result = agent.run(input=latest)
         if hasattr(result, "content"):
             return result.content

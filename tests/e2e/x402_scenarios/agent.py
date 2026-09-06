@@ -20,8 +20,12 @@ from bindu.penguin.bindufy import bindufy  # noqa: E402
 
 def handler(messages):
     """Echo back the last user message wrapped in a PAID JOB DONE marker."""
-    last = messages[-1].get("content", "") if messages else ""
-    return f"PAID JOB DONE — agent received: '{last}'"
+    last = messages[-1] if messages else {}
+    # A2A contract: the message text lives in parts.
+    text = " ".join(
+        p.get("text", "") for p in last.get("parts", []) if p.get("kind") == "text"
+    )
+    return f"PAID JOB DONE — agent received: '{text}'"
 
 
 bindufy(

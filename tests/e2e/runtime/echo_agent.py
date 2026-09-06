@@ -10,10 +10,17 @@ def handler(messages):
     """Echo the last user message back, or a placeholder when input is empty."""
     if not messages:
         return "no message"
+    last = messages[-1]
+    # A2A contract: the message text lives in parts. Fall back to "content"
+    # so the fixture also works against older bindu releases that flattened
+    # history to chat format.
+    text = " ".join(
+        p.get("text", "") for p in last.get("parts", []) if p.get("kind") == "text"
+    )
     return [
         {
             "role": "assistant",
-            "content": messages[-1].get("content", ""),
+            "content": text or last.get("content", ""),
         }
     ]
 

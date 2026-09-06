@@ -102,10 +102,16 @@ def handler(messages):
     """Echo the latest user message back."""
     if not messages:
         return "send a message"
+    # A2A contract: the message text lives in parts.
+    text = " ".join(
+        p.get("text", "")
+        for p in messages[-1].get("parts", [])
+        if p.get("kind") == "text"
+    )
     return [
         {
             "role": "assistant",
-            "content": messages[-1].get("content", ""),
+            "content": text,
         }
     ]
 

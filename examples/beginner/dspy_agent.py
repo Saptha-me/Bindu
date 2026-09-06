@@ -43,7 +43,11 @@ def handler(messages: list[dict]) -> list[dict]:
     Returns:
         List with a single assistant response message
     """
-    last_message = messages[-1]["content"]
+    last_message = " ".join(
+        part.get("text", "")
+        for part in messages[-1].get("parts", [])
+        if part.get("kind") == "text"
+    ).strip()
     result = qa_program(question=last_message)
     return [{"role": "assistant", "content": result.answer}]
 

@@ -51,7 +51,14 @@ def handler(messages: list[dict[str, str]]):
     """Run the AG2 research team and return the final report."""
     if not messages:
         return [{"role": "assistant", "content": "No input provided."}]
-    user_input = messages[-1].get("content", "")
+    last = messages[-1]
+    # A2A contract: the message text lives in parts. Fall back to "content"
+    # so the example also works against older bindu releases that flattened
+    # history to chat format.
+    text = " ".join(
+        p.get("text", "") for p in last.get("parts", []) if p.get("kind") == "text"
+    )
+    user_input = text or last.get("content", "")
     if not user_input:
         return [{"role": "assistant", "content": "Empty message."}]
 

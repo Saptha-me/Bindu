@@ -684,7 +684,7 @@ def _bindufy_core(
 
 def bindufy(
     config: Dict[str, Any],
-    handler: Callable[[list[dict[str, str]]], Any],
+    handler: Callable[[list[dict[str, Any]]], Any],
     run_server: bool = True,
     key_dir: str | Path | None = None,
     launch: bool = False,
@@ -721,7 +721,13 @@ def bindufy(
             - global_webhook_url: Default webhook URL for all tasks (optional)
             - global_webhook_token: Authentication token for global webhook (optional)
         handler: The handler function that processes messages and returns responses.
-                Must have signature: (messages: list[dict[str, str]]) -> Any
+                Must have signature: (messages: list[dict[str, Any]]) -> Any.
+                Each message is an A2A protocol message: {"role": "user" |
+                "agent" | "system", "kind": "message", "parts": [...]} where
+                parts are {"kind": "text", "text": ...}, {"kind": "file",
+                "file": {"bytes", "mimeType", "name"}}, or {"kind": "data",
+                "data": {...}}. Read text via the message's parts, and file
+                bytes via part["file"]["bytes"] (base64).
         run_server: If True, starts the uvicorn server (blocking). If False, returns manifest
                    immediately for testing/programmatic usage (default: True)
         key_dir: Directory for storing DID keys. If None, attempts to detect from caller's
@@ -733,8 +739,14 @@ def bindufy(
         AgentManifest: The manifest for the bindufied agent
 
     Example:
-        def my_handler(messages: list[dict[str, str]]) -> str:
-            result = agent.run(input=messages)
+        def my_handler(messages: list[dict[str, Any]]) -> str:
+            # A2A contract: message text lives in parts.
+            user_text = " ".join(
+                p.get("text", "")
+                for p in messages[-1].get("parts", [])
+                if p.get("kind") == "text"
+            )
+            result = agent.run(input=user_text)
             return result.to_dict()["content"]
 
         config = {

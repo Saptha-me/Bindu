@@ -18,6 +18,7 @@ Environment:
 
 import os
 from bindu.penguin.bindufy import bindufy
+from bindu.utils.worker import MessageConverter
 from agno.agent import Agent
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.models.openai import OpenAILike
@@ -66,7 +67,7 @@ def handler(messages: list[dict[str, str]]):
     Returns:
         Agent response result
     """
-    result = agent.run(input=messages)
+    result = agent.run(input=MessageConverter.to_chat_format(messages))
     return result
 
 

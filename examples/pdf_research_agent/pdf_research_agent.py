@@ -16,14 +16,17 @@ Usage
     python pdf_research_agent.py
 
 The agent will be live at http://localhost:3775
-Send it a message like:
-    {"role": "user", "content": "/path/to/paper.pdf"}
-or paste raw text directly as the message content.
+Send it an A2A message whose parts carry either an inline PDF file part:
+    {"kind": "file", "text": "paper.pdf",
+     "file": {"bytes": "<base64>", "mimeType": "application/pdf", "name": "paper.pdf"}}
+or a text part with a PDF path or raw document text.
 """
 from bindu.penguin.bindufy import bindufy
 from agno.agent import Agent
 from agno.models.openrouter import OpenRouter
 from dotenv import load_dotenv
+import base64
+import io
 import os
 
 load_dotenv()
@@ -51,6 +54,22 @@ def _read_content(source: str) -> str:
         except Exception as e:
             return f"Error reading PDF '{source.strip()}': {str(e)}"
     return source  # treat as raw document text
+
+
+def _read_pdf_bytes(data: bytes) -> str:
+    """Return plain text extracted from an in-memory PDF (inline file part)."""
+    try:
+        from pypdf import PdfReader  # optional dependency
+        reader = PdfReader(io.BytesIO(data))
+        pages = [page.extract_text() or "" for page in reader.pages]
+        text = "\n\n".join(pages)
+        if len(text.strip()) < 100:
+            return "Attached PDF appears to be empty or contains very little text."
+        return text
+    except ImportError:
+        return "[pypdf not installed — cannot read the attached PDF. Run: uv add pypdf]"
+    except Exception as e:
+        return f"Error reading attached PDF: {str(e)}"
 
 
 # ---------------------------------------------------------------------------
@@ -110,8 +129,8 @@ def handler(messages: list[dict[str, str]]):
     message, read its content (PDF or raw text), and return a summary.
 
     Args:
-        messages: Standard A2A message list, e.g.
-                  [{"role": "user", "content": "/path/to/doc.pdf"}]
+        messages: Raw A2A message list; the latest user message's parts carry
+                  an inline PDF file part, a PDF path, or raw document text.
 
     Returns:
         Agent response with the document summary.
@@ -122,11 +141,27 @@ def handler(messages: list[dict[str, str]]):
         if not user_messages:
             return "No user message found. Please send a PDF path or document text."
 
-        user_input = user_messages[-1].get("content", "").strip()
-        if not user_input:
-            return "Empty message received. Please provide a PDF path or document text."
+        parts = user_messages[-1].get("parts", [])
+        user_input = " ".join(
+            p.get("text", "") for p in parts if p.get("kind") == "text"
+        ).strip()
+        pdf_bytes = next(
+            (
+                (p.get("file") or {}).get("bytes")
+                for p in parts
+                if p.get("kind") == "file"
+                and (p.get("file") or {}).get("mimeType") == "application/pdf"
+                and (p.get("file") or {}).get("bytes")
+            ),
+            None,
+        )
 
-        document_text = _read_content(user_input)
+        if pdf_bytes:
+            document_text = _read_pdf_bytes(base64.b64decode(pdf_bytes))
+        elif user_input:
+            document_text = _read_content(user_input)
+        else:
+            return "Empty message received. Please attach a PDF or provide a path/document text."
 
         # Check if document processing failed
         if document_text.startswith("[") or document_text.startswith("Error"):

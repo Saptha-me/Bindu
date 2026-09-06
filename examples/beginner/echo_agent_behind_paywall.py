@@ -28,8 +28,13 @@ def handler(messages):
     Returns:
         List containing a single assistant message with the user's content.
     """
-    # Reply with the user's latest input
-    return [{"role": "assistant", "content": messages[-1]["content"]}]
+    # Reply with the text of the user's latest input (A2A parts contract)
+    text = " ".join(
+        part.get("text", "")
+        for part in messages[-1].get("parts", [])
+        if part.get("kind") == "text"
+    )
+    return [{"role": "assistant", "content": text}]
 
 
 config = {

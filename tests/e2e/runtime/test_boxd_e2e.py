@@ -5,7 +5,9 @@ This test creates a real VM, ships a tiny echo agent, hits the A2A endpoint,
 and destroys the VM. Slow (~30–60s), costs real boxd resources.
 """
 
+import asyncio
 import os
+import uuid
 from pathlib import Path
 
 import httpx
@@ -67,6 +69,61 @@ async def test_full_lifecycle(tmp_path):
             assert resp.status_code == 200, resp.text
             card = resp.json()
             assert card.get("name") == "boxd-e2e-echo", card
+
+            # Exercise the actual message path: without this, a history
+            # contract regression (e.g. re-flattening parts) keeps the
+            # e2e green while every deployed echo returns empty output.
+            task_id, context_id = str(uuid.uuid4()), str(uuid.uuid4())
+            resp = await client.post(
+                handle.url + "/",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": str(uuid.uuid4()),
+                    "method": "message/send",
+                    "params": {
+                        "configuration": {"accepted_output_modes": ["text"]},
+                        "message": {
+                            "role": "user",
+                            "kind": "message",
+                            "parts": [{"kind": "text", "text": "boxd echo probe"}],
+                            "messageId": str(uuid.uuid4()),
+                            "contextId": context_id,
+                            "taskId": task_id,
+                        },
+                    },
+                },
+            )
+            assert resp.status_code == 200, resp.text
+
+            # Poll until terminal, then require the echoed text — the
+            # fixture reads parts (with a content fallback for older
+            # PyPI releases inside the VM), so either code path must
+            # surface the probe text, never an empty echo.
+            reply = ""
+            for _ in range(40):
+                resp = await client.post(
+                    handle.url + "/",
+                    json={
+                        "jsonrpc": "2.0",
+                        "id": str(uuid.uuid4()),
+                        "method": "tasks/get",
+                        "params": {"taskId": task_id},
+                    },
+                )
+                task = resp.json().get("result") or {}
+                state = (task.get("status") or {}).get("state")
+                if state in ("completed", "failed", "rejected"):
+                    assert state == "completed", task
+                    chunks = [
+                        p.get("text", "")
+                        for art in task.get("artifacts") or []
+                        for p in art.get("parts") or []
+                        if p.get("kind") == "text"
+                    ]
+                    reply = " ".join(chunks)
+                    break
+                await asyncio.sleep(0.5)
+            assert "boxd echo probe" in reply, f"echo lost the message text: {reply!r}"
     finally:
         if handle is not None:
             await p.on_exit(handle, "destroy")

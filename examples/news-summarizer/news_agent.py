@@ -20,6 +20,7 @@ from agno.agent import Agent
 from agno.models.ollama import Ollama
 from agno.tools.duckduckgo import DuckDuckGoTools
 from bindu.penguin.bindufy import bindufy
+from bindu.utils.worker import MessageConverter
 
 load_dotenv()
 
@@ -55,14 +56,13 @@ def handler(messages: list[dict[str, str]]):
     """Process incoming messages and return news summary.
 
     Args:
-        messages: Conversation history as list of dicts
-                  e.g. [{"role": "user", "content": "cricket news"}]
+        messages: Conversation history as raw A2A messages, e.g.
+                  [{"role": "user", "parts": [{"kind": "text", "text": "cricket news"}], ...}]
 
     Returns:
         Agent response with structured news summary
     """
-    latest_message = messages[-1]["content"]
-    result = agent.run(input=messages)
+    result = agent.run(input=MessageConverter.to_chat_format(messages))
     return result
 
 # Launch

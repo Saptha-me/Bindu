@@ -76,19 +76,20 @@ def _get_agent() -> AIAgent:
 
 
 def _last_user_text(messages: list[dict[str, Any]]) -> str:
-    """Extract the newest user message's text, tolerating the A2A parts shape."""
+    """Extract the newest user message's text from A2A ``parts`` (chat fallback)."""
     for m in reversed(messages):
         if m.get("role") != "user":
             continue
+        parts = m.get("parts")
+        if isinstance(parts, list):
+            return "\n".join(
+                p.get("text", "")
+                for p in parts
+                if isinstance(p, dict) and p.get("kind") == "text"
+            )
         content = m.get("content", "")
         if isinstance(content, str):
             return content
-        if isinstance(content, list):
-            return "\n".join(
-                p.get("text", "")
-                for p in content
-                if isinstance(p, dict) and p.get("kind") == "text"
-            )
     return ""
 
 

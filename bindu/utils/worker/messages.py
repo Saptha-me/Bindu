@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import io
+from functools import lru_cache
 from typing import Any, Optional, Union
 from uuid import UUID, uuid4
 
@@ -67,6 +68,20 @@ class FileInterceptor:
             mime_type = file_obj.get("mimeType", "")
             base64_data = str(file_obj.get("bytes", ""))
 
+            if not base64_data:
+                # FileWithUri (or missing bytes): nothing to decode locally.
+                # Say so explicitly instead of emitting an empty "Document
+                # Uploaded" block from b64decode("").
+                ref = file_obj.get("uri") or file_obj.get("name") or "unknown"
+                logger.warning(f"File part without inline bytes skipped: {ref}")
+                processed_parts.append(
+                    {
+                        "kind": "text",
+                        "text": f"[File reference not fetched: {ref}]",
+                    }
+                )
+                continue
+
             if mime_type not in cls.SUPPORTED_MIME_TYPES:
                 logger.warning(f"Unsupported MIME type rejected: {mime_type}")
                 processed_parts.append(
@@ -78,20 +93,7 @@ class FileInterceptor:
                 continue
 
             try:
-                # Decode the Base64 payload
-                file_bytes = base64.b64decode(base64_data)
-                extracted_text = ""
-
-                # Route to specific parser based on MIME type
-                if mime_type == "application/pdf":
-                    extracted_text = cls._extract_pdf(file_bytes)
-                elif mime_type == "text/plain":
-                    extracted_text = file_bytes.decode("utf-8")
-                elif (
-                    mime_type
-                    == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                ):
-                    extracted_text = cls._extract_docx(file_bytes)
+                extracted_text = _extract_file_text(mime_type, base64_data)
 
                 # Inject the parsed document as a formatted text prompt
                 processed_parts.append(
@@ -113,10 +115,28 @@ class FileInterceptor:
         return processed_parts
 
 
+@lru_cache(maxsize=8)
+def _extract_file_text(mime_type: str, base64_data: str) -> str:
+    """Decode and extract text from a supported file payload.
+
+    Cached because task history is append-only: on a multi-turn
+    conversation every turn re-flattens the full history, and without the
+    cache the same PDF is base64-decoded and re-parsed on every turn,
+    synchronously on the event loop. Failures are not cached (lru_cache
+    only stores successful returns).
+    """
+    file_bytes = base64.b64decode(base64_data)
+    if mime_type == "application/pdf":
+        return FileInterceptor._extract_pdf(file_bytes)
+    if mime_type == "text/plain":
+        return file_bytes.decode("utf-8")
+    return FileInterceptor._extract_docx(file_bytes)
+
+
 class MessageConverter:
     """Optimized converter for message format transformations."""
 
-    ROLE_MAP = {"agent": "assistant", "user": "user"}
+    ROLE_MAP = {"agent": "assistant", "user": "user", "system": "system"}
 
     @staticmethod
     def to_chat_format(history: list[Message]) -> list[ChatMessage]:

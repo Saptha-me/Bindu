@@ -131,6 +131,54 @@ class TestMessageConverter:
         assert "hello from a text file" in result[0]["content"]
         assert "Unsupported file type" not in result[0]["content"]
 
+    def test_to_chat_format_maps_system_role_through(self):
+        """A2A system messages keep role 'system' (not demoted to 'user')."""
+        messages = [
+            cast(
+                Message,
+                {
+                    "role": "system",
+                    "parts": [{"kind": "text", "text": "Respond in JSON."}],
+                },
+            )
+        ]
+
+        result = MessageConverter.to_chat_format(messages)
+
+        assert result == [{"role": "system", "content": "Respond in JSON."}]
+
+    def test_to_chat_format_flags_uri_file_without_bytes(self):
+        """FileWithUri parts aren't fetched — say so instead of emitting an
+        empty 'Document Uploaded' block from decoding zero bytes."""
+        messages = [
+            cast(
+                Message,
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "kind": "file",
+                            "file": {
+                                "uri": "https://example.com/doc.pdf",
+                                "bytes": "",
+                                "mimeType": "application/pdf",
+                                "name": "doc.pdf",
+                            },
+                        }
+                    ],
+                },
+            )
+        ]
+
+        result = MessageConverter.to_chat_format(messages)
+
+        assert len(result) == 1
+        assert (
+            "[File reference not fetched: https://example.com/doc.pdf]"
+            in result[0]["content"]
+        )
+        assert "Document Uploaded" not in result[0]["content"]
+
     def test_to_chat_format_marks_unsupported_file_types(self):
         """Unsupported MIME types report the actual type, not an empty string."""
         messages = [

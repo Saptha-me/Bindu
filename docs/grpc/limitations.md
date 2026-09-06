@@ -68,8 +68,9 @@ If you run two instances of the same TypeScript agent, each one registers separa
 | State transitions (input-required) | works | works |
 | Health checks | works | works |
 | Multi-language | Python only | any language |
+| File/binary parts | works (raw A2A parts) | **flattened to text** |
 | Latency overhead | 0ms | 1-5ms |
 | TLS | N/A (in-process) | **not implemented** |
 | Auto-reconnection | N/A (in-process) | **not implemented** |
 
-The bottom line: gRPC agents have **full feature parity** with Python agents for the core functionality (DID, auth, payments, skills, A2A protocol). The gaps are in streaming, security, and resilience — all planned for future releases.
+The bottom line: gRPC agents have **near-full feature parity** with Python agents for the core functionality (DID, auth, payments, skills). The message contract differs in one important way: Python handlers receive raw A2A messages with `parts` intact (including file bytes), while the gRPC proto `ChatMessage` only carries `{role, content}` strings — so file parts are text-extracted (PDF/txt/docx) or replaced with an `[Unsupported file type: ...]` placeholder at the wire boundary, and messages with no extractable text (e.g. data-part-only) are dropped from the gRPC request. Vision/file agents that need raw bytes must be Python handlers until the proto grows a parts field. The remaining gaps are streaming, security, and resilience — all planned for future releases.

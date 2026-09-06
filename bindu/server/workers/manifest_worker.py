@@ -62,6 +62,26 @@ INVALID_TERMINAL_STATE_ERROR = (
 )
 
 
+def _jsonable_copy(value: Any) -> Any:
+    """Structurally copy containers, stringifying UUID leaves.
+
+    Handler input must be (a) isolated — the in-memory backend's
+    list_tasks_by_context hands out live references to stored task dicts,
+    so without copying nested containers a handler mutating `parts` would
+    corrupt stored history — and (b) JSON-serializable with the same shape
+    on every storage backend (memory preserves UUID objects, Postgres loads
+    them differently). Leaf values (including large base64 payload strings)
+    are shared, not duplicated.
+    """
+    if isinstance(value, dict):
+        return {k: _jsonable_copy(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_jsonable_copy(v) for v in value]
+    if isinstance(value, UUID):
+        return str(value)
+    return value
+
+
 @dataclass
 class ManifestWorker(Worker):
     """Concrete worker implementation using AgentManifest for task execution.
@@ -167,13 +187,19 @@ class ManifestWorker(Worker):
                 self.manifest.enable_system_message
                 and app_settings.agent.enable_structured_responses
             ):
-                # Inject structured response system prompt as first message
+                # Inject structured response system prompt as first message.
+                # A2A-shaped like the rest of the history — handlers see one
+                # uniform contract (every message has `parts`), and the gRPC
+                # boundary maps role "system" through unchanged via ROLE_MAP.
                 system_prompt = app_settings.agent.structured_response_system_prompt
                 if system_prompt:
+                    system_message = {
+                        "role": "system",
+                        "kind": "message",
+                        "parts": [{"kind": "text", "text": system_prompt}],
+                    }
                     # Create new list to avoid mutating original message_history
-                    message_history = [{"role": "system", "content": system_prompt}] + (
-                        message_history or []
-                    )
+                    message_history = [system_message] + (message_history or [])
 
             # Step 3.1: Execute agent with tracing
             with tracer.start_as_current_span("agent.execute") as agent_span:
@@ -279,7 +305,7 @@ class ManifestWorker(Worker):
             )
 
     def build_message_history(self, history: list[Message]) -> list[dict[str, Any]]:
-        """Pass A2A protocol messages through verbatim — each keeps its ``parts``.
+        """Pass A2A protocol messages through — each keeps its ``parts``.
 
         Handlers read ``messages[-1]["parts"]`` (text / file / data parts)
         directly; that is the A2A contract agents are written against. Do NOT
@@ -289,13 +315,18 @@ class ManifestWorker(Worker):
         flattening happens only at the gRPC boundary
         (``GrpcAgentClient._build_request``), whose proto requires it.
 
+        Messages are structurally copied (see ``_jsonable_copy``) so handler
+        mutations cannot reach stored task history, and envelope UUIDs are
+        stringified so the input is JSON-serializable and shaped identically
+        on every storage backend. ``parts`` content is untouched.
+
         Args:
             history: List of A2A protocol Message objects
 
         Returns:
-            The same messages as plain dicts, ``parts`` intact.
+            The same messages as plain JSON-safe dicts, ``parts`` intact.
         """
-        return [{**m} for m in history]
+        return [_jsonable_copy(m) for m in history]
 
     def build_artifacts(self, result: Any) -> list[Artifact]:
         """Convert manifest execution result to A2A protocol artifacts.

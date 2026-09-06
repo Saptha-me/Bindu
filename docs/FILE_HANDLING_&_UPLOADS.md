@@ -1,44 +1,12 @@
-﻿# File Handling & Uploads
+# File Handling & Uploads
 
-Bindu provides built-in file handling at the framework layer, so agent authors do not need to implement custom upload parsing logic. Uploaded files are validated, parsed, and injected into conversation context as plain text before agent execution.
+When a client uploads a file, your handler receives the real bytes. Bindu stores the uploaded A2A file part verbatim in task history and passes it through to your handler untouched — base64 payload, MIME type, and filename intact. Your agent decides what to do with them: parse a PDF, feed an image to a vision model, or hand the bytes to a downstream tool.
 
-This design gives you:
-- Consistent parsing behavior across agents
-- Strict MIME-type validation before execution
-- Zero-configuration file support for common document workflows
-
-## How It Works
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API as Bindu API
-    participant FH as File Handler
-    participant Worker as ManifestWorker
-    participant Agent
-
-    Client->>API: POST / (JSON-RPC message/send)\nparts: [text, file]
-    API->>FH: Detect file part (kind=file)
-    FH->>FH: Decode Base64 payload
-    FH->>FH: Validate MIME type
-    FH->>FH: Parse content (PDF/text)
-    FH-->>API: Inject extracted text into message
-    API->>Worker: Forward normalized message history
-    Worker->>Agent: Execute with parsed file content
-    Agent-->>Client: Structured response
-```
-
-## Supported Formats
-
-Bindu currently supports:
-- `application/pdf` (PDF parsing)
-- Text MIME types such as `text/plain`, `text/csv`
-
-Unsupported MIME types are rejected before task execution.
+This matters because flattening files to text destroys information. A framework cannot know whether your agent wants extracted text, raw bytes for a vision model, or the original file for re-upload — so it doesn't guess.
 
 ## Upload Request Format
 
-Files are sent using A2A JSON-RPC as Base64 data inside a `parts` item with `"kind": "file"`.
+Files travel as A2A `FilePart` entries inside `message/send`. The file payload is nested under `file` — not at the top level of the part:
 
 ```json
 {
@@ -59,8 +27,12 @@ Files are sent using A2A JSON-RPC as Base64 data inside a `parts` item with `"ki
         },
         {
           "kind": "file",
-          "mimeType": "application/pdf",
-          "data": "JVBERi0xLjQK...<base64>..."
+          "text": "report.pdf",
+          "file": {
+            "bytes": "JVBERi0xLjQK...<base64>...",
+            "mimeType": "application/pdf",
+            "name": "report.pdf"
+          }
         }
       ]
     }
@@ -68,66 +40,48 @@ Files are sent using A2A JSON-RPC as Base64 data inside a `parts` item with `"ki
 }
 ```
 
-## Processing Pipeline
+The `text` field on the file part is currently required by request validation; use the filename.
 
-### 1. Protocol Interception
+## Reading Files in a Python Handler
 
-The message conversion layer detects `"kind": "file"` parts in incoming payloads.
+Your handler receives the full A2A message history. Find file parts and decode:
 
-### 2. Extraction and Validation
+```python
+import base64
 
-The file handler decodes Base64 content, validates MIME type, and routes to the parser.
 
-### 3. Context Injection
-
-Parsed content is transformed into a text block and appended to the conversation payload.
-
-Example injected structure:
-
-```text
-[Attached Document: file.pdf]
-...extracted content...
+def handler(messages):
+    last = messages[-1]
+    for part in last.get("parts", []):
+        if part.get("kind") == "file":
+            file_obj = part["file"]
+            raw = base64.b64decode(file_obj.get("bytes", ""))
+            name = file_obj.get("name", "upload")
+            mime = file_obj.get("mimeType", "")
+            # raw is the exact uploaded content — parse, embed, or forward it.
+    ...
 ```
 
-### 4. Agent Execution
+Byte integrity is guaranteed end to end: what the client base64-encoded is exactly what `b64decode` returns in your handler.
 
-`ManifestWorker` receives normalized text content and runs the agent with file data already in message history.
+## gRPC (SDK) Agents Get Extracted Text
 
-## Developer Experience
+The gRPC wire format (`ChatMessage`) only carries `{role, content}` strings, so file parts are flattened at that boundary — and only there:
 
-### Zero Configuration for Agents
+- `application/pdf`, `text/plain`, and `.docx` payloads are decoded and their text is injected into `content` as a `--- Document Uploaded ---` block.
+- Other MIME types (images included) arrive as an `[Unsupported file type: ...]` placeholder — binary cannot cross the current proto.
+- A `FileWithUri` part without inline bytes arrives as `[File reference not fetched: <uri>]`; the core does not download URIs.
 
-Agent code does not need to handle:
-- Base64 decoding
-- Binary parsing
-- MIME validation
-
-Agents receive clean text content and can immediately summarize, classify, extract, or reason over uploaded documents.
+If your agent needs raw file bytes, write it as a Python handler for now; carrying parts over the proto is a planned protocol change (see [gRPC limitations](./grpc/limitations.md)).
 
 ## Security Considerations
 
-- Validate MIME types strictly at the API boundary
-- Reject unsupported file formats before task execution
-- Avoid passing raw binary payloads to model execution
-- Keep parser dependencies updated for security patches
-
-## Tips
-
-- Prefer text-based formats when possible for lower parsing overhead
-- Keep user prompts explicit (for example: summarize, extract entities, compare)
-- Return clear validation errors for unsupported file types
+- Treat uploaded bytes as untrusted input: cap sizes, validate MIME types against what your agent actually supports, and sandbox parsers.
+- Keep parser dependencies (pypdf, python-docx, image libraries) updated for security patches.
+- Reject unsupported formats early with a clear validation error rather than deep in your pipeline.
 
 ## Related Documentation
 
 - [Streaming](./STREAMING.md)
 - [Storage](./STORAGE.md)
 - [Authentication](./AUTHENTICATION.md)
-du abstracts file handling into a seamless pipeline:
-
-```text id="u5p9e2"
-Upload → Parse → Inject → Consume
-```
-
-👉 So you can focus on **agent logic**, not file infrastructure.
-
----

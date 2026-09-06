@@ -29,9 +29,12 @@ class GrpcAgentClient:
         self._timeout = timeout
 
     def __call__(self, messages, **kwargs):
-        # 1. Convert Python dicts to protobuf
-        proto_msgs = [ChatMessage(role=m["role"], content=m["content"]) for m in messages]
-        request = HandleRequest(messages=proto_msgs)
+        # 1. Flatten A2A messages (with `parts`) to protobuf {role, content}.
+        #    The proto ChatMessage has no parts field, so text parts collapse
+        #    to content, file parts are text-extracted, and A2A roles map to
+        #    chat roles ("agent" -> "assistant") — this is the ONE place
+        #    chat-format flattening still happens.
+        request = self._build_request(messages)
 
         # 2. Call the SDK's AgentHandler over gRPC
         response = self._stub.HandleMessages(request, timeout=self._timeout)
@@ -63,8 +66,9 @@ A user sends "What is quantum computing?" to a TypeScript agent:
 
 ```
 ManifestWorker calls manifest.run(messages)
-  → GrpcAgentClient.__call__([{"role": "user", "content": "What is quantum computing?"}])
-    → Converts to protobuf: ChatMessage(role="user", content="What is quantum computing?")
+  → GrpcAgentClient.__call__([{"role": "user", "kind": "message",
+        "parts": [{"kind": "text", "text": "What is quantum computing?"}], ...}])
+    → Flattens parts to protobuf: ChatMessage(role="user", content="What is quantum computing?")
     → gRPC call: AgentHandler.HandleMessages(HandleRequest{messages: [...]})
     → TypeScript SDK receives the call
     → Developer's handler runs: await openai.chat.completions.create(...)

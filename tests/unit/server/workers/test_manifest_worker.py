@@ -55,6 +55,47 @@ class TestManifestWorker:
         # File bytes reach the handler untouched.
         assert result[-1]["parts"][0]["file"]["bytes"] == "JVBERi0xLjQ="
 
+    def test_build_message_history_is_json_safe_and_isolated(self):
+        """Envelope UUIDs stringify; handler mutations can't reach the source.
+
+        The in-memory backend's list_tasks_by_context returns live stored
+        dicts, so the copy must be structural — and json.dumps(messages)
+        must work identically on every storage backend.
+        """
+        import json
+
+        mock_manifest = Mock()
+        mock_scheduler = Mock()
+        mock_storage = AsyncMock()
+
+        worker = ManifestWorker(
+            manifest=mock_manifest, scheduler=mock_scheduler, storage=mock_storage
+        )
+
+        message_id, task_id = uuid4(), uuid4()
+        messages = [
+            {
+                "role": "user",
+                "kind": "message",
+                "message_id": message_id,
+                "task_id": task_id,
+                "parts": [{"kind": "text", "text": "original"}],
+            }
+        ]
+
+        result = worker.build_message_history(messages)  # type: ignore[arg-type] # ty: ignore[invalid-argument-type]
+
+        # UUID envelope fields become strings — JSON-safe on any backend.
+        assert result[0]["message_id"] == str(message_id)
+        assert result[0]["task_id"] == str(task_id)
+        json.dumps(result)
+
+        # Nested containers are copies: mutating handler input must not
+        # touch the (potentially live-stored) source message.
+        result[0]["parts"][0]["text"] = "mutated"
+        result[0]["parts"].append({"kind": "text", "text": "injected"})
+        assert messages[0]["parts"] == [{"kind": "text", "text": "original"}]
+
     def test_build_artifacts(self):
         """Test building artifacts from result."""
         mock_manifest = Mock()
@@ -709,6 +750,14 @@ class TestManifestWorker:
             await worker.run_task(params)
 
         mock_manifest.run.assert_called_once()
+        # The injected system prompt must be A2A-shaped like the rest of the
+        # history — one uniform contract, every message has `parts`.
+        sent_history = mock_manifest.run.call_args[0][0]
+        assert sent_history[0] == {
+            "role": "system",
+            "kind": "message",
+            "parts": [{"kind": "text", "text": "System prompt"}],
+        }
 
     @pytest.mark.asyncio
     async def test_run_task_with_context_based_history(self):

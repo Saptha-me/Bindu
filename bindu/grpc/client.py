@@ -13,10 +13,11 @@ Supports both unary and streaming responses:
 
 Key contract:
     - Input:  list[dict] — A2A protocol messages with "parts" (as passed
-      through by ManifestWorker.build_message_history), plus optionally a
-      chat-format {"role": "system", "content": ...} system prompt. The
-      proto ChatMessage only carries {role, content}, so this client
-      flattens parts to text at the wire boundary (_build_request).
+      through by ManifestWorker.build_message_history, including the
+      A2A-shaped injected system prompt). The proto ChatMessage only
+      carries {role, content}, so this client flattens parts to text at
+      the wire boundary (_build_request); chat-shaped {role, content}
+      dicts from direct callers are passed through for compatibility.
     - Output: str (normal completion), dict with "state" key (state transition),
       or generator of str/dict (streaming — collected by ResultProcessor).
 
@@ -115,10 +116,10 @@ class GrpcAgentClient:
         """Convert message history to a proto HandleRequest.
 
         ManifestWorker passes A2A protocol messages through with ``parts``
-        intact (plus an optional chat-format system message). The proto
-        ChatMessage only carries {role, content}, so flattening happens here
-        at the wire boundary: parts collapse to text (file parts extracted
-        by FileInterceptor) and A2A roles map to chat roles.
+        intact (system prompt included). The proto ChatMessage only carries
+        {role, content}, so flattening happens here at the wire boundary:
+        parts collapse to text (file parts extracted by FileInterceptor)
+        and A2A roles map to chat roles ("system" maps through unchanged).
 
         Args:
             messages: Conversation history — A2A messages with "parts",
@@ -127,25 +128,38 @@ class GrpcAgentClient:
         Returns:
             HandleRequest proto message ready for gRPC call.
         """
-        chat_messages: list[dict[str, str]] = []
+        proto_messages: list[agent_handler_pb2.ChatMessage] = []
         for m in messages:
             if m.get("parts"):
                 # A2A message → flatten to {role, content} for the proto.
-                chat_messages.extend(
-                    MessageConverter.to_chat_format(cast("list[Message]", [m]))
+                flattened = MessageConverter.to_chat_format(cast("list[Message]", [m]))
+                proto_messages.extend(
+                    agent_handler_pb2.ChatMessage(
+                        role=cm["role"], content=cm["content"]
+                    )
+                    for cm in flattened
                 )
+                if not flattened:
+                    # Data-only / empty parts carry no proto-representable
+                    # text — the turn is invisible to the SDK agent. Local
+                    # handlers still receive it; see docs/grpc/limitations.md.
+                    logger.debug(
+                        f"Message with no extractable text dropped from gRPC "
+                        f"request (role={m.get('role')})"
+                    )
             elif "content" in m:
-                # Already chat-shaped (e.g. the injected system prompt).
-                chat_messages.append(
-                    {"role": m.get("role", "user"), "content": m.get("content", "")}
+                # Chat-shaped compatibility for direct callers still passing
+                # the pre-parts flattened format.
+                proto_messages.append(
+                    agent_handler_pb2.ChatMessage(
+                        role=m.get("role", "user"), content=m.get("content", "")
+                    )
                 )
-        proto_messages = [
-            agent_handler_pb2.ChatMessage(
-                role=m["role"],
-                content=m["content"],
-            )
-            for m in chat_messages
-        ]
+            else:
+                logger.debug(
+                    f"Message with neither parts nor content dropped from "
+                    f"gRPC request (role={m.get('role')})"
+                )
         return agent_handler_pb2.HandleRequest(messages=proto_messages)
 
     def __call__(self, messages: list[dict[str, Any]], **kwargs: Any) -> Any:

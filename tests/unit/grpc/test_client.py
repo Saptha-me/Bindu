@@ -191,6 +191,38 @@ class TestGrpcAgentClient:
 
     @patch("bindu.grpc.client.grpc.insecure_channel")
     @patch("bindu.grpc.client.agent_handler_pb2_grpc.AgentHandlerStub")
+    def test_a2a_system_message_keeps_system_role(self, mock_stub_class, mock_channel):
+        """The A2A-shaped injected system prompt reaches the wire as 'system'."""
+        mock_stub = MagicMock()
+        mock_stub_class.return_value = mock_stub
+        mock_stub.HandleMessages.return_value = agent_handler_pb2.HandleResponse(
+            content="ok", state=""
+        )
+
+        client = GrpcAgentClient("localhost:50052")
+        client(
+            [
+                {
+                    "role": "system",
+                    "kind": "message",
+                    "parts": [{"kind": "text", "text": "Respond in JSON."}],
+                },
+                {
+                    "role": "user",
+                    "kind": "message",
+                    "parts": [{"kind": "text", "text": "hi"}],
+                },
+            ]
+        )
+
+        request = mock_stub.HandleMessages.call_args[0][0]
+        assert len(request.messages) == 2
+        assert request.messages[0].role == "system"
+        assert request.messages[0].content == "Respond in JSON."
+        assert request.messages[1].role == "user"
+
+    @patch("bindu.grpc.client.grpc.insecure_channel")
+    @patch("bindu.grpc.client.agent_handler_pb2_grpc.AgentHandlerStub")
     def test_lazy_connection(self, mock_stub_class, mock_channel):
         """Test that gRPC channel is not created until first call."""
         client = GrpcAgentClient("localhost:50052")

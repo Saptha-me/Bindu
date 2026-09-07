@@ -78,6 +78,35 @@ db.exec(`
 		created_at   TEXT NOT NULL,
 		updated_at   TEXT NOT NULL
 	);
+
+	-- Trust state is intentionally separate from agent discovery. Discovering an
+	-- agent card does not authenticate a peer; only an accepted signed message
+	-- may move it to verified.
+	CREATE TABLE IF NOT EXISTS peer_trust_state (
+		peer_id TEXT PRIMARY KEY,
+		status TEXT NOT NULL DEFAULT 'unknown',
+		last_verified_at TEXT,
+		last_contact_at TEXT,
+		updated_at TEXT NOT NULL
+	);
+	CREATE TABLE IF NOT EXISTS verification_events (
+		id TEXT PRIMARY KEY,
+		peer_id TEXT NOT NULL,
+		event_type TEXT NOT NULL,
+		result TEXT NOT NULL,
+		reason TEXT,
+		message_id TEXT,
+		context_id TEXT,
+		occurred_at TEXT NOT NULL
+	);
+	CREATE INDEX IF NOT EXISTS verification_events_peer_time
+		ON verification_events (peer_id, occurred_at DESC);
+	CREATE TABLE IF NOT EXISTS replay_protection (
+		message_id TEXT PRIMARY KEY,
+		peer_id TEXT NOT NULL,
+		seen_at TEXT NOT NULL
+	);
+	CREATE INDEX IF NOT EXISTS replay_protection_seen_at ON replay_protection (seen_at);
 `);
 
 export interface EventRow {
@@ -204,6 +233,51 @@ export interface AgentRecord {
 	resolvedAt?: string;
 	source?: "webhook" | "manual";
 	addedAt?: string;
+}
+
+export type TrustStatus = "verified" | "unknown" | "changed" | "invalid" | "blocked" | "unavailable";
+export interface VerificationEvent {
+	id: string;
+	peerId: string;
+	eventType: string;
+	result: "accepted" | "rejected" | "observed";
+	reason?: string;
+	messageId?: string;
+	contextId?: string;
+	occurredAt: string;
+}
+export interface PeerTrustState {
+	peerId: string;
+	status: TrustStatus;
+	lastVerifiedAt?: string;
+	lastContactAt?: string;
+	updatedAt: string;
+}
+
+const trustStatus = db.prepare("SELECT peer_id AS peerId, status, last_verified_at AS lastVerifiedAt, last_contact_at AS lastContactAt, updated_at AS updatedAt FROM peer_trust_state WHERE peer_id = ?");
+const trustUpsert = db.prepare("INSERT INTO peer_trust_state (peer_id,status,last_verified_at,last_contact_at,updated_at) VALUES (@peerId,@status,@lastVerifiedAt,@lastContactAt,@updatedAt) ON CONFLICT(peer_id) DO UPDATE SET status=excluded.status,last_verified_at=COALESCE(excluded.last_verified_at, peer_trust_state.last_verified_at),last_contact_at=COALESCE(excluded.last_contact_at, peer_trust_state.last_contact_at),updated_at=excluded.updated_at");
+const insertVerificationEvent = db.prepare("INSERT INTO verification_events (id,peer_id,event_type,result,reason,message_id,context_id,occurred_at) VALUES (@id,@peerId,@eventType,@result,@reason,@messageId,@contextId,@occurredAt)");
+const listVerificationEvents = db.prepare("SELECT id, peer_id AS peerId, event_type AS eventType, result, reason, message_id AS messageId, context_id AS contextId, occurred_at AS occurredAt FROM verification_events WHERE peer_id = ? ORDER BY occurred_at DESC LIMIT ?");
+const replayInsert = db.prepare("INSERT OR IGNORE INTO replay_protection (message_id, peer_id, seen_at) VALUES (?, ?, ?)");
+const replayTrim = db.prepare("DELETE FROM replay_protection WHERE seen_at < ?");
+
+export function readPeerTrust(peerId: string): PeerTrustState {
+	const row = trustStatus.get(peerId) as PeerTrustState | undefined;
+	return row ?? { peerId, status: "unknown", updatedAt: new Date().toISOString() };
+}
+export function writePeerTrust(peerId: string, status: TrustStatus, at: string): void {
+	trustUpsert.run({ peerId, status, lastVerifiedAt: status === "verified" ? at : null, lastContactAt: at, updatedAt: at });
+}
+export function recordVerificationEvent(event: VerificationEvent): void {
+	insertVerificationEvent.run({ ...event, reason: event.reason ?? null, messageId: event.messageId ?? null, contextId: event.contextId ?? null });
+}
+export function getVerificationHistory(peerId: string, limit = 100): VerificationEvent[] {
+	return listVerificationEvents.all(peerId, Math.min(Math.max(limit, 1), 100)) as VerificationEvent[];
+}
+/** Returns false when a message id was already accepted during retention. */
+export function claimMessageId(peerId: string, messageId: string, now: string, retentionSeconds: number): boolean {
+	replayTrim.run(new Date(Date.parse(now) - retentionSeconds * 1000).toISOString());
+	return replayInsert.run(messageId, peerId, now).changes === 1;
 }
 
 type AgentRow = {

@@ -25,6 +25,10 @@ import {
 	readPersonalAgent,
 	readPriorSummary,
 	readSettings,
+	readPeerTrust,
+	getVerificationHistory,
+	recordVerificationEvent,
+	writePeerTrust,
 	recordEvent,
 	resolveTaskContinuation,
 	unarchiveThread,
@@ -32,6 +36,7 @@ import {
 	writePersonalAgent,
 	writeSettings,
 } from "./db";
+import { assessInboundTrust } from "./trust";
 import { spawnPersonalAgent, stopPersonalAgent } from "./personal-agent";
 // `dispatcherFetch` MUST be used whenever an undici dispatcher is passed —
 // Node's bundled undici (6.x) global fetch and our pinned undici@8 dispatcher
@@ -278,6 +283,7 @@ app.post("/webhooks/bindu/:agentId", async (c) => {
 	const id = String(payload.event_id ?? crypto.randomUUID());
 	const receivedAt = new Date().toISOString();
 	const firstContact = recordEvent(id, agentId, receivedAt, payload);
+	assessInboundTrust(agentId, payload, new Date(receivedAt));
 	const ev: EventRow = { id, agentId, receivedAt, payload, firstContact };
 	for (const cb of subscribers) cb(ev);
 	console.log(
@@ -328,6 +334,33 @@ app.get("/api/events/stream", (c) => {
 app.get("/api/agents/:agentId", async (c) => {
 	const rec = await resolveAgent(c.req.param("agentId"));
 	return c.json(rec);
+});
+
+app.get("/api/peers/:peerId/trust", (c) => {
+	const peerId = c.req.param("peerId");
+	if (!AGENT_ID_RE.test(peerId)) return c.json({ error: "invalid-peer-id" }, 400);
+	return c.json(readPeerTrust(peerId));
+});
+app.get("/api/peers/:peerId/verification-history", (c) => {
+	const peerId = c.req.param("peerId");
+	if (!AGENT_ID_RE.test(peerId)) return c.json({ error: "invalid-peer-id" }, 400);
+	return c.json(getVerificationHistory(peerId));
+});
+app.post("/api/peers/:peerId/block", (c) => {
+	const peerId = c.req.param("peerId");
+	if (!AGENT_ID_RE.test(peerId)) return c.json({ error: "invalid-peer-id" }, 400);
+	const at = new Date().toISOString();
+	writePeerTrust(peerId, "blocked", at);
+	recordVerificationEvent({ id: crypto.randomUUID(), peerId, eventType: "peer_blocked", result: "accepted", occurredAt: at });
+	return c.json(readPeerTrust(peerId));
+});
+app.post("/api/peers/:peerId/unblock", (c) => {
+	const peerId = c.req.param("peerId");
+	if (!AGENT_ID_RE.test(peerId)) return c.json({ error: "invalid-peer-id" }, 400);
+	const at = new Date().toISOString();
+	writePeerTrust(peerId, "unknown", at);
+	recordVerificationEvent({ id: crypto.randomUUID(), peerId, eventType: "peer_unblocked", result: "accepted", occurredAt: at });
+	return c.json(readPeerTrust(peerId));
 });
 
 /**

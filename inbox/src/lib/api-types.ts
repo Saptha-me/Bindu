@@ -20,6 +20,15 @@ export interface EcosystemAgent {
 	source?: "webhook" | "manual";
 }
 
+export interface PeerTrust {
+	peerId: string;
+	status: "verified" | "unknown" | "changed" | "invalid" | "blocked" | "unavailable";
+	lastVerifiedAt?: string;
+	lastContactAt?: string;
+	updatedAt: string;
+}
+export interface VerificationEvent { id: string; eventType: string; result: "accepted" | "rejected" | "observed"; reason?: string; messageId?: string; contextId?: string; occurredAt: string; }
+
 // --- personal agent ----------------------------------------------------
 // Mirrors `server/db.ts:PersonalAgentRow`. The wizard owns the persona
 // shape so we keep it flexible — server only enforces persona.name; the

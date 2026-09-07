@@ -26,6 +26,24 @@ cd inbox && npm install && npm run dev    # → http://127.0.0.1:3775
 #            Compose               → pick joke_agent → type a message → ⌘↵
 ```
 
+## Trust verification (vertical slice)
+
+The Inbox records a peer as **unknown** when it is discovered. The server-side
+canonical DID-signature verifier supplies the verified result; webhook JSON is
+never trusted as a verification claim. The Inbox persists the verification
+outcome, rejects duplicate accepted message IDs, and rejects timestamps outside
+its clock-skew window. Configure the
+retention controls on the Inbox API process:
+
+```bash
+BINDU_SIGNATURE_MAX_CLOCK_SKEW_SECONDS=300
+BINDU_REPLAY_RETENTION_SECONDS=86400
+```
+
+Select a message and open **Verify** to inspect the accessible trust badge and
+verification history. Signature verification remains a server/agent operation:
+the browser never supplies a trust decision.
+
 If you've never done this before, keep reading — every step below explains what it does and what you should see.
 
 ## What ends up running

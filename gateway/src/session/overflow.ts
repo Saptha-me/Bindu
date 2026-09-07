@@ -1,4 +1,5 @@
 import type { MessageWithParts } from "./message"
+import { MINIMAX_MODELS } from "../provider/catalog"
 
 /**
  * Token accounting + overflow detection for session history.
@@ -57,6 +58,10 @@ const CONTEXT_WINDOW_BY_MODEL: Record<string, number> = {
   "openai/gpt-4.1-mini": 1_047_576,
   "openai/o3": 200_000,
   "openai/o3-mini": 200_000,
+
+  // MiniMax
+  "minimax/MiniMax-M3": MINIMAX_MODELS[0].contextWindow,
+  "minimax/MiniMax-M2.7": MINIMAX_MODELS[1].contextWindow,
 }
 
 export const DEFAULT_THRESHOLD: OverflowThreshold = {

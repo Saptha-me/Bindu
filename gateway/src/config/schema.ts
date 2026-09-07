@@ -47,6 +47,11 @@ export const ProviderEntry = z
   .object({
     apiKey: z.string().optional(),
     baseURL: z.string().optional(),
+    openaiBaseURL: z.string().optional(),
+    anthropicBaseURL: z.string().optional(),
+    region: z.enum(["global_en", "cn_zh"]).optional(),
+    protocol: z.enum(["openai", "anthropic"]).optional(),
+    fallbackModels: z.array(z.string()).optional(),
   })
   .passthrough()
 export type ProviderEntry = z.infer<typeof ProviderEntry>

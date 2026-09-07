@@ -1,23 +1,23 @@
 import { Context, Effect, Layer } from "effect"
 import { createOpenAI } from "@ai-sdk/openai"
+import { createAnthropic } from "@ai-sdk/anthropic"
 import type { LanguageModel } from "ai"
 import { Service as ConfigService, type Config } from "../config"
 import type { z } from "zod"
+import {
+  MINIMAX_ENDPOINTS,
+  normalizeMiniMaxModelId,
+  type MiniMaxProtocol,
+  type MiniMaxRegion,
+} from "./catalog"
 
 /**
- * Provider service — OpenRouter-only.
+ * Provider service - resolves a configured provider/model pair to an AI-SDK
+ * language model.
  *
- * Looks up an AI-SDK LanguageModel handle by ``"openrouter/<modelId>"``
- * where ``modelId`` is whatever OpenRouter publishes for that model
- * (for example ``openai/gpt-4o-mini`` or
- * ``anthropic/claude-sonnet-4.6``).
- *
- * Why a single provider: we ship every agent (gateway planner + the
- * fleet) on OpenRouter. Supporting the Anthropic or OpenAI SDKs
- * directly was optionality nobody used and added two env vars and a
- * dependency we could drop. OpenRouter exposes an OpenAI-compatible
- * API, so a single ``@ai-sdk/openai`` client with a baseURL override
- * covers every model on the platform.
+ * Model IDs use ``provider/modelId``. The OpenRouter path keeps its existing
+ * request-body behavior, while MiniMax can use either its OpenAI-compatible
+ * or Anthropic-compatible endpoint.
  *
  * On every outbound request the gateway's fetch wrapper injects two
  * OpenRouter-specific request-body fields:
@@ -36,7 +36,7 @@ import type { z } from "zod"
  * a model string, give me a model handle the AI SDK can stream.
  */
 
-const SUPPORTED_PROVIDERS = ["openrouter"] as const
+const SUPPORTED_PROVIDERS = ["openrouter", "minimax"] as const
 export type ProviderId = (typeof SUPPORTED_PROVIDERS)[number]
 
 const OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
@@ -157,8 +157,39 @@ export const layer = Layer.effect(
 
     function build(providerId: ProviderId, modelId: string): LanguageModel {
       const providerCfg = providers[providerId] as
-        | { apiKey?: string; baseURL?: string; fallbackModels?: readonly string[] }
+        | {
+            apiKey?: string
+            baseURL?: string
+            openaiBaseURL?: string
+            anthropicBaseURL?: string
+            region?: MiniMaxRegion
+            protocol?: MiniMaxProtocol
+            fallbackModels?: readonly string[]
+          }
         | undefined
+
+      if (providerId === "minimax") {
+        const region = providerCfg?.region ?? "global_en"
+        const protocol = providerCfg?.protocol ?? "openai"
+        const endpoints = MINIMAX_ENDPOINTS[region]
+        const resolvedModelId = normalizeMiniMaxModelId(modelId)
+
+        if (protocol === "anthropic") {
+          const baseURL = providerCfg?.anthropicBaseURL ?? providerCfg?.baseURL ?? endpoints.anthropicBaseURL
+          if (!baseURL.endsWith("/anthropic")) {
+            throw new Error('provider: MiniMax Anthropic baseURL must end with "/anthropic"')
+          }
+          const p = createAnthropic({ apiKey: providerCfg?.apiKey, baseURL })
+          return p(resolvedModelId)
+        }
+
+        const p = createOpenAI({
+          apiKey: providerCfg?.apiKey,
+          baseURL: providerCfg?.openaiBaseURL ?? providerCfg?.baseURL ?? endpoints.openaiBaseURL,
+        })
+        return p.chat(resolvedModelId)
+      }
+
       // OpenRouter's API is OpenAI-compatible — one @ai-sdk/openai
       // client pointed at OpenRouter's baseURL handles every model.
       //

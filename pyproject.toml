@@ -38,12 +38,12 @@ dependencies = [
     "pypdf>=6.10.2,<7",
     "python-docx>=1.1.2,<2",
     # Telemetry
-    "opentelemetry-api==1.42.1",
-    "opentelemetry-sdk==1.42.1",
-    "opentelemetry-exporter-otlp==1.42.1",
-    "opentelemetry-exporter-otlp-proto-http==1.42.1",
-    "opentelemetry-instrumentation-fastapi==0.63b1",
-    "opentelemetry-instrumentation-httpx==0.63b1",
+    "opentelemetry-api==1.44.0",
+    "opentelemetry-sdk==1.44.0",
+    "opentelemetry-exporter-otlp==1.44.0",
+    "opentelemetry-exporter-otlp-proto-http==1.44.0",
+    "opentelemetry-instrumentation-fastapi==0.65b0",
+    "opentelemetry-instrumentation-httpx==0.65b0",
     "sentry-sdk>=2.41.0,<3",
     # x402 payments
     "x402>=2.3.0,<3",

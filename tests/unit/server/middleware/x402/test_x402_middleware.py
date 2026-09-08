@@ -69,11 +69,17 @@ def _build_app(
     verify_result: VerifyResponse,
     nonce_store: InMemoryNonceStore | None = None,
     protected_methods: list[str] | None = None,
+    state_recorder: dict[str, object] | None = None,
 ):
     """Spin up a minimal Starlette app with the middleware in front of
     an agent that simply echoes ``OK``."""
 
     async def agent(request: Request) -> JSONResponse:
+        if state_recorder is not None:
+            state_recorder["payment_payload"] = request.state.payment_payload
+            state_recorder["payment_requirements"] = request.state.payment_requirements
+            state_recorder["verify_response"] = request.state.verify_response
+            state_recorder["payer"] = request.state.payer
         return JSONResponse({"ok": True})
 
     resource_server = MagicMock()
@@ -263,19 +269,28 @@ class TestFacilitatorRejection:
 
 class TestHappyPath:
     def test_valid_payment_reaches_agent(self, _restore_protected_methods):
+        seen_state: dict[str, object] = {}
         app, restore, server, _ = _build_app(
-            verify_result=VerifyResponse(is_valid=True, payer="0xbeef")
+            verify_result=VerifyResponse(is_valid=True, payer="0xbeef"),
+            state_recorder=seen_state,
         )
         try:
             client = TestClient(app)
+            payload = _payload()
             r = client.post(
                 "/",
                 json={"jsonrpc": "2.0", "method": "message/send"},
-                headers={"X-PAYMENT": _payment_header(_payload())},
+                headers={"X-PAYMENT": _payment_header(payload)},
             )
             assert r.status_code == 200
             assert r.json() == {"ok": True}
             server.verify_payment.assert_awaited_once()
+            assert seen_state["payment_payload"] == payload
+            assert seen_state["payment_requirements"] == REQUIREMENT
+            verify_response = seen_state["verify_response"]
+            assert getattr(verify_response, "is_valid") is True
+            assert getattr(verify_response, "invalid_reason") is None
+            assert seen_state["payer"] == "0xbeef"
         finally:
             restore()
 

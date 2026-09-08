@@ -17,10 +17,12 @@ from __future__ import annotations
 
 import asyncio
 import base64
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID, uuid4
 
+import httpx
 import pytest
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -32,10 +34,16 @@ from starlette.testclient import TestClient
 from x402 import PaymentPayload, PaymentRequirements
 from x402.schemas.responses import VerifyResponse
 
+from bindu.common.models import AgentManifest
+from bindu.server.endpoints.a2a_protocol import agent_run_endpoint
 from bindu.server.middleware.x402.nonce_store import InMemoryNonceStore
 from bindu.server.middleware.x402.x402_middleware import X402Middleware
+from bindu.server.scheduler.memory_scheduler import InMemoryScheduler
 from bindu.server.storage.memory_storage import InMemoryStorage
+from bindu.server.task_manager import TaskManager
 from bindu.server.workers.manifest_worker import ManifestWorker
+from bindu.settings import app_settings
+from bindu.utils.logging import get_logger
 
 
 pytestmark = [
@@ -44,6 +52,8 @@ pytestmark = [
     pytest.mark.slow,
     pytest.mark.x402,
 ]
+
+logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -221,6 +231,30 @@ def report_task(task: Any, manifest_call_count: int) -> None:
     print(f"  → artifacts delivered:  {len(artifacts)}")
 
 
+async def wait_for_terminal_task(
+    storage: InMemoryStorage,
+    task_id: UUID,
+    *,
+    timeout_seconds: float = 2.0,
+) -> Any:
+    """Poll in-memory storage until the background worker reaches a terminal state."""
+    terminal_states = set(app_settings.agent.terminal_states)
+    deadline = asyncio.get_running_loop().time() + timeout_seconds
+    last_state = "(not created)"
+
+    while asyncio.get_running_loop().time() < deadline:
+        task = await storage.load_task(task_id)
+        if task is not None:
+            last_state = task["status"]["state"]
+            if last_state in terminal_states:
+                return task
+        await asyncio.sleep(0.01)
+
+    pytest.fail(
+        f"Task {task_id} did not reach a terminal state; last state={last_state}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Scenario 1: Front-run drain (Mallory empties wallet between verify and settle)
 # ---------------------------------------------------------------------------
@@ -375,6 +409,155 @@ async def test_scenario_3_parallel_nonce_double_spend():
     assert len(manifest_b.calls) == 0
     assert not task_b.get("artifacts")
     print("  → net: 1 LLM call (paid), 0 LLM calls wasted, 1 artifact delivered.")
+
+
+# ---------------------------------------------------------------------------
+# Full paid HTTP lifecycle: middleware -> A2A endpoint -> scheduler -> worker
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_full_http_paid_message_send_settles_and_completes():
+    """Exercise the paid HTTP path from x402 verification through task completion."""
+    describe("Full HTTP paid message/send lifecycle")
+    logger.info("Real ASGI request enters X402Middleware and agent_run_endpoint.")
+    logger.info(
+        "Payment context must reach ManifestWorker, settle, and complete the task."
+    )
+
+    storage = InMemoryStorage()
+    scheduler = InMemoryScheduler()
+    manifest = ManifestRunRecorder(name="paid-agent")
+
+    resource_server = MagicMock()
+    resource_server.find_matching_requirements = MagicMock(return_value=REQUIREMENT)
+    resource_server.verify_payment = AsyncMock(
+        return_value=VerifyResponse(
+            is_valid=True,
+            invalid_reason=None,
+            payer="0xB0b00000000000000000000000000000000000b0",
+        )
+    )
+
+    settle_response = MagicMock()
+    settle_response.success = True
+    settle_response.error_reason = None
+    settle_response.model_dump = MagicMock(
+        return_value={"success": True, "transaction": "0xpaidsettled"}
+    )
+
+    original_methods = app_settings.x402.protected_methods
+    app_settings.x402.protected_methods = ["message/send"]
+    try:
+        async with TaskManager(
+            scheduler=scheduler,
+            storage=storage,
+            manifest=manifest,  # type: ignore[arg-type]
+        ) as manager:
+            endpoint_app = SimpleNamespace(task_manager=manager)
+
+            async def endpoint(request: Request):
+                """Route the in-process ASGI request into Bindu's A2A endpoint."""
+                return await agent_run_endpoint(cast(Any, endpoint_app), request)
+
+            asgi_app = Starlette(
+                routes=[Route("/", endpoint, methods=["POST"])],
+                middleware=[
+                    Middleware(
+                        X402Middleware,
+                        manifest=cast(AgentManifest, manifest),
+                        resource_server=resource_server,
+                        x402_ext=manifest.x402_extension,
+                        payment_requirements=[REQUIREMENT],
+                        nonce_store=InMemoryNonceStore(),
+                    )
+                ],
+            )
+
+            task_id = uuid4()
+            context_id = uuid4()
+            request_id = str(uuid4())
+            request_body = {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "method": "message/send",
+                "params": {
+                    "configuration": {
+                        "acceptedOutputModes": ["text/plain"],
+                    },
+                    "message": {
+                        "messageId": str(uuid4()),
+                        "contextId": str(context_id),
+                        "taskId": str(task_id),
+                        "kind": "message",
+                        "role": "user",
+                        "parts": [
+                            {
+                                "kind": "text",
+                                "text": "summarize this contract",
+                            }
+                        ],
+                    },
+                },
+            }
+            payload = make_payload(nonce="0x" + "fa" * 32)
+
+            with patch(
+                "bindu.server.workers.manifest_worker.HTTPFacilitatorClient"
+            ) as mock_fac_class:
+                mock_fac = AsyncMock()
+                mock_fac.settle = AsyncMock(return_value=settle_response)
+                mock_fac_class.return_value = mock_fac
+
+                transport = httpx.ASGITransport(app=asgi_app)
+                async with httpx.AsyncClient(
+                    transport=transport,
+                    base_url="http://testserver",
+                    timeout=2.0,
+                ) as client:
+                    response = await client.post(
+                        "/",
+                        json=request_body,
+                        headers={"X-PAYMENT": payment_header(payload)},
+                    )
+
+                assert response.status_code == 200, response.text
+                response_json = response.json()
+                assert response_json["id"] == request_id
+                assert response_json["result"]["id"] == str(task_id)
+
+                task = await wait_for_terminal_task(storage, task_id)
+
+    finally:
+        app_settings.x402.protected_methods = original_methods
+
+    report_task(task, len(manifest.calls))
+
+    assert task["status"]["state"] == "completed"
+    assert len(manifest.calls) == 1
+    assert task.get("artifacts")
+
+    history = task.get("history") or []
+    assert history
+    for history_entry in history:
+        assert "_payment_context" not in (history_entry.get("metadata") or {})
+
+    meta = task.get("metadata") or {}
+    assert (
+        meta.get(app_settings.x402.meta_status_key)
+        == app_settings.x402.status_completed
+    )
+    assert meta.get(app_settings.x402.meta_receipts_key) == [
+        {"success": True, "transaction": "0xpaidsettled"}
+    ]
+
+    resource_server.verify_payment.assert_awaited_once()
+    mock_fac.settle.assert_awaited_once()
+    settle_call = mock_fac.settle.await_args
+    assert settle_call is not None
+    settled_payload, settled_requirement = settle_call.args
+    assert settled_payload.payload["authorization"]["nonce"] == "0x" + "fa" * 32
+    assert settled_requirement.network == REQUIREMENT.network
 
 
 # ---------------------------------------------------------------------------

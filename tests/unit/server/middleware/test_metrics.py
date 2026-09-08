@@ -96,3 +96,35 @@ class TestMetricsMiddleware:
 
         mock_metrics.increment_requests_in_flight.assert_called_once()
         mock_metrics.decrement_requests_in_flight.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_dispatch_ignores_recording_error(self):
+        """Test that errors during metric recording don't crash request."""
+        mock_request = Mock()
+        mock_request.url.path = "/api/test"
+        mock_request.headers = {}
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+
+        mock_call_next = AsyncMock(return_value=mock_response)
+
+        mock_metrics = Mock()
+        mock_metrics.increment_requests_in_flight = Mock()
+        mock_metrics.decrement_requests_in_flight = Mock()
+        # Simulate error in recording
+        mock_metrics.record_http_request = Mock(side_effect=Exception("Metrics DB down"))
+
+        middleware = MetricsMiddleware(app=Mock())
+
+        with patch(
+            "bindu.server.middleware.metrics.get_metrics", return_value=mock_metrics
+        ):
+            # Should not raise exception
+            response = await middleware.dispatch(mock_request, mock_call_next)
+
+        assert response == mock_response
+        mock_metrics.increment_requests_in_flight.assert_called_once()
+        mock_metrics.record_http_request.assert_called_once()
+        mock_metrics.decrement_requests_in_flight.assert_called_once()  # cleanup always runs
+

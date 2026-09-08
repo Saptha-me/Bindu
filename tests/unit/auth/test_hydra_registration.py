@@ -1,6 +1,7 @@
 """Tests for Hydra OAuth client registration utilities."""
 
 import json
+import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,8 +77,9 @@ class TestSaveAgentCredentials:
             save_agent_credentials(credentials, creds_dir)
 
             creds_file = creds_dir / "oauth_credentials.json"
-            # Check permissions (owner read/write only)
-            assert oct(creds_file.stat().st_mode)[-3:] == "600"
+            # Check permissions (owner read/write only) on non-Windows platforms
+            if sys.platform != "win32":
+                assert oct(creds_file.stat().st_mode)[-3:] == "600"
 
     def test_save_credentials_preserves_existing_entries(self):
         """Test that saving new credentials preserves existing ones."""

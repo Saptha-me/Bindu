@@ -155,26 +155,26 @@ class TestReadmeUpdates:
 
     def test_main_readme_mentions_minimax(self):
         """Verify main README mentions MiniMax."""
-        readme = (Path(__file__).parent.parent.parent / "README.md").read_text()
+        readme = (Path(__file__).parent.parent.parent / "README.md").read_text(encoding="utf-8")
         assert "MiniMax" in readme
 
     def test_main_readme_has_minimax_api_key(self):
         """Verify main README mentions MINIMAX_API_KEY."""
-        readme = (Path(__file__).parent.parent.parent / "README.md").read_text()
+        readme = (Path(__file__).parent.parent.parent / "README.md").read_text(encoding="utf-8")
         assert "MINIMAX_API_KEY" in readme
 
     def test_examples_readme_mentions_minimax(self):
         """Verify examples README lists the MiniMax example."""
         readme = (
             Path(__file__).parent.parent.parent / "examples" / "README.md"
-        ).read_text()
+        ).read_text(encoding="utf-8")
         assert "minimax_example.py" in readme
 
     def test_examples_readme_mentions_minimax_env(self):
         """Verify examples README mentions MINIMAX_API_KEY in env vars."""
         readme = (
             Path(__file__).parent.parent.parent / "examples" / "README.md"
-        ).read_text()
+        ).read_text(encoding="utf-8")
         assert "MINIMAX_API_KEY" in readme
 
 

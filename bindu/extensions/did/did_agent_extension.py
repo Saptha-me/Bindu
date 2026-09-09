@@ -26,7 +26,6 @@ DID documents, enabling agents to establish trust in a decentralized network.
 """
 
 from __future__ import annotations
-
 import os
 import platform
 

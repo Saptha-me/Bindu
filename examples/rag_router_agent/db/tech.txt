@@ -1,0 +1,2 @@
+Neural networks are used in deep learning.
+Python is widely used in AI development.
